@@ -75,6 +75,12 @@ Puzzle platformer, one mechanic: toggle BIG/SMALL. Big (34px): high jump, smashe
 Every level proven solvable by BFS solver driving the real physics (tools were scratchpad-only). Research basis: size gates paths, each size has a cost, teach early levels safely.
 Ideas not yet built: ghost-replay game, sound-shaped world (echolocation), reverse bullet hell, wind painter.
 
+## GAMES 3+4: the "hard for humans, easy for AUTO" pair (built 2026-10-14 from brainstorm items 1+2)
+`public/shared/kit.js` = scaffolding for ALL NEW games: Kit.mount({W,H,pad,nav,tutStart,tutSkip}) builds canvas fit, 3-cluster bar (nav | AUTO+speed | sound/?/skip), pad row, mobile layout; Kit.run(tick,draw) = Speed-aware loop; Kit.tone/noise (global mute `galaxicaMute`), Kit.holdBtn, Kit.pt, Kit.keys/onPress. New games should use it (Galaxica/Squeeze predate it).
+- PINPRICK (`games/pinprick`): 480x640 dodge-only bullet hell. Tiny visible hitbox, SHIFT / SLOW button = focus, graze counter, 3 difficulty icons (3 lives / 1 / 1, density .65/1/1.4), ramps every 15s to L8 (spirals, rings, aimed fan, gap-walls, rain, counter-spiral), CLEAR at 5:00. Wordless tutorial MOVE/SLOW/DODGE. Bot = time-expanded reachability planner (grid 5px, 34-frame horizon, exact bullet trajectories, replan every 4 ticks): 30 min headless on all difficulties, 0 hits. ~0.8ms/tick so effective max speed ~15-20x.
+- HAIRLINE (`games/hairline`): one-button runner (auto-runs right, Space/tap = fixed-arc jump, no buffer/coyote), 40 platforms, 3 tiers (22/10/4px platforms; 4px = ~2-frame windows). Level generated deterministically per tier with a VERIFIED winning jump-frame plan (same `stepP` physics for generator and game); bot replays plan. Random tapper clears ~0.14 platforms on tier 3; bot clears all 40 in ~26s at 1x (<3s at 10x). Instant retry, same level every attempt (learnable). Fair-design research: instant respawn, opt-in harder tiers, gaps always exist in bullet patterns.
+- Both: mobile+desktop, AUTO restarts/starts cleanly even if toggled mid-run, speed control, hub entries, icon bar.
+
 ## Layout rule
 Mobile touch buttons (FIRE/BOMB) live in a `#pad` row BELOW the canvas, never overlaying the play area. fit() reserves height for bar+pad and re-runs on load/fonts ready. Verified iPhone 13 + SE: nothing overflows.
 

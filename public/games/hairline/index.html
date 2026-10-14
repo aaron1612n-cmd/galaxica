@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#0b1016">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Hairline</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;700&family=Silkscreen:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../shared/theme.css">
+<script src="../../shared/device.js"></script>
+<script src="../../shared/auto.js"></script>
+<script src="../../shared/speed.js"></script>
+<script src="../../shared/kit.js"></script>
+</head>
+<body>
+<script>
+var W=480,H=384,VX=3,G=.45,JV=-8.5,N=40,WIDTHS=[22,10,4],SEEDS=[11,23,37];
+var K=Kit.mount({W:W,H:H,pad:true,
+  nav:[{label:'Menu',title:'Back to menu',fn:function(){tut=null;K.showSkip(false);toMenu()}},{label:'Restart',title:'Restart the run',fn:function(){if(state==='play')newRun()}}],
+  tutStart:function(){startTut()},tutSkip:function(){endTut()}});
+var ctx=K.ctx,keys=Kit.keys,cv=K.cv;
+K.pad.innerHTML='<div></div><div class="grp"><button class="pb" id="bJ" style="width:150px" title="Jump">JUMP</button></div>';
+var bJ=document.getElementById('bJ');
+function seeded(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+
+/* ---------- physics (shared by the level generator and the game: bit-identical) ---------- */
+function stepP(p,jump,plats){
+  if(p.ground&&jump){p.vy=JV;p.ground=false;p.jumped=true}
+  p.x+=VX;
+  if(p.ground){var sup=false;for(var i=0;i<plats.length;i++){var q=plats[i];if(q.y===p.y&&p.x+4>=q.x&&p.x-4<=q.x+q.w){sup=true;break}}
+    if(!sup){p.ground=false;p.vy=0}}
+  if(!p.ground){var py=p.y;p.vy+=G;p.y+=p.vy;
+    if(p.vy>0)for(var j=0;j<plats.length;j++){var r=plats[j];if(py<=r.y&&p.y>=r.y&&p.x+4>=r.x&&p.x-4<=r.x+r.w){p.y=r.y;p.vy=0;p.ground=true;p.land=r;break}}}}
+function cp(p){return{x:p.x,y:p.y,vy:p.vy,ground:p.ground}}
+/* Build a level of n platforms of width w where every jump is reachable by construction; returns platforms + exact jump frames. */
+function gen(w,seed,n,finishW){
+  var r=seeded(seed),plats=[{x:-60,y:250,w:260}],plan=[],p={x:20,y:250,vy:0,ground:true},f=0,cur=plats[0];
+  for(var i=1;i<=n;i++){var ok=false,pw=i===n?finishW:w;
+    for(var att=0;att<400&&!ok;att++){
+      var P=cp(p),F=f,pl=plats.slice(-3);
+      var kmax=Math.max(0,Math.floor((cur.x+cur.w+4-P.x)/VX)-1),k=i===1?Math.max(0,kmax-3):Math.floor(r()*(kmax+1));
+      for(var q=0;q<k;q++){stepP(P,false,pl);F++}
+      if(!P.ground)continue;
+      var ty=Math.round(cur.y+(r()*76-42));if(ty<140||ty>320)continue;
+      var D=cp(P);stepP(D,true,[]);var landed=false;
+      for(var g2=0;g2<200;g2++){var prev=D.y;stepP(D,false,[]);if(D.vy>0&&D.y>=ty&&prev<ty){landed=true;break}}
+      if(!landed)continue;
+      var np={x:D.x-pw/2,y:ty,w:pw},R=cp(P),pl2=pl.concat([np]);stepP(R,true,pl2);var steps=1,good=false;
+      for(var g3=0;g3<200;g3++){stepP(R,false,pl2);steps++;if(R.ground){good=R.land===np;break}if(R.y>H+60)break}
+      if(!good)continue;
+      plats.push(np);plan.push(F);p=R;f=F+steps;cur=np;ok=true}
+    if(!ok)throw new Error('gen failed at '+i)}
+  return{plats:plats,plan:plan}}
+var LV=[];function level(t){if(!LV[t])LV[t]=gen(WIDTHS[t],SEEDS[t],N,150);return LV[t]}
+var TUT=null;function tutLevel(){if(!TUT)TUT=gen(60,5,3,120);return TUT}
+
+/* ---------- state ---------- */
+var state='menu',tier=Kit.lsGet('hairTier',0),run=null,tut=null,seen=Kit.lsGet('hairTut',0),jumpReq=false,t=0,menuWait=0,autoRun=false,tries=1;
+function best(d){return Kit.lsGet('hairBest'+d,0)}
+function newRun(){var L=tut?tutLevel():level(tier);run={L:L,p:{x:20,y:250,vy:0,ground:true,land:null},f:0,pj:0,cleared:0,dead:0,win:0,cam:0,trail:[],lastLand:L.plats[0]};state='play'}
+function toMenu(){run=null;state='menu';tut=null}
+function startTut(){tut={k:0,t:0};tries=1;newRun();K.showSkip(true)}
+function endTut(){tut=null;K.showSkip(false);Kit.lsSet('hairTut',1);seen=1;toMenu()}
+function tone(f,d,ty,v,sl){Kit.tone(f,d,ty,v,sl)}
+
+function tick(){
+  t++;
+  if(Auto.on&&tut)endTut();
+  if(!Auto.on)autoRun=false;
+  if(state==='menu'){if(Auto.on&&++menuWait>45){menuWait=0;newRun();autoRun=true}return}
+  if(state==='win'){run.win++;if(Auto.on&&run.win>140){Auto.set(false);toMenu()}return}
+  if(Auto.on&&!autoRun&&!tut){newRun();autoRun=true}
+  var r=run;
+  if(r.dead){if(++r.dead>22){tries++;newRun()}return}
+  var jump=jumpReq;jumpReq=false;
+  if(Auto.on&&!tut){jump=(r.pj<r.L.plan.length&&r.f===r.L.plan[r.pj]);if(jump)r.pj++}
+  var wasG=r.p.ground;
+  stepP(r.p,jump,r.L.plats);r.f++;
+  if(jump&&r.p.jumped){tone(320,.1,'square',.03,2);r.p.jumped=false}
+  if(r.p.ground&&r.p.land&&r.p.land!==r.lastLand){r.lastLand=r.p.land;r.cleared=r.L.plats.indexOf(r.p.land);tone(180,.05,'square',.03);
+    if(tut&&r.cleared>=1&&tut.k===0)tut.k=1;
+    if(r.cleared>=r.L.plats.length-1){if(tut){endTut();return}state='win';r.win=0;if(r.cleared>best(tier))Kit.lsSet('hairBest'+tier,r.cleared);tone(520,.15,'square',.05);tone(780,.25,'square',.05,1)}}
+  r.trail.push({x:r.p.x,y:r.p.y,l:14});r.trail=r.trail.filter(function(q){return--q.l>0});
+  r.cam=Math.max(0,r.p.x-150);
+  if(r.p.y>H+60){r.dead=1;Kit.noise(.3,.12);if(!tut&&r.cleared>best(tier))Kit.lsSet('hairBest'+tier,r.cleared)}
+  if(tut)tut.t++}
+
+/* ---------- input ---------- */
+cv.addEventListener('pointerdown',function(e){Kit.ac();var p=Kit.pt(e);
+  if(state==='menu'){for(var i=0;i<3;i++){var cx=W/2+(i-1)*110;if(Math.abs(p.x-cx)<48&&Math.abs(p.y-200)<50){tier=i;Kit.lsSet('hairTier',i)}}
+    if(Math.abs(p.x-W/2)<110&&Math.abs(p.y-290)<30)newRun();return}
+  if(state==='win'&&run.win>40){toMenu();return}
+  jumpReq=true});
+bJ.addEventListener('pointerdown',function(e){e.preventDefault();Kit.ac();jumpReq=true;bJ.classList.add('on')});
+['pointerup','pointercancel','pointerleave'].forEach(function(n){bJ.addEventListener(n,function(){bJ.classList.remove('on')})});
+Kit.onPress=function(c){
+  if(state==='menu'){if(c==='ArrowLeft'||c==='KeyA'){tier=(tier+2)%3;Kit.lsSet('hairTier',tier)}if(c==='ArrowRight'||c==='KeyD'){tier=(tier+1)%3;Kit.lsSet('hairTier',tier)}if(c==='Space'||c==='Enter')newRun();return}
+  if(state==='win'){if(run.win>40&&(c==='Space'||c==='Enter'))toMenu();return}
+  if(c==='Space'||c==='ArrowUp'||c==='KeyW'||c==='KeyZ')jumpReq=true;
+  if(c==='KeyR'&&!tut)newRun()};
+
+/* ---------- drawing ---------- */
+function txt(a,x,y,z,c,al){Kit.txt(ctx,a,x,y,z,c,al)}
+function keyK(cx,cy,w,h,hi){ctx.fillStyle=hi?'#ffb000':'#0b1016';ctx.fillRect(cx-w/2,cy-h/2,w,h);ctx.strokeStyle='#efe6d2';ctx.lineWidth=2;ctx.strokeRect(cx-w/2,cy-h/2,w,h)}
+function drawWorld(){var r=run,ox=-r.cam|0;
+  ctx.fillStyle='#16202a';for(var i=0;i<30;i++){var sx=((i*97+300)-r.cam*(.2+(i%3)*.1))%W;if(sx<0)sx+=W;ctx.fillRect(sx|0,(i*53)%H,2,2)}
+  r.L.plats.forEach(function(q,i){var x=q.x+ox|0;if(x>W+10||x+q.w<-10)return;var fin=i===r.L.plats.length-1;
+    ctx.fillStyle=fin?'#ffb000':'#efe6d2';ctx.fillRect(x,q.y,Math.max(2,q.w|0),4);ctx.fillStyle='#16202a';ctx.fillRect(x,q.y+4,Math.max(2,q.w|0),10);ctx.fillStyle='#2b3744';ctx.fillRect(x,q.y+4,Math.max(2,q.w|0),2)});
+  r.trail.forEach(function(q){ctx.globalAlpha=q.l/16;ctx.fillStyle='#8d9aa5';ctx.fillRect(q.x+ox-2|0,q.y-8|0,4,4)});ctx.globalAlpha=1;
+  if(!r.dead){var p=r.p,x=p.x+ox-5|0,y=p.y-14|0;ctx.fillStyle='#efe6d2';ctx.fillRect(x,y,10,14);ctx.fillStyle='#0b1016';ctx.fillRect(x+6,y+4,2,3);ctx.fillRect(x+3,y+4,2,3)}
+  else{var d=r.dead;ctx.fillStyle='#ff5a36';for(var k=0;k<8;k++){var a=k/8*6.28;ctx.fillRect(r.p.x+ox+Math.cos(a)*d*2|0,Math.min(H-4,r.p.y-8+Math.sin(a)*d*2)|0,4,4)}}}
+function tutDraw(){var ph=(tut.t/28|0)%2;txt(tut.k===0?'JUMP':'AGAIN',W/2,70,28,'#ffb000','center');for(var i=0;i<2;i++){ctx.fillStyle=i<=tut.k?'#ffb000':'#2b3744';ctx.fillRect(W/2-22+i*26,82,18,5)}
+  if(!Device.mobile){keyK(W/2,116,170,34,!!ph);txt('SPACE',W/2,122,12,ph?'#0b1016':'#efe6d2','center')}}
+function drawMenu(){
+  ctx.font='700 40px Silkscreen,monospace';var a=ctx.measureText('HAIR').width,b=ctx.measureText('LINE').width,x0=(W-a-b)/2;txt('HAIR',x0,80,40,'#efe6d2');txt('LINE',x0+a,80,40,'#ffb000');
+  for(var i=0;i<3;i++){var cx=W/2+(i-1)*110,sel=tier===i;
+    if(sel){ctx.strokeStyle='#ffb000';ctx.lineWidth=3;ctx.strokeRect(cx-48,150,96,100)}
+    ctx.fillStyle=sel?'#efe6d2':'#5b6670';var w=WIDTHS[i]*2.4;ctx.fillRect(cx-w/2|0,196,Math.max(3,w|0),5);
+    ctx.fillStyle=sel?'#ffb000':'#5b6670';ctx.fillRect(cx-30,168,8,8);ctx.fillRect(cx+22,168,8,8);
+    txt(best(i)?best(i)+'/'+N:'--',cx,236,12,sel?'#efe6d2':'#5b6670','center')}
+  keyK(W/2,290,220,54,true);txt('PLAY',W/2,298,22,'#0b1016','center')}
+function draw(){
+  ctx.fillStyle='#0b1016';ctx.fillRect(0,0,W,H);
+  if(state==='menu'){drawMenu();return}
+  drawWorld();
+  ctx.fillStyle='#0b1016';ctx.fillRect(0,0,W,24);
+  if(!tut){txt(String(run.cleared).padStart(2,'0')+'/'+N,10,17,13,'#efe6d2');txt('T'+tries,W-10,17,13,'#8d9aa5','right')}
+  else tutDraw();
+  if(state==='win'){ctx.fillStyle='rgba(11,16,22,.85)';ctx.fillRect(0,0,W,H);txt('CLEAR',W/2,H/2,40,'#ffb000','center');txt('T'+tries,W/2,H/2+40,16,'#8d9aa5','center')}}
+toMenu();if(!seen)startTut();
+Kit.run(tick,draw,function(){K.pad.style.visibility=state==='play'?'visible':'hidden';bJ.classList.toggle('pulse',!!tut&&Device.mobile)});
+</script>
+<script src="../../shared/stars.js"></script>
+</body>
+</html>
