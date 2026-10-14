@@ -58,6 +58,12 @@ UX 6: haptics, gamepad, saved settings, icon menu (ship/mode/difficulty), pause 
 Controls (desktop): arrows/WASD move, Space fire, Shift dash, B bomb, P pause, M mute. Mobile: drag, FIRE, BOMB, double-tap dash, auto-fire toggle.
 Research basis (shmup design notes): visible tiny hitbox, graze risk/reward, multi-phase bosses, power-ups as decisions. Stress-tested in Playwright (desktop+iPhone), no JS errors. Tutorial retained.
 
+## Game 2: SQUEEZE (2026-10-14) `public/games/squeeze/`
+Puzzle platformer, one mechanic: toggle BIG/SMALL. Big (34px): high jump, smashes cracked blocks by walking into them, presses plates; can't fit 1-tile tunnels. Small (12px): fits tunnels, low jump, too light for plates. Toggle denied if no headroom. Plates latch doors open. Spikes kill; optional star per level.
+8 levels + wordless tutorial (MOVE/JUMP/SIZE, skippable, `?` replays). Level select menu (progress/stars saved in localStorage). Desktop: A/D/arrows, Space/W/Up jump, X/Shift/Z/Down size, R restart. Mobile: pad row below canvas (L R SIZE JUMP).
+Every level proven solvable by BFS solver driving the real physics (tools were scratchpad-only). Research basis: size gates paths, each size has a cost, teach early levels safely.
+Ideas not yet built: ghost-replay game, sound-shaped world (echolocation), reverse bullet hell, wind painter.
+
 ## Layout rule
 Mobile touch buttons (FIRE/BOMB) live in a `#pad` row BELOW the canvas, never overlaying the play area. fit() reserves height for bar+pad and re-runs on load/fonts ready. Verified iPhone 13 + SE: nothing overflows.
 
