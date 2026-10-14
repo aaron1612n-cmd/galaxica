@@ -30,8 +30,6 @@
 <div id="wrap"><canvas id="c"></canvas><button id="fire" aria-label="Fire">FIRE</button></div>
 <div class="bar">
   <a class="btn ghost" href="../../">← Arcade</a>
-  <span data-show="desktop" hidden>← → / A D move · Space fires · P pauses</span>
-  <span data-show="mobile" hidden>Drag anywhere to steer · hold FIRE (or auto-fire)</span>
   <button class="btn ghost" id="auto" data-show="mobile" hidden>Auto-fire: on</button>
   <button class="btn ghost" id="fs">Fullscreen</button>
 </div>
@@ -111,8 +109,8 @@ function draw(){
   for(var l=0;l<s.lives;l++){ctx.fillStyle='#ffb000';ctx.fillRect(W-22-l*18,14,12,12)}
   if(s.over||paused){ctx.fillStyle='rgba(11,16,22,.88)';ctx.fillRect(0,0,W,H);
     var over=s.over;txt(over?'GAME OVER':'PAUSED',W/2,H/2-6,32,over?'#ff5a36':'#ffb000','center');
-    txt(over?'FINAL '+s.score:'',W/2,H/2+26,14,'#efe6d2','center');
-    txt(over?(Device.mobile?'TAP TO RESTART':'SPACE TO RESTART'):(Device.mobile?'TAP TO RESUME':'P TO RESUME'),W/2,H/2+60,13,'#8d9aa5','center')}
+    if(over)txt(String(s.score),W/2,H/2+30,18,'#efe6d2','center');
+}
 }
 cv.addEventListener('pointerdown',function(){if(paused)paused=false});
 (function loop(){step();draw();requestAnimationFrame(loop)})();

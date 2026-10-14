@@ -1,3 +1,8 @@
 [
-  { "id": "galaxica", "title": "Galaxica", "blurb": "Arrow keys / A-D to move, Space to fire. Hold the line.", "blurbMobile": "Drag to steer, auto-fire on. Hold the line.", "added": "2026-10-14" }
+  {
+    "id": "galaxica",
+    "title": "Galaxica",
+    "blurb": "Hold the line.",
+    "added": "2026-10-14"
+  }
 ]
