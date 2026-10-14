@@ -2,7 +2,7 @@
 Purpose: resume this chat with full context. Cap ~1,500 tokens; condense, don't truncate.
 
 ## Goal
-Host website(s) for repo `aaron1612n-cmd/galaxica` using Cloudflare Wrangler.
+Host website(s) AND the Galaxica game for repo `aaron1612n-cmd/galaxica` using Cloudflare Wrangler.
 
 ## Decisions
 - Runbook: `GalaxicaHostingrunbook.md` (repo root), updated proactively each turn.
@@ -19,7 +19,12 @@ Host website(s) for repo `aaron1612n-cmd/galaxica` using Cloudflare Wrangler.
 - [ ] Site content exists
 
 ## Current state
-- Repo contains only README.md (initial commit). No site yet.
+- Repo has README.md + this runbook. No site/game code yet.
+- Draft PR #1 open (runbook), subscribed; no CI/reviews yet.
+
+## Game (user says we're making it; no prior context visible)
+- Assumed: browser game, static build on Cloudflare Pages. Unconfirmed.
+- Awaiting: genre, tech (plain canvas vs Phaser), controls (keyboard/touch), any existing notes. Default if user says "just pick": single-file canvas space shooter.
 
 ## Open questions
 - Which site: existing in repo, or build a new one? What is it?
