@@ -3,50 +3,55 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#04040c">
+<meta name="theme-color" content="#0b1016">
 <title>Galaxica Arcade</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;700&family=Silkscreen:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="shared/theme.css">
 <script src="shared/device.js"></script>
 <style>
-  header{max-width:960px;margin:0 auto;padding:max(48px,env(safe-area-inset-top)) 20px 12px;text-align:center}
-  h1{margin:0;font-size:clamp(2rem,8vw,3.8rem);letter-spacing:.18em;font-weight:800}
-  .sub{color:var(--dim);margin:8px 0 14px}
-  .badge{display:inline-block;padding:4px 14px;border-radius:999px;font-size:.8rem;color:var(--cyan);
-    border:1px solid var(--line);background:var(--glass)}
-  main{max-width:960px;margin:24px auto 64px;padding:0 20px;display:grid;gap:18px;
-    grid-template-columns:repeat(auto-fill,minmax(250px,1fr))}
-  a.card{display:block;padding:22px;color:inherit;text-decoration:none;position:relative;overflow:hidden;
-    transition:transform .25s,box-shadow .25s,border-color .25s}
-  a.card::before{content:"";position:absolute;inset:-1px;border-radius:inherit;opacity:0;transition:.3s;
-    background:radial-gradient(300px 120px at 50% 0,rgba(94,231,255,.25),transparent 70%)}
-  a.card:hover,a.card:focus-visible{transform:translateY(-4px);border-color:var(--cyan);
-    box-shadow:0 0 34px rgba(94,231,255,.35),0 8px 40px rgba(0,0,0,.5);outline:none}
-  a.card:hover::before{opacity:1}
-  .card h2{margin:0 0 6px;font-size:1.3rem}.card p{margin:0;color:var(--dim)}
-  .play{margin-top:14px;color:var(--cyan);font-weight:600}
-  footer{text-align:center;color:var(--dim);font-size:.85rem;padding-bottom:max(24px,env(safe-area-inset-bottom))}
+  .wrap{max-width:780px;margin:0 auto;padding:max(28px,env(safe-area-inset-top)) 20px 60px}
+  .top{display:flex;justify-content:space-between;gap:12px;font-size:11px;color:var(--dim);border-bottom:2px solid var(--paper);padding-bottom:8px}
+  h1{font:700 clamp(2.4rem,13vw,5.6rem)/.95 var(--px);text-transform:uppercase;margin:34px 0 10px;letter-spacing:-.01em}
+  h1 span{color:var(--amber)}
+  .lede{max-width:46ch;color:var(--dim);margin:0 0 36px}
+  .head,.row{display:grid;grid-template-columns:3.2em 1fr auto;gap:14px;align-items:baseline}
+  .head{font-size:11px;color:var(--dim);border-bottom:1px solid var(--line);padding:6px 0}
+  a.row{padding:18px 0;border-bottom:1px solid var(--line);color:inherit;text-decoration:none}
+  a.row:hover,a.row:focus-visible{background:var(--ink2);outline:none;box-shadow:-14px 0 0 var(--ink2),14px 0 0 var(--ink2)}
+  a.row:hover .go,a.row:focus-visible .go{background:var(--amber);color:var(--ink)}
+  .no{color:var(--amber);font-family:var(--px)}
+  .t{font:700 1.25rem var(--px);text-transform:uppercase}
+  .b{grid-column:2;color:var(--dim);font-size:13px;margin-top:4px}
+  .go{font:700 11px var(--px);border:2px solid var(--paper);padding:6px 10px;align-self:center;grid-row:1/3;grid-column:3}
+  .empty{color:var(--dim);padding:18px 0;font-size:13px}
+  footer{margin-top:40px;font-size:11px;color:var(--dim)}
+  .cursor{display:inline-block;width:.55em;height:1em;background:var(--amber);vertical-align:-.12em;animation:b 1s steps(1) infinite}
+  @keyframes b{50%{opacity:0}}
 </style>
 </head>
 <body>
 <canvas id="stars"></canvas>
-<header>
-  <h1 class="glow-text">GALAXICA</h1>
-  <p class="sub">A growing galaxy of small JS games.</p>
-  <span class="badge" data-show="mobile" hidden>📱 Mobile mode · touch controls on</span>
-  <span class="badge" data-show="desktop" hidden>🖥️ Desktop mode · keyboard controls on</span>
-</header>
-<main id="games"></main>
-<footer>Playable on phone, tablet and PC</footer>
+<div class="wrap">
+  <div class="top px"><span>Galaxica Arcade · Cat. 01</span>
+    <span data-show="mobile" hidden>Input: touch</span><span data-show="desktop" hidden>Input: keyboard</span></div>
+  <h1>Galax<span>ica</span></h1>
+  <p class="lede">Small browser games, filed in the order they were built. Plays on a phone or a keyboard.</p>
+  <div class="head px"><span>No.</span><span>Title</span><span></span></div>
+  <div id="games"><div class="empty">Loading catalog<span class="cursor"></span></div></div>
+  <footer class="px">Listed newest last · more arriving</footer>
+</div>
 <script src="shared/stars.js"></script>
 <script>
 fetch('games.json').then(function(r){return r.json()}).then(function(list){
-  var el=document.getElementById('games');
-  list.slice().reverse().forEach(function(g){
-    var a=document.createElement('a');a.className='card glass';a.href='games/'+g.id+'/';
-    var h=document.createElement('h2');h.textContent=g.title;
-    var p=document.createElement('p');p.textContent=Device.mobile&&g.blurbMobile?g.blurbMobile:g.blurb;
-    var b=document.createElement('div');b.className='play';b.textContent='Play →';
-    a.append(h,p,b);el.append(a);
+  var el=document.getElementById('games');el.textContent='';
+  list.forEach(function(g,i){
+    var a=document.createElement('a');a.className='row';a.href='games/'+g.id+'/';
+    var n=document.createElement('span');n.className='no';n.textContent=String(i+1).padStart(3,'0');
+    var t=document.createElement('span');t.className='t';t.textContent=g.title;
+    var b=document.createElement('span');b.className='b';b.textContent=Device.mobile&&g.blurbMobile?g.blurbMobile:g.blurb;
+    var go=document.createElement('span');go.className='go';go.textContent='PLAY';
+    a.append(n,t,b,go);el.append(a);
   });
 });
 </script>

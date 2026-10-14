@@ -36,11 +36,17 @@ Host website(s) AND the Galaxica game for repo `aaron1612n-cmd/galaxica` using C
 - LIVE: https://galaxica-arcade.galaxica.workers.dev (version 9787abfa, 2026-10-14) via `npx wrangler deploy`.
 - Redeploy after changes: commit, then `npx wrangler deploy`.
 
-## UI / device system (2026-10-14)
-- `public/shared/`: `theme.css` (glassy neon galaxy theme, `[hidden]` fix), `device.js` (sets `html[data-device=mobile|desktop]`, `window.Device`, toggles `[data-show]` elements), `stars.js` (animated starfield on `<canvas id="stars">`).
-- EVERY new game must: link theme.css + device.js, use viewport meta w/ viewport-fit=cover, scale canvas to fit + DPR, support touch (pointer events, >=44px buttons) AND keyboard, show per-device hints via `data-show`.
-- games.json supports optional `blurbMobile`.
-- Galaxica: drag-to-steer, FIRE button, auto-fire toggle, pause (P / tab hidden), particles, best score (localStorage), fullscreen. Verified in Playwright (iPhone 13 + desktop), no JS errors.
+## Design direction: NON-AI look (2026-10-14, researched)
+Research (prg.sh purple-gradient post, impeccable.style/slop, capitalandcompute fix-ai-slop): AI tells = purple/cyan gradients, glass cards, glow shadows, gradient text, Inter, centered hero + 3 cards, emoji icons.
+Our identity: flat "star catalog / arcade cabinet". Ink #0b1016, paper #efe6d2, ONE accent amber #ffb000, red-orange #ff5a36 for enemies. Silkscreen (pixel) + IBM Plex Mono. Hard 4px offset shadows, square corners, pixel sprites (fillRect grids), flat square-pixel starfield, list/catalog layout (not cards). NO glow, blur, glass, gradients, gradient text, emoji.
+RULE: research before designing anything new (search refs, avoid documented AI tells); screenshot-test mobile+desktop before deploy.
+Custom-rules paragraph for user's Claude settings: given in chat (begins "Design with a distinct, human look...").
+
+## Device system
+- `public/shared/`: `theme.css`, `device.js` (html[data-device=mobile|desktop], window.Device, `[data-show]` toggles), `stars.js` (pixel starfield on `<canvas id="stars">`).
+- EVERY game: link theme.css + device.js, viewport-fit=cover, scale canvas + DPR, touch (pointer events, >=44px) AND keyboard, per-device hints.
+- games.json: optional `blurbMobile`.
+- Galaxica: drag steer, FIRE btn, auto-fire toggle, pause (P/tab hidden), pixel sprites, best score (localStorage), fullscreen. Playwright-verified iPhone 13 + desktop, no JS errors.
 
 ## Next step
-Playtest on a real phone; add more games; custom domain? Redeploy: `npx wrangler deploy`.
+Playtest on real phone; more games (research each look first); custom domain? Redeploy: `npx wrangler deploy`.
