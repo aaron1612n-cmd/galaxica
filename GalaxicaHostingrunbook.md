@@ -58,8 +58,14 @@ UX 6: haptics, gamepad, saved settings, icon menu (ship/mode/difficulty), pause 
 Controls (desktop): arrows/WASD move, Space fire, Shift dash, B bomb, P pause, M mute. Mobile: drag, FIRE, BOMB, double-tap dash, auto-fire toggle.
 Research basis (shmup design notes): visible tiny hitbox, graze risk/reward, multi-phase bosses, power-ups as decisions. Stress-tested in Playwright (desktop+iPhone), no JS errors. Tutorial retained.
 
+## AUTO MODE (launcher-level) - RULE FOR EVERY GAME
+User wants an auto mode that plays/beats each game for them; this is why the hub is a launcher. `public/shared/auto.js` = global `Auto` ({on,set,toggle,watch,bind}), stored in localStorage `galaxicaAuto`, synced across tabs. AUTO button on the hub top bar AND in every game's button bar (id `bot`; `Auto.bind(btn)`).
+EVERY NEW GAME MUST: load auto.js, bind an AUTO button, and implement a bot that reads `Auto.on` (auto-start from menu, auto-skip tutorial, auto-restart/advance). Prefer deterministic puzzle games so a solver can record replay plans.
+- Galaxica: heuristic bot (candidate-position danger scoring, target alignment, pickup chasing, bomb+dash use). Headless 25-min tests (90k frames): default/needle/brick ships and boss-rush all survive (wave 64+, lives 5-6). Endless game so "beating" = surviving.
+- Squeeze: replay plans (`PLANS`, one char per 6 frames) found by BFS solver on the real physics; beats all 8 levels in ~30s, 0 deaths. If levels/physics change, RE-RUN the solver (BFS over dir x jump x toggle, 6-frame macro steps, key=x/6,y/6,size,vy,ground,plate,cracked) and regenerate PLANS. Auto turns itself off after the last level.
+
 ## Game 2: SQUEEZE (2026-10-14) `public/games/squeeze/`
-Puzzle platformer, one mechanic: toggle BIG/SMALL. Big (34px): high jump, smashes cracked blocks by walking into them, presses plates; can't fit 1-tile tunnels. Small (12px): fits tunnels, low jump, too light for plates. Toggle denied if no headroom. Plates latch doors open. Spikes kill; optional star per level.
+Puzzle platformer, one mechanic: toggle BIG/SMALL. Big (34px): high jump, smashes cracked blocks by walking into them, presses plates; can't fit 1-tile tunnels. Small (12px): fits tunnels, low jump, too light for plates. Toggle denied if no headroom. Plates latch doors open. Spikes (point UP, fixed 2026-10-14) kill; optional star per level.
 8 levels + wordless tutorial (MOVE/JUMP/SIZE, skippable, `?` replays). Level select menu (progress/stars saved in localStorage). Desktop: A/D/arrows, Space/W/Up jump, X/Shift/Z/Down size, R restart. Mobile: pad row below canvas (L R SIZE JUMP).
 Every level proven solvable by BFS solver driving the real physics (tools were scratchpad-only). Research basis: size gates paths, each size has a cost, teach early levels safely.
 Ideas not yet built: ghost-replay game, sound-shaped world (echolocation), reverse bullet hell, wind painter.

@@ -9,9 +9,10 @@
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;700&family=Silkscreen:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="shared/theme.css">
 <script src="shared/device.js"></script>
+<script src="shared/auto.js"></script>
 <style>
   .wrap{max-width:780px;margin:0 auto;padding:max(28px,env(safe-area-inset-top)) 20px 60px}
-  .top{display:flex;justify-content:space-between;gap:12px;font-size:11px;color:var(--dim);border-bottom:2px solid var(--paper);padding-bottom:8px}
+  .top{display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:11px;color:var(--dim);border-bottom:2px solid var(--paper);padding-bottom:8px}
   h1{font:700 clamp(2.4rem,13vw,5.6rem)/.95 var(--px);text-transform:uppercase;margin:34px 0 40px;letter-spacing:-.01em}
   h1 span{color:var(--amber)}
   .lede{max-width:46ch;color:var(--dim);margin:0 0 36px}
@@ -33,13 +34,14 @@
 <body>
 <canvas id="stars"></canvas>
 <div class="wrap">
-  <div class="top px"><span>Galaxica Arcade · Cat. 01</span></div>
+  <div class="top px"><span>Galaxica Arcade · Cat. 01</span><button class="btn ghost" id="bot" style="min-height:30px;padding:0 10px;font-size:10px;box-shadow:3px 3px 0 var(--paper)">AUTO</button></div>
   <h1>Galax<span>ica</span></h1>
   <div class="head px"><span>No.</span><span>Title</span><span></span></div>
   <div id="games"><div class="empty"><span class="cursor"></span></div></div>
 </div>
 <script src="shared/stars.js"></script>
 <script>
+Auto.bind(document.getElementById('bot'));
 fetch('games.json').then(function(r){return r.json()}).then(function(list){
   var el=document.getElementById('games');el.textContent='';
   list.forEach(function(g,i){

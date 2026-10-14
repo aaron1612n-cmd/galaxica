@@ -9,6 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;700&family=Silkscreen:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../shared/theme.css">
 <script src="../../shared/device.js"></script>
+<script src="../../shared/auto.js"></script>
 <style>
   html,body{height:100%;overflow:hidden;overscroll-behavior:none;user-select:none;-webkit-user-select:none}
   body{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;
@@ -44,6 +45,7 @@
   <a class="btn ghost" href="../../">← Arcade</a>
   <button class="btn ghost" id="auto" data-show="mobile" hidden>Auto-fire: on</button>
   <button class="btn ghost" id="fs">Fullscreen</button>
+  <button class="btn ghost" id="bot">AUTO</button>
   <button class="btn ghost" id="snd">SND</button>
   <button class="btn ghost" id="crt">CRT</button>
   <button class="btn ghost" id="tutb" aria-label="Tutorial">?</button>
@@ -182,6 +184,7 @@ function onPress(c){
 document.addEventListener('visibilitychange',function(){if(document.hidden&&s.state==='play')paused=true});
 var ab=document.getElementById('auto');ab.onclick=function(){auto=!auto;ab.textContent='Auto-fire: '+(auto?'on':'off')};
 document.getElementById('fs').onclick=function(){var f=document.fullscreenElement;f?document.exitFullscreen():(document.documentElement.requestFullscreen||function(){}).call(document.documentElement)};
+Auto.bind(document.getElementById('bot'));
 var sndB=document.getElementById('snd'),crtB=document.getElementById('crt');
 function toggleSnd(){cfg.mute=!cfg.mute;saveCfg();sndB.style.opacity=cfg.mute?.45:1}
 function toggleCrt(){cfg.crt=!cfg.crt;saveCfg();crtB.style.opacity=cfg.crt?1:.45}
@@ -191,6 +194,33 @@ function padIn(){var g=navigator.getGamepads&&navigator.getGamepads()[0];if(!g)r
   [[1,'dash'],[2,'bomb'],[9,'pause'],[0,'a']].forEach(function(x){var n=b(x[0]);if(n&&!gpPrev[x[1]]){
     if(x[1]==='dash')doDash();if(x[1]==='bomb')useBomb();if(x[1]==='pause'&&s.state==='play')paused=!paused;if(x[1]==='a'){if(s.state==='menu'&&!tut)startGame();else if(s.state==='over'&&s.overT>40)toMenu();else fireEdge=true}}gpPrev[x[1]]=n});return o}
 
+
+/* ---------- auto mode bot ---------- */
+function botDanger(x,y){var d=0,i,b,f;
+  for(i=0;i<s.eb.length;i++){b=s.eb[i];for(var t=0;t<=24;t+=6){var bx=b.x+b.vx*t,by=b.y+b.vy*t,dd=Math.hypot(bx-x,by-y);if(dd<b.r+20)d+=(30-t)}}
+  for(i=0;i<s.foes.length;i++){f=s.foes[i];for(var t2=0;t2<=24;t2+=8){var fx=f.x+(f.vx||0)*t2,fy=f.y+(f.vy||0)*t2,dd2=Math.hypot(fx-x,fy-y);if(dd2<f.r+24)d+=(36-t2)*1.5}}
+  for(i=0;i<s.rocks.length;i++){f=s.rocks[i];if(Math.hypot(f.x+f.vx*10-x,f.y+f.vy*10-y)<f.r+22)d+=30}
+  if(s.boss&&Math.hypot(s.boss.x-x,s.boss.y-y)<s.boss.r+30)d+=60;
+  return d}
+function bot(){
+  var sh=SH[cfg.ship],best=-1e9,bx=s.x,by=s.y,here=botDanger(s.x,s.y),i;
+  var tgx=W/2,tgw=0;
+  var tg=s.foes.concat(s.rocks,s.boss?[s.boss]:[]).filter(function(e){return e.y<s.y-20&&e.y>20});
+  tg.forEach(function(e){var w=1/(1+Math.abs(e.x-s.x)/60+Math.max(0,s.y-e.y)/400)+(e.k==='boss'?1:0);if(w>tgw){tgw=w;tgx=e.x}});
+  var pup=null,pd=1e9;s.pups.forEach(function(p){var d=Math.hypot(p.x-s.x,p.y-s.y);if(d<pd&&p.y>200){pd=d;pup=p}});
+  var prefY=H-95;
+  for(var x=-120;x<=120;x+=20)for(var y=-90;y<=90;y+=30){var cx=Math.max(18,Math.min(W-18,s.x+x)),cy=Math.max(330,Math.min(H-28,s.y+y));
+    var dg=botDanger(cx,cy)*(1+Math.hypot(x,y)/200),sc=-dg*3-Math.abs(cx-tgx)*(tgw?.35:0)-Math.abs(cy-prefY)*.12-Math.hypot(x,y)*.03;
+    if(pup&&pd<260&&dg<20)sc-=Math.hypot(cx-pup.x,cy-pup.y)*.5;
+    if(!tgw)sc-=Math.abs(cx-W/2)*.05;
+    if(sc>best){best=sc;bx=cx;by=cy}}
+  var dx=bx-s.x,dy=by-s.y,m=Math.hypot(dx,dy),ax=0,ay=0;
+  var gain=sh.spd*3;ax=Math.abs(dx)>2?Math.max(-1,Math.min(1,dx/gain)):0;ay=Math.abs(dy)>2?Math.max(-1,Math.min(1,dy/gain)):0;
+  var near=0;s.eb.forEach(function(b){if(Math.hypot(b.x-s.x,b.y-s.y)<160)near++});
+  var foesNear=s.foes.filter(function(f){return Math.hypot(f.x-s.x,f.y-s.y)<70}).length;
+  var bomb=s.bombs>0&&((near>=11&&here>60)||foesNear>=3||(s.boss&&s.boss.hp<s.boss.max*.2&&s.bombs>1&&s.t%90===0));
+  var dash=here>=90&&s.dashCd===0&&s.iframes<=0;
+  return{ax:ax,ay:ay,bomb:bomb,dash:dash}}
 /* ---------- helpers ---------- */
 function mult(){var m=Math.min(8,1+Math.floor(s.combo/5));return s.buff.X>0?m*2:m}
 function pop(x,y,t,c){s.pops.push({x:x,y:y,t:t,l:50,c:c||'#efe6d2'})}
@@ -271,10 +301,11 @@ function play(){
   s.t++;
   var G=padIn(),ax=(keys.ArrowRight||keys.KeyD?1:0)-(keys.ArrowLeft||keys.KeyA?1:0),ay=(keys.ArrowDown||keys.KeyS?1:0)-(keys.ArrowUp||keys.KeyW?1:0);
   if(G){ax+=G.ax;ay+=G.ay}
+  var BOT=Auto.on&&!tut?bot():null;if(BOT){ax=BOT.ax;ay=BOT.ay;if(BOT.bomb)useBomb();if(BOT.dash){s.mvx=BOT.ax||s.ldx;s.mvy=BOT.ay;doDash()}}
   var ox=s.x,oy=s.y;
   if(ax||ay){var m=Math.hypot(ax,ay);if(m>1){ax/=m;ay/=m}s.x+=ax*sh.spd;s.y+=ay*sh.spd;s.mvx=ax;s.mvy=ay;if(ax)s.ldx=ax>0?1:-1}
   else if(!touch){s.mvx=s.ldx;s.mvy=0}
-  if(touch){var dx=touch.x-s.x,dy=touch.y-touch.off-s.y,d=Math.hypot(dx,dy);if(d>2){var sp=Math.min(d*.35,sh.spd*2.4);s.x+=dx/d*sp;s.y+=dy/d*sp;s.mvx=dx/d;s.mvy=dy/d}}
+  if(touch&&!BOT){var dx=touch.x-s.x,dy=touch.y-touch.off-s.y,d=Math.hypot(dx,dy);if(d>2){var sp=Math.min(d*.35,sh.spd*2.4);s.x+=dx/d*sp;s.y+=dy/d*sp;s.mvx=dx/d;s.mvy=dy/d}}
   if(s.dash>0){s.dash--;s.x+=s.dvx;s.y+=s.dvy}
   s.x=Math.max(18,Math.min(W-18,s.x));s.y=Math.max(330,Math.min(H-28,s.y));
   if(tut)tut.moved+=Math.hypot(s.x-ox,s.y-oy);
@@ -283,7 +314,7 @@ function play(){
   s.wing.forEach(function(w,i){w.x+=(s.x+(i?32:-32)-w.x)*.18;w.y+=(s.y+12-w.y)*.18});
   /* firing */
   if(s.cd>0)s.cd--;
-  var want=keys.Space||keys.Fire||(G&&G.fire)||(auto&&Device.mobile&&!tut);
+  var want=BOT||keys.Space||keys.Fire||(G&&G.fire)||(auto&&Device.mobile&&!tut);
   if(want&&s.cd===0)shoot();fireEdge=false;
   if(B.M>0&&s.t%34===0){[-1,1].forEach(function(q){s.miss.push({x:s.x+q*10,y:s.y-10,vx:q*2.2,vy:-4})})}
   /* waves */
@@ -342,8 +373,10 @@ function step(){
   if(paused)return;if(hitstop>0){hitstop--;return}
   fx();
   if(s.state==='play'){play();music()}
-  else if(s.state==='over'){s.overT++;var G=padIn()}
-  else if(s.state==='menu')padIn()}
+  else if(s.state==='over'){s.overT++;var G=padIn();if(Auto.on&&s.overT>100)toMenu()}
+  else if(s.state==='menu'){padIn();if(Auto.on&&!tut&&++autoWait>45){autoWait=0;startGame()}}
+  if(Auto.on&&tut)endTut()}
+var autoWait=0;
 
 /* ---------- background ---------- */
 var LAY=[];for(var li=0;li<3;li++)for(var i=0;i<[40,26,14][li];i++)LAY.push({x:Math.random()*W,y:Math.random()*H,sp:[.25,.6,1.4][li],z:[2,2,3][li],a:[.35,.6,.9][li]});

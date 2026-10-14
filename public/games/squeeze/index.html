@@ -9,6 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;700&family=Silkscreen:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../shared/theme.css">
 <script src="../../shared/device.js"></script>
+<script src="../../shared/auto.js"></script>
 <style>
   html,body{height:100%;overflow:hidden;overscroll-behavior:none;user-select:none;-webkit-user-select:none}
   body{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;
@@ -43,6 +44,7 @@
   <a class="btn ghost" href="../../">← Arcade</a>
   <button class="btn ghost" id="mnu">Levels</button>
   <button class="btn ghost" id="rst">Restart</button>
+  <button class="btn ghost" id="bot">AUTO</button>
   <button class="btn ghost" id="snd">SND</button>
   <button class="btn ghost" id="tutb" aria-label="Tutorial">?</button>
   <button class="btn" id="skip" hidden>Skip</button>
@@ -51,6 +53,8 @@
 <script>
 var LV=[["####################", "#..................#", "#..................#", "#..................#", "#..................#", "#..................#", "#..................#", "#..................#", "#..................#", "#..................#", "#..................#", "#........*.........#", "#........##........#", "#@.......##......E.#", "####################", "####################"], ["####################", "#........##........#", "#........##........#", "#........##........#", "#........##........#", "#........##........#", "#........##........#", "#........##........#", "#........##........#", "#........##........#", "#........##........#", "#........##........#", "#........##........#", "#.@......*.......E.#", "####################", "####################"], ["####################", "#..................#", "#..................#", "#..................#", "#..................#", "#..................#", "#..................#", "#..................#", "#..................#", "#........*.........#", "#..................#", "#.......###........#", "#.......###........#", "#.$.....###.....E..#", "####################", "####################"], ["####################", "#.....#.....##.....#", "#.....#.....##.....#", "#.....#.....##.....#", "#.....#.....##.....#", "#.....#.....##.....#", "#.....#.....##.....#", "#.....#.....##.....#", "#.....#.....##.....#", "#.....#.....##.....#", "#.....c.....##.....#", "#.....c.....##.....#", "#.....c.....##.....#", "#.@...c.....*....E.#", "####################", "####################"], ["####################", "#..........#..##...#", "#..........#..##...#", "#..........#..##...#", "#..........#..##...#", "#..........#..##...#", "#..........#..##...#", "#..........#..##...#", "#..........#..##...#", "#..........#..##...#", "#...p......d..##...#", "#..###.....d..##...#", "#..###.....d..##...#", "#$.###.....d..*..E.#", "####################", "####################"], ["####################", "#.........#.##.....#", "#.........#.##.....#", "#.........#.##.....#", "#.........#.##.....#", "#.........#.##.....#", "#.........#.##.....#", "#.........#.##.....#", "#.........#.##.....#", "#.........#.##.....#", "#.........c.##....E#", "#....##...c.##...###", "#....##...c.##...###", "#$...##...c.*....###", "####################", "####################"], ["####################", "#..##............#.#", "#..##............#.#", "#..##............#.#", "#..##............#.#", "#..##............#.#", "#..##............#.#", "#..##............#.#", "#..##............d.#", "#..##............d.#", "#..##............d.#", "#..##............d.#", "#..##............d.#", "#@.*...^^........dE#", "#############pp#####", "####################"], ["####################", "#....#.............#", "#....#.............#", "#....d.............#", "#....d.............#", "#....d.............#", "#....d.............*", "#E...d...^^........#", "################..##", "#......c...##......#", "#......c...##...p..#", "#......c...##...##.#", "#......c...##......#", "#$.....c...........#", "####################", "####################"]],TUT=["####################", "#.........##.......#", "#.........##.......#", "#.........##.......#", "#.........##.......#", "#.........##.......#", "#.........##.......#", "#.........##.......#", "#.........##.......#", "#.........##.......#", "#.........##.......#", "#.........##.......#", "#.........##.......#", "#.@..............E.#", "####################", "####################"];
 var W=480,H=384,T=24,C=20,RN=16;
+/* auto-mode replay plans: one char per 6-frame step; bits = dir(0-2)*4 + jump*2 + size-toggle. Found by a solver driving this exact physics. */
+var PLANS=["jiiiiiiiiikkiiiijjiiiiij", "liiiikiiiiiiiijliiiiij", "iiiiiiihliiiiiiiiiiiij", "iiilijjiijjiiiiiiiiiiij", "lliiiiijjiiiiiiiiiiiiiiib", "iiilkjiiiijiijiiiiiiijklij", "jiiiiiiikiiiiiiiiiifliiiij", "iiiiiiijliiiiiiiiiijkliiddaaaaaaaacaaaaaaaaaaaab"],runId=0,aRun=-1,aStep=0,aF=0,menuWait=0;
 var cv=document.getElementById('c'),ctx=cv.getContext('2d');
 var dpr=Math.min(devicePixelRatio||1,2),scale=1;
 function fit(){
@@ -86,7 +90,7 @@ var isTutLevel=false;
 function parse(rows){g=rows.map(function(r){return r.split('')});orig=rows;var st=null;
   for(var r=0;r<RN;r++)for(var c=0;c<C;c++){var ch=g[r][c];if(ch==='@'||ch==='$'){st={c:c,r:r,big:ch==='@'};g[r][c]='.'}}
   var big=st.big,w=big?34:12;p={x:st.c*T+T/2-w/2,y:(st.r+1)*T-w,w:w,h:w,vx:0,vy:0,big:big,ground:false,coy:0,jb:0,dead:0,sq:0,deny:0,face:1,jumped:false,toggled:false,moved:0,vw:w,vh:w};
-  got=false;plateOn=false;parts=[]}
+  got=false;plateOn=false;parts=[];runId++}
 function loadLevel(i){isTutLevel=false;lvIdx=i;parse(LV[i]);state='play';clearT=0}
 function startTut(){tut={k:0,t:0};isTutLevel=true;parse(TUT.tut||TUT);state='play';skipB.hidden=false}
 var skipB=document.getElementById('skip');
@@ -95,6 +99,7 @@ function toMenu(){state='menu';isTutLevel=false}
 skipB.onclick=endTut;document.getElementById('tutb').onclick=function(){ac();startTut()};
 document.getElementById('mnu').onclick=function(){tut=null;skipB.hidden=true;toMenu()};
 document.getElementById('rst').onclick=function(){restart()};
+Auto.bind(document.getElementById('bot'));
 var sndB=document.getElementById('snd');sndB.style.opacity=mute?.45:1;sndB.onclick=function(){ac();mute=!mute;lsSet('squeezeMute',mute);sndB.style.opacity=mute?.45:1};
 function restart(){if(state!=='play')return;if(isTutLevel){parse(TUT.tut||TUT)}else parse(LV[lvIdx])}
 
@@ -133,6 +138,13 @@ function onPress(c){
   if(c==='Escape'||c==='KeyP')paused=!paused;
   if(c==='Space'||c==='ArrowUp'||c==='KeyW')jumpPress();
   if(c==='KeyX'||c==='ShiftLeft'||c==='ShiftRight'||c==='ArrowDown'||c==='KeyS'||c==='KeyZ')toggle()}
+function autoFeed(){
+  if(runId!==aRun){aRun=runId;aStep=0;aF=0}
+  var plan=PLANS[lvIdx]||'';
+  if(aStep>=plan.length){keys.L=keys.R=keys.J=false;return}
+  if(aF===0){var a=plan.charCodeAt(aStep)-97,d=(a>>2)-1,j=(a>>1)&1,tg=a&1;
+    keys.L=d<0;keys.R=d>0;keys.J=!!j;if(tg)toggle();if(j)jumpPress()}
+  if(++aF===6){aF=0;aStep++}}
 function jumpPress(){if(state==='play'&&p)p.jb=7}
 function toggle(){if(state!=='play'||p.dead||paused)return;
   var nb=!p.big,nw=nb?34:12,cx=p.x+p.w/2,bot=p.y+p.h,ok=false,nx=0,ny=bot-nw;
@@ -196,7 +208,7 @@ function drawTiles(){
     else if(ch==='c'){ctx.fillStyle='#34414f';ctx.fillRect(x,y,T,T);ctx.fillStyle='#0b1016';ctx.fillRect(x+10,y+2,2,8);ctx.fillRect(x+8,y+10,2,6);ctx.fillRect(x+12,y+14,2,8);ctx.fillRect(x+4,y+6,4,2);ctx.fillStyle='#8d9aa5';ctx.fillRect(x,y,T,2)}
     else if(ch==='d'){ctx.fillStyle='#ff5a36';ctx.fillRect(x+2,y,T-4,T);ctx.fillStyle='#0b1016';for(var k=0;k<3;k++)ctx.fillRect(x+4,y+3+k*8,T-8,3)}
     else if(ch==='p'){ctx.fillStyle='#0b1016';ctx.fillRect(x,y+T-4,T,4);ctx.fillStyle=plateOn?'#8d9aa5':'#ffb000';ctx.fillRect(x+2,y+T-(plateOn?6:11),T-4,plateOn?2:7)}
-    else if(ch==='^'){ctx.fillStyle='#ff5a36';for(var s=0;s<3;s++){var bx=x+s*8;for(var k=0;k<5;k++)ctx.fillRect(bx+3-k+0,y+T-4-k*4,2*k+2,4)}}
+    else if(ch==='^'){ctx.fillStyle='#ff5a36';for(var s=0;s<3;s++){var bx=x+s*8;for(var k=0;k<4;k++){var sw=8-k*2;ctx.fillRect(bx+(8-sw)/2,y+T-4-(k+1)*4,sw,4)}}ctx.fillRect(x,y+T-4,T,4)}
     else if(ch==='E'){ctx.fillStyle='#ffb000';ctx.fillRect(x+3,y+1,18,T-1);ctx.fillStyle='#0b1016';ctx.fillRect(x+6,y+4,12,T-4);ctx.fillStyle='#efe6d2';var bl=(t>>4&1);ctx.fillRect(x+10,y+8+bl*2,4,4)}
     else if(ch==='*'){var by=(Math.sin(t/12)*2)|0;ctx.fillStyle='#ffb000';ctx.fillRect(x+10,y+4+by,4,16);ctx.fillRect(x+4,y+10+by,16,4);ctx.fillStyle='#efe6d2';ctx.fillRect(x+10,y+10+by,4,4)}}}
 function drawPlayer(){if(p.dead)return;
@@ -235,12 +247,16 @@ function draw(){
   if(state==='clear'){txt('CLEAR',W/2,H/2,34,'#ffb000','center')}
   if(paused){ctx.fillStyle='rgba(11,16,22,.88)';ctx.fillRect(0,0,W,H);txt('PAUSED',W/2,H/2,30,'#ffb000','center')}}
 function after(){
-  if(state==='clear'){if(--clearT<=0){if(isTutLevel)endTut();else if(lvIdx<LV.length-1)loadLevel(lvIdx+1);else toMenu()}}}
+  if(state==='clear'){if(--clearT<=0){if(isTutLevel)endTut();else if(lvIdx<LV.length-1)loadLevel(lvIdx+1);else{toMenu();if(Auto.on)Auto.set(false)}}}}
 var bL=document.getElementById('bL'),bR=document.getElementById('bR'),bJ=document.getElementById('bJ'),padEl=document.getElementById('pad');
 (function loop(){
   t++;
   padEl.style.visibility=state==='play'?'visible':'hidden';
   [bL,bR].forEach(function(b){b.classList.toggle('pulse',!!tut&&tut.k===0)});bJ.classList.toggle('pulse',!!tut&&tut.k===1);bS.classList.toggle('pulse',!!tut&&tut.k===2);
+  if(Auto.on){if(tut)endTut();
+    if(state==='menu'){if(++menuWait>50){menuWait=0;loadLevel(sel)}}
+    else if(state==='play'&&!isTutLevel&&!paused)autoFeed()}
+  else if(aRun!==-1){aRun=-1;keys.L=keys.R=keys.J=false}
   if(state==='play'&&!paused)sim();else if(state==='clear'){sim()}
   after();draw();requestAnimationFrame(loop)})();
 document.addEventListener('visibilitychange',function(){if(document.hidden&&state==='play')paused=true});
