@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Galaxica Arcade</title>
+<style>
+  :root{--bg:#07070f;--fg:#e8e8ff;--card:#14142a;--accent:#6cf}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,sans-serif;padding:0 16px 48px}
+  header{max-width:880px;margin:0 auto;padding:40px 0 16px}
+  h1{margin:0;letter-spacing:.08em;color:var(--accent)}
+  main{max-width:880px;margin:0 auto;display:grid;gap:16px;grid-template-columns:repeat(auto-fill,minmax(240px,1fr))}
+  a.card{display:block;background:var(--card);border:1px solid #2a2a50;border-radius:10px;padding:18px;color:inherit;text-decoration:none}
+  a.card:hover{border-color:var(--accent)}
+  .card h2{margin:0 0 6px}.card p{margin:0;opacity:.75}
+</style>
+</head>
+<body>
+<header><h1>GALAXICA ARCADE</h1><p>A growing collection of small JS games.</p></header>
+<main id="games"></main>
+<script>
+fetch('games.json').then(r=>r.json()).then(list=>{
+  const el=document.getElementById('games');
+  list.slice().reverse().forEach(g=>{
+    const a=document.createElement('a');a.className='card';a.href='games/'+g.id+'/';
+    const h=document.createElement('h2');h.textContent=g.title;
+    const p=document.createElement('p');p.textContent=g.blurb;
+    a.append(h,p);el.append(a);
+  });
+});
+</script>
+</body>
+</html>

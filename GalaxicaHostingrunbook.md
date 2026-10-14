@@ -16,17 +16,19 @@ Host website(s) AND the Galaxica game for repo `aaron1612n-cmd/galaxica` using C
 - [ ] `CLOUDFLARE_API_TOKEN` as environment secret (never paste in chat)
 - [ ] `CLOUDFLARE_ACCOUNT_ID` as environment secret
 - [ ] Network policy allows `api.cloudflare.com` + npm registry
-- [ ] Site content exists
+- [x] Site content exists (hub + 1 game)
 
 ## Current state
-- Repo has README.md + this runbook. No site/game code yet.
+- Hub + starter game scaffolded on PR #1 branch.
 - Draft PR #1 open (runbook), subscribed; no CI/reviews yet.
 
-## Game (user says we're making it; no prior context visible)
-- Assumed: browser game, static build on Cloudflare Pages. Unconfirmed.
-- Awaiting: genre, tech (plain canvas vs Phaser), controls (keyboard/touch), any existing notes. Default if user says "just pick": single-file canvas space shooter.
+## Game / site structure (decided: collection of JS games added over time)
+- Static arcade hub. `public/index.html` lists games from `public/games.json`.
+- Each game = `public/games/<id>/index.html` (self-contained). To add a game: make the folder + append an entry to games.json.
+- `wrangler.jsonc` serves `./public` as static assets -> `npx wrangler deploy`.
+- Starter game: `galaxica` (canvas shooter, keyboard + touch). Syntax-checked only, not yet play-tested in browser.
 
 ## Open questions
-- Which site: existing in repo, or build a new one? What is it?
-- Pages (static) vs Worker?
-- Custom domain or `*.pages.dev`?
+- Next game ideas? Playtest/feedback on galaxica?
+- Custom domain or `*.pages.dev`/`*.workers.dev`?
+- Cloudflare secrets + network allowlist still needed before deploy.
