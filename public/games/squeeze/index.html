@@ -10,6 +10,7 @@
 <link rel="stylesheet" href="../../shared/theme.css">
 <script src="../../shared/device.js"></script>
 <script src="../../shared/auto.js"></script>
+<script src="../../shared/speed.js"></script>
 <style>
   html,body{height:100%;overflow:hidden;overscroll-behavior:none;user-select:none;-webkit-user-select:none}
   body{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;
@@ -17,6 +18,9 @@
   #wrap{border:2px solid var(--paper);box-shadow:6px 6px 0 var(--amber);background:var(--ink)}
   canvas#c{display:block;touch-action:none;image-rendering:pixelated}
   .bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:center;padding:0 10px}
+  html[data-device=mobile] .cl{padding:4px 6px;gap:6px}
+  html[data-device=mobile] .spd .btn{padding:0 6px}
+  html[data-device=mobile] .spd input{width:48px}
   .btn{min-height:40px;padding:0 12px}
   #pad{display:none;justify-content:space-between;align-items:center;min-height:56px}
   html[data-device=mobile] #pad{display:flex}
@@ -41,13 +45,13 @@
   <div class="grp"><button class="pb" id="bS">SIZE</button><button class="pb" id="bJ">JUMP</button></div>
 </div>
 <div class="bar">
-  <a class="btn ghost" href="../../">← Arcade</a>
-  <button class="btn ghost" id="mnu">Levels</button>
-  <button class="btn ghost" id="rst">Restart</button>
-  <button class="btn ghost" id="bot">AUTO</button>
-  <button class="btn ghost" id="snd">SND</button>
-  <button class="btn ghost" id="tutb" aria-label="Tutorial">?</button>
-  <button class="btn" id="skip" hidden>Skip</button>
+  <div class="cl"><a class="btn ghost" href="../../">← Arcade</a><button class="btn ghost" id="mnu" title="Level select">Levels</button><button class="btn ghost" id="rst" title="Restart this level">Restart</button></div>
+  <div class="cl"><button class="btn ghost" id="bot" title="Auto-play: the game plays itself">AUTO</button><span data-speed></span></div>
+  <div class="cl">
+    <button class="btn ghost ic" id="snd" title="Sound on/off" aria-label="Sound"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M2 6h3l4-3v10l-4-3H2z"/><path class="w" d="M11 5h1v6h-1zM13 3h1v10h-1z"/><path class="x" d="M11 6h1v1h-1zM15 6h1v1h-1zM12 7h1v1h-1zM14 7h1v1h-1zM13 8h1v1h-1zM12 9h1v1h-1zM14 9h1v1h-1zM11 10h1v1h-1zM15 10h1v1h-1z"/></svg></button>
+    <button class="btn ghost ic" id="tutb" title="Replay tutorial" aria-label="Tutorial">?</button>
+    <button class="btn" id="skip" hidden>Skip</button>
+  </div>
 </div>
 <div id="rot">Rotate your phone</div>
 <script>
@@ -82,7 +86,7 @@ var SFX={jump:()=>tone(300,.12,'square',.04,2),big:()=>tone(160,.18,'triangle',.
   smash:()=>{noise(.3,.18);tone(90,.25,'sawtooth',.08,.4)},plate:()=>{tone(400,.08,'square',.05);tone(600,.12,'square',.05,1,AC&&AC.currentTime+.08)},
   star:()=>{tone(880,.08,'square',.04);tone(1320,.14,'square',.04,1,AC&&AC.currentTime+.07)},die:()=>{noise(.35,.15);tone(200,.35,'sawtooth',.07,.3)},
   win:()=>[0,4,7,12].forEach((n,i)=>tone(392*Math.pow(2,n/12),.14,'square',.04,1,AC&&AC.currentTime+i*.09)),land:()=>tone(120,.05,'square',.03)};
-function sfx(n){if(AC&&!mute)SFX[n]()}
+function sfx(n){if(AC&&!mute&&Speed.v<=2.5)SFX[n]()}
 
 /* state */
 var keys={},tut=null,state='menu',sel=Math.min(prog.best,LV.length-1),g,orig,p,lvIdx=0,stars=0,got=false,plateOn=false,clearT=0,deaths=0,parts=[],shake=0,t=0,hold=null,paused=false;
@@ -100,7 +104,7 @@ skipB.onclick=endTut;document.getElementById('tutb').onclick=function(){ac();sta
 document.getElementById('mnu').onclick=function(){tut=null;skipB.hidden=true;toMenu()};
 document.getElementById('rst').onclick=function(){restart()};
 Auto.bind(document.getElementById('bot'));
-var sndB=document.getElementById('snd');sndB.style.opacity=mute?.45:1;sndB.onclick=function(){ac();mute=!mute;lsSet('squeezeMute',mute);sndB.style.opacity=mute?.45:1};
+var sndB=document.getElementById('snd');sndB.style.opacity=mute?.45:1;sndB.classList.toggle('off',mute);sndB.onclick=function(){ac();mute=!mute;lsSet('squeezeMute',mute);sndB.style.opacity=mute?.45:1;sndB.classList.toggle('off',mute)};
 function restart(){if(state!=='play')return;if(isTutLevel){parse(TUT.tut||TUT)}else parse(LV[lvIdx])}
 
 /* tiles */
@@ -253,12 +257,16 @@ var bL=document.getElementById('bL'),bR=document.getElementById('bR'),bJ=documen
   t++;
   padEl.style.visibility=state==='play'?'visible':'hidden';
   [bL,bR].forEach(function(b){b.classList.toggle('pulse',!!tut&&tut.k===0)});bJ.classList.toggle('pulse',!!tut&&tut.k===1);bS.classList.toggle('pulse',!!tut&&tut.k===2);
+  var n=Speed.steps(),t0=performance.now();
+  for(var i=0;i<n;i++){tick();if(i>0&&performance.now()-t0>12){Speed.acc=0;break}}
+  draw();requestAnimationFrame(loop)})();
+function tick(){
   if(Auto.on){if(tut)endTut();
     if(state==='menu'){if(++menuWait>50){menuWait=0;loadLevel(sel)}}
     else if(state==='play'&&!isTutLevel&&!paused)autoFeed()}
   else if(aRun!==-1){aRun=-1;keys.L=keys.R=keys.J=false}
   if(state==='play'&&!paused)sim();else if(state==='clear'){sim()}
-  after();draw();requestAnimationFrame(loop)})();
+  after()}
 document.addEventListener('visibilitychange',function(){if(document.hidden&&state==='play')paused=true});
 cv.addEventListener('pointerdown',function(){if(paused)paused=false});
 if(!seen)startTut();

@@ -64,6 +64,11 @@ EVERY NEW GAME MUST: load auto.js, bind an AUTO button, and implement a bot that
 - Galaxica: heuristic bot (candidate-position danger scoring, target alignment, pickup chasing, bomb+dash use). Headless 25-min tests (90k frames): default/needle/brick ships and boss-rush all survive (wave 64+, lives 5-6). Endless game so "beating" = surviving.
 - Squeeze: replay plans (`PLANS`, one char per 6 frames) found by BFS solver on the real physics; beats all 8 levels in ~30s, 0 deaths. If levels/physics change, RE-RUN the solver (BFS over dir x jump x toggle, 6-frame macro steps, key=x/6,y/6,size,vy,ground,plate,cracked) and regenerate PLANS. Auto turns itself off after the last level.
 
+## UNIVERSAL SPEED + CONTROL BAR RULES
+- `public/shared/speed.js`: global `Speed` (localStorage `galaxicaSpeed`, synced across tabs). Range 0.25-50x; typed values clamp (999 -> 50, 0.01 -> 0.25, junk ignored). Widget = text box + `1x` `2x` `MAX` buttons, auto-mounted into any `<span data-speed>`; it stops key events so typing never triggers game hotkeys.
+- EVERY game loop: `n=Speed.steps()` then run n sim ticks per animation frame with a ~12ms time-budget guard (device limit = effective max); draw once. SFX off above 2.5x, music off above 1.5x. Verified: ticks/sec = 30/60/120/480/1484/2898 at .5/1/2/8/25/50x; Squeeze auto run 30s -> 3.8s at 8x.
+- Button bar = 3 outlined clusters (`.cl`): [nav: Arcade/Levels/Restart] [run: AUTO + speed widget] [toggles: icons]. Icons + hover titles, no cryptic labels: speaker (SND, X when muted), monitor-with-lines (CRT = retro scanline filter), corners (fullscreen), `?` tutorial. Galaxica mobile toggle reads `AUTOFIRE ON/OFF` (hold-to-fire) - not the same as AUTO (bot plays).
+
 ## Game 2: SQUEEZE (2026-10-14) `public/games/squeeze/`
 Puzzle platformer, one mechanic: toggle BIG/SMALL. Big (34px): high jump, smashes cracked blocks by walking into them, presses plates; can't fit 1-tile tunnels. Small (12px): fits tunnels, low jump, too light for plates. Toggle denied if no headroom. Plates latch doors open. Spikes (point UP, fixed 2026-10-14) kill; optional star per level.
 8 levels + wordless tutorial (MOVE/JUMP/SIZE, skippable, `?` replays). Level select menu (progress/stars saved in localStorage). Desktop: A/D/arrows, Space/W/Up jump, X/Shift/Z/Down size, R restart. Mobile: pad row below canvas (L R SIZE JUMP).

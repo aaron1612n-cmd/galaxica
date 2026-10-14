@@ -10,6 +10,7 @@
 <link rel="stylesheet" href="../../shared/theme.css">
 <script src="../../shared/device.js"></script>
 <script src="../../shared/auto.js"></script>
+<script src="../../shared/speed.js"></script>
 <style>
   html,body{height:100%;overflow:hidden;overscroll-behavior:none;user-select:none;-webkit-user-select:none}
   body{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;
@@ -17,6 +18,9 @@
   #wrap{position:relative;border:2px solid var(--paper);box-shadow:6px 6px 0 var(--amber);background:var(--ink)}
   canvas#c{display:block;touch-action:none;image-rendering:pixelated}
   .bar{display:flex;gap:10px;align-items:center;font-size:12px;color:var(--dim);flex-wrap:wrap;justify-content:center;padding:0 10px}
+  html[data-device=mobile] .cl{padding:4px 6px;gap:6px}
+  html[data-device=mobile] .spd .btn{padding:0 6px}
+  html[data-device=mobile] .spd input{width:48px}
   .btn{min-height:40px;padding:0 12px}
   #pad{display:none;justify-content:space-between;align-items:center;min-height:68px}
   html[data-device=mobile] #pad{display:flex}
@@ -42,14 +46,16 @@
 <div id="wrap"><canvas id="c"></canvas></div>
 <div id="pad"><button id="bomb" aria-label="Bomb">BOMB</button><button id="fire" aria-label="Fire">FIRE</button></div>
 <div class="bar">
-  <a class="btn ghost" href="../../">← Arcade</a>
-  <button class="btn ghost" id="auto" data-show="mobile" hidden>Auto-fire: on</button>
-  <button class="btn ghost" id="fs">Fullscreen</button>
-  <button class="btn ghost" id="bot">AUTO</button>
-  <button class="btn ghost" id="snd">SND</button>
-  <button class="btn ghost" id="crt">CRT</button>
-  <button class="btn ghost" id="tutb" aria-label="Tutorial">?</button>
-  <button class="btn" id="skip" hidden>Skip</button>
+  <div class="cl"><a class="btn ghost" href="../../">← Arcade</a></div>
+  <div class="cl"><button class="btn ghost" id="bot" title="Auto-play: the game plays itself">AUTO</button><span data-speed></span></div>
+  <div class="cl">
+    <button class="btn ghost" id="auto" data-show="mobile" hidden title="Hold-to-fire on/off">AUTOFIRE ON</button>
+    <button class="btn ghost ic" id="snd" title="Sound on/off" aria-label="Sound"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M2 6h3l4-3v10l-4-3H2z"/><path class="w" d="M11 5h1v6h-1zM13 3h1v10h-1z"/><path class="x" d="M11 6h1v1h-1zM15 6h1v1h-1zM12 7h1v1h-1zM14 7h1v1h-1zM13 8h1v1h-1zM12 9h1v1h-1zM14 9h1v1h-1zM11 10h1v1h-1zM15 10h1v1h-1z"/></svg></button>
+    <button class="btn ghost ic" id="crt" title="Retro scanline screen filter on/off" aria-label="Retro screen filter"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M2 3h12v1H2zM2 11h12v1H2zM2 4h1v7H2zM13 4h1v7h-1zM5 13h6v1H5z"/><path d="M4 6h8v1H4zM4 8h8v1H4z" opacity=".6"/></svg></button>
+    <button class="btn ghost ic" id="fs" title="Fullscreen" aria-label="Fullscreen"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M2 2h4v1H3v3H2zM10 2h4v4h-1V3h-3zM2 10h1v3h3v1H2zM13 10h1v3h-3v1h4z"/></svg></button>
+    <button class="btn ghost ic" id="tutb" title="Replay tutorial" aria-label="Tutorial">?</button>
+    <button class="btn" id="skip" hidden>Skip</button>
+  </div>
 </div>
 <div id="rot">Rotate to portrait</div>
 <script src="../../shared/stars.js"></script>
@@ -88,10 +94,10 @@ var SFX={shoot:()=>tone(900,.05,'square',.02,.5),boom:()=>noise(.25,.12),big:()=
   dash:()=>tone(300,.15,'triangle',.06,3),bomb:()=>{noise(.9,.22);tone(90,.8,'sawtooth',.1,.3)},graze:()=>tone(1400,.03,'square',.015),
   charge:()=>tone(200,.3,'sawtooth',.07,4),ach:()=>{[0,4,7,12].forEach((n,i)=>tone(440*Math.pow(2,n/12),.12,'square',.04,1,AC&&AC.currentTime+i*.08))},
   life:()=>{[0,7,12].forEach((n,i)=>tone(330*Math.pow(2,n/12),.14,'triangle',.07,1,AC&&AC.currentTime+i*.09))}};
-function sfx(n){if(AC&&!cfg.mute)SFX[n]()}
+function sfx(n){if(AC&&!cfg.mute&&Speed.v<=2.5)SFX[n]()}
 function buzz(ms){if(Device.mobile&&!cfg.mute&&navigator.vibrate)try{navigator.vibrate(ms)}catch(e){}}
 var BASS=[[0,0,7,5,0,0,10,7],[0,3,5,3,0,3,7,5],[0,0,5,7,3,3,5,7],[0,7,3,5,0,7,10,12]],mNext=0,mStep=0;
-function music(){var a=AC;if(!a||cfg.mute||s.state!=='play'||paused)return;if(mNext<a.currentTime)mNext=a.currentTime+.05;
+function music(){var a=AC;if(!a||cfg.mute||Speed.v>1.5||s.state!=='play'||paused)return;if(mNext<a.currentTime)mNext=a.currentTime+.05;
   while(mNext<a.currentTime+.15){var n=BASS[sector()%4][mStep%8],f=55*Math.pow(2,n/12);
     tone(f,.16,'triangle',.07,1,mNext);if(mStep%2)tone(f*4,.08,'square',.012,1,mNext);mStep++;mNext+=boss()?.13:.17}}
 
@@ -182,13 +188,13 @@ function onPress(c){
   if(c==='ShiftLeft'||c==='ShiftRight')doDash();
   if(c==='KeyB')useBomb()}
 document.addEventListener('visibilitychange',function(){if(document.hidden&&s.state==='play')paused=true});
-var ab=document.getElementById('auto');ab.onclick=function(){auto=!auto;ab.textContent='Auto-fire: '+(auto?'on':'off')};
+var ab=document.getElementById('auto');ab.onclick=function(){auto=!auto;ab.textContent='AUTOFIRE '+(auto?'ON':'OFF')};
 document.getElementById('fs').onclick=function(){var f=document.fullscreenElement;f?document.exitFullscreen():(document.documentElement.requestFullscreen||function(){}).call(document.documentElement)};
 Auto.bind(document.getElementById('bot'));
 var sndB=document.getElementById('snd'),crtB=document.getElementById('crt');
-function toggleSnd(){cfg.mute=!cfg.mute;saveCfg();sndB.style.opacity=cfg.mute?.45:1}
+function toggleSnd(){cfg.mute=!cfg.mute;saveCfg();sndB.style.opacity=cfg.mute?.45:1;sndB.classList.toggle('off',cfg.mute)}
 function toggleCrt(){cfg.crt=!cfg.crt;saveCfg();crtB.style.opacity=cfg.crt?1:.45}
-sndB.onclick=function(){ac();toggleSnd()};crtB.onclick=toggleCrt;sndB.style.opacity=cfg.mute?.45:1;crtB.style.opacity=cfg.crt?1:.45;
+sndB.onclick=function(){ac();toggleSnd()};crtB.onclick=toggleCrt;sndB.style.opacity=cfg.mute?.45:1;sndB.classList.toggle('off',cfg.mute);crtB.style.opacity=cfg.crt?1:.45;
 function padIn(){var g=navigator.getGamepads&&navigator.getGamepads()[0];if(!g)return null;
   var dz=function(v){return Math.abs(v)>.25?v:0},b=function(i){return !!(g.buttons[i]&&g.buttons[i].pressed)},o={ax:dz(g.axes[0]||0)+(b(15)?1:0)-(b(14)?1:0),ay:dz(g.axes[1]||0)+(b(13)?1:0)-(b(12)?1:0),fire:b(0)||b(7)};
   [[1,'dash'],[2,'bomb'],[9,'pause'],[0,'a']].forEach(function(x){var n=b(x[0]);if(n&&!gpPrev[x[1]]){
@@ -480,7 +486,8 @@ function draw(){
   var play=s.state==='play'&&!paused;
   fire.hidden=!(Device.mobile&&play);bombB.hidden=!(Device.mobile&&play&&!tut);
   fire.classList.toggle('pulse',!!tut&&tut.k===1&&Device.mobile);
-  step();draw();requestAnimationFrame(loop)})();
+  var n=Speed.steps(),t0=performance.now();for(var i=0;i<n;i++){step();if(i>0&&performance.now()-t0>12){Speed.acc=0;break}}
+  draw();requestAnimationFrame(loop)})();
 </script>
 </body>
 </html>
