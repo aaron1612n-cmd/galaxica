@@ -36,5 +36,11 @@ Host website(s) AND the Galaxica game for repo `aaron1612n-cmd/galaxica` using C
 - LIVE: https://galaxica-arcade.galaxica.workers.dev (version 9787abfa, 2026-10-14) via `npx wrangler deploy`.
 - Redeploy after changes: commit, then `npx wrangler deploy`.
 
+## UI / device system (2026-10-14)
+- `public/shared/`: `theme.css` (glassy neon galaxy theme, `[hidden]` fix), `device.js` (sets `html[data-device=mobile|desktop]`, `window.Device`, toggles `[data-show]` elements), `stars.js` (animated starfield on `<canvas id="stars">`).
+- EVERY new game must: link theme.css + device.js, use viewport meta w/ viewport-fit=cover, scale canvas to fit + DPR, support touch (pointer events, >=44px buttons) AND keyboard, show per-device hints via `data-show`.
+- games.json supports optional `blurbMobile`.
+- Galaxica: drag-to-steer, FIRE button, auto-fire toggle, pause (P / tab hidden), particles, best score (localStorage), fullscreen. Verified in Playwright (iPhone 13 + desktop), no JS errors.
+
 ## Next step
-Playtest galaxica; add more games; decide on custom domain. Branches `claude/cool-dirac-fild0j` and `claude/dazzling-johnson-mcnbcc` carry the same content.
+Playtest on a real phone; add more games; custom domain? Redeploy: `npx wrangler deploy`.

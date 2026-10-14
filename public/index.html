@@ -2,31 +2,51 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#04040c">
 <title>Galaxica Arcade</title>
+<link rel="stylesheet" href="shared/theme.css">
+<script src="shared/device.js"></script>
 <style>
-  :root{--bg:#07070f;--fg:#e8e8ff;--card:#14142a;--accent:#6cf}
-  *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,sans-serif;padding:0 16px 48px}
-  header{max-width:880px;margin:0 auto;padding:40px 0 16px}
-  h1{margin:0;letter-spacing:.08em;color:var(--accent)}
-  main{max-width:880px;margin:0 auto;display:grid;gap:16px;grid-template-columns:repeat(auto-fill,minmax(240px,1fr))}
-  a.card{display:block;background:var(--card);border:1px solid #2a2a50;border-radius:10px;padding:18px;color:inherit;text-decoration:none}
-  a.card:hover{border-color:var(--accent)}
-  .card h2{margin:0 0 6px}.card p{margin:0;opacity:.75}
+  header{max-width:960px;margin:0 auto;padding:max(48px,env(safe-area-inset-top)) 20px 12px;text-align:center}
+  h1{margin:0;font-size:clamp(2rem,8vw,3.8rem);letter-spacing:.18em;font-weight:800}
+  .sub{color:var(--dim);margin:8px 0 14px}
+  .badge{display:inline-block;padding:4px 14px;border-radius:999px;font-size:.8rem;color:var(--cyan);
+    border:1px solid var(--line);background:var(--glass)}
+  main{max-width:960px;margin:24px auto 64px;padding:0 20px;display:grid;gap:18px;
+    grid-template-columns:repeat(auto-fill,minmax(250px,1fr))}
+  a.card{display:block;padding:22px;color:inherit;text-decoration:none;position:relative;overflow:hidden;
+    transition:transform .25s,box-shadow .25s,border-color .25s}
+  a.card::before{content:"";position:absolute;inset:-1px;border-radius:inherit;opacity:0;transition:.3s;
+    background:radial-gradient(300px 120px at 50% 0,rgba(94,231,255,.25),transparent 70%)}
+  a.card:hover,a.card:focus-visible{transform:translateY(-4px);border-color:var(--cyan);
+    box-shadow:0 0 34px rgba(94,231,255,.35),0 8px 40px rgba(0,0,0,.5);outline:none}
+  a.card:hover::before{opacity:1}
+  .card h2{margin:0 0 6px;font-size:1.3rem}.card p{margin:0;color:var(--dim)}
+  .play{margin-top:14px;color:var(--cyan);font-weight:600}
+  footer{text-align:center;color:var(--dim);font-size:.85rem;padding-bottom:max(24px,env(safe-area-inset-bottom))}
 </style>
 </head>
 <body>
-<header><h1>GALAXICA ARCADE</h1><p>A growing collection of small JS games.</p></header>
+<canvas id="stars"></canvas>
+<header>
+  <h1 class="glow-text">GALAXICA</h1>
+  <p class="sub">A growing galaxy of small JS games.</p>
+  <span class="badge" data-show="mobile" hidden>📱 Mobile mode · touch controls on</span>
+  <span class="badge" data-show="desktop" hidden>🖥️ Desktop mode · keyboard controls on</span>
+</header>
 <main id="games"></main>
+<footer>Playable on phone, tablet and PC</footer>
+<script src="shared/stars.js"></script>
 <script>
-fetch('games.json').then(r=>r.json()).then(list=>{
-  const el=document.getElementById('games');
-  list.slice().reverse().forEach(g=>{
-    const a=document.createElement('a');a.className='card';a.href='games/'+g.id+'/';
-    const h=document.createElement('h2');h.textContent=g.title;
-    const p=document.createElement('p');p.textContent=g.blurb;
-    a.append(h,p);el.append(a);
+fetch('games.json').then(function(r){return r.json()}).then(function(list){
+  var el=document.getElementById('games');
+  list.slice().reverse().forEach(function(g){
+    var a=document.createElement('a');a.className='card glass';a.href='games/'+g.id+'/';
+    var h=document.createElement('h2');h.textContent=g.title;
+    var p=document.createElement('p');p.textContent=Device.mobile&&g.blurbMobile?g.blurbMobile:g.blurb;
+    var b=document.createElement('div');b.className='play';b.textContent='Play →';
+    a.append(h,p,b);el.append(a);
   });
 });
 </script>
