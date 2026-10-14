@@ -36,7 +36,7 @@ Host website(s) AND the Galaxica game for repo `aaron1612n-cmd/galaxica` using C
 - LIVE (primary, Workers): https://play.galaxica.workers.dev (worker `play`, name set in wrangler.jsonc).
 - Redeploy: commit, then `npx wrangler deploy` (serves ./public).
 - Decision 2026-10-14: use Workers (Cloudflare's focus platform), not Pages.
-- Old copies still up, not deleted: galaxica.pages.dev (Pages project `galaxica`), galaxica-arcade.galaxica.workers.dev, galaxica.galaxica.workers.dev. Delete if unwanted.
+- Old copies DELETED 2026-10-14 (galaxica.pages.dev, galaxica-arcade + galaxica workers). Only `play` remains.
 
 ## Design direction: NON-AI look (2026-10-14, researched)
 Research (prg.sh purple-gradient post, impeccable.style/slop, capitalandcompute fix-ai-slop): AI tells = purple/cyan gradients, glass cards, glow shadows, gradient text, Inter, centered hero + 3 cards, emoji icons.
