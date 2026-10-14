@@ -13,8 +13,8 @@ Host website(s) AND the Galaxica game for repo `aaron1612n-cmd/galaxica` using C
 - Confirm with user before first deploy / any overwrite of an existing project.
 
 ## Prerequisites (status)
-- [ ] `CLOUDFLARE_API_TOKEN` env secret — NOT SET (checked); blocks deploy
-- [ ] `CLOUDFLARE_ACCOUNT_ID` env secret — NOT SET
+- [x] `CLOUDFLARE_API_TOKEN` env secret — set
+- [x] `CLOUDFLARE_ACCOUNT_ID` env secret — set
 - [x] Network: api.cloudflare.com + npm reachable (verified)
 - [x] Site content exists (hub + 1 game)
 
@@ -31,7 +31,10 @@ Host website(s) AND the Galaxica game for repo `aaron1612n-cmd/galaxica` using C
 ## Open questions
 - Next game ideas? Playtest/feedback on galaxica?
 - Custom domain or `*.pages.dev`/`*.workers.dev`?
-- Cloudflare secrets + network allowlist still needed before deploy.
+
+## Deployed
+- LIVE: https://galaxica-arcade.galaxica.workers.dev (version 9787abfa, 2026-10-14) via `npx wrangler deploy`.
+- Redeploy after changes: commit, then `npx wrangler deploy`.
 
 ## Next step
-User asked to deploy initial site as `galaxica-arcade` (wrangler.jsonc name). Blocked only on Cloudflare secrets; once set: `npx wrangler deploy`, report URL.
+Playtest galaxica; add more games; decide on custom domain. Branches `claude/cool-dirac-fild0j` and `claude/dazzling-johnson-mcnbcc` carry the same content.
