@@ -56,6 +56,9 @@ UX 6: haptics, gamepad, saved settings, icon menu (ship/mode/difficulty), pause 
 Controls (desktop): arrows/WASD move, Space fire, Shift dash, B bomb, P pause, M mute. Mobile: drag, FIRE, BOMB, double-tap dash, auto-fire toggle.
 Research basis (shmup design notes): visible tiny hitbox, graze risk/reward, multi-phase bosses, power-ups as decisions. Stress-tested in Playwright (desktop+iPhone), no JS errors. Tutorial retained.
 
+## Layout rule
+Mobile touch buttons (FIRE/BOMB) live in a `#pad` row BELOW the canvas, never overlaying the play area. fit() reserves height for bar+pad and re-runs on load/fonts ready. Verified iPhone 13 + SE: nothing overflows.
+
 ## Device system
 - `public/shared/`: `theme.css`, `device.js` (html[data-device], window.Device, `[data-show]`), `stars.js` (hub starfield).
 - EVERY game: theme.css + device.js, viewport-fit=cover, scale canvas + DPR, touch AND keyboard, first-run tutorial.

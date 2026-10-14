@@ -17,12 +17,19 @@
   canvas#c{display:block;touch-action:none;image-rendering:pixelated}
   .bar{display:flex;gap:10px;align-items:center;font-size:12px;color:var(--dim);flex-wrap:wrap;justify-content:center;padding:0 10px}
   .btn{min-height:40px;padding:0 12px}
-  #fire{position:absolute;right:12px;bottom:12px;width:78px;height:78px;border:2px solid var(--paper);
+  #pad{display:none;justify-content:space-between;align-items:center;min-height:68px}
+  html[data-device=mobile] #pad{display:flex}
+  html[data-device=mobile] .bar .btn{min-height:34px;padding:0 9px;font-size:10px;box-shadow:3px 3px 0 var(--paper)}
+  html[data-device=mobile] .bar{gap:8px}
+  html[data-device=mobile] #fs{display:none}
+  html[data-device=mobile] #pad{min-height:56px}
+  html[data-device=mobile] #fire,html[data-device=mobile] #bomb{height:50px}
+  #fire{width:96px;height:60px;border:2px solid var(--paper);
     background:var(--amber);color:var(--ink);font:700 13px var(--px);box-shadow:4px 4px 0 var(--paper);touch-action:none}
   #fire.pulse{animation:pk .5s steps(1) infinite}
   @keyframes pk{50%{background:var(--red)}}
   #fire.on{transform:translate(4px,4px);box-shadow:none;background:var(--red)}
-  #bomb{position:absolute;left:12px;bottom:12px;width:66px;height:66px;border:2px solid var(--paper);background:var(--ink);color:var(--red);font:700 11px var(--px);box-shadow:4px 4px 0 var(--paper);touch-action:none}
+  #bomb{width:84px;height:60px;border:2px solid var(--paper);background:var(--ink);color:var(--red);font:700 11px var(--px);box-shadow:4px 4px 0 var(--paper);touch-action:none}
   #bomb:active{transform:translate(4px,4px);box-shadow:none}
   html[data-device=desktop] #fire,html[data-device=desktop] #bomb{display:none}
   #rot{display:none;position:fixed;inset:0;z-index:5;background:var(--ink);align-items:center;
@@ -31,7 +38,8 @@
 </head>
 <body>
 <canvas id="stars"></canvas>
-<div id="wrap"><canvas id="c"></canvas><button id="fire" aria-label="Fire">FIRE</button><button id="bomb" aria-label="Bomb">BOMB</button></div>
+<div id="wrap"><canvas id="c"></canvas></div>
+<div id="pad"><button id="bomb" aria-label="Bomb">BOMB</button><button id="fire" aria-label="Fire">FIRE</button></div>
 <div class="bar">
   <a class="btn ghost" href="../../">← Arcade</a>
   <button class="btn ghost" id="auto" data-show="mobile" hidden>Auto-fire: on</button>
@@ -47,14 +55,14 @@
 var W=480,H=640,cv=document.getElementById('c'),ctx=cv.getContext('2d');
 var dpr=Math.min(devicePixelRatio||1,2),scale=1;
 function fit(){
-  var bar=document.querySelector('.bar').offsetHeight+30;
+  var pd=document.getElementById('pad'),bar=document.querySelector('.bar').offsetHeight+30+(Device.mobile?pd.offsetHeight+28:0);
   scale=Math.min(innerWidth*.98/W,(innerHeight-bar)/H);
   scale=Math.max(.3,Math.min(scale,Device.mobile?3:1.6));
-  cv.style.width=W*scale+'px';cv.style.height=H*scale+'px';
+  pd.style.width=W*scale+'px';cv.style.width=W*scale+'px';cv.style.height=H*scale+'px';
   cv.width=W*scale*dpr;cv.height=H*scale*dpr;
   document.getElementById('rot').style.display=(Device.mobile&&!Device.portrait()&&innerHeight<420)?'flex':'none';
 }
-fit();Device.onChange(fit);
+fit();Device.onChange(fit);addEventListener('load',fit);if(document.fonts&&document.fonts.ready)document.fonts.ready.then(fit);
 
 /* ---------- storage / config / rng ---------- */
 function lsGet(k,d){try{var v=localStorage[k];return v?JSON.parse(v):d}catch(e){return d}}
@@ -362,7 +370,7 @@ function tutDraw(){var T=tut,k=T.k,ph=(T.t/30|0)%2;
     if(Device.mobile){var fx=W/2+Math.sin(T.t/22)*110;ctx.fillStyle='#2b3744';for(var d=-110;d<=110;d+=22)ctx.fillRect(W/2+d,H/2+60,6,6);spr(HAND,fx,H/2+40,5,'#efe6d2')}
     else{key(W/2-50,H/2+10,56,56,!ph);arrow(W/2-50,H/2+10,-1,ph?'#efe6d2':'#0b1016');key(W/2+50,H/2+10,56,56,!!ph);arrow(W/2+50,H/2+10,1,ph?'#0b1016':'#efe6d2')}}
   else if(k===1){
-    if(Device.mobile){ctx.fillStyle='#ffb000';var y=H-150+ph*8,x=W-50;for(var j=0;j<5;j++)ctx.fillRect(x-(4-j)*3,y+j*4,(4-j)*6+3,4)}
+    if(Device.mobile){ctx.fillStyle='#ffb000';var y=H-70+ph*8,x=W-60;for(var j=0;j<5;j++)ctx.fillRect(x-(4-j)*3,y+j*4,(4-j)*6+3,4)}
     else{key(W/2,H/2+10,240,52,!!ph);txt('SPACE',W/2,H/2+18,16,ph?'#0b1016':'#efe6d2','center')}}}
 function drawWorld(){
   var B=s.buff;
