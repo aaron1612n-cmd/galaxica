@@ -33,10 +33,10 @@ Host website(s) AND the Galaxica game for repo `aaron1612n-cmd/galaxica` using C
 - Custom domain or `*.pages.dev`/`*.workers.dev`?
 
 ## Deployed
-- LIVE (primary): https://galaxica.pages.dev (Cloudflare Pages project `galaxica`).
-- Redeploy: commit, then `npx wrangler pages deploy public --project-name=galaxica --branch=main`.
-- Plain `wrangler pages project create` got redirected to a Workers deploy (made stray Worker `galaxica`); `--force` was needed once to create a real Pages project.
-- Old/stray Workers still up (not deleted): galaxica-arcade.galaxica.workers.dev, galaxica.galaxica.workers.dev. Delete if unwanted.
+- LIVE (primary, Workers): https://play.galaxica.workers.dev (worker `play`, name set in wrangler.jsonc).
+- Redeploy: commit, then `npx wrangler deploy` (serves ./public).
+- Decision 2026-10-14: use Workers (Cloudflare's focus platform), not Pages.
+- Old copies still up, not deleted: galaxica.pages.dev (Pages project `galaxica`), galaxica-arcade.galaxica.workers.dev, galaxica.galaxica.workers.dev. Delete if unwanted.
 
 ## Design direction: NON-AI look (2026-10-14, researched)
 Research (prg.sh purple-gradient post, impeccable.style/slop, capitalandcompute fix-ai-slop): AI tells = purple/cyan gradients, glass cards, glow shadows, gradient text, Inter, centered hero + 3 cards, emoji icons.
@@ -66,4 +66,4 @@ Mobile touch buttons (FIRE/BOMB) live in a `#pad` row BELOW the canvas, never ov
 - EVERY game: theme.css + device.js, viewport-fit=cover, scale canvas + DPR, touch AND keyboard, first-run tutorial.
 
 ## Next step
-Real-phone playtest + balance pass; more games (research look first); custom domain? Redeploy: see Deployed section (Pages).
+Real-phone playtest + balance pass; more games (research look first); custom domain? Redeploy: `npx wrangler deploy`.
