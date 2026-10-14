@@ -19,6 +19,8 @@
   .btn{min-height:40px;padding:0 12px}
   #fire{position:absolute;right:12px;bottom:12px;width:78px;height:78px;border:2px solid var(--paper);
     background:var(--amber);color:var(--ink);font:700 13px var(--px);box-shadow:4px 4px 0 var(--paper);touch-action:none}
+  #fire.pulse{animation:pk .5s steps(1) infinite}
+  @keyframes pk{50%{background:var(--red)}}
   #fire.on{transform:translate(4px,4px);box-shadow:none;background:var(--red)}
   html[data-device=desktop] #fire{display:none}
   #rot{display:none;position:fixed;inset:0;z-index:5;background:var(--ink);align-items:center;
@@ -32,6 +34,8 @@
   <a class="btn ghost" href="../../">← Arcade</a>
   <button class="btn ghost" id="auto" data-show="mobile" hidden>Auto-fire: on</button>
   <button class="btn ghost" id="fs">Fullscreen</button>
+  <button class="btn ghost" id="tutb" aria-label="Tutorial">?</button>
+  <button class="btn" id="skip" hidden>Skip</button>
 </div>
 <div id="rot">Rotate to portrait</div>
 <script src="../../shared/stars.js"></script>
@@ -66,8 +70,20 @@ document.getElementById('fs').onclick=function(){
 document.addEventListener('visibilitychange',function(){if(document.hidden)paused=true});
 
 var s,best=0;try{best=+localStorage.galaxicaBest||0}catch(e){}
+var tut=null;
 function reset(){s={x:W/2,cd:0,bullets:[],foes:[],parts:[],t:0,score:0,lives:3,over:false}}
 reset();
+function startTut(){reset();tut={k:0,moved:0,fired:0,t:0,foe:false};skip.hidden=false}
+function endTut(){tut=null;skip.hidden=true;try{localStorage.galaxicaTut=1}catch(e){}reset()}
+var skip=document.getElementById('skip');skip.onclick=endTut;document.getElementById('tutb').onclick=startTut;
+var seen=false;try{seen=!!localStorage.galaxicaTut}catch(e){}
+if(!seen)startTut();
+function tutStep(){var T=tut;T.t++;
+  if(T.k===0&&T.moved>200){T.k=1;T.fired=0}
+  else if(T.k===1&&T.fired){T.k=2;T.foe=false}
+  else if(T.k===2){if(!T.foe&&!s.foes.length){s.foes.push({x:W/2,y:90,vy:.5});T.foe=true}
+    if(T.foe&&!s.foes.length){T.k=3;T.t=0}}
+  else if(T.k===3&&T.t>70)endTut()}
 function boom(x,y,c){for(var i=0;i<14;i++){var a=Math.random()*6.28,v=1+Math.random()*3;
   s.parts.push({x:x,y:y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,l:30,c:c})}}
 function step(){
@@ -76,18 +92,19 @@ function step(){
   if(s.over){if(keys.Space||keys.Enter)reset();return}
   s.t++;
   var v=(keys.ArrowLeft||keys.KeyA?-1:0)+(keys.ArrowRight||keys.KeyD?1:0);
-  s.x+=v*6;
+  var ox=s.x;s.x+=v*6;
   if(touchX!==null)s.x+=Math.max(-12,Math.min(12,touchX-s.x))*.6;
-  s.x=Math.max(20,Math.min(W-20,s.x));
+  s.x=Math.max(20,Math.min(W-20,s.x));if(tut)tut.moved+=Math.abs(s.x-ox);
   if(s.cd>0)s.cd--;
-  if((keys.Space||keys.Fire||(auto&&Device.mobile))&&s.cd===0){s.bullets.push({x:s.x,y:H-50});s.cd=12}
-  if(s.t%Math.max(18,60-Math.floor(s.t/300)*4)===0)s.foes.push({x:20+Math.random()*(W-40),y:-20,vy:1.5+Math.random()+s.t/3000});
+  if((keys.Space||keys.Fire||(auto&&Device.mobile&&!tut))&&s.cd===0){s.bullets.push({x:s.x,y:H-50});if(tut)tut.fired=1;s.cd=12}
+  if(!tut&&s.t%Math.max(18,60-Math.floor(s.t/300)*4)===0)s.foes.push({x:20+Math.random()*(W-40),y:-20,vy:1.5+Math.random()+s.t/3000});
   s.bullets.forEach(function(b){b.y-=9});s.foes.forEach(function(f){f.y+=f.vy});
   s.foes.forEach(function(f){s.bullets.forEach(function(b){
     if(!f.dead&&!b.dead&&Math.abs(f.x-b.x)<16&&Math.abs(f.y-b.y)<16){f.dead=b.dead=true;s.score+=10;boom(f.x,f.y,'#ffb000')}})});
-  s.foes.forEach(function(f){if(!f.dead&&f.y>H-30){f.dead=true;boom(f.x,H-30,'#ff5555');
+  s.foes.forEach(function(f){if(!f.dead&&f.y>H-30){if(tut){f.y=-20;return}f.dead=true;boom(f.x,H-30,'#ff5555');
     if(--s.lives<=0){s.over=true;if(s.score>best){best=s.score;try{localStorage.galaxicaBest=best}catch(e){}}}}});
   s.bullets=s.bullets.filter(function(b){return !b.dead&&b.y>-10});s.foes=s.foes.filter(function(f){return !f.dead});
+  if(tut)tutStep();
 }
 var SHIP=['...XX...','...XX...','..XXXX..','.XXXXXX.','XXXXXXXX','XX.XX.XX','X..XX..X'],
     FOE=['..X..X..','...XX...','..XXXX..','.XX..XX.','XXXXXXXX','X.X..X.X','X......X'];
@@ -95,6 +112,24 @@ function spr(m,cx,cy,u,col,eye){ctx.fillStyle=col;var ox=cx-m[0].length*u/2|0,oy
   for(var r=0;r<m.length;r++)for(var q=0;q<m[r].length;q++)if(m[r][q]==='X')ctx.fillRect(ox+q*u,oy+r*u,u,u);
   if(eye){ctx.fillStyle=eye;ctx.fillRect(ox+2*u,oy+4*u,u,u);ctx.fillRect(ox+5*u,oy+4*u,u,u)}}
 function txt(t,x,y,size,col,al){ctx.font='700 '+size+'px Silkscreen,ui-monospace,monospace';ctx.fillStyle=col;ctx.textAlign=al||'left';ctx.fillText(t,x,y)}
+var HAND=['...XX...','...XX...','...XX...','.XXXXXX.','XXXXXXXX','XXXXXXXX','.XXXXXX.','..XXXX..'];
+function arrow(cx,cy,dir,col){ctx.fillStyle=col;for(var i=0;i<5;i++){var h=(i+1)*4,x=dir<0?cx-12+i*5:cx+7-i*5;ctx.fillRect(x,cy-h/2,5,h)}}
+function key(cx,cy,w,h,hi){ctx.fillStyle=hi?'#ffb000':'#0b1016';ctx.fillRect(cx-w/2,cy-h/2,w,h);
+  ctx.strokeStyle='#efe6d2';ctx.lineWidth=3;ctx.strokeRect(cx-w/2,cy-h/2,w,h)}
+function tutDraw(){var T=tut,k=T.k,ph=(T.t/30|0)%2;
+  if(k===3){txt('GO',W/2,H/2,44,'#ffb000','center');return}
+  txt(['MOVE','FIRE','HIT IT'][k],W/2,H/2-70,30,'#ffb000','center');
+  for(var i=0;i<3;i++){ctx.fillStyle=i<=k?'#ffb000':'#2b3744';ctx.fillRect(W/2-36+i*26,H/2-52,18,6)}
+  if(k===0){
+    if(Device.mobile){var fx=W/2+Math.sin(T.t/22)*110;ctx.fillStyle='#2b3744';
+      for(var d=-110;d<=110;d+=22)ctx.fillRect(W/2+d,H/2+60,6,6);spr(HAND,fx,H/2+40,5,'#efe6d2')}
+    else{key(W/2-50,H/2+10,56,56,!ph);arrow(W/2-50,H/2+10,-1,ph?'#efe6d2':'#0b1016');
+      key(W/2+50,H/2+10,56,56,!!ph);arrow(W/2+50,H/2+10,1,ph?'#0b1016':'#efe6d2')}}
+  else if(k===1){
+    if(Device.mobile){ctx.fillStyle='#ffb000';var y=H-150+ph*8,x=W-50;
+      for(var j=0;j<5;j++)ctx.fillRect(x-(4-j)*3,y+j*4,(4-j)*6+3,4)}
+    else{key(W/2,H/2+10,240,52,!!ph);txt('SPACE',W/2,H/2+18,16,ph?'#0b1016':'#efe6d2','center')}}
+}
 function draw(){
   ctx.setTransform(scale*dpr,0,0,scale*dpr,0,0);ctx.imageSmoothingEnabled=false;
   ctx.fillStyle='#0b1016';ctx.fillRect(0,0,W,H);
@@ -107,13 +142,14 @@ function draw(){
   txt('SCORE '+String(s.score).padStart(5,'0'),14,26,15,'#efe6d2');
   txt('HI '+String(best).padStart(5,'0'),W/2+40,26,12,'#8d9aa5');
   for(var l=0;l<s.lives;l++){ctx.fillStyle='#ffb000';ctx.fillRect(W-22-l*18,14,12,12)}
+  if(tut&&!paused)tutDraw();
   if(s.over||paused){ctx.fillStyle='rgba(11,16,22,.88)';ctx.fillRect(0,0,W,H);
     var over=s.over;txt(over?'GAME OVER':'PAUSED',W/2,H/2-6,32,over?'#ff5a36':'#ffb000','center');
     if(over)txt(String(s.score),W/2,H/2+30,18,'#efe6d2','center');
 }
 }
 cv.addEventListener('pointerdown',function(){if(paused)paused=false});
-(function loop(){step();draw();requestAnimationFrame(loop)})();
+(function loop(){fire.classList.toggle('pulse',!!tut&&tut.k===1&&Device.mobile);step();draw();requestAnimationFrame(loop)})();
 </script>
 </body>
 </html>
