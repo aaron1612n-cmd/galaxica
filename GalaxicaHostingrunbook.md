@@ -44,11 +44,21 @@ RULE: every game ships a first-run interactive tutorial: learn-by-doing steps, O
 RULE: research before designing anything new (search refs, avoid documented AI tells); screenshot-test mobile+desktop before deploy.
 Custom-rules paragraph for user's Claude settings: given in chat (begins "Design with a distinct, human look..."; add: games have no instruction text but ship a wordless first-run interactive tutorial, skippable and replayable).
 
+## Galaxica: 69 features (shipped 2026-10-14)
+Enemies 11: zigzag, sine-wave, diver, shooter, tank, splitter, homing kamikaze, shielded, mine-layer, V formations, asteroids.
+Bosses 6: every 5th wave, health bar, 3 phases, fan+spiral patterns, boss-rush mode, hit-stop mega explosion.
+Power-ups 14: spread, rapid, shield, bomb, 1UP, laser, homing missiles, slow-mo, magnet, x2 score, wingmen, piercing, buff timer chips, weapon levels (stars).
+Player 10: 2D movement, dash, i-frames, smart bomb, 3 ships, engine trail, charge shot (fills by kills/graze), visible hitbox core, 1UP every 5000, graze scoring.
+Progression 10: combo+multiplier, combo timer line, waves+banner, difficulty ramp, difficulty select, top-5 table per mode, end stats/accuracy, 6 achievements, daily seeded mode, wave-clear bonus.
+FX 9: 3-layer parallax, shake, hit flash, score popups, planets, sector palettes (every 5 waves), shockwave rings, debris, CRT toggle.
+Audio 3: synth SFX, chiptune loop, mute (SND/M).
+UX 6: haptics, gamepad, saved settings, icon menu (ship/mode/difficulty), pause (P/Esc/tab hidden), mobile BOMB btn + double-tap dash.
+Controls (desktop): arrows/WASD move, Space fire, Shift dash, B bomb, P pause, M mute. Mobile: drag, FIRE, BOMB, double-tap dash, auto-fire toggle.
+Research basis (shmup design notes): visible tiny hitbox, graze risk/reward, multi-phase bosses, power-ups as decisions. Stress-tested in Playwright (desktop+iPhone), no JS errors. Tutorial retained.
+
 ## Device system
-- `public/shared/`: `theme.css`, `device.js` (html[data-device=mobile|desktop], window.Device, `[data-show]` toggles), `stars.js` (pixel starfield on `<canvas id="stars">`).
-- EVERY game: link theme.css + device.js, viewport-fit=cover, scale canvas + DPR, touch (pointer events, >=44px) AND keyboard, per-device hints.
-- games.json: optional `blurbMobile`.
-- Galaxica: drag steer, FIRE btn, auto-fire toggle, pause (P/tab hidden), pixel sprites, best score (localStorage), fullscreen. Playwright-verified iPhone 13 + desktop, no JS errors.
+- `public/shared/`: `theme.css`, `device.js` (html[data-device], window.Device, `[data-show]`), `stars.js` (hub starfield).
+- EVERY game: theme.css + device.js, viewport-fit=cover, scale canvas + DPR, touch AND keyboard, first-run tutorial.
 
 ## Next step
-Playtest on real phone; more games (research each look first); custom domain? Redeploy: `npx wrangler deploy`.
+Real-phone playtest + balance pass; more games (research look first); custom domain? Redeploy: `npx wrangler deploy`.
