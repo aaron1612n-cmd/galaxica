@@ -49,3 +49,16 @@ canvas{display:block;touch-action:none}
 .gk-stamp{aspect-ratio:1;border:2px dashed color-mix(in srgb,var(--gk-ink,#eee) 30%,transparent);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;opacity:.55}
 .gk-stamp svg{width:26px;height:26px}.gk-stamp b{font:700 16px/1 var(--gk-font,sans-serif)}
 .gk-stamp.got{border:2px solid var(--gk-acc,#f60);color:var(--gk-acc,#f60);opacity:1}
+
+/* bar drawer + layouts (html[data-bar]=bottom|top|left|right). Rails only on wide landscape screens. */
+.gk-more{position:absolute;z-index:45;bottom:calc(100% + 6px);right:8px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:flex-end;padding:10px;background:var(--gk-bg,#111);border:var(--gk-bw,2px) solid var(--gk-ink,#eee);border-radius:var(--gk-r,0);box-shadow:var(--gk-sh,none);max-width:min(calc(100vw - 16px),440px)}
+.gk-b.more.on{background:var(--gk-ink,#eee);color:var(--gk-bg,#111)}
+[data-bar=top] #app{flex-direction:column-reverse}
+[data-bar=top] .gk-more{bottom:auto;top:calc(100% + 6px)}
+@media(min-width:760px) and (min-aspect-ratio:1/1){
+  [data-bar=left] #app{flex-direction:row-reverse}[data-bar=right] #app{flex-direction:row}
+  [data-bar=left] .gk-bar,[data-bar=right] .gk-bar{flex-direction:column;flex-wrap:nowrap;justify-content:center;padding:10px;max-height:100%}
+  [data-bar=left] .gk-g,[data-bar=right] .gk-g{display:grid;grid-template-columns:repeat(2,auto);justify-content:center}
+  [data-bar=left] .gk-more{bottom:10px;left:calc(100% + 6px);right:auto}
+  [data-bar=right] .gk-more{bottom:10px;right:calc(100% + 6px);left:auto}
+}

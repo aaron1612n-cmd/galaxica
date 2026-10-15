@@ -22,6 +22,10 @@ canvas#c{border:10px solid #3a2616;box-shadow:inset 0 0 0 3px #1a0f08,0 0 0 3px 
 .gk-b.tl.on{background:var(--gk-acc);border-color:var(--gk-acc);color:#24302d}
 .gk-b{font-weight:800}
 .gk-b.md.on{background:var(--gk-ink);color:var(--gk-bg)}
+/* bar skin: wooden blocks on the frame */
+.gk-bar{background:#3a2616}.gk-b{background:#7a5230;color:#f0e2c4;border:2px solid #1a0f08;box-shadow:inset 0 -4px 0 #4a3018,0 2px 0 #1a0f08}
+.gk-bar .spd input,.gk-bar .spd .btn{color:#f0e2c4;border-color:#f0e2c4}
+.gk-b.on,.gk-b.tl.on,.gk-b.md.on,.gk-b.gk-auto:not(.ghost){background:#ffb42e;color:#24302d;box-shadow:inset 0 -4px 0 #b97c12,0 2px 0 #1a0f08}
 </style>
 </head>
 <body>
@@ -204,7 +208,7 @@ var tut=GK.tutorial({parent:document.getElementById('stage'),onStart:function(){
 function tutDraw(){var t=tut.t;if(tut.i===0)GK.pulse(ctx,W/2+120,(SR-1)*CELL,t,AMBER,16);else if(tut.i===1)GK.swipe(ctx,W/2-60,(SR+16)*CELL,W/2+60,(SR+16)*CELL,t,AMBER);else if(tut.i===2){}}
 /* ============ bar ============ */
 var tbtn={};
-var R=GK.controls(document.getElementById('bar'),{onHelp:function(){tut.start()},extra:[
+var R=GK.controls(document.getElementById('bar'),{bar:'left',onHelp:function(){tut.start()},extra:[
   {id:'t_dig',cls:'tl',html:'<svg viewBox="0 0 22 22"><path d="M5 17l9-9M14 8l3-3 2 2-3 3zM4 18l3-1-2-2z"/><path d="M12 4l6 6"/></svg>',title:'Dig',fn:function(){tool='dig';paintTools()}},
   {id:'t_sugar',cls:'tl',html:'<svg viewBox="0 0 22 22"><rect x="5" y="9" width="8" height="8"/><rect x="10" y="5" width="7" height="7"/></svg>',title:'Sugar',fn:function(){tool='sugar';paintTools()}},
   {id:'t_pebble',cls:'tl',html:'<svg viewBox="0 0 22 22"><path d="M4 16l3-7 6-2 5 4-2 6z"/></svg>',title:'Pebble',fn:function(){tool='pebble';paintTools()}},

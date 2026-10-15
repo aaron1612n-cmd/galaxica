@@ -22,6 +22,9 @@ canvas#c{cursor:none;touch-action:none}
 .gk-b{font-size:16px}
 .gk-b.md.on{background:var(--gk-ink);color:var(--gk-bg)}
 .gk-b.gk-auto:not(.ghost){color:#0e1114}
+/* bar skin: chalk marks, no boxes */
+.gk-b{border:0;border-bottom:2px solid var(--gk-ink);border-radius:0;background:transparent}.gk-b:nth-child(odd){transform:rotate(-2deg)}.gk-b:nth-child(even){transform:rotate(1.5deg)}
+.gk-b.on,.gk-b.md.on,.gk-b.gk-auto:not(.ghost){background:transparent;color:#ff5d4a;border-bottom-color:#ff5d4a;border-bottom-width:4px}
 </style>
 </head>
 <body>
@@ -167,7 +170,7 @@ var tut=GK.tutorial({parent:document.getElementById('stage'),onStart:function(){
   steps:[{done:function(){return tutFlag.chirp}},{done:function(){return tutFlag.moth||moths.every(function(m){return!m.alive})}},{done:function(){return tutFlag.exit}}]});
 function tutDraw(){var t=tut.t;ctx.save();ctx.translate(-Math.round(cam.x),-Math.round(cam.y));if(tut.i===0)GK.pulse(ctx,bat.x,bat.y,t,CORAL,12);else if(tut.i===1){var m=moths.find(function(m){return m.alive});if(m){var seenM=echoes.some(function(e){return e.k==='moth'});if(seenM)GK.pulse(ctx,m.x,m.y,t,YEL,10);else GK.pulse(ctx,bat.x,bat.y,t,CORAL,12)}}else GK.pulse(ctx,exitP.x,exitP.y,t,YEL,14);ctx.restore()}
 /* ============ bar ============ */
-var R=GK.controls(document.getElementById('bar'),{onHelp:function(){tut.start()},extra:[
+var R=GK.controls(document.getElementById('bar'),{bar:'top',onHelp:function(){tut.start()},extra:[
   {id:'ch',html:'<svg viewBox="0 0 22 22"><path d="M5 11c0-4 3-6 6-6M5 11c0 4 3 6 6 6M8 11c0-2 1-3 3-3M8 11c0 2 1 3 3 3"/></svg>',title:'Chirp (Space)',fn:function(){chirp()}},
   {id:'rs',html:GK.icon('restart'),title:'New cave',fn:function(){if(!tut.active)newRun()}},
   {id:'m_cave',cls:'md',html:GK.icoSvg('bat'),title:'Caves',fn:function(){setMode('cave')}},

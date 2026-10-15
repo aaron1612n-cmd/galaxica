@@ -21,6 +21,11 @@ body{background:#14110f}
 canvas#c{cursor:crosshair;border-left:1px solid #3a2f22;border-right:1px solid #3a2f22}
 .gk-b{font-size:15px;letter-spacing:.04em}
 .gk-b.on{background:var(--gk-acc);border-color:var(--gk-acc);color:#14110f}
+/* bar skin: a row of piano keys */
+.gk-bar{gap:2px;padding:0 6px 8px}.gk-bar>.gk-g{gap:1px}
+.gk-bar>.gk-g>.gk-b{background:#efe6d2;color:#14110f;border:0;height:56px;min-width:42px;border-radius:0 0 5px 5px;align-items:flex-end;padding-bottom:8px}
+.gk-bar>.gk-g>.gk-b:nth-child(odd){background:#e3d8c0}
+.gk-b.on,.gk-b.md.on,.gk-b.gk-auto:not(.ghost){background:#c9a24a!important;color:#14110f}
 </style>
 </head>
 <body>
@@ -164,7 +169,7 @@ var tut=GK.tutorial({parent:document.getElementById('stage'),onStart:function(){
   steps:[{done:function(){return tutFlag.shot&&balls.length===0}},{done:function(){return pegsLeft()<L.targets&&balls.length===0}},{done:function(){return pegsLeft()===0||(L.pegs.filter(function(p){return p.dead&&p.k==='target'}).length>=3&&balls.length===0)}}]});
 function tutDraw(){var t=tut.t;if(tut.i===0)GK.pulse(ctx,CANNON.x+Math.cos(ang)*60,CANNON.y+Math.sin(ang)*60,t,BRASS,14);else if(tut.i===1){var tg=L.pegs.find(function(p){return p.k==='target'&&!p.dead});if(tg)GK.pulse(ctx,tg.x,tg.y,t,BRASS,18)}else if(tut.i===2){var tg2=L.pegs.find(function(p){return p.k==='target'&&!p.dead});if(tg2)GK.pulse(ctx,tg2.x,tg2.y,t,BRASS,18)}}
 /* ============ bar ============ */
-var R=GK.controls(document.getElementById('bar'),{onHelp:function(){tut.start()},extra:[
+var R=GK.controls(document.getElementById('bar'),{bar:'bottom',onHelp:function(){tut.start()},extra:[
   {id:'sd',html:'<svg viewBox="0 0 22 22"><path d="M8 16V5l9-2v11"/><circle class="f" cx="6" cy="16" r="2"/><circle class="f" cx="15" cy="14" r="2"/></svg>',title:'Compose',fn:function(){sand=!sand;R.sd.classList.toggle('on',sand);R.sp.hidden=!sand;R.sb.hidden=!sand;R.se.hidden=!sand;if(sand){L.pegs=L.pegs.filter(function(p){return true});balls=[];mode='play'}else loadLevel(Math.max(1,prog.level))}},
   {id:'sp',html:'<svg viewBox="0 0 22 22"><circle cx="11" cy="11" r="4"/></svg>',title:'Peg',fn:function(){sandTool='peg';sel()}},
   {id:'sb',html:'<svg viewBox="0 0 22 22"><circle cx="11" cy="11" r="7"/><circle cx="11" cy="11" r="3"/></svg>',title:'Bumper',fn:function(){sandTool='bumper';sel()}},

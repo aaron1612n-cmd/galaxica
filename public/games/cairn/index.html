@@ -22,6 +22,9 @@ body{background:#e8d7b0}
 canvas#c{touch-action:none;cursor:grab}
 .gk-b.rot{min-width:50px}
 .gk-b.rot.on{background:var(--gk-ink);color:#e8d7b0}
+/* bar skin: river stones */
+.gk-b{border-radius:46% 54% 42% 58%/55% 45% 55% 45%;padding:0 12px}.gk-b:nth-child(3n){border-radius:58% 42% 52% 48%/45% 58% 42% 55%}.gk-b:nth-child(3n+1){border-radius:50% 50% 44% 56%/60% 52% 48% 40%}
+.gk-b.on,.gk-b.md.on,.gk-b.gk-auto:not(.ghost){background:#d4572a;border-color:#2e2a24;color:#e8d7b0}
 </style>
 </head>
 <body>
@@ -174,7 +177,7 @@ function drawRelic(){ctx.fillStyle='rgba(232,215,176,.88)';ctx.fillRect(0,0,W,H)
     else{ctx.fillStyle='#8f7a58';ctx.fillRect(cx-22,cy+4,44,24);ctx.strokeRect(cx-22,cy+4,44,24);ctx.beginPath();ctx.moveTo(cx-44,cy-8);ctx.lineTo(cx-28,cy-18);ctx.lineTo(cx-28,cy-2);ctx.closePath();ctx.moveTo(cx+44,cy-8);ctx.lineTo(cx+28,cy-18);ctx.lineTo(cx+28,cy-2);ctx.closePath();ctx.fillStyle=ORANGE;ctx.fill();ctx.stroke()}
     ctx.restore()}}
 GK.goals.setup({metrics:function(){return{cm:ST.cm,stones:ST.stones,gold:ST.gold,relics:ST.relics,reach:ST.reach,zen:ST.zen,daily:ST.daily,collapse:ST.collapse}},defs:{cm:{ic:'up',t:[10,25,50,75,100,150,200,300]},stones:{ic:'ball',t:[10,50,200,500,1500,5000]},gold:{ic:'gem',t:[1,5,25,100]},relics:{ic:'star',t:[1,5,20,50]},reach:{ic:'hand',t:[5,15,30,60,100]},zen:{ic:'leaf',t:[20,50,100,250]},daily:{ic:'sun',t:[1,3,7,14,30]},collapse:{ic:'skull',t:[1,5,20]}}});
-var R=GK.controls(document.getElementById('bar'),{onHelp:function(){tut.start()},extra:[
+var R=GK.controls(document.getElementById('bar'),{bar:'bottom',onHelp:function(){tut.start()},extra:[
   {id:'rl',cls:'rot',html:'<svg viewBox="0 0 22 22"><path d="M4 11a7 7 0 1 1 2.3 5.2M4 6v5h5"/></svg>',title:'Turn left',fn:function(){}},
   {id:'rr',cls:'rot',html:'<svg viewBox="0 0 22 22"><path d="M18 11a7 7 0 1 0-2.3 5.2M18 6v5h-5"/></svg>',title:'Turn right',fn:function(){}},
   {id:'m_tower',cls:'md',html:GK.icoSvg('up'),title:'Tower',fn:function(){setMode('tower')}},

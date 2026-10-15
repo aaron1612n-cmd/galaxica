@@ -27,6 +27,11 @@ body{background-color:#eadfc2;background-image:repeating-linear-gradient(90deg,r
 #grid button.lock{opacity:.35}
 #grid button i{display:flex;gap:2px}#grid button i b{width:8px;height:8px;border:2px solid var(--gk-ink)}#grid button i b.on{background:var(--gk-acc);border-color:var(--gk-acc)}
 .gk-b.num{font:700 15px var(--gk-font);min-width:72px}
+/* bar skin: carved seals on a dark plank rail */
+.gk-bar{background:#1b1b26}.gk-bar .gk-b{color:#eadfc2;border:3px solid #eadfc2;outline:1px solid #eadfc2;outline-offset:-7px}
+.gk-bar .spd input,.gk-bar .spd .btn{color:#eadfc2;border-color:#eadfc2}.gk-bar .spd b{color:#eadfc2}
+.gk-b.on,.gk-b.gk-auto:not(.ghost){background:#c8442a;border-color:#c8442a;outline-color:#eadfc2;color:#eadfc2}
+.gk-more .gk-b{color:#1b1b26;border-color:#1b1b26;outline-color:#1b1b26}
 </style>
 </head>
 <body>
@@ -207,7 +212,7 @@ function openSelect(){closeSelect();overlay=document.createElement('div');overla
   document.body.appendChild(overlay);overlay.onpointerdown=function(e){if(e.target===overlay)closeSelect()};sh.querySelector('#cl').onclick=closeSelect}
 function closeSelect(){if(overlay){overlay.remove();overlay=null}}
 /* ============ bar ============ */
-var R=GK.controls(document.getElementById('bar'),{onHelp:function(){tut.start()},extra:[
+var R=GK.controls(document.getElementById('bar'),{bar:'right',onHelp:function(){tut.start()},extra:[
   {id:'lv',cls:'num',html:'<svg viewBox="0 0 22 22"><rect x="3" y="3" width="6.5" height="6.5"/><rect x="12.5" y="3" width="6.5" height="6.5"/><rect x="3" y="12.5" width="6.5" height="6.5"/><rect x="12.5" y="12.5" width="6.5" height="6.5"/></svg>',title:'Levels',fn:openSelect},
   {id:'un',html:'<svg viewBox="0 0 22 22"><path d="M4 9h9a5 5 0 0 1 0 10H8M4 9l4-4M4 9l4 4"/></svg>',title:'Undo (Z)',fn:undo},
   {id:'rs',html:GK.icon('restart'),title:'Restart (R)',fn:restart},

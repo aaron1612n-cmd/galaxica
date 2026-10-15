@@ -25,6 +25,10 @@ canvas#c{touch-action:none;cursor:pointer}
 .lv{aspect-ratio:1;border:1.5px solid var(--gk-ink);background:transparent;color:var(--gk-ink);font:700 18px var(--gk-font);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer}
 .lv i{display:flex;gap:2px}.lv i s{width:7px;height:7px;border:1.2px solid var(--gk-ink);border-radius:50%}.lv i s.on{background:var(--gk-acc);border-color:var(--gk-acc)}
 .lv.lock{opacity:.3;pointer-events:none}.lv.cur{outline:2px solid var(--gk-acc);outline-offset:2px}
+/* bar skin: a chart legend box */
+.gk-bar{border:1.5px solid var(--gk-ink);outline:1px solid var(--gk-ink);outline-offset:3px;margin:12px;background:#f1f4f2;align-self:center}
+.gk-b{border:0;border-bottom:1px solid rgba(29,43,58,.35)}
+.gk-b.md.on,.gk-b.gk-auto:not(.ghost){background:var(--gk-ink);color:#f1f4f2}
 </style>
 </head>
 <body>
@@ -172,7 +176,7 @@ function openLevels(){var m=document.createElement('div');m.className='gk-modal'
 var tut=GK.tutorial({parent:stage,onStart:function(){loadTut(0)},onEnd:function(){inTut=-1;load(MODE==='chart'?Math.min(NLV,Math.max(1,prog.done+1)):1)},
   steps:[{done:function(){return inTut===1||inTut===2}},{done:function(){return inTut===2}},{done:function(){return S.won&&S.winT>40&&inTut===2&&S.st>=2}}]});
 /* ============ bar ============ */
-var R=GK.controls(document.getElementById('bar'),{onHelp:function(){tut.start()},extra:[
+var R=GK.controls(document.getElementById('bar'),{bar:'right',onHelp:function(){tut.start()},extra:[
   {id:'un',html:GK.icoSvg('up').replace('<svg','<svg style="transform:rotate(-90deg)"'),title:'Undo (Z)',fn:undo},
   {id:'rs',html:GK.icon('restart'),title:'Restart (R)',fn:restart},
   {id:'hi',html:GK.icoSvg('eye'),title:'Hint (H)',fn:hint},

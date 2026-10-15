@@ -22,6 +22,10 @@ canvas#c{background:#e6e6df;border-left:6px solid #111;border-right:6px solid #1
 .gk-b{font-weight:700}
 .gk-b.md.on{background:var(--gk-ink);color:var(--gk-bg)}
 .gk-b.gk-auto:not(.ghost){color:#fff}
+/* bar skin: station departure board */
+.gk-bar{background:#111}.gk-bar .gk-b{background:#111;color:#fff;border-color:#fff}.gk-bar .spd input,.gk-bar .spd .btn{color:#fff;border-color:#fff}.gk-bar .spd .btn:not(.ghost){background:#fff;color:#111}
+.gk-b.md.on,.gk-b.on,.gk-b.gk-auto:not(.ghost){background:#d8232a!important;border-color:#d8232a!important;color:#fff}
+.gk-more .gk-b{color:#111;background:#e6e6df;border-color:#111}
 </style>
 </head>
 <body>
@@ -125,7 +129,7 @@ function tutDraw(){var t=tut.t;if(!trains.length)return;var tr=trains[0];var nod
   else if(node&&node.i>0){/* next node */}
   /* also check the next node on path */ if(node&&!node.depot){var nn=planChoice(node,tr).b;if(nn&&!nn.depot){var w2=planChoice(nn,tr),i2=nn.out.indexOf(w2);if(nn.state!==i2)GK.pulse(ctx,nn.x,nn.y,t+20,RED,12)}}}
 /* ============ bar ============ */
-var R=GK.controls(document.getElementById('bar'),{onHelp:function(){tut.start()},extra:[{id:'rs',html:GK.icon('restart'),title:'New yard',fn:function(){if(!tut.active)newRun()}},
+var R=GK.controls(document.getElementById('bar'),{bar:'top',onHelp:function(){tut.start()},extra:[{id:'rs',html:GK.icon('restart'),title:'New yard',fn:function(){if(!tut.active)newRun()}},
   {id:'m_classic',cls:'md',html:GK.icoSvg('clock'),title:'Classic',fn:function(){setMode('classic')}},
   {id:'m_wide',cls:'md',html:GK.icoSvg('box'),title:'Big yard',fn:function(){setMode('wide')}},
   {id:'m_express',cls:'md',html:GK.icoSvg('bolt'),title:'Express',fn:function(){setMode('express')}},

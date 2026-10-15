@@ -54,6 +54,10 @@ canvas#c{image-rendering:pixelated;cursor:crosshair}
 .stamp{position:absolute;right:10px;top:10px;pointer-events:none;display:flex;gap:4px;align-items:center;border:3px solid var(--gk-acc);color:var(--gk-acc);padding:3px 8px;transform:rotate(-6deg);background:rgba(247,243,228,.9);animation:st 2.4s steps(1) forwards;font:400 26px/1 var(--hand)}
 @keyframes st{0%{transform:rotate(-6deg) scale(2.2);opacity:0}10%{transform:rotate(-6deg) scale(1);opacity:1}85%{opacity:1}100%{opacity:0}}
 .stamp .sw{width:16px;height:16px}
+/* bar skin: lab-notebook strip with masking-tape labels */
+.gk-bar{background:repeating-linear-gradient(#f2eddc 0 21px,#c9d6e3 21px 22px);border-top:2px solid #d63a2f}
+.gk-b{background:#ece0b4;border:0;box-shadow:1px 1px 0 rgba(27,42,58,.35);transform:rotate(-1.4deg)}.gk-b:nth-child(even){transform:rotate(1.1deg)}
+.gk-b.on,.gk-b.gk-auto:not(.ghost){background:#d63a2f;color:#f2eddc}
 </style>
 </head>
 <body>
@@ -223,7 +227,7 @@ function rackList(){return mis?Object.keys(mis.budget).map(Number).concat([0]):S
 function build(){rack.innerHTML='';rackList().forEach(function(t){var b=document.createElement('button');b.className='v'+(t===sel?' sel':'');b.dataset.t=t;b.title=NAMES[t]||'eraser';b.setAttribute('aria-label',NAMES[t]||'eraser');b.appendChild(icon(t));if(mis&&t){var e=document.createElement('em');e.className='bdg';b.appendChild(e)}b.onclick=function(){setSel(t)};rack.appendChild(b)})}
 function badges(){if(!mis)return;[].forEach.call(rack.children,function(b){var e=b.querySelector('.bdg');if(e)e.textContent=Math.max(0,mis.budget[+b.dataset.t]||0)})}
 function setSel(t){sel=t;[].forEach.call(rack.children,function(b){b.classList.toggle('sel',+b.dataset.t===t)});nm.textContent=t?NAMES[t]:'eraser';if(tut.active&&tutStep===1&&t===N.WATER)tutPicked=1;if(tut.active&&tutStep===2&&t===N.FIRE)tutPicked=1;if(t<100)markEl(t)}
-var bar=document.getElementById('bar'),R=GK.controls(bar,{onHelp:function(){startTut()},extra:[
+var bar=document.getElementById('bar'),R=GK.controls(bar,{bar:'bottom',onHelp:function(){startTut()},extra:[
   {id:'b1',cls:'sz',html:'<svg viewBox="0 0 22 22"><circle class="f" cx="11" cy="11" r="2"/></svg>',title:'Small brush',fn:function(){setBrush(1)}},
   {id:'b2',cls:'sz',html:'<svg viewBox="0 0 22 22"><circle class="f" cx="11" cy="11" r="4.5"/></svg>',title:'Medium brush',fn:function(){setBrush(2)}},
   {id:'b3',cls:'sz',html:'<svg viewBox="0 0 22 22"><circle class="f" cx="11" cy="11" r="8"/></svg>',title:'Big brush',fn:function(){setBrush(3)}},

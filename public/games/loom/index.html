@@ -27,6 +27,10 @@ canvas#c{box-shadow:0 0 0 3px #222a45,0 0 0 7px #e6dcc3,0 0 0 9px #222a45}
 #bolts button canvas{width:100%;aspect-ratio:1/1.3;display:block;image-rendering:pixelated}
 #bolts button.lock{opacity:.4}
 #bolts button svg.big{width:44px;height:56px}.opt{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.opt .tg{border:3px solid #222a45;background:#f2ead3;height:38px;min-width:46px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#222a45;padding:0 6px}.opt .tg svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.6}.opt .tg.on{background:#222a45;color:#e6dcc3}.opt .sp{flex:1}.opt b{font:800 16px Bitter}#bolts i{display:flex;gap:4px}#bolts i b{width:12px;height:12px;border:2px solid #222a45;transform:rotate(45deg)}#bolts i b.on{background:#b3332f;border-color:#b3332f}
+/* bar skin: round embroidered patches, stitched edge */
+.gk-b{border-radius:50%;border:2px dashed var(--gk-ink);box-shadow:0 0 0 3px var(--gk-bg),0 0 0 5px var(--gk-ink);width:var(--gk-h);padding:0;margin:4px}
+.gk-names .gk-b[data-cap]{border-radius:14px;width:auto}
+.gk-b.on,.gk-b.gk-auto:not(.ghost){background:#b3332f;color:#e6dcc3;border-color:#e6dcc3}
 </style>
 </head>
 <body>
@@ -193,7 +197,7 @@ function openMenu(){closeMenu();mode='menu';GK.setPaused(false);overlay=document
   document.body.appendChild(overlay)}
 function closeMenu(){if(overlay){overlay.remove();overlay=null}}
 /* ============ bar ============ */
-var R=GK.controls(document.getElementById('bar'),{onHelp:function(){tut.start()},extra:[
+var R=GK.controls(document.getElementById('bar'),{bar:'top',onHelp:function(){tut.start()},extra:[
   {id:'lv',html:'<svg viewBox="0 0 22 22"><rect x="3" y="3" width="6.5" height="6.5"/><rect x="12.5" y="3" width="6.5" height="6.5"/><rect x="3" y="12.5" width="6.5" height="6.5"/><rect x="12.5" y="12.5" width="6.5" height="6.5"/></svg>',title:'Bolts',fn:function(){openMenu()}},
   {id:'rs',html:GK.icon('restart'),title:'Restart',fn:function(){if(cur&&!tutOn){start(curI>=0?chartFor(curI):applyMods(makeChart(cur.seed,cur.diff,{style:cur.style})))}}}]});
 function fit(){GK.fit(cv,stage,W,H,1.5)}
