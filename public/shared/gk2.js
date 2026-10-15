@@ -82,6 +82,13 @@ GK.ico={
  bone:'<path d="M5 8a2 2 0 1 1 2-3l9 9a2 2 0 1 1 3 2 2 2 0 1 1-3 2L7 8z"/>',
  candle:'<path d="M9 8h4v11H9zM11 3c1 2 2 3 0 5-2-2-1-3 0-5z"/>',
  cube:'<rect x="4" y="4" width="14" height="14"/><path d="M4 9h14M9 4v14"/>'};
+/* draw a pictogram on a canvas: GK.icoDraw(ctx,name,cx,cy,size,col,lineWidth) */
+var IC2={};function icoParts(n){if(IC2[n])return IC2[n];var src=GK.ico[n]||GK.ico.star,out=[],re=/<(path|circle|ellipse|rect)([^>]*)\/>/g,m;
+  while((m=re.exec(src))){var a={},r2=/([\w-]+)="([^"]*)"/g,q;while((q=r2.exec(m[2])))a[q[1]]=q[2];var P=new Path2D();
+    if(m[1]==='path')P=new Path2D(a.d);else if(m[1]==='circle')P.arc(+a.cx,+a.cy,+a.r,0,6.2832);else if(m[1]==='ellipse')P.ellipse(+a.cx,+a.cy,+a.rx,+a.ry,0,0,6.2832);else P.rect(+a.x,+a.y,+a.width,+a.height);
+    out.push({p:P,f:a['class']==='f'})}return IC2[n]=out}
+GK.icoDraw=function(ctx,n,x,y,size,col,lw){var parts=icoParts(n),k=size/22;ctx.save();ctx.translate(x-size/2,y-size/2);ctx.scale(k,k);ctx.strokeStyle=ctx.fillStyle=col||'#000';ctx.lineWidth=lw||1.6;ctx.lineCap='round';ctx.lineJoin='round';
+  parts.forEach(function(o){if(o.f)ctx.fill(o.p);else ctx.stroke(o.p)});ctx.restore()};
 GK.icoSvg=function(n,cls){return'<svg viewBox="0 0 22 22" class="'+(cls||'')+'" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+(GK.ico[n]||GK.ico.star)+'</svg>'};
 
 /* ---------- goals (achievements) ---------- */
