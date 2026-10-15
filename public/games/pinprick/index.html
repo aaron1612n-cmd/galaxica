@@ -52,7 +52,7 @@ var safe=new Uint8Array(KH*NC),par=new Uint8Array(KH*NC),vis=new Int32Array(NC),
 var MV=[];for(var dy=-1;dy<=1;dy++)for(var dx=-1;dx<=1;dx++)MV.push([dx,dy]);
 function makePlan(){
   safe.fill(0);
-  for(var i=0;i<s.b.length;i++){var b=s.b[i],R=b.r+2.5+3,rc=Math.ceil(R/CS);
+  for(var i=0;i<s.b.length;i++){var b=s.b[i],R=(b.r+3)*1.4143+2,rc=Math.ceil(R/CS);
     for(var k=1;k<=KH;k++){var bx=b.x+b.vx*k+b.ax*k*(k+1)/2,by=b.y+b.vy*k+b.ay*k*(k+1)/2;
       if(bx<-R||bx>W+R||by<-R||by>H+R)continue;
       var c0=Math.max(X0,Math.floor((bx-R)/CS)),c1=Math.min(X1,Math.ceil((bx+R)/CS)),r0=Math.max(Y0,Math.floor((by-R)/CS)),r1=Math.min(Y1,Math.ceil((by+R)/CS)),base=(k-1)*NC;
@@ -92,23 +92,25 @@ function tick(){
     s.x+=Math.max(-lim,Math.min(lim,tx-s.x));s.y+=Math.max(-lim,Math.min(lim,ty-s.y))}
   else{s.x+=ax*spd;s.y+=ay*spd}
   s.x=Math.max(10,Math.min(W-10,s.x));s.y=Math.max(150,Math.min(H-15,s.y));
+  if(flash>0)flash--;
   s.moved+=Math.abs(s.x-ox)+Math.abs(s.y-oy);if(focus)s.focused++;
   emit();
   if(s.ic>0)s.ic--;
   var b=s.b,w=0;
   for(var i=0;i<b.length;i++){var q=b[i];q.vx+=q.ax;q.vy+=q.ay;q.x+=q.vx;q.y+=q.vy;
     if(q.y>H+20||q.y<-40||q.x<-40||q.x>W+40)continue;
-    var dx=q.x-s.x,dy=q.y-s.y,d2=dx*dx+dy*dy,hr=q.r+2.5;
-    if(d2<hr*hr&&s.ic<=0&&!tut){hit();if(state!=='play')return;continue}
+    var dx=q.x-s.x,dy=q.y-s.y,d2=dx*dx+dy*dy,hr=q.r+3;
+    if(Math.abs(dx)<hr&&Math.abs(dy)<hr&&s.ic<=0){hit();if(state!=='play')return;continue}
     if(!q.g&&d2<(q.r+14)*(q.r+14)){q.g=1;s.graze++;Kit.tone(1500,.02,'square',.012)}
     b[w++]=q}
   b.length=w;
   if(!tut&&s.t>=18000)finish(true);
   if(tut)tutStep()}
 function finish(win){state='over';s.overT=0;s.win=!!win;var bt=best(diff);s.rank=s.t>bt?1:0;if(s.t>bt)Kit.lsSet('pinBest'+diff,s.t);plan=null;if(win){Kit.tone(660,.2,'square',.05);Kit.tone(990,.3,'square',.05,1,Kit.ac()&&Kit.ac().currentTime+.15)}}
-function hit(){s.lives--;s.ic=90;Kit.noise(.3,.14);Kit.tone(150,.3,'sawtooth',.07,.4);
+var flash=0;
+function hit(){if(!tut)s.lives--;s.ic=tut?45:90;flash=8;Kit.noise(.3,.14);Kit.tone(150,.3,'sawtooth',.07,.4);
   var w=0;for(var i=0;i<s.b.length;i++){var q=s.b[i];if(Math.hypot(q.x-s.x,q.y-s.y)>70)s.b[w++]=q}s.b.length=w;
-  if(s.lives<=0)finish(false)}
+  if(!tut&&s.lives<=0)finish(false)}
 function tutStep(){tut.t++;
   if(tut.k===0&&s.moved>260)tut.k=1;
   else if(tut.k===1&&s.focused>45)tut.k=2;
@@ -145,6 +147,7 @@ function drawPlay(){
   ctx.fillStyle='#0b1016';ctx.fillRect(0,0,W,40);ctx.fillStyle='#2b3744';ctx.fillRect(0,40,W,2);
   txt(fmt(s.t),14,27,16,'#efe6d2');txt('G'+s.graze,W/2+10,27,13,'#8d9aa5');
   for(var l=0;l<s.lives;l++){ctx.fillStyle='#ffb000';ctx.fillRect(W-22-l*17,15,11,11)}
+  if(flash>0){ctx.globalAlpha=flash/12;ctx.fillStyle='#ff5a36';ctx.fillRect(0,0,W,H);ctx.globalAlpha=1}
   if(tut)tutDraw()}
 function drawMenu(){
   ctx.font='700 44px Silkscreen,monospace';var a=ctx.measureText('PINPR').width,b=ctx.measureText('ICK').width,x0=(W-a-b)/2;txt('PINPR',x0,130,44,'#efe6d2');txt('ICK',x0+a,130,44,'#ffb000');
