@@ -113,12 +113,13 @@ Test recipe: Playwright desktop+390x800, AUTO bot via `window.__g`, screenshots;
 - gk2: `GK.icoDraw(ctx,name,x,y,size,col,lw)` draws pictograms on canvas. gk.js: tut.maybe() never auto-starts while AUTO on.
 - DONE Tantrum: modes story/one-hit/rush/daily (seeded mood order), toy cards between bosses (9 toys x3), graze combo x1-8, fx, 45 goals.
 - DONE Ant Kingdom: buried fossils(12 kinds)/gems/spores->fungus farms/aphid eggs, glints, bot digs toward finds; modes farm/calm/siege/daily (ends year 2, score=peak+10*fossils); 46 goals.
+- DONE Peg Song: fever finale bins+slowmo, 3 stars/board, free balls, long shots, zen/daily. Switchyard: express/freight/mail trains, rush hours, yards classic/big/express/daily. Chirp: crystals, fireflies, combos, perk cards, modes cave/dark/feast/daily. Gravity Garden: 12 challenges + daily (chip top-right), share links #w=code.
+- DEPLOY: `npx wrangler deploy` was BLOCKED by the session permission classifier (production deploy) -> user must run it or allow it.
 - Test scripts (scratchpad, ephemeral): bot.mjs (AUTO run, prints __g.stats), waitshot.mjs (screenshot when condition), names.mjs (overflow check). Server: http-server public -p 8080.
 
 ## NEXT GOALS (priority order)
-1. Upgrade with fun layer (goals, modes, juice, daily): Peg Song, Switchyard, Chirp, Gravity Garden (Tantrum+Ant done).
-2. 10 NEW games, own look each, wordless tutorial, AUTO bot, goals, thumb.jpg, games.json entry: Bramble, Deepdig, Hedgerow, Cauldron, Rube Garden, Sneeze Heist, Snail Rocket, Brass Pinball, Ripple, Floe.
-3. Then: commit, push main, `npx wrangler deploy`, compact this runbook.
+1. 10 NEW games, own look each, wordless tutorial, AUTO bot, goals, thumb.jpg, games.json entry: Bramble, Deepdig, Hedgerow, Cauldron, Rube Garden, Sneeze Heist, Snail Rocket, Brass Pinball, Ripple, Floe.
+2. Then: commit, push, `npx wrangler deploy`, compact this runbook.
 Constraints: no Workflow/Agent tools unless user opts in; honest wording (procedural content, not literal thousands).
 
 ## Next step
