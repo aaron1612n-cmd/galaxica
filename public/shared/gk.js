@@ -74,7 +74,8 @@ addEventListener('keydown',function(e){if(e.target&&(e.target.tagName==='INPUT'|
 GK.fit=function(cv,stage,W,H,max){var r=stage.getBoundingClientRect(),dpr=Math.min(devicePixelRatio||1,2),cw=Math.max(40,r.width),ch=Math.max(40,r.height),w,h,s=1;
   if(W&&H){s=Math.min(cw/W,ch/H);if(max)s=Math.min(s,max);w=W*s;h=H*s}else{w=cw;h=ch}
   cv.style.width=w+'px';cv.style.height=h+'px';cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr);
-  GK.view={s:s,w:w,h:h,dpr:dpr,W:W||w,H:H||h};return GK.view};
+  GK.view={s:s,w:w,h:h,dpr:dpr,W:W||w,H:H||h};
+  /* tell overlays (tutorial pips, toasts) where the canvas sits so they can avoid each game's HUD */ var sr=stage.getBoundingClientRect(),crr=cv.getBoundingClientRect();stage.style.setProperty('--gk-ct',(crr.top-sr.top-stage.clientTop)+'px');stage.style.setProperty('--gk-cs',String(s));return GK.view};
 
 /* ---------- loop ---------- */
 GK.loop=function(tick,draw,pre){var last=0;(function f(ts){

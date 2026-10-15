@@ -152,5 +152,12 @@
     "blurb": "Drill down through hand-coloured rock strata. Haul ore up to sell, refuel and upgrade, and dig out the relic at the core.",
     "added": "2026-10-15",
     "thumb": "games/deepdig/thumb.jpg"
+  },
+  {
+    "id": "sneeze-heist",
+    "title": "Sneeze Heist",
+    "blurb": "Sneak past the guards' torches to grab the gems, but your nose itches. Hold it in, or sneeze on purpose to lure guards away.",
+    "added": "2026-10-15",
+    "thumb": "games/sneeze-heist/thumb.jpg"
   }
 ]

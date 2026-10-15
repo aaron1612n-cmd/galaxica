@@ -15,7 +15,7 @@
 <script src="../../shared/gk2.js"></script>
 <style>
 /* Deepdig: a hand-coloured geological section, c. 1850. Laid paper, iron-gall ink, watercolour strata, one vermilion. */
-:root{--gk-bg:#ece2cc;--gk-ink:#2b2219;--gk-acc:#c8432a;--gk-font:"IM Fell English",Georgia,serif;--gk-bw:1px;--gk-r:0;--gk-sh:none;--gk-h:40px}
+:root{--gk-ty:80;--gk-toy:96;--gk-bg:#ece2cc;--gk-ink:#2b2219;--gk-acc:#c8432a;--gk-font:"IM Fell English",Georgia,serif;--gk-bw:1px;--gk-r:0;--gk-sh:none;--gk-h:40px}
 body{background:#ece2cc}
 #stage{padding:4px}
 canvas#c{touch-action:none}
@@ -78,10 +78,10 @@ function bump(){if(D.bumpT>0)return;D.bumpT=20;GK.fx.shake(2,6);GK.audio.tone(11
 function finish(){var a=D.act;D.act=null;
   if(a.k==='dig'){var nx=D.x+a.dx,ny=D.y+a.dy,i=ny*GW+nx;
     if(HID[i]){HID[i]=0;boom(nx,ny)}
-    var o=O[i];if(o){if(o===10){D.won=1;ST.relic=1;D.money+=ORE[10].v;D.earned+=ORE[10].v;saveST();GK.fx.text((nx+.5)*TS,(ny-cam)*TS+HUD,'+'+ORE[10].v,VER,30);for(var k=0;k<4;k++)GK.fx.burst((nx+.5)*TS,(ny-cam+.5)*TS+HUD,24,{col:[VER,INK,'#d9a72e',PAPER][k],speed:5,life:50,size:4,up:2,grav:.1});GK.audio.tone(392,.6,'triangle',.07);[523,659,784,1047].forEach(function(f,j){GK.audio.tone(f,.5,'triangle',.06,1,GK.audio.ctx&&GK.audio.ctx.currentTime+.15*(j+1))})}
-      else if(D.cargo.length<cap()){D.cargo.push(o);if(!D.tut){ST.ores++;if(o===9)ST.fossils++}GK.fx.burst((nx+.5)*TS,(ny-cam+.5)*TS+HUD,10,{col:ORE[o].c,speed:2.6,life:22,shape:'sq',size:3,grav:.1});GK.audio.tone(700+o*90,.09,'triangle',.05)}
-      else{GK.fx.text((nx+.5)*TS,(ny-cam)*TS+HUD,'×',VER,26)}O[i]=0}
-    M[i]=0;if(!D.tut)ST.dug++;GK.fx.burst((nx+.5)*TS-a.dx*10,(ny-cam+.5)*TS+HUD-a.dy*10,5,{col:BANDS[band(ny)][0],speed:1.8,life:18,size:3,grav:.15});
+    var o=O[i];if(o){if(o===10){D.won=1;ST.relic=1;D.money+=ORE[10].v;D.earned+=ORE[10].v;saveST();GK.fx.text((nx+.5)*TS,ny*TS,'+'+ORE[10].v,VER,30);for(var k=0;k<4;k++)GK.fx.burst((nx+.5)*TS,(ny+.5)*TS,24,{col:[VER,INK,'#d9a72e',PAPER][k],speed:5,life:50,size:4,up:2,grav:.1});GK.audio.tone(392,.6,'triangle',.07);[523,659,784,1047].forEach(function(f,j){GK.audio.tone(f,.5,'triangle',.06,1,GK.audio.ctx&&GK.audio.ctx.currentTime+.15*(j+1))})}
+      else if(D.cargo.length<cap()){D.cargo.push(o);if(!D.tut){ST.ores++;if(o===9)ST.fossils++}GK.fx.burst((nx+.5)*TS,(ny+.5)*TS,10,{col:ORE[o].c,speed:2.6,life:22,shape:'sq',size:3,grav:.1});GK.audio.tone(700+o*90,.09,'triangle',.05)}
+      else{GK.fx.text((nx+.5)*TS,ny*TS,'×',VER,26)}O[i]=0}
+    M[i]=0;if(!D.tut)ST.dug++;GK.fx.burst((nx+.5)*TS-a.dx*10,(ny+.5)*TS-a.dy*10,5,{col:BANDS[band(ny)][0],speed:1.8,life:18,size:3,grav:.15});
     D.act={k:'mv',dx:a.dx,dy:a.dy,t:0,n:4};return}
   if(a.k==='mv'||a.k==='fall'){D.x+=a.dx;D.y+=a.dy;var m=mat(D.x,D.y);if(m===8){hurt(45,'lava')}
     if(a.k==='fall')D.fall++;else if(a.dy<0)D.fall=0;
@@ -89,12 +89,12 @@ function finish(){var a=D.act;D.act=null;
     if(D.y>SR-1){var dp=D.y-SR+1;if(dp>D.dmax)D.dmax=dp;if(!D.tut&&dp>ST.depth){ST.depth=dp}}
     if(D.y===SR-1)atSurface()}}
 function boom(x,y){if(!D.tut)ST.boom++;hurt(30,'gas');for(var dy=-1;dy<=1;dy++)for(var dx=-1;dx<=1;dx++){var xx=x+dx,yy=y+dy;if(xx>=0&&xx<GW&&yy>SR&&mat(xx,yy)!==7){M[yy*GW+xx]=0;O[yy*GW+xx]=0}}
-  GK.fx.burst((x+.5)*TS,(y-cam+.5)*TS+HUD,40,{col:VER,speed:6,life:34,shape:'ci',size:4});GK.fx.burst((x+.5)*TS,(y-cam+.5)*TS+HUD,30,{col:INK,speed:4,life:40,size:3,grav:.1});GK.fx.shake(10,20);GK.fx.hitstop(6);GK.audio.noise(.7,.25,0,0)}
+  GK.fx.burst((x+.5)*TS,(y+.5)*TS,40,{col:VER,speed:6,life:34,shape:'ci',size:4});GK.fx.burst((x+.5)*TS,(y+.5)*TS,30,{col:INK,speed:4,life:40,size:3,grav:.1});GK.fx.shake(10,20);GK.fx.hitstop(6);GK.audio.noise(.7,.25,0,0)}
 function hurt(n,why){D.hull-=n;GK.fx.shake(6,12);GK.audio.tone(120,.3,'sawtooth',.06,.5);if(D.hull<=0){D.hull=0;strand()}}
 function strand(){if(D.dead)return;D.dead=1;D.deadT=0;D.cargo=[];GK.audio.tone(90,.8,'sawtooth',.06,.4);if(MODE==='career'){D.fee=Math.floor(D.money*.3);D.money-=D.fee;CAR.money=D.money;saveCar()}else endTimed()}
 function atSurface(){var h=D.x===HUT.sell?'sell':D.x===HUT.fuel?'fuel':D.x===HUT.shop?'shop':'';if(h===D.atHut)return;D.atHut=h;
-  if(h==='sell'&&D.cargo.length){var v=0;D.cargo.forEach(function(o){v+=ORE[o].v});D.money+=v;D.earned+=v;if(!D.tut)ST.earned+=v;D.cargo=[];GK.fx.text(HUT.sell*TS+TS/2,(SR-1-cam)*TS+HUD-10,'+'+v,VER,28);GK.fx.burst(HUT.sell*TS+TS/2,(SR-1-cam)*TS+HUD,18,{col:'#d9a72e',speed:3,life:26,shape:'ci',size:3,up:2,grav:.12});[784,988,1175].forEach(function(f,j){GK.audio.tone(f,.15,'triangle',.05,1,GK.audio.ctx&&GK.audio.ctx.currentTime+j*.07)});if(D.tut)tutF.sold=1;saveST()}
-  if(h==='fuel'){var need=tank()-D.fuel,c=Math.min(Math.ceil(need/5),D.money);D.fuel=Math.min(tank(),D.fuel+c*5);D.money-=c;if(D.fuel<tank()*.6&&D.money<3){D.fuel=tank()*.6;GK.fx.text(HUT.fuel*TS+TS/2,(SR-1-cam)*TS+HUD-10,'+',INK,26)}var rp=Math.min(Math.ceil((hullMax()-D.hull)/2),D.money);D.hull=Math.min(hullMax(),D.hull+rp*2);D.money-=rp;if(D.hull<hullMax()*.5&&D.money<3)D.hull=hullMax()*.5;if(c||rp)GK.audio.tone(330,.25,'sine',.04,1.6)}
+  if(h==='sell'&&D.cargo.length){var v=0;D.cargo.forEach(function(o){v+=ORE[o].v});D.money+=v;D.earned+=v;if(!D.tut)ST.earned+=v;D.cargo=[];GK.fx.text(HUT.sell*TS+TS/2,(SR-1)*TS-10,'+'+v,VER,28);GK.fx.burst(HUT.sell*TS+TS/2,(SR-1)*TS,18,{col:'#d9a72e',speed:3,life:26,shape:'ci',size:3,up:2,grav:.12});[784,988,1175].forEach(function(f,j){GK.audio.tone(f,.15,'triangle',.05,1,GK.audio.ctx&&GK.audio.ctx.currentTime+j*.07)});if(D.tut)tutF.sold=1;saveST()}
+  if(h==='fuel'){var need=tank()-D.fuel,c=Math.min(Math.ceil(need/5),D.money);D.fuel=Math.min(tank(),D.fuel+c*5);D.money-=c;if(D.fuel<tank()*.6&&D.money<3){D.fuel=tank()*.6;GK.fx.text(HUT.fuel*TS+TS/2,(SR-1)*TS-10,'+',INK,26)}var rp=Math.min(Math.ceil((hullMax()-D.hull)/2),D.money);D.hull=Math.min(hullMax(),D.hull+rp*2);D.money-=rp;if(D.hull<hullMax()*.5&&D.money<3)D.hull=hullMax()*.5;if(c||rp)GK.audio.tone(330,.25,'sine',.04,1.6)}
   if(h==='shop'&&!Auto.on&&!D.tut)openShop();
   if(MODE==='career'){CAR.money=D.money;saveCar()}}
 function cost(k){var l=lv(k);return l>=5?0:Math.round(UP[k].b*[1,3,8,20,50][l])}
@@ -172,7 +172,7 @@ function render(){var v=GK.view,so=GK.fx.offset();ctx.setTransform(v.dpr*v.s,0,0
   /* ground line + huts */ var gy=HUD+(SR-cam)*TS;if(gy>HUD-TS&&gy<H){ctx.strokeStyle=INK;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(0,gy);ctx.lineTo(W,gy);ctx.stroke();
     [['sell','coin'],['fuel','drop'],['shop','wrench']].forEach(function(h){var hx=HUT[h[0]]*TS,hy=gy-TS;ctx.fillStyle='#f6efdc';ctx.strokeStyle=INK;ctx.lineWidth=1.4;ctx.beginPath();ctx.moveTo(hx-6,hy+6);ctx.lineTo(hx+TS/2,hy-14);ctx.lineTo(hx+TS+6,hy+6);ctx.closePath();ctx.fill();ctx.stroke();ctx.fillRect(hx,hy+6,TS,TS-6);ctx.strokeRect(hx,hy+6,TS,TS-6);GK.icoDraw(ctx,h[1],hx+TS/2,hy+19,18,h[0]===D.atHut?VER:INK,1.6)});
     for(var gx=0;gx<W;gx+=9){ctx.beginPath();ctx.moveTo(gx,gy);ctx.lineTo(gx+3,gy-5);ctx.strokeStyle='rgba(43,34,25,.6)';ctx.lineWidth=1;ctx.stroke()}}
-  drawDigger();ctx.restore();GK.fx.draw(ctx);
+  drawDigger();ctx.save();ctx.translate(0,HUD-cam*TS);GK.fx.draw(ctx);ctx.restore();ctx.restore();
   /* depth scale down the left margin */ ctx.fillStyle=INK;ctx.font='11px "IM Fell English"';ctx.textAlign='left';for(var r2=0;r2<=VIEWR;r2++){var yy=y0+r2;if(yy>SR&&(yy-SR)%5===0){var YY=HUD+r2*TS-off;ctx.fillRect(0,YY,6,1);ctx.fillText(String((yy-SR)*2),8,YY+4)}}
   drawHud();ctx.restore();
   if(D.dead)drawDead();if(tut.active)tutDraw()}
