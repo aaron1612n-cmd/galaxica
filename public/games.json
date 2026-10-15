@@ -103,5 +103,12 @@
     "blurb": "You are a bat in the dark. Chirp to see the cave by echo, eat moths, and find the way out.",
     "added": "2026-10-15",
     "thumb": "games/chirp/thumb.jpg"
+  },
+  {
+    "id": "floe",
+    "title": "Floe",
+    "blurb": "A penguin on sliding ice. You only stop at rocks and snow, so plan each slide to reach the igloo and catch every fish.",
+    "added": "2026-10-15",
+    "thumb": "games/floe/thumb.jpg"
   }
 ]
