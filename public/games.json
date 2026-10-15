@@ -117,5 +117,12 @@
     "blurb": "A Victorian parlour pinball table. Ring the bell, sink the saucer three times for multiball, and chase the missions on the backglass.",
     "added": "2026-10-15",
     "thumb": "games/brass-pinball/thumb.jpg"
+  },
+  {
+    "id": "ripple",
+    "title": "Ripple",
+    "blurb": "Drop pebbles in a pond. The ripples push paper boats into their moorings, around rocks, currents and a whirlpool.",
+    "added": "2026-10-15",
+    "thumb": "games/ripple/thumb.jpg"
   }
 ]
