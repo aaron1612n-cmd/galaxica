@@ -30,6 +30,7 @@ var IC={
  shot:'<rect x="3" y="7" width="16" height="11"/><circle cx="11" cy="12.5" r="3"/><path d="M8 7l1-2h4l1 2"/>',
  gear:'<path d="M4 6h14M4 11h14M4 16h14"/><circle class="f" cx="8" cy="6" r="2"/><circle class="f" cx="14" cy="11" r="2"/><circle class="f" cx="7" cy="16" r="2"/>',
  menu:'<path d="M4 6h14M4 11h14M4 16h14"/>',
+ info:'<circle cx="11" cy="11" r="8"/><path d="M11 10v6"/><circle class="f" cx="11" cy="6.6" r="1"/>',
  center:'<circle cx="11" cy="11" r="3"/><path d="M11 2v4M11 16v4M2 11h4M16 11h4"/>',
  follow:'<circle cx="11" cy="11" r="6"/><circle class="f" cx="11" cy="11" r="1.6"/><path d="M11 2v3M11 17v3M2 11h3M17 11h3"/>',
  clone:'<rect x="3" y="7" width="11" height="11"/><path d="M8 7V3h11v11h-5"/>',
@@ -63,8 +64,8 @@ var IC={
 function svg(n){return'<svg viewBox="0 0 22 22" aria-hidden="true">'+(IC[n]||'')+'</svg>'}
 
 /* ---------- state ---------- */
-var set=Object.assign({trails:1,bands:1,labels:0,grid:1,wild:1,music:1,theme:'paper'},GG.lsGet('ggSet',{}));
-function applySet(){V.opt.trails=set.trails;V.opt.bands=set.bands;V.opt.labels=set.labels;V.opt.grid=set.grid;W.wild=!!set.wild;GG.setTheme(set.theme);GG.lsSet('ggSet',set)}
+var set=Object.assign({trails:1,bands:1,labels:0,grid:1,wild:1,music:1,caps:0,theme:'paper'},GG.lsGet('ggSet',{}));
+function applySet(){V.opt.trails=set.trails;V.opt.bands=set.bands;V.opt.labels=set.labels;V.opt.grid=set.grid;W.wild=!!set.wild;GG.setTheme(set.theme);document.body.classList.toggle('caps',!!set.caps);GG.lsSet('ggSet',set)}
 var AC=null,mute=GG.lsGet('galaxicaMute',false),paused=false,tool=null,size=1,best=GG.lsGet('ggBest',0),tut=null,tutT=0,botN=0,fr=0,hist=[];
 var undo=[];
 function snap(){try{undo.push(JSON.stringify(GG.save()));if(undo.length>30)undo.shift()}catch(e){}}
@@ -90,10 +91,10 @@ TOOLS.push({id:'binary',g:'exotic',kind:'star',cls:'G',pair:1},{id:'wormhole',g:
 var TB={};TOOLS.forEach(function(t){TB[t.id]=t});
 tool=TB.ocean;var group='planet';
 var tabsEl=$('tabs'),palEl=$('pal'),sizesEl=$('sizes');
-GROUPS.forEach(function(g){var b=el('button','ib','');b.innerHTML=svg(g);b.dataset.g=g;b.setAttribute('aria-label',g);b.onclick=function(){ac();setGroup(g)};tabsEl.appendChild(b)});
+GROUPS.forEach(function(g){var b=el('button','ib','');b.innerHTML=svg(g);b.dataset.g=g;b.title=({planet:'planets',star:'stars',small:'small',exotic:'exotic',tools:'tools'})[g];b.setAttribute('aria-label',g);b.onclick=function(){ac();setGroup(g)};tabsEl.appendChild(b)});
 function setGroup(g){group=g;[].forEach.call(tabsEl.children,function(b){b.classList.toggle('sel',b.dataset.g===g)});buildPal();sizesEl.style.display=g==='planet'?'flex':'none'}
 function buildPal(){palEl.innerHTML='';TOOLS.filter(function(t){return t.g===group}).forEach(function(t){
-  var b=el('button','tl'+(t===tool?' sel':''),'');b.title=t.id;b.dataset.t=t.id;
+  var b=el('button','tl'+(t===tool?' sel':''),'');b.title=t.g==='star'&&t.cls.length===1&&t.kind==='star'?t.cls+' star':t.id;b.dataset.t=t.id;
   if(t.act)b.innerHTML=svg(t.icon);else{var c=el('canvas');b.appendChild(c);requestAnimationFrame(function(){GG.glyph(c,t.kind,t.cls,{seed:t.belt?3:7})})}
   b.onclick=function(){ac();setTool(t)};palEl.appendChild(b)})}
 function setTool(t){tool=t;V.pend=null;[].forEach.call(palEl.children,function(b){b.classList.toggle('sel',b.dataset.t===t.id)})}
@@ -108,22 +109,27 @@ function doReset(){snap();GG.newWorld();V.sel=0;hideInsp();V.cam.x=0;V.cam.y=0;V
 function center(){V.cam.x=0;V.cam.y=0;V.cam.z=1;V.follow=0}
 function shot(){cv.toBlob(function(b){if(!b)return;var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='gravity-garden.png';document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},500)})}
 var ACTS={
- pause:{ic:'pause',t:'Pause (Space)',f:function(){setPause(!paused)}},undo:{ic:'undo',t:'Undo (Z)',f:doUndo},reset:{ic:'reset',t:'New world (R)',f:doReset},
- sound:{ic:'sound',t:'Sound (M)',f:toggleSnd},help:{ic:'q',t:'Replay tutorial',f:function(){startTut()}},
- presets:{ic:'presets',t:'Systems',f:function(){openM('pre')}},dice:{ic:'dice',t:'Random system',f:function(){openM('pre')}},
+ pause:{ic:'pause',t:'Pause (Space)',f:function(){setPause(!paused)}},undo:{ic:'undo',t:'Undo (Z)',f:doUndo},reset:{ic:'reset',t:'New (R)',f:doReset},
+ sound:{ic:'sound',t:'Sound (M)',f:toggleSnd},help:{ic:'q',t:'Tutorial',f:function(){startTut()}},
+ presets:{ic:'presets',t:'Systems',f:function(){openM('pre')}},dice:{ic:'dice',t:'Random',f:function(){openM('pre')}},
  saves:{ic:'save',t:'Saves',f:function(){openM('sav')}},codex:{ic:'book',t:'Codex',f:function(){openM('cod')}},goals:{ic:'goals',t:'Goals',f:function(){openM('gol')}},
- shot:{ic:'shot',t:'Picture (P)',f:shot},settings:{ic:'gear',t:'Settings',f:function(){openM('set')}},center:{ic:'center',t:'Centre view (0)',f:center},
+ shot:{ic:'shot',t:'Picture (P)',f:shot},settings:{ic:'gear',t:'Settings',f:function(){openM('set')}},center:{ic:'center',t:'Centre (0)',f:center},
+ caps:{ic:'info',t:'Names',f:function(){set.caps=set.caps?0:1;applySet();var b=document.querySelectorAll('[data-a=caps]');[].forEach.call(b,function(x){x.classList.toggle('on',!!set.caps)})}},
  menu:{ic:'menu',t:'Menu',f:function(){openM('menu')}}};
 function mkBtn(id,cls){var a=ACTS[id],b=el('button','ib'+(cls?' '+cls:''),'');b.dataset.a=id;b.title=a.t;b.setAttribute('aria-label',a.t);b.innerHTML=a.ic==='q'?'?':svg(a.ic);if(a.ic==='q')b.classList.add('q');
   b.onclick=function(){ac();a.f()};if(id==='sound')sndBtns.push(b);return b}
 ['pause','undo','reset','sound','help'].forEach(function(i){$('r1').appendChild(mkBtn(i))});
 var menuB=mkBtn('menu','mob');$('r1').appendChild(menuB);
 ['presets','dice','saves','codex','goals'].forEach(function(i){$('r2').appendChild(mkBtn(i,'dsk'))});
-['shot','settings','center'].forEach(function(i){$('r3').insertBefore(mkBtn(i,'dsk'),$('r3').firstChild)});
-(function(){var s=$('r3');var ord=['shot','settings','center'];ord.forEach(function(n){var b=s.querySelector('[data-a='+n+']');s.insertBefore(b,s.querySelector('[data-speed]'))})})();
-var autoB=el('button','ib auto ghost','auto');autoB.title='Auto: a gardener tends the system';$('r3').insertBefore(autoB,$('r3').querySelector('[data-speed]'));Auto.bind(autoB);
+['caps','shot','settings','center'].forEach(function(i){$('r3').insertBefore(mkBtn(i,'dsk'),$('r3').firstChild)});
+(function(){var s=$('r3');var ord=['caps','shot','settings','center'];ord.forEach(function(n){var b=s.querySelector('[data-a='+n+']');s.insertBefore(b,s.querySelector('[data-speed]'))})})();
+var autoB=el('button','ib auto ghost','auto');autoB.title='Auto play';$('r3').insertBefore(autoB,$('r3').querySelector('[data-speed]'));Auto.bind(autoB);
 var st=document.createElement('style');st.textContent='@media(max-width:760px),(max-aspect-ratio:1/1){.dsk{display:none}}@media(min-width:761px) and (min-aspect-ratio:1/1){.mob{display:none}}';document.head.appendChild(st);
 Speed.mountAll();paintSnd();
+function capAll(root){[].forEach.call((root.querySelectorAll?root.querySelectorAll('.ib,.tl'):[]),function(b){var t=b.title||b.getAttribute('aria-label');if(t&&b.dataset.cap!==t.replace(/ \(.*\)$/,''))b.dataset.cap=t.replace(/ \(.*\)$/,'')});
+  if(root.matches&&root.matches('.ib,.tl')){var t2=root.title;if(t2)root.dataset.cap=t2.replace(/ \(.*\)$/,'')}}
+var capT=0;new MutationObserver(function(){if(capT)return;capT=setTimeout(function(){capT=0;capAll(document.body)},30)}).observe(document.body,{childList:true,subtree:true});
+setTimeout(function(){capAll(document.body)},0);
 
 /* ---------- placing things ---------- */
 function pickBody(px,py){var A=W.bodies,k=V.k(),best=null,bd=1e9,i,b,s,d;for(i=0;i<A.length;i++){b=A[i];s=V.toScreen(b.x,b.y);d=Math.hypot(s.x-px,s.y-py)-GG.R(b)*k;if(d<bd){bd=d;best=b}}return bd<(Device.mobile?26:18)?best:null}
@@ -192,11 +198,11 @@ function buildInsp(b){
   if(b.sp){var sp=el('div','sp'),cc=el('canvas');cc.width=96;cc.height=68;sp.appendChild(cc);ir.sp=el('div','sub');sp.appendChild(ir.sp);inspEl.appendChild(sp);
     var c2=cc.getContext('2d');c2.setTransform(2,0,0,2,0,0);GG.creature(c2,b.sp,24,17,30);ir.sp.innerHTML='<i style="font:italic 18px var(--serif);color:var(--ink)">'+b.sp.name+'</i><br>'+b.sp.legs+' legs · '+b.sp.eyes+' eyes'}
   var acts=el('div','acts');
-  [['follow',function(){V.follow=V.follow?0:b.id}],['anchor',function(){var o=GG.byId(V.sel);if(o){o.fixed=!o.fixed;if(o.fixed){o.vx=0;o.vy=0}W.dirty=true}}],
-   ['clone',function(){var o=GG.byId(V.sel);if(o){snap();var n=GG.mk(o.kind,o.cls,o.x+16,o.y+10,o.vx,o.vy,{m:o.m,size:o.size,age:o.age});GG.add(n);select(n)}}],
-   ['minus',function(){var o=GG.byId(V.sel);if(o&&o.m>.06){snap();o.m/=1.3;W.dirty=true}}],['plus',function(){var o=GG.byId(V.sel);if(o&&o.m>0){snap();o.m*=1.3;W.dirty=true}}],
-   ['trash',function(){var o=GG.byId(V.sel);if(o){snap();W.bodies.splice(W.bodies.indexOf(o),1);W.dirty=true;V.sel=0;hideInsp()}}]].forEach(function(a){
-    var bt=el('button','ib',svg(a[0]));bt.title=a[0];bt.onclick=function(){ac();a[1]()};acts.appendChild(bt)});
+  [['track',function(){V.follow=V.follow?0:b.id}],['pin',function(){var o=GG.byId(V.sel);if(o){o.fixed=!o.fixed;if(o.fixed){o.vx=0;o.vy=0}W.dirty=true}}],
+   ['copy',function(){var o=GG.byId(V.sel);if(o){snap();var n=GG.mk(o.kind,o.cls,o.x+16,o.y+10,o.vx,o.vy,{m:o.m,size:o.size,age:o.age});GG.add(n);select(n)}}],
+   ['less',function(){var o=GG.byId(V.sel);if(o&&o.m>.06){snap();o.m/=1.3;W.dirty=true}}],['more',function(){var o=GG.byId(V.sel);if(o&&o.m>0){snap();o.m*=1.3;W.dirty=true}}],
+   ['delete',function(){var o=GG.byId(V.sel);if(o){snap();W.bodies.splice(W.bodies.indexOf(o),1);W.dirty=true;V.sel=0;hideInsp()}}]].forEach(function(a){
+    var ico={track:'follow',pin:'anchor',copy:'clone',less:'minus',more:'plus','delete':'trash'}[a[0]];var bt=el('button','ib',svg(ico));bt.title=a[0];bt.onclick=function(){ac();a[1]()};acts.appendChild(bt)});
   inspEl.appendChild(acts);refreshInsp(b)}
 function refreshInsp(b){
   ir.nm.textContent=b.name;
@@ -224,7 +230,7 @@ function thumb(c,arr){var d=Math.min(devicePixelRatio||1,2),s=c.clientWidth||110
     if(b.kind==='star'||b.kind==='comet'){x.fillStyle=P.rust;x.fill()}else if(b.kind==='hole'||b.kind==='rock'){x.fillStyle=P.ink;x.fill()}else if(b.kind==='wormhole'){x.strokeStyle=P.rust;x.stroke()}else{x.strokeStyle=P.ink;x.lineWidth=1;x.stroke()}})}
 function loadSys(arr,label){snap();GG.loadSystem(arr);V.sel=0;hideInsp();center();closeM();if(tut)endTut()}
 var BUILD={
- menu:function(sh){head(sh,'menu');var g=el('div','grid tg');['presets','saves','codex','goals','shot','settings','center','sound','help'].forEach(function(i){var b=mkBtn(i);b.onclick=function(){ac();var a=ACTS[i];closeM();a.f()};g.appendChild(b)});sh.appendChild(g)},
+ menu:function(sh){head(sh,'menu');var g=el('div','grid tg');['presets','saves','codex','goals','shot','settings','center','caps','sound','help'].forEach(function(i){var b=mkBtn(i);b.onclick=function(){ac();var a=ACTS[i];closeM();a.f()};g.appendChild(b)});sh.appendChild(g)},
  pre:function(sh){head(sh,'presets');var g=el('div','grid pre');
    GG.PRESETS.forEach(function(p,i){var b=el('button','',''),c=el('canvas');b.appendChild(c);b.appendChild(document.createTextNode(PN[p.id]||p.id));g.appendChild(b);
      requestAnimationFrame(function(){thumb(c,p.build(GG.rng(i+1)))});b.onclick=function(){ac();GG.W.stats.presets++;W.seed=0;loadSys(p.build(GG.rng(Date.now()&0xffff)))}});sh.appendChild(g);
@@ -325,7 +331,7 @@ addEventListener('keydown',function(e){if(e.target&&(e.target.tagName==='INPUT'|
   if(e.ctrlKey&&c==='KeyZ'){doUndo();e.preventDefault();return}
   if(c.indexOf('Digit')===0&&+c[5]>=1&&+c[5]<=5){setGroup(GROUPS[+c[5]-1]);return}
   if(c==='Space'){e.preventDefault();setPause(!paused)}else if(c==='KeyR')doReset();else if(c==='KeyM')toggleSnd();else if(c==='KeyA')Auto.toggle();else if(c==='KeyZ')doUndo();
-  else if(c==='KeyP')shot();else if(c==='Digit0')center();else if(c==='KeyF'&&V.sel)V.follow=V.follow?0:V.sel;
+  else if(c==='KeyP')shot();else if(c==='KeyH')ACTS.caps.f();else if(c==='Digit0')center();else if(c==='KeyF'&&V.sel)V.follow=V.follow?0:V.sel;
   else if((c==='Delete'||c==='Backspace')&&V.sel){var o=GG.byId(V.sel);if(o){snap();W.bodies.splice(W.bodies.indexOf(o),1);W.dirty=true;V.sel=0;hideInsp()}}
   else if(c==='Equal'||c==='NumpadAdd')zoomAt(V.w/2,V.h/2,1.2);else if(c==='Minus'||c==='NumpadSubtract')zoomAt(V.w/2,V.h/2,1/1.2)});
 
@@ -350,7 +356,7 @@ function loop(){
   GG.draw(ctx);if(++fr%15===0)ledger();if(fr%240===0&&!tut){GG.lsSet('ggWorld',{s:GG.save(),c:V.cam});GG.lsSet('ggStats',W.stats)}
   requestAnimationFrame(loop)}
 fit();addEventListener('resize',fit);addEventListener('orientationchange',fit);if(document.fonts&&document.fonts.ready)document.fonts.ready.then(function(){fit();rebuildGlyphs()});
-applySet();setGroup('planet');
+applySet();setGroup('planet');[].forEach.call(document.querySelectorAll('[data-a=caps]'),function(x){x.classList.toggle('on',!!set.caps)});
 var saved=GG.lsGet('ggWorld',null);
 if(saved&&saved.s&&GG.load(saved.s)){V.cam=Object.assign({x:0,y:0,z:1},saved.c||{})}else GG.newWorld();
 if(!GG.lsGet('ggTut',0))startTut();

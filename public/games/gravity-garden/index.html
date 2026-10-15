@@ -131,6 +131,17 @@ textarea{width:100%;height:70px;background:transparent;color:var(--ink);border:1
 @media(max-height:520px) and (min-aspect-ratio:1/1){
   #app{grid-template-columns:minmax(0,1fr) 250px}.hdr,.ledger{display:none}#mini{display:block}#pal{grid-template-columns:repeat(auto-fill,minmax(40px,1fr))}.tl{height:42px}
 }
+
+/* names mode: every button shows what it does */
+.caps .ib[data-cap],.caps .tl[data-cap]{height:auto;min-height:40px;flex-direction:column;gap:2px;padding:5px 2px 4px}
+.caps .ib[data-cap]::after,.caps .tl[data-cap]::after{content:attr(data-cap);display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:400 9px/1.15 var(--mono);color:inherit;text-align:center;padding:0 1px}
+.caps .tl[data-cap]{min-height:54px;padding:4px 1px}
+.caps .tl canvas{width:30px;height:30px}
+.caps #tabs .ib[data-cap]{height:auto}
+.caps #sizes .ib[data-cap]{flex-direction:row;gap:5px}
+.caps #insp .acts .ib[data-cap]::after,.caps .slot .ib[data-cap]::after{font-size:8px}
+.caps .tl[data-cap]::after{color:var(--dim)}.caps .tl.sel[data-cap]::after{color:var(--ink)}
+@media(max-width:760px),(max-aspect-ratio:1/1){.caps .tl[data-cap]{flex:0 0 58px}.caps .rows .ib[data-cap]::after{font-size:8px}}
 @media(prefers-reduced-motion:reduce){*{animation:none!important}}
 </style>
 </head>
