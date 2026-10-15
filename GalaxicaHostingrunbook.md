@@ -108,9 +108,15 @@ Kit add: `shared/gk2.js` = GK.fx (particles/text/shake), GK.ico/icoSvg (~50 pict
 Upgraded+deployed: Powder Lab (71 reactions, brushes, 36 missions), Tidewater (currents/keys, 120 lvls, hint, daily), Loom (36 songs, 3 diff, mods, fever), Moth Mail (storms/cats/owls, shop), Cairn (modes tower/reach/zen/daily, relics every 6 stones, goals). Backups in /tmp/*.bak (ephemeral).
 Test recipe: Playwright desktop+390x800, AUTO bot via `window.__g`, screenshots; long runs in background.
 
+## SESSION 2026-10-15b (branch claude/determined-brown-9f1py4, harness-assigned; push there + draft PR)
+- DONE goal 0: Names-mode bar wraps (gk.css .gk-g wrap; names.js/kit.js `.kn .cl` wrap, captions skip buttons with own text, short caps). 0 overflow at 390px except intentional scroll palettes.
+- gk2: `GK.icoDraw(ctx,name,x,y,size,col,lw)` draws pictograms on canvas. gk.js: tut.maybe() never auto-starts while AUTO on.
+- DONE Tantrum: modes story/one-hit/rush/daily (seeded mood order), toy cards between bosses (9 toys x3), graze combo x1-8, fx, 45 goals.
+- DONE Ant Kingdom: buried fossils(12 kinds)/gems/spores->fungus farms/aphid eggs, glints, bot digs toward finds; modes farm/calm/siege/daily (ends year 2, score=peak+10*fossils); 46 goals.
+- Test scripts (scratchpad, ephemeral): bot.mjs (AUTO run, prints __g.stats), waitshot.mjs (screenshot when condition), names.mjs (overflow check). Server: http-server public -p 8080.
+
 ## NEXT GOALS (priority order)
-0. BUG: when Names mode (i) is on, bar buttons grow and clip past screen sides -> wrap/shrink/scroll bar (gk.css `.gk-bar`, names captions). Check all games at 390px.
-1. Upgrade with fun layer (goals, modes, juice, daily): Tantrum, Ant Kingdom, Peg Song, Switchyard, Chirp, Gravity Garden.
+1. Upgrade with fun layer (goals, modes, juice, daily): Peg Song, Switchyard, Chirp, Gravity Garden (Tantrum+Ant done).
 2. 10 NEW games, own look each, wordless tutorial, AUTO bot, goals, thumb.jpg, games.json entry: Bramble, Deepdig, Hedgerow, Cauldron, Rube Garden, Sneeze Heist, Snail Rocket, Brass Pinball, Ripple, Floe.
 3. Then: commit, push main, `npx wrangler deploy`, compact this runbook.
 Constraints: no Workflow/Agent tools unless user opts in; honest wording (procedural content, not literal thousands).
