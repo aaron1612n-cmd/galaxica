@@ -96,6 +96,7 @@ AUTO = gardener: keeps <=5 planets on spaced ring slots in the band (moons remov
 Ideas: pinch/zoom, save/share systems, comets, moons that survive.
 
 ## Git (2026-10-15)
+DEPLOY RULE: pushing to main does NOT publish. After every game/change run `npx wrangler deploy` and verify the live games.json.
 RULE: always work on and commit to `main`. Branches cool-dirac-fild0j and dazzling-johnson-mcnbcc (identical, 269d192) were fast-forward merged into main. Push main; no more side branches.
 
 ## Style rule
