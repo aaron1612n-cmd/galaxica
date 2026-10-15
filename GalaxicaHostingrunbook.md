@@ -103,5 +103,17 @@ RULE: always work on and commit to `main`. Branches cool-dirac-fild0j and dazzli
 ## Style rule
 New games need NOT match Galaxica's look. Give each its own identity (research first); shared kit/theme.css are optional scaffolding, not a mandate.
 
+## FUN LAYER (2026-10-15, user: "thousands of features, 10 more games, these are boring") — DEPLOYED
+Kit add: `shared/gk2.js` = GK.fx (particles/text/shake), GK.ico/icoSvg (~50 pictograms), GK.goals (stamps+trophy btn), GK.daily (seed/streak). Gravity Garden has exit button top-left.
+Upgraded+deployed: Powder Lab (71 reactions, brushes, 36 missions), Tidewater (currents/keys, 120 lvls, hint, daily), Loom (36 songs, 3 diff, mods, fever), Moth Mail (storms/cats/owls, shop), Cairn (modes tower/reach/zen/daily, relics every 6 stones, goals). Backups in /tmp/*.bak (ephemeral).
+Test recipe: Playwright desktop+390x800, AUTO bot via `window.__g`, screenshots; long runs in background.
+
+## NEXT GOALS (priority order)
+0. BUG: when Names mode (i) is on, bar buttons grow and clip past screen sides -> wrap/shrink/scroll bar (gk.css `.gk-bar`, names captions). Check all games at 390px.
+1. Upgrade with fun layer (goals, modes, juice, daily): Tantrum, Ant Kingdom, Peg Song, Switchyard, Chirp, Gravity Garden.
+2. 10 NEW games, own look each, wordless tutorial, AUTO bot, goals, thumb.jpg, games.json entry: Bramble, Deepdig, Hedgerow, Cauldron, Rube Garden, Sneeze Heist, Snail Rocket, Brass Pinball, Ripple, Floe.
+3. Then: commit, push main, `npx wrangler deploy`, compact this runbook.
+Constraints: no Workflow/Agent tools unless user opts in; honest wording (procedural content, not literal thousands).
+
 ## Next step
-Real-phone playtest + balance pass; more games (research look first); custom domain? Redeploy: `npx wrangler deploy`.
+Real-phone playtest + balance pass; custom domain? Redeploy: `npx wrangler deploy`.
