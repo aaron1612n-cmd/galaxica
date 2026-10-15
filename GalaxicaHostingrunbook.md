@@ -92,5 +92,8 @@ Mobile touch buttons (FIRE/BOMB) live in a `#pad` row BELOW the canvas, never ov
 ## Git (2026-10-15)
 RULE: always work on and commit to `main`. Branches cool-dirac-fild0j and dazzling-johnson-mcnbcc (identical, 269d192) were fast-forward merged into main. Push main; no more side branches.
 
+## Style rule
+New games need NOT match Galaxica's look. Give each its own identity (research first); shared kit/theme.css are optional scaffolding, not a mandate.
+
 ## Next step
 Real-phone playtest + balance pass; more games (research look first); custom domain? Redeploy: `npx wrangler deploy`.
