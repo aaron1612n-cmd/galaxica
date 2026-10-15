@@ -166,5 +166,12 @@
     "blurb": "Steer a growing thorny vine and close loops around flowers to harvest them. Dodge the gardener's shears.",
     "added": "2026-10-15",
     "thumb": "games/bramble/thumb.jpg"
+  },
+  {
+    "id": "rube-garden",
+    "title": "Rube Garden",
+    "blurb": "Place ramps, planks, springs and fans in a glasshouse so one drop of water from the tap reaches the flowerpot.",
+    "added": "2026-10-15",
+    "thumb": "games/rube-garden/thumb.jpg"
   }
 ]
