@@ -131,5 +131,12 @@
     "blurb": "Catch falling ingredients in the order the recipe asks and dodge the rest. Each potion you brew gives a power.",
     "added": "2026-10-15",
     "thumb": "games/cauldron/thumb.jpg"
+  },
+  {
+    "id": "snail-rocket",
+    "title": "Snail Rocket",
+    "blurb": "Strap a snail to a rocket and hold to boost. Bounce off mushrooms and balloons, grab lettuce, and upgrade in the garden shed.",
+    "added": "2026-10-15",
+    "thumb": "games/snail-rocket/thumb.jpg"
   }
 ]

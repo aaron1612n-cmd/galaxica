@@ -146,7 +146,8 @@ function setMode(m){if(tut.active)return;MODE=m;GK.ls.set('mode',m);paint();S=nu
 function paint(){['career','max','daily'].forEach(function(k){R['m_'+k].classList.toggle('on',MODE===k)})}paint();
 GK.goals.setup({metrics:function(){return ST},defs:{dist:{ic:'flag',t:[50,150,400,800,1500,2500]},lettuce:{ic:'leaf',t:[25,250,1000,4000]},launches:{ic:'up',t:[1,10,50,200]},ups:{ic:'wrench',t:[1,10,20,30]},birds:{ic:'bat',t:[1,10,50]},height:{ic:'cloud',t:[30,80,150,250]},drops:{ic:'drop',t:[5,50,250]},moon:{ic:'moon',t:[1]},daily:{ic:'sun',t:[1,3,7,14,30]}}});
 GK.goals.mount(R);
-function fit(){GK.fit(cv,stage,W,H,1.6)}addEventListener('resize',fit);addEventListener('orientationchange',fit);fit();
+function dims(){var port=innerHeight>innerWidth*1.1,g0=GROUND;W=port?400:720;H=port?700:480;GROUND=H-60;var d=GROUND-g0;if(d){items.forEach(function(it){it.y+=d});if(S)S.y+=d}}
+function fit(){dims();GK.fit(cv,stage,W,H,1.6)}addEventListener('resize',fit);addEventListener('orientationchange',fit);fit();
 GK.loop(step,render);if(!GK.ls.get('tut',0)&&!Auto.on)tut.start();else openGarage();
 window.__g={st:ST,car:CAR,setMode:setMode,tut:tut,launch:launch,stats:function(){return S?{MODE:MODE,mode:mode,dist:dist(),x:Math.round(S.x),y:Math.round(S.y),fuel:Math.round(S.fuel),let:S.let,done:S.done,bank:CAR.let,up:JSON.stringify(CAR.up)}:{mode:mode,bank:CAR.let}}};
 </script>
