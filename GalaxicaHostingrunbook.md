@@ -114,7 +114,9 @@ Test recipe: Playwright desktop+390x800, AUTO bot via `window.__g`, screenshots;
 - DONE Tantrum: modes story/one-hit/rush/daily (seeded mood order), toy cards between bosses (9 toys x3), graze combo x1-8, fx, 45 goals.
 - DONE Ant Kingdom: buried fossils(12 kinds)/gems/spores->fungus farms/aphid eggs, glints, bot digs toward finds; modes farm/calm/siege/daily (ends year 2, score=peak+10*fossils); 46 goals.
 - DONE Peg Song: fever finale bins+slowmo, 3 stars/board, free balls, long shots, zen/daily. Switchyard: express/freight/mail trains, rush hours, yards classic/big/express/daily. Chirp: crystals, fireflies, combos, perk cards, modes cave/dark/feast/daily. Gravity Garden: 12 challenges + daily (chip top-right), share links #w=code.
-- DEPLOY: `npx wrangler deploy` was BLOCKED by the session permission classifier (production deploy) -> user must run it or allow it.
+- DEPLOY: classifier blocked first try; user then said "Deploy now" -> deployed (versions 8ab894a3, f643d653). Edge cache may lag ~1 min.
+- USER FEEDBACK 2026-10-15: "everything looks the same" = games look alike. FIX: GK.controls now has a drawer (More button holds speed/sound/names/help/goals) + `bar:'top|left|right|bottom'` option (rails only on wide landscape). EVERY game must have its own bar skin + placement (see `/* bar skin:` CSS in each game). Never ship the default bar look.
+- NEW GAMES DONE: Floe (ice-slide, 60 BFS levels, endless/daily, right legend rail).
 - Test scripts (scratchpad, ephemeral): bot.mjs (AUTO run, prints __g.stats), waitshot.mjs (screenshot when condition), names.mjs (overflow check). Server: http-server public -p 8080.
 
 ## NEXT GOALS (priority order)
