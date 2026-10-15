@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#ece6d6">
+<title>Hedgerow</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Marcellus&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../shared/gk.css">
+<script src="../../shared/device.js"></script>
+<script src="../../shared/auto.js"></script>
+<script src="../../shared/speed.js"></script>
+<script src="../../shared/gk.js"></script>
+<script src="../../shared/gk2.js"></script>
+<style>
+/* Hedgerow: a formal garden plan. Raked gravel, clipped box hedges, one rose. */
+:root{--gk-bg:#ece6d6;--gk-ink:#23331f;--gk-acc:#c44d6e;--gk-font:"Marcellus",Georgia,serif;--gk-bw:0px;--gk-r:12px;--gk-sh:none;--gk-h:42px}
+body{background:#ece6d6}
+#stage{padding:8px}
+canvas#c{touch-action:none;cursor:pointer}
+/* bar skin: clipped topiary blocks with a scalloped rim */
+.gk-bar .gk-b{background:#2f4a2c;color:#ece6d6;border-radius:14px;box-shadow:0 0 0 3px #ece6d6,0 0 0 5px #2f4a2c}
+.gk-bar .gk-g{gap:12px}
+.gk-b.on,.gk-b.md.on,.gk-b.gk-auto:not(.ghost){background:#c44d6e;color:#ece6d6;box-shadow:0 0 0 3px #ece6d6,0 0 0 5px #c44d6e}
+.gk-bar .spd input,.gk-bar .spd .btn{border:2px solid #2f4a2c;border-radius:10px}
+.lvls{display:grid;grid-template-columns:repeat(auto-fill,minmax(56px,1fr));gap:8px}
+.lv{aspect-ratio:1;border:2px solid #2f4a2c;border-radius:12px;background:transparent;color:#23331f;font:20px Marcellus;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer}
+.lv i{display:flex;gap:2px}.lv i s{width:7px;height:7px;border-radius:50%;border:1.4px solid #2f4a2c}.lv i s.on{background:#c44d6e;border-color:#c44d6e}
+.lv.lock{opacity:.3;pointer-events:none}.lv.cur{background:#2f4a2c;color:#ece6d6}
+</style>
+</head>
+<body>
+<div id="app"><div id="stage"><canvas id="c"></canvas></div><div id="bar"></div></div>
+<script>
+GK.id('hedgerow');
+var cv=document.getElementById('c'),ctx=cv.getContext('2d'),stage=document.getElementById('stage');
+var GRAVEL='#ece6d6',GRAV2='#b8ae95',HEDGE='#2f4a2c',BOX='#4d6b3d',INK='#23331f',ROSE='#c44d6e',TOP=70,PAD=20,T=56,W=480,H=640,NLV=50;
+var N=1,E=2,S_=4,Wd=8,DIR=[[0,-1,N,S_],[1,0,E,Wd],[0,1,S_,N],[-1,0,Wd,E]];
+var MODE=GK.ls.get('mode','garden'),prog=GK.ls.get('prog',{done:0,stars:{}}),ST=GK.ls.get('st',{cleared:0,stars:0,turns:0,par:0,endless:0,daily:0,roses:0,big:0});
+function saveST(){GK.ls.set('st',ST)}
+function rot(m,k){for(var i=0;i<k;i++)m=((m<<1)|(m>>3))&15;return m}
+/* ============ generation: a random spanning tree from the gate, then scramble ============ */
+function gen(n,seed){var rn=GK.rng(seed),w=Math.min(9,3+Math.floor(n/6)),h=Math.min(11,4+Math.floor(n/5));if(n<=2){w=3;h=3}
+  var sol=new Uint8Array(w*h),seen=new Uint8Array(w*h),gx=(w/2)|0,stack=[gx];seen[gx]=1;
+  /* growing-tree: mix of newest and random cells for varied corridors */
+  var active=[gx];while(active.length){var pick=rn()<.6?active.length-1:(rn()*active.length)|0,c=active[pick],cx=c%w,cy=(c/w)|0,opts=[];
+    for(var d=0;d<4;d++){var nx=cx+DIR[d][0],ny=cy+DIR[d][1];if(nx>=0&&ny>=0&&nx<w&&ny<h&&!seen[ny*w+nx])opts.push(d)}
+    if(!opts.length){active.splice(pick,1);continue}var dd=opts[(rn()*opts.length)|0],ni=(cy+DIR[dd][1])*w+cx+DIR[dd][0];sol[c]|=DIR[dd][2];sol[ni]|=DIR[dd][3];seen[ni]=1;active.push(ni)}
+  sol[gx]|=N;
+  var cur=new Uint8Array(w*h),lock=new Uint8Array(w*h),par=0;
+  for(var i=0;i<w*h;i++){if(n>=12&&rn()<.1&&i!==gx){lock[i]=1;cur[i]=sol[i];continue}var k=(rn()*4)|0;if(n>0&&k===0)k=1+((rn()*3)|0);cur[i]=rot(sol[i],k);
+    for(var r=0;r<4;r++)if(rot(cur[i],r)===sol[i]){par+=r;break}}
+  return{n:n,w:w,h:h,sol:sol,cur:cur,lock:lock,gate:gx,par:par}}
+/* ============ state ============ */
+var L=null,lvN=1,inTut=-1,turns=0,won=0,winT=0,anim={},TT=0,lit=null,hog=null,eseed=1;
+function seedFor(n){return MODE==='daily'?GK.daily.seed()*5+3:MODE==='endless'?eseed*977+n:n*6151+29}
+function load(n){inTut=-1;lvN=n;L=gen(MODE==='daily'?30:MODE==='endless'?Math.min(60,4+n*2):n,seedFor(n));reset()}
+var TUTL=[{w:2,h:1,sol:[E|N,Wd],cur:[E|N,N],lock:[1,0],gate:0},{w:3,h:2,sol:[E,Wd|E|S_|N,Wd,S_,N|S_,0],cur:0,lock:[0,0,0,0,0,0],gate:1}];
+function loadTut(i){inTut=i;var t=TUTL[i];if(i===1){var g=gen(1,77);L=g;L.n=0}else{L={n:0,w:t.w,h:t.h,sol:new Uint8Array(t.sol),cur:new Uint8Array(t.cur),lock:new Uint8Array(t.lock),gate:t.gate,par:1}}reset()}
+function reset(){turns=0;won=0;winT=0;anim={};hog=null;GK.fx.clear();layout();light()}
+function layout(){W=Math.max(360,L.w*T+PAD*2);H=L.h*T+TOP+PAD+16;fit()}
+function fit(){GK.fit(cv,stage,W,H,1.5)}
+function ox(){return(W-L.w*T)/2}
+/* ============ connectivity from the gate ============ */
+function light(){var w=L.w,h=L.h,v=new Uint8Array(w*h),q=[L.gate];v[L.gate]=1;if(!(L.cur[L.gate]&N)){lit=v;lit.n=1;return}
+  while(q.length){var c=q.pop(),cx=c%w,cy=(c/w)|0;for(var d=0;d<4;d++){if(!(L.cur[c]&DIR[d][2]))continue;var nx=cx+DIR[d][0],ny=cy+DIR[d][1];if(nx<0||ny<0||nx>=w||ny>=h)continue;var ni=ny*w+nx;if(!v[ni]&&(L.cur[ni]&DIR[d][3])){v[ni]=1;q.push(ni)}}}
+  var cnt=0;for(var i=0;i<w*h;i++)cnt+=v[i];v.n=cnt;lit=v}
+function solved(){if(lit.n!==L.w*L.h)return false;/* no open ends */ for(var c=0;c<L.w*L.h;c++){var cx=c%L.w,cy=(c/L.w)|0;for(var d=0;d<4;d++){if(!(L.cur[c]&DIR[d][2]))continue;var nx=cx+DIR[d][0],ny=cy+DIR[d][1];if(c===L.gate&&d===0)continue;if(nx<0||ny<0||nx>=L.w||ny>=L.h)return false;if(!(L.cur[ny*L.w+nx]&DIR[d][3]))return false}}return true}
+function turn(i){if(won||L.lock[i]||anim[i])return;anim[i]={t:0};L.cur[i]=rot(L.cur[i],1);turns++;if(inTut<0)ST.turns++;GK.audio.tone(330+Math.random()*40,.05,'triangle',.04);GK.audio.noise(.05,.03,0,3000);light();
+  if(solved())winNow()}
+function winNow(){won=1;winT=0;var st=turns<=L.par?3:turns<=Math.ceil(L.par*1.5)?2:1;L.st=st;
+  [392,494,587,784].forEach(function(f,k){GK.audio.tone(f,.35,'sine',.05,1,GK.audio.ctx&&GK.audio.ctx.currentTime+k*.08)});hog=tour();
+  if(inTut>=0)return;if(st===3)ST.par++;ST.roses+=leaves();if(L.w*L.h>=80)ST.big++;
+  if(MODE==='garden'){var k0=prog.stars[lvN]||0;if(st>k0){ST.stars+=st-k0;prog.stars[lvN]=st}if(lvN>prog.done){prog.done=lvN;ST.cleared=Math.max(ST.cleared,lvN)}GK.ls.set('prog',prog)}else if(MODE==='endless')ST.endless=Math.max(ST.endless,lvN);else ST.daily=GK.daily.claim(1000-turns).n;saveST()}
+function leaves(){var c=0;for(var i=0;i<L.w*L.h;i++){var m=L.cur[i],b=0;for(var k=0;k<4;k++)if(m&(1<<k))b++;if(b===1)c++}return c}
+/* the hedgehog walks the whole maze once (an Euler tour of the tree) */
+function tour(){var path=[],seen=new Uint8Array(L.w*L.h);(function dfs(c){seen[c]=1;path.push(c);var cx=c%L.w,cy=(c/L.w)|0;for(var d=0;d<4;d++){if(!(L.cur[c]&DIR[d][2]))continue;var nx=cx+DIR[d][0],ny=cy+DIR[d][1];if(nx<0||ny<0||nx>=L.w||ny>=L.h)continue;var ni=ny*L.w+nx;if(!seen[ni]){dfs(ni);path.push(c)}}})(L.gate);return{path:path,t:0,got:{}}}
+function next(){if(inTut>=0){if(inTut<1)loadTut(1);else tut.end();return}if(MODE==='daily'){load(1);return}load(MODE==='garden'?Math.min(NLV,lvN+1):lvN+1)}
+/* ============ input ============ */
+GK.pointer(cv,{down:function(x,y){if(won){if(winT>40)next();return}if(Auto.on)return;var tx=Math.floor((x-ox())/T),ty=Math.floor((y-TOP)/T);if(tx<0||ty<0||tx>=L.w||ty>=L.h)return;turn(ty*L.w+tx)},
+  key:function(c,d){if(!d)return;if(won&&(c==='Space'||c==='Enter')){next();return}if(c==='KeyR')restart()}});
+function restart(){if(inTut>=0){loadTut(inTut);return}load(lvN)}
+/* ============ AUTO: turns each tile toward its known orientation ============ */
+var botT=0;function bot(){if(won){if(winT>(hog?Math.min(260,hog.path.length*6+40):60))next();return}if(++botT<7)return;botT=0;
+  for(var i=0;i<L.w*L.h;i++){if(!L.lock[i]&&L.cur[i]!==L.sol[i]&&!anim[i]){turn(i);return}}}
+/* ============ tick ============ */
+function step(){TT++;GK.goals.tick();if(!L)return;for(var k in anim){anim[k].t++;if(anim[k].t>=6)delete anim[k]}if(won){winT++;if(hog)hog.t+=.18}
+  if(Auto.on&&(!tut.active))bot();tut.tick()}
+/* ============ drawing: an engraved parterre ============ */
+function jr(i,k){var v=Math.sin(i*41.3+k*7.1)*43758.5;return v-Math.floor(v)}
+function render(){var v=GK.view,so=GK.fx.offset();ctx.setTransform(v.dpr*v.s,0,0,v.dpr*v.s,0,0);ctx.fillStyle=GRAVEL;ctx.fillRect(0,0,W,H);if(!L)return;ctx.translate(so.x,so.y);
+  var X0=ox();
+  /* outer clipped hedge border */ ctx.fillStyle=HEDGE;roundR(X0-10,TOP-10,L.w*T+20,L.h*T+20,14);ctx.fill();
+  /* gate opening + iron gate */ var gxp=X0+L.gate*T+T/2;ctx.fillStyle=GRAVEL;ctx.fillRect(gxp-T*.17,TOP-14,T*.34,16);ctx.strokeStyle=INK;ctx.lineWidth=2;ctx.beginPath();ctx.arc(gxp,TOP-14,T*.2,Math.PI,0);ctx.stroke();for(var g=-2;g<=2;g++){ctx.beginPath();ctx.moveTo(gxp+g*4,TOP-14);ctx.lineTo(gxp+g*4,TOP-26+Math.abs(g)*2);ctx.stroke()}
+  for(var i=0;i<L.w*L.h;i++){var cx=X0+(i%L.w)*T,cy=TOP+((i/L.w)|0)*T,a=anim[i]?(1-anim[i].t/6)*-1.5708:0;ctx.save();ctx.translate(cx+T/2,cy+T/2);ctx.rotate(a);drawTile(i,L.cur[i],lit[i]);ctx.restore()}
+  /* hedgehog */ if(hog)drawHog();
+  GK.fx.draw(ctx);
+  /* hud */ ctx.fillStyle=INK;ctx.textAlign='left';ctx.font='30px Marcellus';ctx.fillText(inTut>=0||MODE!=='garden'?'':String(lvN),PAD,44);if(MODE!=='garden'||inTut>=0)GK.icoDraw(ctx,inTut>=0?'eye':MODE==='daily'?'sun':'infinity',PAD+14,34,24,INK,1.8);
+  ctx.textAlign='right';ctx.font='24px Marcellus';ctx.fillText(turns+' / '+L.par,W-PAD,44);
+  if(MODE==='garden'&&inTut<0){var bs=prog.stars[lvN]||0;for(var k=0;k<3;k++)GK.icoDraw(ctx,'flower',PAD+62+k*18,36,15,k<bs?ROSE:'rgba(35,51,31,.25)',1.8)}
+  if(won)drawWin();if(tut.active&&!won)tutDraw()}
+function roundR(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath()}
+function drawTile(i,m,on){var h=T/2,lane=T*.36;
+  /* hedge block */ ctx.fillStyle=L.lock[i]?'#3b4a38':HEDGE;ctx.fillRect(-h,-h,T,T);
+  /* clipped texture: little leaf marks */ ctx.fillStyle=BOX;for(var k=0;k<7;k++){ctx.beginPath();ctx.arc(-h+5+jr(i,k)*(T-10),-h+5+jr(i,k+9)*(T-10),2.4,0,6.3);ctx.fill()}
+  /* gravel lanes */ ctx.fillStyle=on?GRAVEL:GRAV2;ctx.beginPath();ctx.arc(0,0,lane/2,0,6.3);ctx.fill();
+  for(var d=0;d<4;d++){if(!(m&(1<<d)))continue;ctx.save();ctx.rotate(d*1.5708);ctx.fillRect(-lane/2,-h-1,lane,h+1);ctx.restore()}
+  /* raked lines */ ctx.strokeStyle=on?'rgba(35,51,31,.18)':'rgba(35,51,31,.1)';ctx.lineWidth=1;for(d=0;d<4;d++){if(!(m&(1<<d)))continue;ctx.save();ctx.rotate(d*1.5708);ctx.beginPath();ctx.moveTo(-lane/4,-h);ctx.lineTo(-lane/4,0);ctx.moveTo(lane/4,-h);ctx.lineTo(lane/4,0);ctx.stroke();ctx.restore()}
+  /* dead ends bloom with a rose once connected */ var b=0;for(d=0;d<4;d++)if(m&(1<<d))b++;if(b===1){var got=hog&&hog.got[i];ctx.fillStyle=on?(got?'#e9a3b5':ROSE):'rgba(196,77,110,.35)';for(var p=0;p<5;p++){var a=p/5*6.283+TT*.0;ctx.beginPath();ctx.arc(Math.cos(a)*5,Math.sin(a)*5,4.2,0,6.3);ctx.fill()}ctx.fillStyle=GRAVEL;ctx.beginPath();ctx.arc(0,0,2.6,0,6.3);ctx.fill()}
+  if(L.lock[i]){ctx.strokeStyle='rgba(236,230,214,.5)';ctx.lineWidth=1.5;ctx.strokeRect(-h+4,-h+4,T-8,T-8)}
+  ctx.strokeStyle='rgba(35,51,31,.6)';ctx.lineWidth=1;ctx.strokeRect(-h+.5,-h+.5,T-1,T-1)}
+function drawHog(){var p=hog.path,k=Math.min(p.length-1,Math.floor(hog.t)),f=hog.t-Math.floor(hog.t),a=p[k],b=p[Math.min(p.length-1,k+1)],X0=ox();
+  var ax=X0+(a%L.w)*T+T/2,ay=TOP+((a/L.w)|0)*T+T/2,bx=X0+(b%L.w)*T+T/2,by=TOP+((b/L.w)|0)*T+T/2,x=ax+(bx-ax)*f,y=ay+(by-ay)*f;
+  if(!hog.got[a]){hog.got[a]=1;var m=L.cur[a],c=0;for(var d=0;d<4;d++)if(m&(1<<d))c++;if(c===1){GK.fx.burst(ax,ay,8,{col:ROSE,speed:2,life:18,shape:'ci',size:2.5});GK.audio.tone(880+Math.random()*200,.08,'sine',.03)}}
+  var dir=Math.atan2(by-ay,bx-ax);ctx.save();ctx.translate(x,y);ctx.rotate(dir);ctx.fillStyle='#7a5a3e';ctx.beginPath();ctx.ellipse(-2,0,11,8,0,0,6.3);ctx.fill();ctx.strokeStyle='#4a3524';ctx.lineWidth=1.5;for(var s=-8;s<6;s+=3){ctx.beginPath();ctx.moveTo(s,-7);ctx.lineTo(s-3,-11);ctx.moveTo(s,7);ctx.lineTo(s-3,11);ctx.stroke()}
+  ctx.fillStyle='#d8c3a0';ctx.beginPath();ctx.moveTo(6,-5);ctx.lineTo(15,0);ctx.lineTo(6,5);ctx.closePath();ctx.fill();ctx.fillStyle=INK;ctx.beginPath();ctx.arc(15,0,1.8,0,6.3);ctx.arc(9,-2.5,1.2,0,6.3);ctx.fill();ctx.restore()}
+function drawWin(){if(winT<(hog?Math.min(200,hog.path.length*5.6):30))return;var a=Math.min(1,(winT-(hog?Math.min(200,hog.path.length*5.6):30))/20);ctx.fillStyle='rgba(236,230,214,'+.85*a+')';ctx.fillRect(0,0,W,H);ctx.globalAlpha=a;ctx.fillStyle=INK;ctx.textAlign='center';ctx.font='64px Marcellus';ctx.fillText(String(turns),W/2,H/2-26);
+  if(inTut<0)for(var k=0;k<3;k++)GK.icoDraw(ctx,'flower',W/2-56+k*56,H/2+34,k<L.st?44:28,k<L.st?ROSE:'rgba(35,51,31,.3)',1.8);ctx.globalAlpha=1;GK.pulse(ctx,W/2,H/2+100,winT,ROSE,10)}
+/* ============ tutorial ============ */
+var tut=GK.tutorial({parent:stage,onStart:function(){loadTut(0)},onEnd:function(){load(MODE==='garden'?Math.min(NLV,Math.max(1,prog.done+1)):1)},steps:[{done:function(){return inTut>=1}},{done:function(){return won&&winT>120&&inTut===1}}]});
+function tutDraw(){for(var i=0;i<L.w*L.h;i++){if(!L.lock[i]&&L.cur[i]!==L.sol[i]){GK.pulse(ctx,ox()+(i%L.w)*T+T/2,TOP+((i/L.w)|0)*T+T/2,tut.t,ROSE,12);return}}}
+/* ============ level list ============ */
+function openLevels(){var m=document.createElement('div');m.className='gk-modal';var sh=document.createElement('div');sh.className='gk-sheet';var hd=document.createElement('div');hd.className='gk-mh';hd.innerHTML='<span>'+prog.done+' / '+NLV+'</span>';var x=document.createElement('button');x.className='gk-b';x.textContent='×';x.onclick=function(){m.remove()};hd.appendChild(x);sh.appendChild(hd);
+  var g=document.createElement('div');g.className='lvls';for(var n=1;n<=NLV;n++)(function(n){var b=document.createElement('button'),s=prog.stars[n]||0;b.className='lv'+(n>prog.done+1?' lock':'')+(n===lvN&&MODE==='garden'?' cur':'');b.innerHTML=n+'<i>'+[0,1,2].map(function(k){return'<s class="'+(k<s?'on':'')+'"></s>'}).join('')+'</i>';b.onclick=function(){m.remove();if(tut.active)tut.end();if(MODE!=='garden'){MODE='garden';GK.ls.set('mode','garden');paint()}load(n)};g.appendChild(b)})(n);
+  sh.appendChild(g);m.appendChild(sh);m.onpointerdown=function(e){if(e.target===m)m.remove()};document.body.appendChild(m)}
+/* ============ bar ============ */
+var R=GK.controls(document.getElementById('bar'),{bar:'left',onHelp:function(){tut.start()},extra:[
+  {id:'rs',html:GK.icon('restart'),title:'Restart (R)',fn:restart},
+  {id:'lv',html:GK.icoSvg('flag'),title:'Gardens',fn:openLevels},
+  {id:'m_garden',cls:'md',html:GK.icoSvg('flower'),title:'Levels',fn:function(){setMode('garden')}},
+  {id:'m_endless',cls:'md',html:GK.icoSvg('infinity'),title:'Endless',fn:function(){setMode('endless')}},
+  {id:'m_daily',cls:'md',html:GK.icoSvg('sun'),title:'Daily',fn:function(){setMode('daily')}}]});
+function setMode(m){if(tut.active)return;MODE=m;GK.ls.set('mode',m);paint();if(m==='endless')eseed=(Math.random()*1e6)|0;load(m==='garden'?Math.min(NLV,Math.max(1,prog.done+1)):1)}
+function paint(){['garden','endless','daily'].forEach(function(k){R['m_'+k].classList.toggle('on',MODE===k)})}paint();
+GK.goals.setup({metrics:function(){return ST},defs:{cleared:{ic:'flag',t:[1,5,10,20,35,50]},stars:{ic:'flower',t:[3,15,45,90,150]},turns:{ic:'restart',t:[100,1000,5000]},par:{ic:'target',t:[1,10,25,50]},roses:{ic:'heart',t:[10,100,500,2000]},big:{ic:'tree',t:[1,10,30]},endless:{ic:'infinity',t:[3,10,25]},daily:{ic:'sun',t:[1,3,7,14,30]}}});
+GK.goals.mount(R);
+addEventListener('resize',fit);addEventListener('orientationchange',fit);
+eseed=(Math.random()*1e6)|0;load(MODE==='garden'?Math.min(NLV,Math.max(1,prog.done+1)):1);GK.loop(step,render);tut.maybe();
+window.__g={st:ST,setMode:setMode,load:load,gen:gen,tut:tut,stats:function(){return{MODE:MODE,lv:lvN,tut:inTut,size:L.w+'x'+L.h,par:L.par,turns:turns,won:won,lit:lit.n,done:prog.done}}};
+</script>
+</body>
+</html>

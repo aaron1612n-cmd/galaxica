@@ -138,5 +138,12 @@
     "blurb": "Strap a snail to a rocket and hold to boost. Bounce off mushrooms and balloons, grab lettuce, and upgrade in the garden shed.",
     "added": "2026-10-15",
     "thumb": "games/snail-rocket/thumb.jpg"
+  },
+  {
+    "id": "hedgerow",
+    "title": "Hedgerow",
+    "blurb": "Turn the hedge tiles until every gravel path in the garden joins the gate. Then watch the hedgehog walk the whole maze.",
+    "added": "2026-10-15",
+    "thumb": "games/hedgerow/thumb.jpg"
   }
 ]
