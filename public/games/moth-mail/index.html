@@ -35,7 +35,7 @@ var PORT=innerHeight>innerWidth*1.15,W=PORT?420:720,H=PORT?740:560,GROUND=H-48;
 var SKY='#0c1a22',L1='#12303a',L2='#0e2630',L3='#081820',WIN='#ffc24b',CREAM='#efe5c9',BONE='#d8cdb0',DIM='#8f8870';
 /* ============ state ============ */
 var best=GK.ls.get('best',{nights:0,letters:0});
-var G=null,mode='title',tx=200,ty=H/2,dashT=0,ptrDown=false,tick=0,cx=0;
+var rel=null,G=null,mode='title',tx=200,ty=H/2,dashT=0,ptrDown=false,tick=0,cx=0;
 var UPG=GK.ls.get('upg0',null);
 function newRun(){G={night:0,moths:[],letters:0,carry:0,cap:2,delivered:0,total:0,upg:{swarm:0,magnet:0,sack:0,repel:0,tight:0,slow:0,dash:0,lamp:0,shield:0,umbrella:0,honey:0},objs:[],bats:[],owls:[],sparks:[],fx:[],t:0,nightT:0,quota:3,spawnX:900,seed:1,dead:false,pick:null,pickT:0,tut:false};cx=0;applyMeta();META.runs++;startNight(true)}
 function startNight(first){G.night++;G.nightT=0;G.delivered=0;G.quota=Math.min(9,2+Math.floor(G.night*.7));G.objs=[];G.bats=[];G.owls=[];cx=0;G.spawnX=900;G.carry=0;G.seed=G.night*911+3;G.rn=GK.rng(G.seed);G.pick=null;
@@ -57,8 +57,8 @@ function spawnBat(){var y=Math.random()*(GROUND-60)+30;G.bats.push({x:W+30,y:y,v
 function spawnOwl(w,x){x=x==null?300+Math.random()*(W-380):x;G.owls.push({x:x,y:-60,state:0,t:0,w:w||44,big:!!w})}
 /* ============ input ============ */
 GK.pointer(cv,{hover:true,
-  down:function(x,y,e){if(mode==='pick'){clickPick(x,y);return}if(mode==='title'||mode==='over'){if(mode==='over'&&G.pickT<30)return;begin();return}ptrDown=true;tx=x;ty=y;if(G&&dashT<=0&&!Auto.on)dash()},
-  move:function(x,y,e,dn){tx=x;ty=y},up:function(){ptrDown=false},
+  down:function(x,y,e){if(mode==='pick'){clickPick(x,y);return}if(mode==='title'||mode==='over'){if(mode==='over'&&G.pickT<30)return;begin();return}ptrDown=true;if(e.pointerType!=='mouse'){rel={x:x,y:y,tx:tx,ty:ty}}else{tx=x;ty=y}if(G&&dashT<=0&&!Auto.on)dash()},
+  move:function(x,y,e,dn){if(rel&&dn){tx=GK.clamp(rel.tx+(x-rel.x)*1.4,0,W);ty=GK.clamp(rel.ty+(y-rel.y)*1.4,0,H);if(tx===0||tx===W){rel.tx=tx-(x-rel.x)*1.4}if(ty===0||ty===H){rel.ty=ty-(y-rel.y)*1.4}}else if(!rel){tx=x;ty=y}},up:function(){ptrDown=false;rel=null},
   key:function(c,d){if(!d)return;if(c==='Space'){if(mode==='title'||mode==='over')begin();else if(mode==='play'&&dashT<=0)dash()}}});
 function dash(){dashT=G.upg.dash>0?70:100;G.dashOn=18;GK.audio.noise(.15,.06,0,1500)}
 function begin(){if(tut.active)return;newRun();mode='play'}

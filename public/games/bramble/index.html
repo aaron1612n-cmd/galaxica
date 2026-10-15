@@ -51,7 +51,7 @@ function area(P){var s=0;for(var i=0,j=P.length-1;i<P.length;j=i++)s+=(P[j][0]+P
 function step(){T++;GK.goals.tick();if(mode!=='play')return;if(G.over){G.deadT++;if(Auto.on&&G.deadT>100)newGame();return}G.t++;
   if(MODE==='daily'&&!G.tut){G.timer--;if(G.timer<=0){end();return}}
   /* steer: keys, a finger, or the bot */ var turn=0,K=GK.keys;if(K.ArrowLeft||K.KeyA)turn=-1;if(K.ArrowRight||K.KeyD)turn=1;
-  if(Auto.on&&!G.tut)turn=bot();else if(ptr){var da=Math.atan2(ptr.y-G.hy,ptr.x-G.hx)-G.ang;da=Math.atan2(Math.sin(da),Math.cos(da));turn=GK.clamp(da*3,-1,1)}
+  if(Auto.on&&!G.tut)turn=bot();else if(stick.on){var sv=stick.vec();if(sv.m>.25){var dh=Math.atan2(sv.y,sv.x)-G.ang;dh=Math.atan2(Math.sin(dh),Math.cos(dh));turn=GK.clamp(dh*3,-1,1)}}else if(ptr){var da=Math.atan2(ptr.y-G.hy,ptr.x-G.hx)-G.ang;da=Math.atan2(Math.sin(da),Math.cos(da));turn=GK.clamp(da*3,-1,1)}
   var sp=G.speed;G.ang+=turn*.06*sp/1.6;var nx=G.hx+Math.cos(G.ang)*sp,ny=G.hy+Math.sin(G.ang)*sp;
   /* walls + rocks kill */ if(nx<M||nx>W-M||ny<TOP+M||ny>H-M||rocks.some(function(o){return Math.hypot(o.x-nx,o.y-ny)<o.r+3})){die();return}
   /* self-crossing closes a loop and harvests what it encloses */ var P=G.pts,n=P.length;for(var i=0;i<n-6;i++){var hit=segX(G.hx,G.hy,nx,ny,P[i][0],P[i][1],P[i+1][0],P[i+1][1]);if(hit){loop(i+1,hit);break}}
@@ -82,7 +82,7 @@ function bot(){if(--bt.t<=0||!bt.tgt||items.indexOf(bt.tgt)<0){var best=null,bs=
       for(var q=0;q<shears.length;q++){var s=shears[q],sx=s.x+s.vx*k,sy=s.y+s.vy*k;if(Math.hypot(sx-x,sy-y)<22){ok=false;break}}if(!ok)break}
     var da=want-(G.ang+o*tr*6);da=Math.atan2(Math.sin(da),Math.cos(da));var sc=(ok?0:-1000)-Math.abs(da);if(sc>bs2){bs2=sc;best2=o}});return best2}
 /* ============ input ============ */
-GK.pointer(cv,{down:function(x,y){if(mode==='title'||G&&G.over){if(!G||G.deadT>40||mode==='title')newGame();return}ptr={x:x,y:y}},move:function(x,y,e,dn){if(dn)ptr={x:x,y:y}},up:function(){ptr=null},key:function(c,d){if(d&&(c==='Space'||c==='Enter')&&(mode==='title'||G&&G.over&&G.deadT>40))newGame()}});
+var stick=GK.stick(46);GK.pointer(cv,{down:function(x,y,e){if(mode==='title'||G&&G.over){if(!G||G.deadT>40||mode==='title')newGame();return}if(e.pointerType!=='mouse'){stick.down(x,y);return}ptr={x:x,y:y}},move:function(x,y,e,dn){if(stick.on){stick.move(x,y);return}if(dn)ptr={x:x,y:y}},up:function(){if(stick.on){stick.up();return}ptr=null},key:function(c,d){if(d&&(c==='Space'||c==='Enter')&&(mode==='title'||G&&G.over&&G.deadT>40))newGame()}});
 /* ============ drawing: Art Nouveau ============ */
 var frame=document.createElement('canvas');frame.width=W;frame.height=H;(function(){var x=frame.getContext('2d'),r=GK.rng(9);x.fillStyle=CREAM;x.fillRect(0,0,W,H);for(var i=0;i<4000;i++){x.fillStyle='rgba(122,59,29,'+(r()*.05)+')';x.fillRect(r()*W,r()*H,1,1)}
   x.strokeStyle=SIEN;x.lineWidth=3;x.strokeRect(M-8,TOP+M-8,W-2*M+16,H-TOP-2*M+16);x.lineWidth=1.2;x.strokeRect(M-3,TOP+M-3,W-2*M+6,H-TOP-2*M+6);
@@ -92,7 +92,7 @@ function render(){var v=GK.view,so=GK.fx.offset();ctx.setTransform(v.dpr*v.s,0,0
   if(!G){drawCard(BEST[MODE]||0);if(tut.active)tutDraw();return}
   rocks.forEach(function(o,i){ctx.fillStyle='#b8a17a';ctx.strokeStyle=SIEN;ctx.lineWidth=2;ctx.beginPath();for(var k=0;k<10;k++){var a=k/10*6.283,r=o.r*(.85+.15*Math.sin(i*5+k*1.9));ctx.lineTo(o.x+Math.cos(a)*r,o.y+Math.sin(a)*r)}ctx.closePath();ctx.fill();ctx.stroke()});
   G.wither.forEach(function(w){var a=1-w.t/40;if(w.fill){ctx.fillStyle='rgba(107,45,92,'+(.18*a)+')';ctx.beginPath();w.pts.forEach(function(p,i){i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1])});ctx.closePath();ctx.fill()}ctx.strokeStyle='rgba(122,59,29,'+(.5*a)+')';ctx.lineWidth=3;ctx.beginPath();w.pts.forEach(function(p,i){i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1])});ctx.stroke()});
-  items.forEach(drawItem);drawVine();shears.forEach(drawShear);GK.fx.draw(ctx);drawHud();if(G.over)drawCard(G.score);if(tut.active)tutDraw()}
+  items.forEach(drawItem);drawVine();shears.forEach(drawShear);GK.fx.draw(ctx);stick.draw(ctx,BERRY);drawHud();if(G.over)drawCard(G.score);if(tut.active)tutDraw()}
 function drawItem(it){var x=it.x,y=it.y+Math.sin(T*.04+it.ph)*1.2,g=Math.min(1,it.t/30);ctx.save();ctx.translate(x,y);ctx.scale(g,g);ctx.strokeStyle=SIEN;ctx.lineWidth=1.6;
   if(it.k==='flower'){for(var k=0;k<8;k++){ctx.save();ctx.rotate(k/8*6.283+T*.003);ctx.fillStyle=PALE;ctx.beginPath();ctx.ellipse(0,-8,3.6,7,0,0,6.3);ctx.fill();ctx.stroke();ctx.restore()}ctx.fillStyle='#d9a43a';ctx.beginPath();ctx.arc(0,0,4.5,0,6.3);ctx.fill();ctx.stroke()}
   else if(it.k==='dew'){ctx.fillStyle='#c7d6cf';ctx.beginPath();ctx.moveTo(0,-9);ctx.quadraticCurveTo(7,2,0,7);ctx.quadraticCurveTo(-7,2,0,-9);ctx.fill();ctx.stroke()}

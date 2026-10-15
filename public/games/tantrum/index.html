@@ -41,7 +41,7 @@ function rnd(){return G&&G.rn?G.rn():Math.random()}
 var TOYS={heart:{ic:'heart'},hug:{ic:'bomb'},crayon:{ic:'up'},magnet:{ic:'target'},sticker:{ic:'shield'},lullaby:{ic:'moon'},glitter:{ic:'star'},rattle:{ic:'bolt'},tiny:{ic:'eye'}};
 var TOYPRI=['sticker','heart','tiny','lullaby','hug','crayon','rattle','glitter','magnet'];
 /* ============ state ============ */
-var G=null,mode='title',T=0,px=W/2,py=H-120,tgtX=W/2,tgtY=H-120,focus=false,touchMode=false,boil=0;
+var rel=null,G=null,mode='title',T=0,px=W/2,py=H-120,tgtX=W/2,tgtY=H-120,focus=false,touchMode=false,boil=0;
 var BUL=[],SHOT=[],PICK=[],SPARK=[];
 function newRun(){var seed=MODE==='daily'?GK.daily.seed():(Math.random()*1e9|0);G={rn:MODE==='daily'?GK.rng(seed):null,toy:{},combo:0,comboT:0,maxCombo:0,stageHit:0,order:[0,1,2,3,4],stage:0,round:0,lives:3,bombs:2,power:1,score:0,hp:0,maxhp:0,t:0,phase:0,inv:0,bossX:W/2,bossY:140,bossT:0,mood:0,pause:0,won:0,dead:0,graze:0,shootT:0,spiral:0,hit:0,tut:false,deadT:0,pickT:0,clearT:0};BUL.length=0;SHOT.length=0;PICK.length=0;SPARK.length=0;GK.fx.clear();
   if(MODE==='daily'){for(var i=4;i>0;i--){var j=Math.floor(G.rn()*(i+1)),t=G.order[i];G.order[i]=G.order[j];G.order[j]=t}}
@@ -51,9 +51,9 @@ function mood(){return G.order[G.stage%5]}
 function startStage(){G.stageHit=0;G.shieldUp=G.toy.sticker||0;var s=mood(),r=Math.floor(G.stage/5);G.round=r;G.maxhp=90+s*26+r*40+(MODE==='rush'?30:0);G.hp=G.maxhp;G.phase=0;G.t=0;G.pause=90;G.won=0;G.spiral=0;G.pickT=0;BUL.length=0}
 /* ============ input ============ */
 GK.pointer(cv,{hover:true,
-  down:function(x,y,e){touchMode=e.pointerType==='touch'||e.pointerType==='pen';if(mode==='pick'){clickPick(x,y);return}if(mode==='title'||mode==='over'){if(mode==='over'&&G.deadT<45)return;if(!tut.active)newRun();return}tgtX=x;tgtY=touchMode?y-70:y},
-  move:function(x,y,e,dn){if(e.pointerType==='touch'&&!dn)return;touchMode=e.pointerType==='touch';tgtX=x;tgtY=touchMode?y-70:y},
-  up:function(){},
+  down:function(x,y,e){touchMode=e.pointerType==='touch'||e.pointerType==='pen';if(mode==='pick'){clickPick(x,y);return}if(mode==='title'||mode==='over'){if(mode==='over'&&G.deadT<45)return;if(!tut.active)newRun();return}if(touchMode){rel={x:x,y:y,px:px,py:py};tgtX=px;tgtY=py}else{tgtX=x;tgtY=y}},
+  move:function(x,y,e,dn){if(e.pointerType==='touch'&&!dn)return;touchMode=e.pointerType==='touch';if(rel){tgtX=GK.clamp(rel.px+(x-rel.x)*1.35,14,W-14);tgtY=GK.clamp(rel.py+(y-rel.y)*1.35,60,H-14);rel.px=tgtX-(x-rel.x)*1.35;rel.py=tgtY-(y-rel.y)*1.35}else{tgtX=x;tgtY=y}},
+  up:function(){rel=null},
   key:function(c,d){if(!d)return;if(mode==='pick'){var n=c==='Digit1'?0:c==='Digit2'?1:c==='Digit3'?2:-1;if(c==='ArrowLeft'||c==='KeyA')G.sel=(G.sel+G.pick.length-1)%G.pick.length;if(c==='ArrowRight'||c==='KeyD')G.sel=(G.sel+1)%G.pick.length;if(c==='Space'||c==='Enter')n=G.sel;if(n>=0&&G.pick[n]&&G.pickT>25)choose(G.pick[n]);return}if(c==='Space'||c==='KeyB'){if(mode==='play')bomb();else if((mode==='title'||mode==='over')&&!tut.active)newRun()}}});
 var KEYS=GK.keys;
 function bomb(){if(!G||G.bombs<=0||G.dead||G.pause>60)return;G.bombs--;ST.hugs++;G.inv=Math.max(G.inv,110);clearBullets(true);GK.fx.shake(6,14);GK.fx.burst(px,py,30,{col:RED,speed:6,life:30,shape:'ci',size:4});GK.audio.noise(.6,.2);GK.audio.tone(110,.5,'sine',.1,.5);G.hp-=G.maxhp*.025;G.clearT=40}

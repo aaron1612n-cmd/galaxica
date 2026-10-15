@@ -163,8 +163,9 @@ cv.addEventListener('pointerdown',function(e){ac();cv.setPointerCapture(e.pointe
   if(paused){paused=false;return}
   if(s.state==='menu'){menuTap(p);return}
   if(s.state==='over'){if(s.overT>40)toMenu();return}
-  touch=p;var n=performance.now();if(n-lastTap<280)doDash();lastTap=n});
-cv.addEventListener('pointermove',function(e){if(touch)touch=pt(e)});
+  /* touch steers relatively: the ship copies the thumb's movement from wherever the thumb lands */ p.rel=e.pointerType!=='mouse';p.sx=p.x;p.sy=p.y;p.ox=s.x;p.oy=s.y;touch=p;var n=performance.now();if(n-lastTap<280)doDash();lastTap=n});
+cv.addEventListener('pointermove',function(e){if(touch){var q=pt(e);touch.x=q.x;touch.y=q.y}});
+/* the empty part of the pad row under the screen works as a trackpad too */ (function(){var pad=document.getElementById('pad');if(!pad)return;pad.addEventListener('pointerdown',function(e){if(e.target!==pad||s.state!=='play'||paused)return;ac();try{pad.setPointerCapture(e.pointerId)}catch(_){}var p=pt(e);p.rel=true;p.sx=p.x;p.sy=p.y;p.ox=s.x;p.oy=s.y;touch=p});pad.addEventListener('pointermove',function(e){if(touch&&touch.rel){var q=pt(e);touch.x=q.x;touch.y=q.y}});['pointerup','pointercancel'].forEach(function(n){pad.addEventListener(n,function(){touch=null})});pad.style.touchAction='none'})();
 ['pointerup','pointercancel'].forEach(function(n){cv.addEventListener(n,function(){touch=null})});
 var fire=document.getElementById('fire'),bombB=document.getElementById('bomb');
 fire.addEventListener('pointerdown',function(e){e.preventDefault();ac();keys.Fire=true;fireEdge=true;fire.classList.add('on')});
@@ -311,7 +312,7 @@ function play(){
   var ox=s.x,oy=s.y;
   if(ax||ay){var m=Math.hypot(ax,ay);if(m>1){ax/=m;ay/=m}s.x+=ax*sh.spd;s.y+=ay*sh.spd;s.mvx=ax;s.mvy=ay;if(ax)s.ldx=ax>0?1:-1}
   else if(!touch){s.mvx=s.ldx;s.mvy=0}
-  if(touch&&!BOT){var dx=touch.x-s.x,dy=touch.y-touch.off-s.y,d=Math.hypot(dx,dy);if(d>2){var sp=Math.min(d*.35,sh.spd*2.4);s.x+=dx/d*sp;s.y+=dy/d*sp;s.mvx=dx/d;s.mvy=dy/d}}
+  if(touch&&!BOT){var tx=touch.rel?touch.ox+(touch.x-touch.sx)*1.35:touch.x,ty=touch.rel?touch.oy+(touch.y-touch.sy)*1.35:touch.y;if(touch.rel){tx=Math.max(8,Math.min(W-8,tx));ty=Math.max(20,Math.min(H-12,ty));if(tx!==touch.ox+(touch.x-touch.sx)*1.35){touch.ox=tx-(touch.x-touch.sx)*1.35}if(ty!==touch.oy+(touch.y-touch.sy)*1.35){touch.oy=ty-(touch.y-touch.sy)*1.35}}var dx=tx-s.x,dy=ty-s.y,d=Math.hypot(dx,dy);if(d>1){var sp=Math.min(d*.6,sh.spd*3.2);s.x+=dx/d*sp;s.y+=dy/d*sp;s.mvx=dx/d;s.mvy=dy/d}}
   if(s.dash>0){s.dash--;s.x+=s.dvx;s.y+=s.dvy}
   s.x=Math.max(18,Math.min(W-18,s.x));s.y=Math.max(330,Math.min(H-28,s.y));
   if(tut)tut.moved+=Math.hypot(s.x-ox,s.y-oy);

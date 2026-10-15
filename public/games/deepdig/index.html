@@ -24,6 +24,11 @@ canvas#c{touch-action:none}
 .gk-b{background:#f6efdc;border:1px solid #2b2219;clip-path:polygon(7px 0,calc(100% - 7px) 0,100% 7px,100% calc(100% - 7px),calc(100% - 7px) 100%,7px 100%,0 calc(100% - 7px),0 7px);font:15px "IM Fell English SC",serif;padding:0 12px}
 .gk-b.on,.gk-b.md.on,.gk-b.gk-auto:not(.ghost){background:#c8432a;color:#f6efdc;border-color:#c8432a}
 .gk-names .gk-b[data-cap]{padding:4px 10px}
+#pad{display:flex;gap:8px;justify-content:center;padding:6px 10px 2px;flex:none}
+#pad button{flex:1;max-width:96px;height:64px;background:#f6efdc;border:1px solid #2b2219;color:#2b2219;clip-path:polygon(9px 0,calc(100% - 9px) 0,100% 9px,100% calc(100% - 9px),calc(100% - 9px) 100%,9px 100%,0 calc(100% - 9px),0 9px);display:flex;align-items:center;justify-content:center;touch-action:none}
+#pad button svg{width:30px;height:30px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+#pad button.dn{background:#c8432a;color:#f6efdc}
+html:not([data-device=mobile]) #pad{display:none}
 .shop{display:flex;flex-direction:column;gap:8px}
 .srow{display:grid;grid-template-columns:40px 1fr auto;gap:10px;align-items:center;border-bottom:1px solid rgba(43,34,25,.25);padding:4px 0}
 .srow svg{width:30px;height:30px}
@@ -33,7 +38,7 @@ canvas#c{touch-action:none}
 </style>
 </head>
 <body>
-<div id="app"><div id="stage"><canvas id="c"></canvas></div><div id="bar"></div></div>
+<div id="app"><div id="stage"><canvas id="c"></canvas></div><div id="pad"><button data-d="2" aria-label="Left"><svg viewBox="0 0 22 22"><path d="M14 4L7 11l7 7"/></svg></button><button data-d="3" aria-label="Up"><svg viewBox="0 0 22 22"><path d="M4 14l7-7 7 7"/></svg></button><button data-d="1" aria-label="Down"><svg viewBox="0 0 22 22"><path d="M4 8l7 7 7-7"/></svg></button><button data-d="0" aria-label="Right"><svg viewBox="0 0 22 22"><path d="M8 4l7 7-7 7"/></svg></button></div><div id="bar"></div></div>
 <script>
 GK.id('deepdig');
 var cv=document.getElementById('c'),ctx=cv.getContext('2d'),stage=document.getElementById('stage');
@@ -60,6 +65,7 @@ function gen(sd){var rn=GK.rng(sd);M=new Uint8Array(GW*GH);O=new Uint8Array(GW*G
   for(var x3=0;x3<GW;x3++)M[SR*GW+x3]=1;M[SR*GW+7]=1}
 function mat(x,y){if(x<0||x>=GW||y<0)return 7;if(y>=GH)return 7;return M[y*GW+x]}
 var HUT={sell:1,fuel:4,shop:13};
+function canEnter(m){return m===0||m===8||m===1||m===2||m===3||m===4||(m===5&&lv('drill')>=2)||(m===6&&lv('drill')>=4)}
 function lv(k){return D.up[k]||0}
 function tank(){return 100+lv('tank')*70+lv('tank')*lv('tank')*15}function hullMax(){return 100+lv('hull')*60}function cap(){return 8+lv('cargo')*5+lv('cargo')*lv('cargo')}
 function newRun(){seed=MODE==='daily'?GK.daily.seed()*13+7:(Math.random()*1e9)|0;gen(seed);
@@ -110,17 +116,19 @@ function endTimed(){var sc=D.earned;if(MODE==='dash')ST.dash=Math.max(ST.dash,sc
 var hold=null;
 GK.pointer(cv,{down:function(x,y){if(D.dead){if(D.deadT>40)revive();return}hold={x:x,y:y}},move:function(x,y,e,dn){if(dn)hold={x:x,y:y}},up:function(){hold=null}});
 function pdir(){if(!hold)return-1;var px=(D.x+.5)*TS,py=(D.y-cam+.5)*TS+HUD,dx=hold.x-px,dy=hold.y-py;if(Math.hypot(dx,dy)<TS*.45)return-1;return Math.abs(dx)>Math.abs(dy)?(dx>0?0:2):(dy>0?1:3)}
-function kdir(){var K=GK.keys;if(K.ArrowRight||K.KeyD)return 0;if(K.ArrowDown||K.KeyS)return 1;if(K.ArrowLeft||K.KeyA)return 2;if(K.ArrowUp||K.KeyW||K.Space)return 3;return-1}
+var padD=-1;[].forEach.call(document.querySelectorAll('#pad button'),function(b){var d=+b.dataset.d;b.addEventListener('pointerdown',function(e){e.preventDefault();GK.audio.ac();if(D&&D.dead){if(D.deadT>40)revive();return}padD=d;b.classList.add('dn');try{b.setPointerCapture(e.pointerId)}catch(_){}});['pointerup','pointercancel','lostpointercapture'].forEach(function(n){b.addEventListener(n,function(){if(padD===d)padD=-1;b.classList.remove('dn')})})});
+function kdir(){if(padD>=0)return padD;var K=GK.keys;if(K.ArrowRight||K.KeyD)return 0;if(K.ArrowDown||K.KeyS)return 1;if(K.ArrowLeft||K.KeyA)return 2;if(K.ArrowUp||K.KeyW||K.Space)return 3;return-1}
 function revive(){if(D.over||MODE!=='career'){newRun();return}D.dead=0;D.x=7;D.y=SR-1;D.act=null;D.fall=0;D.fuel=Math.max(D.fuel,tank()*.3);D.hull=Math.max(D.hull,hullMax()*.5);D.atHut=''}
 /* ============ AUTO: a prospector with a budget ============ */
 var bot={plan:null,t:0};
-function botDir(){if(D.dead||D.act)return-1;if(mat(D.x,D.y+1)===0&&D.fall>=8&&D.fuel>5)return 3;var depth=D.y-SR+1,need=depth*(.62/(1+lv('engine')*.25)+.14)+6;
+function botDir(){if(D.dead||D.act)return-1;
+  /* watchdog: parked in one cell for 5s of game time -> drop the plan and try another way */ var wk=D.x+','+D.y;if(wk===bot.wk)bot.wt++;else{bot.wk=wk;bot.wt=0}if(bot.wt>300){bot.wt=0;bot.plan=null;bot.hd=-(bot.hd||1);var ds=[0,1,2,3].filter(function(d){var nx=D.x+[1,0,-1,0][d],ny=D.y+[0,1,0,-1][d];return nx>=0&&nx<GW&&ny>=SR-1&&canEnter(mat(nx,ny))&&mat(nx,ny)!==8});if(ds.length)return ds[(Math.random()*ds.length)|0]}if(mat(D.x,D.y+1)===0&&D.fall>=8&&D.fuel>5&&D.y-1>=SR-1&&canEnter(mat(D.x,D.y-1)))return 3;var depth=D.y-SR+1,need=depth*(.62/(1+lv('engine')*.25)+.14)+6;
   var home=D.cargo.length>=cap()||D.fuel<need*1.15||D.hull<hullMax()*.3||(MODE!=='career'&&D.timer<depth*14+200&&D.cargo.length>0);
   if(D.y===SR-1){/* surface errands */ if(D.won&&!D.cargo.length&&MODE==='career'){newRun();return-1}if(D.cargo.length&&D.x!==HUT.sell)return D.x<HUT.sell?0:2;
     if((D.fuel<tank()*.8&&(D.money>4||D.fuel<tank()*.45)||D.hull<hullMax()*.8&&(D.money>4||D.hull<hullMax()*.45))&&D.x!==HUT.fuel&&D.atHut!=='fuel')return D.x<HUT.fuel?0:2;
     var want=['cargo','drill','tank','engine','hull'].filter(function(k){return cost(k)&&D.money>=cost(k)+tank()/5+hullMax()/4+30});if(want.length&&MODE==='career'){if(D.x!==HUT.shop)return D.x<HUT.shop?0:2;buy(want[0]);return-1}
     var sx=bot.shaft==null?7:bot.shaft;if(D.x!==sx)return D.x<sx?0:2;return 1}
-  if(home){var up=mat(D.x,D.y-1);if(up===0||up===8||up===1||up===2||up===3||up===4)return 3;for(var k=1;k<4;k++){if(mat(D.x+k,D.y-1)===0&&mat(D.x+k,D.y)===0)return 0;if(mat(D.x-k,D.y-1)===0&&mat(D.x-k,D.y)===0)return 2}return mat(D.x+1,D.y)!==7?0:2}
+  if(home){var up=mat(D.x,D.y-1);if(up!==8&&canEnter(up))return 3;for(var k=1;k<4;k++){if(mat(D.x+k,D.y-1)===0&&mat(D.x+k,D.y)===0)return 0;if(mat(D.x-k,D.y-1)===0&&mat(D.x-k,D.y)===0)return 2}return mat(D.x+1,D.y)!==7?0:2}
   /* hunt ores nearby with a small Dijkstra */ if(--bot.t<=0||!bot.plan||!bot.plan.length){bot.plan=hunt();bot.t=40}
   if(bot.plan&&bot.plan.length){return bot.plan.shift()}
   var b=mat(D.x,D.y+1),deepOk=D.fuel>need*1.15+40;
@@ -138,7 +146,8 @@ function step(){T++;GK.goals.tick();if(mode!=='play')return;if(D.bumpT>0)D.bumpT
   if(D.act){D.act.t++;if(D.act.t>=D.act.n)finish()}
   else{var below=mat(D.x,D.y+1),dIn=Auto.on&&!D.tut?botDir():(pdir()>=0?pdir():kdir());
     var side=(dIn===0||dIn===2)?mat(D.x+(dIn===0?1:-1),D.y):-1,canSide=D.fuel>0&&(side===0||side===1||side===2||side===3||side===4||(side===5&&lv('drill')>=2)||(side===6&&lv('drill')>=4));
-    if((below===0||below===8)&&D.y<GH-1&&!(dIn===3&&D.fuel>0)&&!canSide){D.act={k:'fall',dx:0,dy:1,t:0,n:4}}
+    var canUp=dIn===3&&D.fuel>0&&D.y-1>=SR-1&&canEnter(mat(D.x,D.y-1));
+    if((below===0||below===8)&&D.y<GH-1&&!canUp&&!canSide){D.act={k:'fall',dx:0,dy:1,t:0,n:4}}
     else if(dIn>=0)tryDir(dIn)}
   if(D.fuel<=0&&!D.act&&D.y>SR-1&&!D.dead){D.fuel=0;strand()}
   D.fuel=Math.max(0,D.fuel-.004);

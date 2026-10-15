@@ -82,6 +82,13 @@ GK.ico={
  bone:'<path d="M5 8a2 2 0 1 1 2-3l9 9a2 2 0 1 1 3 2 2 2 0 1 1-3 2L7 8z"/>',
  candle:'<path d="M9 8h4v11H9zM11 3c1 2 2 3 0 5-2-2-1-3 0-5z"/>',
  cube:'<rect x="4" y="4" width="14" height="14"/><path d="M4 9h14M9 4v14"/>'};
+/* floating thumbstick for touch: GK.stick() -> {down(x,y),move(x,y),up(),vec(),draw(ctx,col)}; appears where the thumb lands */
+GK.stick=function(R){R=R||46;var S={on:false,ox:0,oy:0,x:0,y:0,t0:0,moved:0,
+  down:function(x,y){S.on=true;S.ox=S.x=x;S.oy=S.y=y;S.t0=performance.now();S.moved=0},
+  move:function(x,y){if(!S.on)return;S.x=x;S.y=y;S.moved=Math.max(S.moved,Math.hypot(x-S.ox,y-S.oy))},
+  up:function(){var tap=S.on&&S.moved<10&&performance.now()-S.t0<260;S.on=false;return tap},
+  vec:function(){if(!S.on)return{x:0,y:0,m:0};var dx=S.x-S.ox,dy=S.y-S.oy,d=Math.hypot(dx,dy),m=Math.min(1,d/R);return d<4?{x:0,y:0,m:0}:{x:dx/d*m,y:dy/d*m,m:m}},
+  draw:function(ctx,col){if(!S.on)return;var v=S.vec();ctx.save();ctx.globalAlpha=.35;ctx.strokeStyle=col;ctx.lineWidth=3;ctx.beginPath();ctx.arc(S.ox,S.oy,R,0,6.2832);ctx.stroke();ctx.globalAlpha=.55;ctx.fillStyle=col;ctx.beginPath();ctx.arc(S.ox+v.x*R,S.oy+v.y*R,R*.38,0,6.2832);ctx.fill();ctx.restore()}};return S};
 /* draw a pictogram on a canvas: GK.icoDraw(ctx,name,cx,cy,size,col,lineWidth) */
 var IC2={};function icoParts(n){if(IC2[n])return IC2[n];var src=GK.ico[n]||GK.ico.star,out=[],re=/<(path|circle|ellipse|rect)([^>]*)\/>/g,m;
   while((m=re.exec(src))){var a={},r2=/([\w-]+)="([^"]*)"/g,q;while((q=r2.exec(m[2])))a[q[1]]=q[2];var P=new Path2D();
