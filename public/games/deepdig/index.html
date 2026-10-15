@@ -123,8 +123,9 @@ function botDir(){if(D.dead||D.act)return-1;if(mat(D.x,D.y+1)===0&&D.fall>=8&&D.
   if(home){var up=mat(D.x,D.y-1);if(up===0||up===8||up===1||up===2||up===3||up===4)return 3;for(var k=1;k<4;k++){if(mat(D.x+k,D.y-1)===0&&mat(D.x+k,D.y)===0)return 0;if(mat(D.x-k,D.y-1)===0&&mat(D.x-k,D.y)===0)return 2}return mat(D.x+1,D.y)!==7?0:2}
   /* hunt ores nearby with a small Dijkstra */ if(--bot.t<=0||!bot.plan||!bot.plan.length){bot.plan=hunt();bot.t=40}
   if(bot.plan&&bot.plan.length){return bot.plan.shift()}
-  var b=mat(D.x,D.y+1);if(b===8||b===7||(b===5&&lv('drill')<2)||(b===6&&lv('drill')<4)){return mat(D.x+1,D.y)!==7&&D.x<GW-1?0:2}return 1}
-function hunt(){var R=7,best=null,dist={},prev={},q=[[0,D.x,D.y]],key=function(x,y){return x+','+y};dist[key(D.x,D.y)]=0;
+  var b=mat(D.x,D.y+1),deepOk=D.fuel>need*1.15+40;
+  if(!deepOk||b===8||b===7||(b===5&&lv('drill')<2)||(b===6&&lv('drill')<4)){bot.hd=bot.hd||1;var nx=D.x+bot.hd,sm=mat(nx,D.y);if(nx<0||nx>=GW||sm===7||sm===8||(sm===5&&lv('drill')<2)||(sm===6&&lv('drill')<4)){bot.hd=-bot.hd;if(b!==8&&b!==7&&deepOk)return 1}return bot.hd>0?0:2}return 1}
+function hunt(){var R=9,best=null,dist={},prev={},q=[[0,D.x,D.y]],key=function(x,y){return x+','+y};dist[key(D.x,D.y)]=0;
   while(q.length){q.sort(function(a,b){return a[0]-b[0]});var c=q.shift(),cx=c[1],cy=c[2],cd=c[0];if(cd>dist[key(cx,cy)])continue;
     if(O[cy*GW+cx]&&O[cy*GW+cx]!==10&&!(cx===D.x&&cy===D.y)){var val=ORE[O[cy*GW+cx]].v/(cd+2);if(!best||val>best.v)best={v:val,x:cx,y:cy}}
     if(cd>60)continue;for(var d=0;d<4;d++){var nx=cx+[1,0,-1,0][d],ny=cy+[0,1,0,-1][d];if(Math.abs(nx-D.x)>R||Math.abs(ny-D.y)>R||ny<SR)continue;var m=mat(nx,ny);if(m===7||m===8||(m===5&&lv('drill')<2)||(m===6&&lv('drill')<4))continue;
