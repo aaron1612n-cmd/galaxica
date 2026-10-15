@@ -27,7 +27,7 @@ Host website(s) AND the Galaxica game for repo `aaron1612n-cmd/galaxica` using C
 ## Design direction: NON-AI look (2026-10-14, researched)
 Research (prg.sh purple-gradient post, impeccable.style/slop, capitalandcompute fix-ai-slop): AI tells = purple/cyan gradients, glass cards, glow shadows, gradient text, Inter, centered hero + 3 cards, emoji icons.
 Our identity: flat "star catalog / arcade cabinet". Ink #0b1016, paper #efe6d2, ONE accent amber #ffb000, red-orange #ff5a36 for enemies. Silkscreen (pixel) + IBM Plex Mono. Hard 4px offset shadows, square corners, pixel sprites (fillRect grids), flat square-pixel starfield, list/catalog layout (not cards). NO glow, blur, glass, gradients, gradient text, emoji.
-RULE: games never explain themselves - no control hints, instructions or tutorial text in game UI or hub blurbs (restart/resume is silent: tap or Space/P). The hub has NO description text at all (no tagline, footer, input labels or blurbs): just title, catalog rows, PLAY. Controls must be obvious from the UI itself.
+RULE: games never explain themselves - no control hints, instructions or tutorial text in game UI or hub blurbs (restart/resume is silent: tap or Space/P). HUB (changed 2026-10-15 at user's request): each row = thumbnail + title + one-sentence description + PLAY. To add a game: folder, `thumb.jpg` (4:3 screenshot, make with Playwright), games.json entry {id,title,blurb,thumb}. Games themselves still have no instruction text. Controls must be obvious from the UI itself.
 RULE: every game ships a first-run interactive tutorial: learn-by-doing steps, ONE word per step + animated visuals (keycaps on desktop, finger/pulsing button on mobile), progress pips, advances only when the player does the thing, Skip button, `?` button replays, seen-flag in localStorage. Galaxica: MOVE > FIRE > HIT IT > GO (Playwright-verified).
 RULE: research before designing anything new (search refs, avoid documented AI tells); screenshot-test mobile+desktop before deploy.
 Custom-rules paragraph for user's Claude settings: given in chat (begins "Design with a distinct, human look..."; add: games have no instruction text but ship a wordless first-run interactive tutorial, skippable and replayable).
@@ -89,6 +89,12 @@ RESEARCH 2026-10-15: AI-design tells also include Instrument Serif, Space Grotes
 9 switchyard: Swiss timetable; Galton lattice of switches, trains by colour pattern (red/ring/bars); tap switch=throw, tap train=hold; AUTO assigns each switch to next train.
 10 chirp: chalk bat cave; echolocation LOS reveal (walls/moths/spiders/owls/stalactites), stereo-panned echo clicks, cave from cellular automata + BFS exit; AUTO uses true map.
 All AUTO bots verified headless (desktop+iPhone viewport, no JS errors). TODO ideas: leaderboards, daily seeds, real-phone playtest, balance pass (ant stores huge under bot, cairn strikes).
+
+## FIXES + POLISH (2026-10-15, user feedback)
+- Powder Lab bug: GK.pointer already returns LOGICAL units (W,H passed to GK.fit); a game that draws at css px must multiply by view.s. Powder wrongly divided by css size -> fixed. Verified with real mouse/touch input tests (all 10 games respond where you click).
+- NAMES MODE: button (i) in every GK bar + kit.js bar (old games) + Gravity Garden; puts the button's title under it; persisted in localStorage `galaxicaNames`. Vials/tiles use data-cap via GK MutationObserver.
+- GK: bar z-index 40 (modals no longer cover back/names), pause overlay (tap to resume), auto-pause on tab hide now auto-resumes, removed the 'A' key = AUTO hotkey (conflicted with moving left).
+- Ant Kingdom keeps Dig tool after tutorial; Cairn ignores the click that starts a run.
 
 ## Git (2026-10-15)
 DEPLOY RULE: pushing to main does NOT publish. After every game/change run `npx wrangler deploy` and verify the live games.json.

@@ -209,7 +209,7 @@ var R=GK.controls(document.getElementById('bar'),{onHelp:function(){tut.start()}
   {id:'rs',html:GK.icon('restart'),title:'Restart',fn:function(){if(!tut.active)newRun()}}]});
 function fit(){GK.fit(cv,stage,W,H,1.4)}addEventListener('resize',fit);addEventListener('orientationchange',fit);fit();
 GK.loop(step,render);tut.maybe();
-window.__g={stats:function(){return G?{mode:mode,stage:G.stage,hp:Math.round(G.hp),lives:G.lives,score:G.score,power:G.power,bombs:G.bombs,bullets:BUL.length,hit:G.hit,tut:tut.active,best:best.stage}:{mode:mode}},tut:tut,newRun:function(){newRun()}};
+window.__g={stats:function(){return G?{mode:mode,stage:G.stage,hp:Math.round(G.hp),lives:G.lives,score:G.score,power:G.power,bombs:G.bombs,bullets:BUL.length,hit:G.hit,px:Math.round(px),py:Math.round(py),tut:tut.active,best:best.stage}:{mode:mode}},tut:tut,newRun:function(){newRun()}};
 </script>
 </body>
 </html>

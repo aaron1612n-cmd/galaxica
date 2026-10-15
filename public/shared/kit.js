@@ -39,7 +39,7 @@
       document.body.insertAdjacentHTML('afterbegin','<canvas id="stars"></canvas><div id="wrap"><canvas id="c"></canvas></div><div id="pad"></div>'
         +'<div class="bar"><div class="cl"><a class="btn ghost" href="../../">← Arcade</a>'+nav+'</div>'
         +'<div class="cl"><button class="btn ghost" id="bot" title="Auto-play: the game plays itself">AUTO</button><span data-speed></span></div>'
-        +'<div class="cl"><button class="btn ghost ic" id="snd" title="Sound on/off" aria-label="Sound">'+SND+'</button><button class="btn ghost ic" id="tutb" title="Replay tutorial" aria-label="Tutorial">?</button><button class="btn" id="skip" hidden>Skip</button></div></div>'
+        +'<div class="cl"><button class="btn ghost ic" id="snd" title="Sound on/off" aria-label="Sound">'+SND+'</button><button class="btn ghost ic" id="nmb" title="Names" aria-label="Names"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M8 7v5"/><circle cx="8" cy="4.6" r=".6" fill="currentColor"/></svg></button><button class="btn ghost ic" id="tutb" title="Replay tutorial" aria-label="Tutorial">?</button><button class="btn" id="skip" hidden>Skip</button></div></div>'
         +'<div id="rot">Rotate your phone</div>');
       var cv=Kit.cv=document.getElementById('c'),ctx=Kit.ctx=cv.getContext('2d'),W=Kit.W=o.W,H=Kit.H=o.H,pad=Kit.pad=document.getElementById('pad'),dpr=Math.min(devicePixelRatio||1,2);
       Speed.mountAll();Auto.bind(document.getElementById('bot'));
@@ -47,6 +47,10 @@
       sndB=document.getElementById('snd');function paint(){sndB.style.opacity=mute?.45:1;sndB.classList.toggle('off',mute)}paint();
       Kit.toggleSnd=sndB.onclick=function(){Kit.ac();mute=!mute;lsSet('galaxicaMute',mute);paint()};
       document.getElementById('tutb').onclick=function(){Kit.ac();o.tutStart&&o.tutStart()};
+      (function(){var on=false;try{on=localStorage.galaxicaNames==='1'}catch(e){}var st=document.createElement('style');st.textContent='.kn .bar .btn[data-cap]{height:auto;min-height:40px;flex-direction:column;gap:2px;padding:4px 8px}.kn .bar .btn[data-cap]::after{content:attr(data-cap);font:700 8px/1.1 var(--px);letter-spacing:.04em;white-space:nowrap}#nmb.on{background:var(--amber);color:var(--ink)}';document.head.appendChild(st);
+        function cap(){[].forEach.call(document.querySelectorAll('.bar .btn'),function(b){var t=b.title||b.getAttribute('aria-label');if(t&&b.id!=='skip')b.dataset.cap=t.replace(/ \(.*\)$/,'').slice(0,14)})}
+        function apply(){document.documentElement.classList.toggle('kn',on);document.getElementById('nmb').classList.toggle('on',on);cap()}
+        document.getElementById('nmb').onclick=function(){on=!on;try{localStorage.galaxicaNames=on?'1':'0'}catch(e){}apply()};apply();new MutationObserver(cap).observe(document.querySelector('.bar'),{childList:true,subtree:true})})();
       document.getElementById('skip').onclick=function(){o.tutSkip&&o.tutSkip()};
       function fit(){var bar=document.querySelector('.bar').offsetHeight+30+(Device.mobile?pad.offsetHeight+28:0);
         var sc=Math.min(innerWidth*.98/W,(innerHeight-bar)/H);sc=Kit.scale=Math.max(.3,Math.min(sc,Device.mobile?3:(o.maxScale||2)));

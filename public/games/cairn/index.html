@@ -51,7 +51,7 @@ function toWorldY(py){return py+camY}
 GK.pointer(cv,{hover:true,
   down:function(x,y,e){if(mode==='title'||mode==='over'){if(mode==='over'&&run.deadT<40)return;if(!tut.active){newRun();}return}ptx=x},
   move:function(x,y,e,dn){ptx=x},
-  up:function(x,y,e){if(mode==='play'&&!Auto.on)drop()},
+  up:function(x,y,e){if(mode==='play'&&!Auto.on&&run&&run.t>25)drop()},
   key:function(c,d){if(!d)return;if(c==='Space'||c==='Enter'){if(mode==='title'||mode==='over'){if(!tut.active)newRun()}else drop()}
     else if(c==='ArrowLeft')ptx=GK.clamp(ptx-16,40,W-40);else if(c==='ArrowRight')ptx=GK.clamp(ptx+16,40,W-40)}});
 cv.addEventListener('wheel',function(e){e.preventDefault();if(run&&run.held)run.held.a+=(e.deltaY>0?1:-1)*.18},{passive:false});

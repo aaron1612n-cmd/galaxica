@@ -174,7 +174,7 @@ function drawHud(){ctx.fillStyle='rgba(20,15,10,.6)';ctx.fillRect(8,6,208,34);ct
   ctx.fillStyle=CREAM;ctx.textAlign='right';ctx.fillText(String(G.year),W-12,30)}
 /* ============ tutorial ============ */
 var tutFlag={sugar:0,mark:0,dug:0};
-var tut=GK.tutorial({parent:document.getElementById('stage'),onStart:function(){reset();G.tut=true;tutFlag={sugar:0,mark:0,dug:0};tool='sugar';paintTools()},onEnd:function(){reset()},
+var tut=GK.tutorial({parent:document.getElementById('stage'),onStart:function(){reset();G.tut=true;tutFlag={sugar:0,mark:0,dug:0};tool='sugar';paintTools()},onEnd:function(){reset();tool='dig';paintTools()},
   steps:[{init:function(){tool='sugar';paintTools()},done:function(){return tutFlag.sugar&&G.stores>13},update:function(){}},
    {init:function(){tool='dig';paintTools()},done:function(){var n=0;for(var i=0;i<MARK.length;i++)n+=MARK[i];return n>=8}},
    {init:function(){tutFlag.dug0=G.dug},done:function(){return G.dug-tutFlag.dug0>=6}}]});
@@ -192,7 +192,7 @@ function paintTools(){['dig','sugar','pebble','erase'].forEach(function(k){R['t_
 paintTools();
 function fit(){GK.fit(cv,stage,W,H,1.3)}addEventListener('resize',fit);addEventListener('orientationchange',fit);fit();
 reset();GK.loop(step,render);tut.maybe();
-window.__g={stats:function(){return{mode:mode,pop:ants.length,stores:Math.floor(G.stores),year:G.year,peak:G.peak,dug:G.dug,hatched:G.hatched,lost:G.lost,kills:G.kills||0,threats:threats.length,foods:foods.length,tut:tut.active}},tut:tut,reset:reset};
+window.__g={stats:function(){return{marks:G.markCount||0,markNow:MARK.reduce(function(a,b){return a+b},0),mode:mode,pop:ants.length,stores:Math.floor(G.stores),year:G.year,peak:G.peak,dug:G.dug,hatched:G.hatched,lost:G.lost,kills:G.kills||0,threats:threats.length,foods:foods.length,tut:tut.active}},tut:tut,reset:reset};
 </script>
 </body>
 </html>

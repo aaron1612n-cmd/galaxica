@@ -17,14 +17,17 @@
   h1{font:700 clamp(2.4rem,13vw,5.6rem)/.95 var(--px);text-transform:uppercase;margin:34px 0 40px;letter-spacing:-.01em}
   h1 span{color:var(--amber)}
   .lede{max-width:46ch;color:var(--dim);margin:0 0 36px}
-  .head,.row{display:grid;grid-template-columns:3.2em 1fr auto;gap:14px;align-items:baseline}
+  .head{display:none}
+  .row{display:grid;grid-template-columns:3em 132px 1fr auto;gap:16px;align-items:center}
   .head{font-size:11px;color:var(--dim);border-bottom:1px solid var(--line);padding:6px 0}
-  a.row{padding:18px 0;border-bottom:1px solid var(--line);color:inherit;text-decoration:none}
+  a.row{padding:14px 0;border-bottom:1px solid var(--line);color:inherit;text-decoration:none}
   a.row:hover,a.row:focus-visible{background:var(--ink2);outline:none;box-shadow:-14px 0 0 var(--ink2),14px 0 0 var(--ink2)}
   a.row:hover .go,a.row:focus-visible .go{background:var(--amber);color:var(--ink)}
   .no{color:var(--amber);font-family:var(--px)}
   .t{font:700 1.25rem var(--px);text-transform:uppercase}
-  .b{grid-column:2;color:var(--dim);font-size:13px;margin-top:4px}
+  .th{width:132px;height:99px;object-fit:cover;object-position:center;border:2px solid var(--paper);background:var(--ink2);display:block;image-rendering:auto}
+  .tx{min-width:0}.b{color:var(--dim);font-size:13px;margin-top:6px;max-width:52ch}
+  @media(max-width:560px){.row{grid-template-columns:96px 1fr;gap:12px}.no{display:none}.go{grid-column:1/-1;justify-self:start}.th{width:96px;height:72px}.t{font-size:1rem}}
   .go{font:700 11px var(--px);border:2px solid var(--paper);padding:6px 10px;align-self:center}
   .empty{color:var(--dim);padding:18px 0;font-size:13px}
   footer{margin-top:40px;font-size:11px;color:var(--dim)}
@@ -48,9 +51,11 @@ fetch('games.json').then(function(r){return r.json()}).then(function(list){
   list.forEach(function(g,i){
     var a=document.createElement('a');a.className='row';a.href='games/'+g.id+'/';
     var n=document.createElement('span');n.className='no';n.textContent=String(i+1).padStart(3,'0');
-    var t=document.createElement('span');t.className='t';t.textContent=g.title;
+    var im=document.createElement('img');im.className='th';im.src=g.thumb||('games/'+g.id+'/thumb.jpg');im.alt='';im.loading='lazy';im.width=132;im.height=99;
+    var tx=document.createElement('div');tx.className='tx';var t=document.createElement('div');t.className='t';t.textContent=g.title;tx.appendChild(t);
+    if(g.blurb){var b=document.createElement('div');b.className='b';b.textContent=g.blurb;tx.appendChild(b)}
     var go=document.createElement('span');go.className='go';go.textContent='PLAY';
-    a.append(n,t,go);el.append(a);
+    a.append(n,im,tx,go);el.append(a);
   });
 });
 </script>

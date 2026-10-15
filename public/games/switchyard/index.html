@@ -119,7 +119,7 @@ function tutDraw(){var t=tut.t;if(!trains.length)return;var tr=trains[0];var nod
 var R=GK.controls(document.getElementById('bar'),{onHelp:function(){tut.start()},extra:[{id:'rs',html:GK.icon('restart'),title:'New yard',fn:function(){if(!tut.active)newRun()}}]});
 function fit(){GK.fit(cv,stage,W,H,1.4)}addEventListener('resize',fit);addEventListener('orientationchange',fit);fit();
 GK.loop(step,render);tut.maybe();
-window.__g={stats:function(){return G?{mode:mode,score:G.score,delivered:G.delivered,strikes:G.strikes,stage:G.stage,trains:trains.length,best:best.score,tut:tut.active}:{mode:mode}},tut:tut,newRun:function(){newRun()}};
+window.__g={stats:function(){return G?{sw:nodes.map(function(n){return n.state}).join(''),mode:mode,score:G.score,delivered:G.delivered,strikes:G.strikes,stage:G.stage,trains:trains.length,best:best.score,tut:tut.active}:{mode:mode}},tut:tut,newRun:function(){newRun()}};
 </script>
 </body>
 </html>

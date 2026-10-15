@@ -38,7 +38,8 @@ var IC={
   pause:'<path class="pa" d="M7.5 5v12M14.5 5v12"/><path class="pl f" d="M7 4.5l10 6.5-10 6.5z"/>',
   help:'<path d="M8 8.5a3 3 0 1 1 4.2 2.7c-.8.4-1.2 1-1.2 1.8"/><circle class="f" cx="11" cy="16.6" r="1"/>',
   auto:'<path d="M4 17L11 4l7 13M6.6 12.5h8.8"/>',
-  restart:'<path d="M4.5 11a6.5 6.5 0 1 0 2.2-4.9"/><path d="M4 3.5v4.2h4.2"/>'};
+  restart:'<path d="M4.5 11a6.5 6.5 0 1 0 2.2-4.9"/><path d="M4 3.5v4.2h4.2"/>',
+  info:'<circle cx="11" cy="11" r="8"/><path d="M11 10v6"/><circle class="f" cx="11" cy="6.6" r="1"/>'};
 GK.icon=function(n){return'<svg viewBox="0 0 22 22" aria-hidden="true">'+(IC[n]||'')+'</svg>'};
 GK.controls=function(el,o){o=o||{};var R={};GK._snd=[];
   function b(cls,html,title,fn,tag){var e=document.createElement(tag||'button');e.className='gk-b '+cls;e.innerHTML=html;e.title=title;e.setAttribute('aria-label',title);if(fn)e.onclick=fn;return e}
@@ -49,13 +50,22 @@ GK.controls=function(el,o){o=o||{};var R={};GK._snd=[];
   if(o.auto!==false){R.auto=b('auto',GK.icon('auto'),'Auto',null);g2.appendChild(R.auto);Auto.bind(R.auto);R.auto.classList.add('gk-auto')}
   if(o.speed!==false){var sp=document.createElement('span');sp.setAttribute('data-speed','');g2.appendChild(sp);Speed.mount(sp);R.speed=sp}
   R.snd=b('snd',GK.icon('snd'),'Sound',function(){GK.audio.ac();GK.audio.setMute(!GK.audio.mute)});GK._snd.push(R.snd);R.snd.classList.toggle('off',mute);g3.appendChild(R.snd);
+  R.names=b('names',GK.icon('info'),'Names',function(){GK.setNames(!GK.names)});g3.appendChild(R.names);R.names.classList.toggle('on',GK.names);
   if(o.help!==false){R.help=b('help',GK.icon('help'),'Tutorial',function(){o.onHelp&&o.onHelp()});g3.appendChild(R.help)}
   el.classList.add('gk-bar');el.append(g1,g2,g3);return R};
+/* names mode: a caption under every button (title text) */
+GK.names=false;try{GK.names=localStorage.galaxicaNames==='1'}catch(e){}
+function capAll(root){[].forEach.call((root||document).querySelectorAll('.gk-b,.v,.tl'),function(b){var t=(b.title||b.getAttribute('aria-label')||'').replace(/ \(.*\)$/,'');if(t&&b.dataset.cap!==t)b.dataset.cap=t})}
+GK.setNames=function(v){GK.names=!!v;document.documentElement.classList.toggle('gk-names',GK.names);try{localStorage.galaxicaNames=GK.names?'1':'0'}catch(e){}document.querySelectorAll('.gk-b.names').forEach(function(b){b.classList.toggle('on',GK.names)});capAll();setTimeout(function(){dispatchEvent(new Event('resize'))},60)};
+document.documentElement.classList.toggle('gk-names',GK.names);
+(function(){var t=0;function go(){if(t)return;t=setTimeout(function(){t=0;capAll()},40)}function boot(){capAll();if(GK.names)setTimeout(function(){dispatchEvent(new Event('resize'))},150);new MutationObserver(go).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['title']})}if(document.body)boot();else document.addEventListener('DOMContentLoaded',boot)})();
 GK.paused=false;
-GK.setPaused=function(v){GK.paused=!!v;document.querySelectorAll('.gk-b.pause').forEach(function(b){b.classList.toggle('paused',GK.paused)});GK.onPause&&GK.onPause(GK.paused)};
-document.addEventListener('visibilitychange',function(){if(document.hidden&&!GK.paused)GK.setPaused(true)});
+GK.setPaused=function(v){GK.paused=!!v;var ov=document.getElementById('gkpause');
+  if(GK.paused&&!ov){var st=document.getElementById('stage')||document.body;ov=document.createElement('div');ov.id='gkpause';ov.innerHTML='<i></i><i></i>';ov.onclick=function(){GK.setPaused(false)};st.appendChild(ov)}else if(!GK.paused&&ov){ov.remove()}
+document.querySelectorAll('.gk-b.pause').forEach(function(b){b.classList.toggle('paused',GK.paused)});GK.onPause&&GK.onPause(GK.paused)};
+var autoPaused=false;document.addEventListener('visibilitychange',function(){if(document.hidden&&!GK.paused){autoPaused=true;GK.setPaused(true)}else if(!document.hidden&&autoPaused){autoPaused=false;GK.setPaused(false)}});
 addEventListener('keydown',function(e){if(e.target&&(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'))return;
-  if(e.code==='KeyP'||e.code==='Escape'){GK.setPaused(!GK.paused)}else if(e.code==='KeyM'){GK.audio.setMute(!GK.audio.mute)}else if(e.code==='KeyA'&&!e.ctrlKey&&!e.metaKey&&GK.autoKey!==false){Auto.toggle()}});
+  if(e.code==='KeyP'||e.code==='Escape'){GK.setPaused(!GK.paused)}else if(e.code==='KeyM'){GK.audio.setMute(!GK.audio.mute)}});
 
 /* ---------- canvas fit ---------- */
 GK.fit=function(cv,stage,W,H,max){var r=stage.getBoundingClientRect(),dpr=Math.min(devicePixelRatio||1,2),cw=Math.max(40,r.width),ch=Math.max(40,r.height),w,h,s=1;

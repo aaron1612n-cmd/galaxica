@@ -38,7 +38,7 @@ canvas#c{image-rendering:pixelated;cursor:crosshair}
 .v.sel::after{content:"";position:absolute;inset:-4px;border:2px solid var(--gk-acc);border-radius:50%;opacity:.55}
 .v:hover{background:rgba(27,42,58,.07)}
 .v.pulse{animation:vp .7s steps(1) infinite}@keyframes vp{50%{background:rgba(214,58,47,.25)}}
-.sizes{display:flex;gap:4px}
+.gk-names .v{flex-direction:column}.gk-names .v[data-cap]::after{content:attr(data-cap);font:10px/1 var(--gk-font);margin-top:-2px;white-space:nowrap}.gk-names #rack{grid-template-rows:repeat(2,68px);grid-auto-columns:56px}.sizes{display:flex;gap:4px}
 .sizes .gk-b.on,.gk-b.on{background:var(--gk-ink);color:var(--gk-bg)}
 #modal{position:fixed;inset:0;z-index:30;background:rgba(27,42,58,.45);display:flex;align-items:center;justify-content:center;padding:14px}
 #modal .sheet{background:#f7f3e4;border:2px solid var(--gk-ink);box-shadow:6px 6px 0 var(--gk-ink);width:min(780px,100%);max-height:100%;overflow:auto;padding:14px;display:flex;flex-direction:column;gap:12px}
@@ -165,10 +165,10 @@ function render(){
   octx.putImageData(img,0,0);var v=GK.view;ctx.setTransform(v.dpr,0,0,v.dpr,0,0);ctx.imageSmoothingEnabled=false;
   var sx=shake?((Math.random()-.5)*shake*.6):0,sy=shake?((Math.random()-.5)*shake*.6):0;ctx.drawImage(off,sx,sy,v.w,v.h);
   if(tut.active)tut.draw(ctx);
-  if(cursor&&!Device.mobile){ctx.strokeStyle='#1b2a3a';ctx.lineWidth=1;ctx.strokeRect(cursor.x-brush*v.s,cursor.y-brush*v.s,brush*2*v.s,brush*2*v.s)}}
+  if(cursor&&!Device.mobile){ctx.strokeStyle='#1b2a3a';ctx.lineWidth=1;var rr=[0,1,3,6][brush>3?3:brush]+.5;ctx.strokeRect((cursor.x-rr)*v.s,(cursor.y-rr)*v.s,rr*2*v.s,rr*2*v.s)}}
 /* ============ input ============ */
 var cursor=null,last=null,painting=false;
-function toCell(x,y){var v=GK.view;return[Math.floor(x/v.w*GW),Math.floor(y/v.h*GH)]}
+function toCell(x,y){return[GK.clamp(Math.floor(x),0,GW-1),GK.clamp(Math.floor(y),0,GH-1)]} /* GK.pointer already reports grid units */
 function dab(cx,cy,t){var r=[0,1,3,6][brush>3?3:brush],rr=r*r,xx,yy,i;
   for(var dy=-r;dy<=r;dy++)for(var dx=-r;dx<=r;dx++){xx=cx+dx;yy=cy+dy;if(xx<0||yy<0||xx>=GW||yy>=GH||dx*dx+dy*dy>rr+r)continue;i=yy*GW+xx;
     if(t===0){T[i]=0;L[i]=0;continue}
@@ -244,7 +244,7 @@ for(var xx=0;xx<GW;xx++){} /* start with a little bench: a stone ledge */
 tut.maybe();
 var tickN=0;
 GK.loop(function(){if(Auto.on&&!tut.active)botTick();step();tut.tick();if(++tickN%30===0)cnt.textContent=found.length+'/'+RXLIST.length},render);
-window.__g={stats:function(){return{rx:found.length,rxTotal:RXLIST.length,el:seenEl.length,cells:T.reduce(function(a,t){return a+(t?1:0)},0),frame:frame}},put:put,N:N,GW:GW,GH:GH,setSel:setSel,tut:tut,step:step};
+window.__g={T:T,box:function(cx,cy,r){var n=0;for(var y=cy-r;y<=cy+r;y++)for(var x=cx-r;x<=cx+r;x++)if(x>=0&&y>=0&&x<GW&&y<GH&&T[y*GW+x]===sel)n++;return n},stats:function(){return{rx:found.length,rxTotal:RXLIST.length,el:seenEl.length,cells:T.reduce(function(a,t){return a+(t?1:0)},0),frame:frame}},put:put,N:N,GW:GW,GH:GH,setSel:setSel,tut:tut,step:step};
 </script>
 </body>
 </html>

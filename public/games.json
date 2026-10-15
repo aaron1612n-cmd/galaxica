@@ -2,91 +2,106 @@
   {
     "id": "galaxica",
     "title": "Galaxica",
-    "blurb": "Hold the line.",
-    "added": "2026-10-14"
+    "blurb": "Arcade space shooter. Six bosses, fourteen power-ups, a daily seed, and a gamepad if you have one.",
+    "added": "2026-10-14",
+    "thumb": "games/galaxica/thumb.jpg"
   },
   {
     "id": "squeeze",
     "title": "Squeeze",
-    "blurb": "",
-    "added": "2026-10-14"
+    "blurb": "Puzzle platformer built on one trick: swap between big and small to smash blocks, hit plates and fit through gaps.",
+    "added": "2026-10-14",
+    "thumb": "games/squeeze/thumb.jpg"
   },
   {
     "id": "pinprick",
     "title": "Pinprick",
-    "blurb": "",
-    "added": "2026-10-14"
+    "blurb": "A dodge-only bullet hell with a tiny hitbox. Hold slow-mode, graze the bullets, survive five minutes.",
+    "added": "2026-10-14",
+    "thumb": "games/pinprick/thumb.jpg"
   },
   {
     "id": "hairline",
     "title": "Hairline",
-    "blurb": "",
-    "added": "2026-10-14"
+    "blurb": "A one-button runner. Jump onto platforms as thin as four pixels, with frame-perfect timing.",
+    "added": "2026-10-14",
+    "thumb": "games/hairline/thumb.jpg"
   },
   {
     "id": "gravity-garden",
     "title": "Gravity Garden",
-    "blurb": "",
-    "added": "2026-10-15"
+    "blurb": "An orbital sandbox. Drop stars, planets and black holes, then watch life bloom, evolve and die.",
+    "added": "2026-10-15",
+    "thumb": "games/gravity-garden/thumb.jpg"
   },
   {
     "id": "powder-lab",
     "title": "Powder Lab",
-    "blurb": "",
-    "added": "2026-10-15"
+    "blurb": "A falling-sand alchemy lab. Pour thirty elements together and discover fifty-three reactions.",
+    "added": "2026-10-15",
+    "thumb": "games/powder-lab/thumb.jpg"
   },
   {
     "id": "tidewater",
     "title": "Tidewater",
-    "blurb": "",
-    "added": "2026-10-15"
+    "blurb": "Move the moon to change the tide. Sail under low bridges and over sandbars to collect the pearls.",
+    "added": "2026-10-15",
+    "thumb": "games/tidewater/thumb.jpg"
   },
   {
     "id": "loom",
     "title": "Loom",
-    "blurb": "",
-    "added": "2026-10-15"
+    "blurb": "A rhythm game on a loom. Every note you hit stitches a mirrored cross-stitch cloth.",
+    "added": "2026-10-15",
+    "thumb": "games/loom/thumb.jpg"
   },
   {
     "id": "moth-mail",
     "title": "Moth Mail",
-    "blurb": "",
-    "added": "2026-10-15"
+    "blurb": "Steer a swarm of moths across a night city. Pick up letters, deliver them to lit windows, dodge bats and owls.",
+    "added": "2026-10-15",
+    "thumb": "games/moth-mail/thumb.jpg"
   },
   {
     "id": "cairn",
     "title": "Cairn",
-    "blurb": "",
-    "added": "2026-10-15"
+    "blurb": "Stack stones on a windy cliff. The taller the cairn, the harder the wind blows.",
+    "added": "2026-10-15",
+    "thumb": "games/cairn/thumb.jpg"
   },
   {
     "id": "tantrum",
     "title": "Tantrum",
-    "blurb": "",
-    "added": "2026-10-15"
+    "blurb": "A crayon bullet-hell against a giant toddler. Survive every mood until he falls asleep.",
+    "added": "2026-10-15",
+    "thumb": "games/tantrum/thumb.jpg"
   },
   {
     "id": "ant-kingdom",
     "title": "Ant Kingdom",
-    "blurb": "",
-    "added": "2026-10-15"
+    "blurb": "Run an ant colony. Mark tunnels to dig, drop sugar, and survive winters, beetles and spiders.",
+    "added": "2026-10-15",
+    "thumb": "games/ant-kingdom/thumb.jpg"
   },
   {
     "id": "peg-song",
     "title": "Peg Song",
-    "blurb": "",
-    "added": "2026-10-15"
+    "blurb": "Pachinko with a piano. Every peg is a note. Clear the brass pegs and write the tune as you go.",
+    "added": "2026-10-15",
+    "thumb": "games/peg-song/thumb.jpg"
   },
   {
     "id": "switchyard",
     "title": "Switchyard",
-    "blurb": "",
-    "added": "2026-10-15"
+    "blurb": "Flip rail switches to send each train to the depot that matches it, before they collide.",
+    "added": "2026-10-15",
+    "thumb": "games/switchyard/thumb.jpg"
   },
   {
     "id": "chirp",
     "title": "Chirp",
-    "blurb": "",
-    "added": "2026-10-15"
+    "blurb": "You are a bat in the dark. Chirp to see the cave by echo, eat moths, and find the way out.",
+    "added": "2026-10-15",
+    "thumb": "games/chirp/thumb.jpg"
   }
 ]
