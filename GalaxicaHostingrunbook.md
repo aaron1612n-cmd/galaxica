@@ -89,11 +89,15 @@ Mobile touch buttons (FIRE/BOMB) live in a `#pad` row BELOW the canvas, never ov
 - `public/shared/`: `theme.css`, `device.js` (html[data-device], window.Device, `[data-show]`), `stars.js` (hub starfield).
 - EVERY game: theme.css + device.js, viewport-fit=cover, scale canvas + DPR, touch AND keyboard, first-run tutorial.
 
-## GAME 5: GRAVITY GARDEN (2026-10-15) `public/games/gravity-garden/` — first game NOT in Galaxica style, standalone (no kit.js/theme.css)
-Look: orrery plate. Cream paper #eee6d1, navy ink #1c2233, one rust #cf4a2c; Instrument Serif + DM Mono; hairline rules, sidebar ledger (desktop) / bottom bar (mobile). Motion moment = petals blooming on planets.
-Sandbox: N-body leapfrog (G=1, dt .5x2 per tick). Tools 1-4: planet(m2)/star(400)/black hole(1500)/erase. TAP = stable circular orbit round dominant body; DRAG = aim+speed with dotted predicted path. Merges conserve momentum; planet m>=150 ignites, star m>=1200 -> hole. Total momentum zeroed on every add (else system drifts away). Planets in a star's habitable band (100-190 x sqrt(m/400)) bloom: 1 petal/150 ticks, max 12; blooms = score, best saved `ggBest`. Bodies past 1000 units culled.
-AUTO = gardener: keeps <=5 planets on spaced ring slots in the band (moons removed from bot: too fragile). Wordless tutorial: tap ring -> drag arrow -> pulse speed box (skip/`?`). Keys 1-4, Space, R, M, A. Speed.js drives ticks. Headless debug hook `window.__gg`.
-Ideas: pinch/zoom, save/share systems, comets, moons that survive.
+## GAME 5: GRAVITY GARDEN (2026-10-15) `public/games/gravity-garden/` — own look, standalone (no kit/theme.css)
+Files: `gg-core.js` (data, names, N-body, life, stars, presets, save), `gg-view.js` (themes, engraved glyphs, renderer), `gg-ui.js` (palette, input, camera, inspector, modals, codex, goals, AUTO, tutorial, loop), `index.html` (CSS). Test hooks: `GG`, `GG.ui`.
+Look: orrery plate, 3 themes (paper/night/blue; ink+bg+ONE accent), Instrument Serif + DM Mono, hairlines, no glow. Goals/UI are pictograms+numbers (no instruction text).
+Content: 9 planet classes (own engraving each), 7 star classes + dwarf/neutron/hole, wormhole pairs, dark matter, repulsor, nebula (drag), moons/rocks/belts/comets/stations/binary pair; tools select/hand/erase/pull/push/anchor. 15 presets + seeded random systems (dice). ~800k procedural names; species glyphs; codex = 6237 (class x host x stage x size x moons) discoveries; 118 goals; 6 save slots + export/import code; undo(30); screenshot; autosave `ggWorld`; pan/zoom/pinch/follow; music = planets ping pentatonic notes on ring crossing.
+Physics: G=1, leapfrog dt .5x2, heavy bodies attract all, LIGHT (moon/rock/comet/station) are test particles (cheap: 50x = 3000 ticks/s with 300 bodies). Planet masses tiny (.12-2.2) else mutual Hill instability (preset spacing matters). zeroMom on add. Merge conserves momentum; planet>=.8 -> gas, gas>=3.5 -> ringed.
+Life: flux = sum lum*145^2/d^2 (lum=(m/400)^3). Class flux window -> habitable ticks `hab`; stages at THR [0,150,450,1800,5500,14600,32850] (microbes, flora/petals, fauna+species, city, stations, halo). Climate drift changes class (ocean<->desert/ice, lava). Stars live 450yr*(400/m)^2.5 (1yr=365 ticks): giant at 88% then dwarf / supernova->neutron or hole (blast sterilizes). Comets seed life, rocks cause extinctions.
+AUTO = gardener: <=6 planets in the star's zone, one ringed giant with moons, rare comets.
+Wordless tutorial: tap ring -> drag arrow -> pulse speed box (skip/`?`).
+Ideas next: more presets, species interactions/wars, tides, sandbox challenges, shareable URLs.
 
 ## Git (2026-10-15)
 DEPLOY RULE: pushing to main does NOT publish. After every game/change run `npx wrangler deploy` and verify the live games.json.
