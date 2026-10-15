@@ -124,5 +124,12 @@
     "blurb": "Drop pebbles in a pond. The ripples push paper boats into their moorings, around rocks, currents and a whirlpool.",
     "added": "2026-10-15",
     "thumb": "games/ripple/thumb.jpg"
+  },
+  {
+    "id": "cauldron",
+    "title": "Cauldron",
+    "blurb": "Catch falling ingredients in the order the recipe asks and dodge the rest. Each potion you brew gives a power.",
+    "added": "2026-10-15",
+    "thumb": "games/cauldron/thumb.jpg"
   }
 ]

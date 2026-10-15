@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#e9dcbc">
+<title>Cauldron</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Pirata+One&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../shared/gk.css">
+<script src="../../shared/device.js"></script>
+<script src="../../shared/auto.js"></script>
+<script src="../../shared/speed.js"></script>
+<script src="../../shared/gk.js"></script>
+<script src="../../shared/gk2.js"></script>
+<style>
+/* Cauldron: a woodcut grimoire. Parchment, black ink, hatching, one acid green. */
+:root{--gk-bg:#e9dcbc;--gk-ink:#14110d;--gk-acc:#8cc63f;--gk-font:"Pirata One",Georgia,serif;--gk-bw:0px;--gk-r:0;--gk-sh:none;--gk-h:42px}
+body{background:#e9dcbc}
+#stage{padding:4px}
+canvas#c{touch-action:none}
+/* bar skin: inked woodcut stamps */
+.gk-bar{border-bottom:4px solid #14110d}
+.gk-bar .gk-b{background:#14110d;color:#e9dcbc;border-radius:3px 9px 4px 8px;font-size:18px}
+.gk-bar .gk-b:nth-child(even){border-radius:9px 3px 8px 4px}
+.gk-b.on,.gk-b.md.on,.gk-b.gk-auto:not(.ghost){background:#8cc63f;color:#14110d}
+.gk-bar .spd input,.gk-bar .spd .btn{border:2px solid #14110d}
+</style>
+</head>
+<body>
+<div id="app"><div id="stage"><canvas id="c"></canvas></div><div id="bar"></div></div>
+<script>
+GK.id('cauldron');
+var cv=document.getElementById('c'),ctx=cv.getContext('2d'),stage=document.getElementById('stage');
+var W=480,H=720,PAR='#e9dcbc',PAR2='#dccca4',INK='#14110d',ACID='#8cc63f',CY=630,CW=86;
+var ING=['mushroom','eye','bone','leaf','moth','gem','flame','egg','fish','flower','bug','snow'];
+var POT={slow:{ic:'clock'},magnet:{ic:'target'},wide:{ic:'up'},heart:{ic:'heart'}},POTK=Object.keys(POT);
+var MODE=GK.ls.get('mode','brew'),BEST=GK.ls.get('best',{}),ST=GK.ls.get('st',{potions:0,score:0,combo:0,caught:0,gold:0,clean:0,daily:0,games:0,apprentice:0,longest:0});
+function saveST(){GK.ls.set('st',ST)}
+/* ============ state ============ */
+var G=null,items=[],mode='title',T=0,cx=W/2,tx=W/2,bubbles=[];
+function rnd(){return G&&G.rn?G.rn():Math.random()}
+function newGame(){G={score:0,hearts:MODE==='apprentice'?99:3,recipe:[],pos:0,len:2,brewed:0,combo:0,spawnT:40,speed:1.6,t:0,pot:{},potT:{},over:0,deadT:0,miss:0,flash:0,flashC:INK,timer:MODE==='daily'?90*60:0,rn:MODE==='daily'?GK.rng(GK.daily.seed()):null,tut:false,mix:[]};items=[];bubbles=[];cx=tx=W/2;newRecipe();mode='play';GK.fx.clear()}
+function pool(){return Math.min(ING.length,4+Math.floor(G.brewed/2))}
+function newRecipe(){var r=[],n=Math.min(6,G.len),p=pool();for(var i=0;i<n;i++)r.push((rnd()*p)|0);G.recipe=r;G.pos=0;G.mix=[];G.potion=POTK[(rnd()*POTK.length)|0];G.cleanR=1}
+function width(){return CW*(G&&G.potT.wide>0?1.5:1)}
+/* ============ spawning ============ */
+function spawn(){var need=G.recipe[G.pos],p=pool(),k;var u=rnd();
+  if(u<.4)k=need;else if(u<.46)k=-1;else{k=(rnd()*p)|0;}
+  var x=40+rnd()*(W-80);items.push({k:k,x:x,x0:x,y:80,vy:G.speed*(.8+rnd()*.5),ph:rnd()*6,amp:8+rnd()*18,rot:0,bounce:0})}
+/* ============ tick ============ */
+function step(){T++;GK.goals.tick();bubbles.forEach(function(b){b.y-=b.v;b.l--});bubbles=bubbles.filter(function(b){return b.l>0});if(mode!=='play')return;
+  if(G.over){G.deadT++;if(Auto.on&&G.deadT>110)newGame();return}G.t++;if(G.flash>0)G.flash--;
+  POTK.forEach(function(k){if(G.potT[k]>0)G.potT[k]--});
+  if(MODE==='daily'&&!G.tut){G.timer--;if(G.timer<=0){end();return}}
+  if(!G.tut){if(--G.spawnT<=0){spawn();G.spawnT=Math.max(22,70-G.brewed*3)*(MODE==='apprentice'?1.4:1)*(.7+rnd()*.6)}}
+  if(Auto.on&&!G.tut)bot();var K=GK.keys;if(K.ArrowLeft||K.KeyA)tx=cx-30;if(K.ArrowRight||K.KeyD)tx=cx+30;
+  var sp=9;cx+=GK.clamp(tx-cx,-sp,sp);cx=GK.clamp(cx,width()/2+8,W-width()/2-8);
+  var slow=G.potT.slow>0?.5:1;
+  for(var i=items.length-1;i>=0;i--){var it=items[i];it.y+=it.vy*slow;it.x=it.x0+Math.sin(it.ph+it.y*.02)*it.amp;it.rot+=.03;
+    if(G.potT.magnet>0&&(it.k===G.recipe[G.pos]||it.k===-1)){it.x0+=GK.clamp(cx-it.x,-2,2)}
+    if(it.y>CY-18&&it.y<CY+6&&Math.abs(it.x-cx)<width()/2-6){items.splice(i,1);catchIt(it);continue}
+    if(it.y>H+20){items.splice(i,1);if(it.k===G.recipe[G.pos]&&MODE!=='apprentice'){G.combo=0}}}
+  if(Math.random()<.3)bubbles.push({x:cx+(Math.random()-.5)*width()*.6,y:CY-6,v:.5+Math.random(),l:30+Math.random()*20,r:2+Math.random()*4});
+  tut.tick()}
+function catchIt(it){var need=G.recipe[G.pos],ok=it.k===need||it.k===-1;
+  if(!G.tut)ST.caught++;
+  if(ok){if(it.k===-1&&!G.tut)ST.gold++;G.mix.push(need);G.pos++;GK.audio.tone(330+G.pos*90,.12,'triangle',.05);GK.fx.burst(cx,CY-14,10,{col:ACID,speed:2.6,life:22,shape:'ci',size:3,up:2,grav:.08});if(G.tut)tutF.caught=1;
+    if(G.pos>=G.recipe.length)brew()}
+  else{G.cleanR=0;GK.fx.burst(cx,CY-14,18,{col:INK,speed:3.5,life:30,size:4,up:2.5,grav:.12});GK.fx.shake(7,14);GK.audio.tone(110,.4,'sawtooth',.06,.5);G.flash=20;G.combo=0;
+    if(MODE!=='apprentice'&&!G.tut){G.hearts--;if(G.hearts<=0){end();return}}G.pos=0;G.mix=[]}}
+function brew(){G.brewed++;G.combo++;var pts=G.recipe.length*100*G.combo;G.score+=pts;if(!G.tut){ST.potions++;ST.combo=Math.max(ST.combo,G.combo);ST.longest=Math.max(ST.longest,G.recipe.length);if(G.cleanR)ST.clean++;if(MODE==='apprentice')ST.apprentice++}
+  GK.fx.text(cx,CY-60,'+'+pts,INK,30);for(var k=0;k<3;k++)GK.fx.burst(cx,CY-20,22,{col:[ACID,INK,PAR][k],speed:5,life:40,shape:k?'sq':'ci',size:4,up:4,grav:.12});GK.fx.shake(5,12);
+  [392,494,587,784].forEach(function(f,i){GK.audio.tone(f,.3,'triangle',.05,1,GK.audio.ctx&&GK.audio.ctx.currentTime+i*.07)});
+  var p=G.potion;if(p==='heart'){if(MODE!=='apprentice')G.hearts=Math.min(5,G.hearts+1)}else G.potT[p]=420;if(G.tut)tutF.brewed=1;
+  if(G.brewed%2===0)G.len++;G.speed=Math.min(4.2,1.6+G.brewed*.12);newRecipe();saveST()}
+function end(){G.over=1;G.deadT=0;ST.games++;ST.score=Math.max(ST.score,G.score);if(MODE==='daily')ST.daily=GK.daily.claim(G.score).n;if(G.score>(BEST[MODE]||0)){BEST[MODE]=G.score;GK.ls.set('best',BEST)}saveST();GK.audio.tone(98,.8,'sawtooth',.06,.5)}
+/* ============ AUTO: weighs every landing ============ */
+function bot(){var w=width(),sl=G.potT.slow>0?.5:1,lo=w/2+8,hi=W-w/2-8,best=cx,bs=-1e9;
+  for(var x=lo;x<=hi;x+=8){var c=cx,pos=G.pos,sc=-Math.abs(x-cx)*.03,its=items.map(function(it){return{k:it.k,x0:it.x0,y:it.y,vy:it.vy,ph:it.ph,amp:it.amp,done:0}});
+    for(var t=1;t<=90;t++){c+=GK.clamp(x-c,-9,9);for(var q=0;q<its.length;q++){var it=its[q];if(it.done)continue;it.y+=it.vy*sl;var ix=it.x0+Math.sin(it.ph+it.y*.02)*it.amp;
+        if(it.y>CY-18&&it.y<CY+6&&Math.abs(ix-c)<w/2-4){it.done=1;var nd=G.recipe[pos];if(it.k===nd||it.k===-1){sc+=600/(1+t*.01);pos++;if(pos>=G.recipe.length)pos=0}else sc-=4000}
+        else if(it.y>=CY+6)it.done=1}}
+    /* beyond the horizon: drift toward the next needed item's landing spot */ var need=G.recipe[pos];its.forEach(function(it){if(it.done)return;if(it.k===need||it.k===-1){var lx=it.x0+Math.sin(it.ph+(CY-18)*.02)*it.amp;sc-=Math.abs(lx-x)*.4/(1+(CY-it.y)*.01)}});
+    if(sc>bs){bs=sc;best=x}}tx=best}
+/* ============ input ============ */
+GK.pointer(cv,{down:function(x){if(mode==='title'||G&&G.over){if(!G||G.deadT>40||mode==='title')newGame();return}tx=x},move:function(x,y,e,dn){if(dn||e.pointerType==='mouse')tx=x},hover:true,key:function(c,d){if(d&&(c==='Space'||c==='Enter')&&(mode==='title'||G&&G.over&&G.deadT>40))newGame()}});
+/* ============ drawing: woodcut ============ */
+function hatchRect(x,y,w,h,gap,ang){ctx.save();ctx.beginPath();ctx.rect(x,y,w,h);ctx.clip();ctx.strokeStyle=INK;ctx.lineWidth=1.2;ctx.beginPath();for(var k=-h;k<w+h;k+=gap){ctx.moveTo(x+k,y);ctx.lineTo(x+k+(ang||1)*h,y+h)}ctx.stroke();ctx.restore()}
+function medallion(k,x,y,r,rot){ctx.save();ctx.translate(x,y);ctx.rotate(Math.sin(rot)*.3);ctx.fillStyle=k===-1?ACID:PAR;ctx.strokeStyle=INK;ctx.lineWidth=3;ctx.beginPath();ctx.arc(0,0,r,0,6.3);ctx.fill();ctx.stroke();ctx.lineWidth=1;ctx.beginPath();ctx.arc(0,0,r-4,0,6.3);ctx.stroke();
+  GK.icoDraw(ctx,k===-1?'star':ING[k],0,0,r*1.25,INK,2);ctx.restore()}
+var bg=document.createElement('canvas');bg.width=W;bg.height=H;(function(){var x=bg.getContext('2d'),r=GK.rng(3);x.fillStyle=PAR;x.fillRect(0,0,W,H);for(var i=0;i<5000;i++){x.fillStyle='rgba(20,17,13,'+(r()*.06)+')';x.fillRect(r()*W,r()*H,1,1)}
+  /* shelf + jars */ x.fillStyle=INK;x.fillRect(0,58,W,8);for(var j=0;j<8;j++){var jx=18+j*60+r()*10,jh=26+r()*18,jw=24+r()*10;x.strokeStyle=INK;x.lineWidth=2.5;x.fillStyle=PAR2;x.beginPath();x.rect(jx,58-jh,jw,jh);x.fill();x.stroke();x.fillStyle=INK;x.fillRect(jx-2,58-jh-5,jw+4,5);x.beginPath();for(var q=4;q<jw;q+=5){x.moveTo(jx+q,58-jh+6);x.lineTo(jx+q-3,58-2)}x.lineWidth=1;x.stroke()}
+  /* floor: woodcut planks */ x.fillStyle=INK;x.fillRect(0,H-40,W,40);x.strokeStyle=PAR;x.lineWidth=1;for(var p=0;p<W;p+=46){x.beginPath();x.moveTo(p,H-40);x.lineTo(p+8,H);x.stroke()}
+  x.font='22px "Pirata One"';x.fillStyle='rgba(20,17,13,.08)';x.textAlign='center';for(var s=0;s<14;s++)x.fillText(['☿','♄','♃','♂','♀','☉','☽'][s%7],r()*W,120+r()*(H-260))})();
+function drawCauldron(){var w=width(),x=cx,y=CY;
+  /* fire */ for(var k=0;k<5;k++){var fx=x-w*.35+k*w*.175,fh=14+Math.sin(T*.3+k*1.7)*6;ctx.fillStyle=k%2?ACID:INK;ctx.beginPath();ctx.moveTo(fx-8,y+52);ctx.quadraticCurveTo(fx-4,y+52-fh,fx,y+52-fh-6);ctx.quadraticCurveTo(fx+4,y+52-fh,fx+8,y+52);ctx.fill()}
+  ctx.fillStyle=INK;ctx.fillRect(x-w*.5,y+50,w,6);
+  /* pot */ ctx.fillStyle=INK;ctx.beginPath();ctx.moveTo(x-w/2,y-6);ctx.quadraticCurveTo(x-w/2-6,y+46,x,y+48);ctx.quadraticCurveTo(x+w/2+6,y+46,x+w/2,y-6);ctx.closePath();ctx.fill();
+  ctx.strokeStyle=PAR;ctx.lineWidth=1.2;ctx.beginPath();for(var h=-w/2+10;h<w/2-6;h+=7){ctx.moveTo(x+h,y+6);ctx.lineTo(x+h+4,y+38-Math.abs(h)*.2)}ctx.stroke();
+  /* brew surface */ var col=G&&G.flash?'#5a4a3a':G&&G.mix.length?ACID:'#3d3a2a';ctx.fillStyle=col;ctx.beginPath();ctx.ellipse(x,y-6,w/2-3,8,0,0,6.3);ctx.fill();ctx.strokeStyle=INK;ctx.lineWidth=4;ctx.beginPath();ctx.ellipse(x,y-6,w/2,10,0,0,6.3);ctx.stroke();
+  bubbles.forEach(function(b){ctx.strokeStyle=G&&G.mix.length?ACID:INK;ctx.lineWidth=1.6;ctx.globalAlpha=b.l/40;ctx.beginPath();ctx.arc(b.x-cx+x,b.y,b.r,0,6.3);ctx.stroke();ctx.globalAlpha=1})}
+function render(){var v=GK.view,so=GK.fx.offset();ctx.setTransform(v.dpr*v.s,0,0,v.dpr*v.s,0,0);ctx.drawImage(bg,0,0);ctx.translate(so.x,so.y);
+  if(G){items.forEach(function(it){medallion(it.k,it.x,it.y,20,it.rot)});drawCauldron();GK.fx.draw(ctx);drawRecipe();drawHud();if(G.flash>0){ctx.fillStyle='rgba(20,17,13,'+G.flash/60+')';ctx.fillRect(0,0,W,H)}if(G.over)drawCard(G.score)}
+  else{drawCauldronIdle();drawCard(BEST[MODE]||0)}
+  if(tut.active)tutDraw()}
+function drawCauldronIdle(){var g0=G;G={flash:0,mix:[1],potT:{}};drawCauldron();G=g0}
+function drawRecipe(){/* the recipe scroll hanging below the shelf */ var n=G.recipe.length,w=n*50+30,x=W/2-w/2,y=80;ctx.fillStyle=PAR;ctx.strokeStyle=INK;ctx.lineWidth=3;ctx.fillRect(x,y,w,62);ctx.strokeRect(x,y,w,62);ctx.fillStyle=INK;ctx.fillRect(x-6,y-4,w+12,7);ctx.fillRect(x-6,y+59,w+12,7);
+  for(var i=0;i<n;i++){var ix=x+30+i*50,iy=y+31;if(i<G.pos){ctx.fillStyle=ACID;ctx.beginPath();ctx.arc(ix,iy,19,0,6.3);ctx.fill()}GK.icoDraw(ctx,ING[G.recipe[i]],ix,iy,30,INK,2.2);if(i===G.pos){ctx.strokeStyle=INK;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(ix-14,iy+24);ctx.lineTo(ix+14,iy+24);ctx.stroke()}}
+  GK.icoDraw(ctx,POT[G.potion].ic,x+w+28,y+31,24,INK,2.2)}
+function drawHud(){ctx.fillStyle=INK;ctx.font='34px "Pirata One"';ctx.textAlign='left';ctx.fillText(String(G.score),14,180);if(G.combo>1){ctx.fillStyle=ACID;ctx.fillText('×'+G.combo,14,214)}
+  if(G.hearts<10)for(var i=0;i<G.hearts;i++)GK.icoDraw(ctx,'heart',W-24-i*28,170,22,INK,2.4);else GK.icoDraw(ctx,'infinity',W-30,170,24,INK,2.2);
+  if(MODE==='daily'){GK.icoDraw(ctx,'clock',W-30,206,20,INK,2);ctx.textAlign='right';ctx.font='24px "Pirata One"';ctx.fillText(String(Math.ceil(G.timer/60)),W-46,214)}
+  var px=14;POTK.forEach(function(k){if(G.potT[k]>0){GK.icoDraw(ctx,POT[k].ic,px+12,240,20,ACID,2.4);ctx.fillStyle=ACID;ctx.fillRect(px,254,24*G.potT[k]/420,3);px+=32}})}
+function drawCard(sc){ctx.fillStyle='rgba(233,220,188,.86)';ctx.fillRect(60,300,W-120,170);ctx.strokeStyle=INK;ctx.lineWidth=4;ctx.strokeRect(60,300,W-120,170);hatchRect(60,300,W-120,14,6);hatchRect(60,456,W-120,14,6);
+  ctx.fillStyle=INK;ctx.textAlign='center';ctx.font='64px "Pirata One"';ctx.fillText(String(sc),W/2,410);GK.icoDraw(ctx,MODE==='daily'?'sun':MODE==='apprentice'?'leaf':'crown',W/2,346,28,INK,2.2);if(MODE==='daily'){ctx.font='24px "Pirata One"';ctx.fillText(String(GK.daily.streak()),W/2+30,354)}GK.pulse(ctx,W/2,440,T,ACID,8)}
+/* ============ tutorial: move, catch, brew ============ */
+var tutF={moved:0,caught:0,brewed:0};
+var tut=GK.tutorial({parent:stage,onStart:function(){var m0=MODE;MODE='apprentice';newGame();MODE=m0;G.tut=true;G.recipe=[0,1];G.pos=0;items=[];tutF={moved:0,caught:0,brewed:0};tutF.x0=cx},onEnd:function(){mode='title';G=null;items=[]},
+  steps:[{done:function(){return Math.abs(cx-tutF.x0)>90}},{init:function(){items.push({k:G.recipe[G.pos],x:120,x0:120,y:90,vy:1.6,ph:0,amp:0,rot:0})},update:function(){if(!items.length)items.push({k:G.recipe[G.pos],x:120,x0:120,y:90,vy:1.6,ph:0,amp:0,rot:0})},done:function(){return tutF.caught}},
+    {init:function(){items=[]},update:function(){if(!items.length&&G.pos<G.recipe.length)items.push({k:G.recipe[G.pos],x:360,x0:360,y:90,vy:1.6,ph:0,amp:0,rot:0})},done:function(){return tutF.brewed}}]});
+function tutDraw(){var t=tut.t;if(tut.i===0)GK.swipe(ctx,cx,CY+20,cx+(cx<W/2?140:-140),CY+20,t,ACID);else{var it=items[0];if(it){GK.pulse(ctx,it.x,CY-10,t,ACID,12)}}}
+/* ============ bar ============ */
+var R=GK.controls(document.getElementById('bar'),{bar:'top',onHelp:function(){tut.start()},extra:[
+  {id:'rs',html:GK.icon('restart'),title:'New brew',fn:function(){if(!tut.active)newGame()}},
+  {id:'m_brew',cls:'md',html:GK.icoSvg('flame'),title:'Brew',fn:function(){setMode('brew')}},
+  {id:'m_apprentice',cls:'md',html:GK.icoSvg('leaf'),title:'Apprentice',fn:function(){setMode('apprentice')}},
+  {id:'m_daily',cls:'md',html:GK.icoSvg('sun'),title:'Daily',fn:function(){setMode('daily')}}]});
+function setMode(m){if(tut.active)return;MODE=m;GK.ls.set('mode',m);paint();mode='title';G=null;items=[]}
+function paint(){['brew','apprentice','daily'].forEach(function(k){R['m_'+k].classList.toggle('on',MODE===k)})}paint();
+GK.goals.setup({metrics:function(){return ST},defs:{potions:{ic:'flame',t:[1,10,50,200,600]},score:{ic:'crown',t:[2000,10000,40000,100000,250000]},combo:{ic:'bolt',t:[3,6,10,15]},caught:{ic:'mushroom',t:[50,500,2500]},gold:{ic:'star',t:[1,10,50]},clean:{ic:'shield',t:[5,25,100]},longest:{ic:'book',t:[3,4,5,6]},apprentice:{ic:'leaf',t:[10,50]},games:{ic:'skull',t:[1,10,50]},daily:{ic:'sun',t:[1,3,7,14,30]}}});
+GK.goals.mount(R);
+function fit(){GK.fit(cv,stage,W,H,1.5)}addEventListener('resize',fit);addEventListener('orientationchange',fit);fit();
+GK.loop(function(){step();if(mode==='title'&&Auto.on&&!tut.active)newGame()},render);tut.maybe();
+window.__g={st:ST,setMode:setMode,tut:tut,newGame:newGame,stats:function(){return G?{MODE:MODE,score:G.score,hearts:G.hearts,brewed:G.brewed,len:G.recipe.length,pos:G.pos,combo:G.combo,over:G.over,items:items.length}:{mode:mode}}};
+</script>
+</body>
+</html>
