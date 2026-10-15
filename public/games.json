@@ -145,5 +145,12 @@
     "blurb": "Turn the hedge tiles until every gravel path in the garden joins the gate. Then watch the hedgehog walk the whole maze.",
     "added": "2026-10-15",
     "thumb": "games/hedgerow/thumb.jpg"
+  },
+  {
+    "id": "deepdig",
+    "title": "Deepdig",
+    "blurb": "Drill down through hand-coloured rock strata. Haul ore up to sell, refuel and upgrade, and dig out the relic at the core.",
+    "added": "2026-10-15",
+    "thumb": "games/deepdig/thumb.jpg"
   }
 ]
