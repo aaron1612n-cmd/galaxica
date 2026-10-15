@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#24302d">
+<title>Ant Kingdom</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rokkitt:wght@500;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../shared/gk.css">
+<script src="../../shared/device.js"></script>
+<script src="../../shared/auto.js"></script>
+<script src="../../shared/speed.js"></script>
+<script src="../../shared/gk.js"></script>
+<style>
+/* Ant Kingdom: an ant farm behind glass. Wooden frame, strata of soil, sugar amber as the one accent. */
+:root{--gk-bg:#24302d;--gk-ink:#f0e2c4;--gk-acc:#ffb42e;--gk-font:"Rokkitt","Rockwell",serif;--gk-bw:3px;--gk-r:3px;--gk-sh:0 3px 0 #101816;--gk-h:40px}
+body{background:#24302d}
+#stage{padding:8px 8px 2px}
+canvas#c{border:10px solid #3a2616;box-shadow:inset 0 0 0 3px #1a0f08,0 0 0 3px #1a0f08,0 6px 0 3px #1a0f08;background:#000;cursor:crosshair}
+.gk-b.tl.on{background:var(--gk-acc);border-color:var(--gk-acc);color:#24302d}
+.gk-b{font-weight:800}
+</style>
+</head>
+<body>
+<div id="app"><div id="stage"><canvas id="c"></canvas></div><div id="bar"></div></div>
+<script>
+GK.id('antk');
+var cv=document.getElementById('c'),ctx=cv.getContext('2d'),stage=document.getElementById('stage');
+var GW=120,GH=80,CELL=6,W=GW*CELL,H=GH*CELL,SR=16; /* surface row */
+var AMBER='#ffb42e',CREAM='#f0e2c4';
+/* ============ world ============ */
+var S=new Uint8Array(GW*GH),MARK=new Uint8Array(GW*GH),NM=new Int16Array(GW*GH),SM=new Int16Array(GW*GH),DM=new Int16Array(GW*GH),TM=new Int16Array(GW*GH),FER=new Float32Array(GW*GH),VAR=new Uint8Array(GW*GH);
+var BIG=9999,q=new Int32Array(GW*GH),ants=[],foods=[],threats=[],brood=[],mound=new Uint8Array(GW),G={},tick=0,mode='play',dirty=true,tool='dig',showFer=true;
+var rnd=Math.random;
+function I(x,y){return y*GW+x}
+function inb(x,y){return x>=0&&y>=0&&x<GW&&y<GH}
+function open(x,y){return inb(x,y)&&S[I(x,y)]===0&&y>=SR-2}
+function reset(){S.fill(1);MARK.fill(0);FER.fill(0);ants=[];foods=[];threats=[];brood=[];mound.fill(0);
+  var r=GK.rng(11);for(var y=0;y<GH;y++)for(var x=0;x<GW;x++){var i=I(x,y);VAR[i]=(r()*4)|0;if(y<SR)S[i]=0;else if(y>GH-3)S[i]=2;else if(r()<.012&&y>SR+8)S[i]=2}
+  /* entrance shaft and queen's room */ var cx=GW/2|0;for(y=SR;y<SR+9;y++){S[I(cx,y)]=0;S[I(cx+1,y)]=0}for(y=SR+9;y<SR+13;y++)for(x=cx-6;x<=cx+7;x++)S[I(x,y)]=0;
+  G={stores:12,year:0,pop:0,tick:0,dead:0,peak:0,queenX:cx,queenY:SR+11,eggT:0,seasonT:0,lost:0,hatched:0,dug:0,tut:false,best:G.best||GK.ls.get('best',{years:0,peak:0}).years};
+  for(var k=0;k<14;k++)addAnt(cx+(rnd()-.5)*10,SR+10+(rnd()-.5)*2);
+  tick=0;dirty=true;mode='play'}
+function addAnt(x,y){var cx=Math.round(x),cy=Math.round(y);if(!open(cx,cy))return;ants.push({cx:cx,cy:cy,nx:cx,ny:cy,p:1,role:'forage',carry:0,hp:1,age:0,dir:0,tgt:null,wait:0,trail:0})}
+/* ============ BFS maps ============ */
+function bfs(M,sources){M.fill(BIG);var h=0,t=0;for(var i=0;i<sources.length;i++){M[sources[i]]=0;q[t++]=sources[i]}
+  while(h<t){var c=q[h++],x=c%GW,y=(c/GW)|0,d=M[c]+1;
+    if(x>0&&open(x-1,y)&&M[c-1]>d){M[c-1]=d;q[t++]=c-1}if(x<GW-1&&open(x+1,y)&&M[c+1]>d){M[c+1]=d;q[t++]=c+1}if(y>0&&open(x,y-1)&&M[c-GW]>d){M[c-GW]=d;q[t++]=c-GW}if(y<GH-1&&open(x,y+1)&&M[c+GW]>d){M[c+GW]=d;q[t++]=c+GW}}}
+function rebuild(){var src=[],x,y,i;for(y=G.queenY-1;y<=G.queenY+1;y++)for(x=G.queenX-3;x<=G.queenX+3;x++)if(open(x,y))src.push(I(x,y));bfs(NM,src);
+  src=[];for(x=0;x<GW;x++)src.push(I(x,SR-1));bfs(SM,src);
+  /* dig frontier: open cells beside a marked soil cell */ src=[];for(y=SR;y<GH-2;y++)for(x=1;x<GW-1;x++){i=I(x,y);if(S[i]===0&&(MARK[i-1]&&S[i-1]===1||MARK[i+1]&&S[i+1]===1||MARK[i-GW]&&S[i-GW]===1||MARK[i+GW]&&S[i+GW]===1))src.push(i)}bfs(DM,src);G.frontier=src.length;
+  if(threats.length){src=[];threats.forEach(function(t){var c=I(Math.round(t.x),Math.round(t.y));if(inb(Math.round(t.x),Math.round(t.y)))src.push(c)});bfs(TM,src)}dirty=false}
+/* ============ seasons ============ */
+var YEAR=7200;function season(){return Math.floor((G.seasonT%YEAR)/1800)} /* 0 spring 1 summer 2 autumn 3 winter */
+/* ============ ants ============ */
+var N8=[[1,0],[1,1],[0,1],[-1,1],[-1,0],[-1,-1],[0,-1],[1,-1]];
+function passable(x,y,fx,fy){if(!open(x,y))return false;if(fx!==undefined&&dx2(x-fx,y-fy))return S[I(fx,y)]!==1||S[I(x,fy)]!==1;return true}
+function dx2(a,b){return a!==0&&b!==0}
+function descend(a,M,noise){var best=-1,bv=M[I(a.cx,a.cy)]+(noise?0:0);var cands=[];for(var k=0;k<8;k++){var x=a.cx+N8[k][0],y=a.cy+N8[k][1];if(!passable(x,y,a.cx,a.cy))continue;var v=M[I(x,y)]+(noise?rnd()*noise:0);cands.push([k,v,x,y])}
+  if(!cands.length)return false;cands.sort(function(a,b){return a[1]-b[1]});var c=cands[0];a.nx=c[2];a.ny=c[3];a.p=0;a.dir=Math.atan2(c[3]-a.cy,c[2]-a.cx);return true}
+function wander(a,bias){var cands=[];for(var k=0;k<8;k++){var x=a.cx+N8[k][0],y=a.cy+N8[k][1];if(!passable(x,y,a.cx,a.cy))continue;var da=Math.abs(((Math.atan2(N8[k][1],N8[k][0])-a.dir+9.42)%6.28)-3.14);var w=.4+(3.14-da)*.7+(bias?bias(x,y):0)+rnd()*.8;cands.push([w,x,y])}
+  if(!cands.length)return false;cands.sort(function(a,b){return b[0]-a[0]});var c=cands[0];a.dir=Math.atan2(c[2]-a.cy,c[1]-a.cx);a.nx=c[1];a.ny=c[2];a.p=0;return true}
+function nearestFood(a){var bd=100,bf=null;for(var i=0;i<foods.length;i++){var f=foods[i];if(f.amt<=0)continue;var d=Math.hypot(f.x-a.cx,f.y-a.cy);if(d<bd){bd=d;bf=f}}return bd<16&&bf&&(a.cy<SR+1||bd<4)?bf:null}
+function antThink(a){
+  var i=I(a.cx,a.cy);
+  if(a.role==='forage'){
+    if(a.carry===1){FER[i]=Math.min(2,FER[i]+.7);if(NM[i]<=2){a.carry=0;G.stores+=1;a.trail=0;GK.audio.tone(900+rnd()*200,.03,'sine',.006)}else if(!descend(a,NM,.6))wander(a)}
+    else{var f=nearestFood(a);
+      if(f){if(Math.hypot(f.x-a.cx,f.y-a.cy)<1.6){f.amt--;a.carry=1;if(f.amt<=0)foods.splice(foods.indexOf(f),1)}else{var best=null,bd=1e9;for(var k=0;k<8;k++){var x=a.cx+N8[k][0],y=a.cy+N8[k][1];if(!passable(x,y,a.cx,a.cy))continue;var d=Math.hypot(f.x-x,f.y-y)+rnd()*.5;if(d<bd){bd=d;best=[x,y]}}
+          if(best){a.dir=Math.atan2(best[1]-a.cy,best[0]-a.cx);a.nx=best[0];a.ny=best[1];a.p=0}else wander(a)}}
+      else if(a.cy>=SR&&NM[i]<BIG){ /* in the nest: leave through the shaft, sniff trails */ var cand=[],tr=a;
+        if(!wander(a,function(x,y){return FER[I(x,y)]*3-SM[I(x,y)]*.06})){}}
+      else{wander(a,function(x,y){return FER[I(x,y)]*4+(y>=SR-2&&y<=SR-1?.3:0)})}}}
+  else if(a.role==='dig'){
+    if(a.carry===2){if(SM[i]<=0||a.cy<SR){a.carry=0;var mx=GK.clamp(a.cx+((rnd()*5)|0)-2,2,GW-3);if(mound[mx]<8)mound[mx]++;dirty=true}else if(!descend(a,SM,.4))wander(a)}
+    else{ if(DM[i]===0||adjMark(a)){var m=adjMark(a);if(m!==-1){S[m]=0;MARK[m]=0;a.carry=2;G.dug++;dirty=true;GK.audio.tone(180+rnd()*60,.04,'square',.012);return}}
+      if(DM[i]<BIG){if(!descend(a,DM,.3))wander(a)}else wander(a)}}
+  else if(a.role==='guard'){var T=threats[0];if(T&&TM[i]<BIG){if(!descend(a,TM,.4))wander(a)}else wander(a)}
+  else{wander(a)}}
+function adjMark(a){for(var k=0;k<4;k++){var x=a.cx+N8[k*2][0],y=a.cy+N8[k*2][1];if(inb(x,y)&&S[I(x,y)]===1&&MARK[I(x,y)])return I(x,y)}return-1}
+function assignRoles(){var n=ants.length,wantDig=Math.min(Math.ceil(n*.35),Math.max(0,Math.ceil((G.markCount||0)/4))),wantGuard=threats.length?Math.ceil(n*.35):0,c={dig:0,guard:0},i,a;
+  for(i=0;i<n;i++){a=ants[i];if(a.carry)continue;a.role='forage'}
+  for(i=0;i<n&&c.guard<wantGuard;i++){a=ants[i];if(!a.carry&&a.cy>=SR&&NM[I(a.cx,a.cy)]<BIG){a.role='guard';c.guard++}}
+  for(i=n-1;i>=0&&c.dig<wantDig;i--){a=ants[i];if(!a.carry&&a.role==='forage'&&a.cy>=SR){a.role='dig';c.dig++}}
+  /* diggers carrying soil keep their role */ ants.forEach(function(a){if(a.carry===2)a.role='dig';if(a.carry===1)a.role='forage'})}
+/* ============ threats ============ */
+function spawnThreat(kind){var x=rnd()<.5?4:GW-5;threats.push({kind:kind,x:x,y:SR-1,hp:kind==='beetle'?50+G.year*14:14+G.year*3,max:kind==='beetle'?50+G.year*14:14+G.year*3,t:0,atk:0,fx:0});dirty=true;GK.audio.tone(90,.3,'sawtooth',.05,.7)}
+function stepThreats(){for(var i=threats.length-1;i>=0;i--){var t=threats[i];t.t++;var cx=Math.round(t.x),cy=Math.round(t.y);
+    /* move */ if(t.kind==='beetle'&&t.t%4===0){var best=null,bv=TM[I(cx,cy)];var M=NM;var cv2=M[I(cx,cy)],bb=cv2;for(var k=0;k<8;k++){var x=cx+N8[k][0],y=cy+N8[k][1];if(!open(x,y))continue;var v=M[I(x,y)];if(v<bb){bb=v;best=[x,y]}}
+        if(best){t.x+=(best[0]-t.x)*.5;t.y+=(best[1]-t.y)*.5}else if(cy<SR-1){t.y=SR-1}}
+    else if(t.kind==='spider'&&t.t%3===0){var nf=null,nd=1e9;ants.forEach(function(a){if(a.cy<SR&&Math.hypot(a.cx-t.x,a.cy-t.y)<nd){nd=Math.hypot(a.cx-t.x,a.cy-t.y);nf=a}});if(nf){t.x+=Math.sign(nf.cx-t.x)*.7;t.y=SR-1}else{t.x+=(t.x<GW/2?-.4:.4)}if(t.t>1400||t.x<0||t.x>GW)threats.splice(i,1)}
+    /* fight */ var near=0;ants.forEach(function(a,j){var d=Math.hypot(a.cx-t.x,a.cy-t.y);if(d<2.4){near++;t.hp-=.07+(a.role==='guard'?.06:0)}});
+    if(t.hp<=0){threats.splice(i,1);G.kills=(G.kills||0)+1;GK.audio.tone(400,.2,'triangle',.05);dirty=true;continue}
+    t.atk++;if(t.atk>(t.kind==='beetle'?34:22)){t.atk=0;var vi=-1,vd=1e9;ants.forEach(function(a,j){var d=Math.hypot(a.cx-t.x,a.cy-t.y);if(d<2.6&&d<vd){vd=d;vi=j}});if(vi>=0){ants.splice(vi,1);G.lost++;GK.audio.tone(140,.08,'sawtooth',.03)}}}
+  if(!threats.length&&G.hadThreat){G.hadThreat=false;dirty=true}else if(threats.length)G.hadThreat=true}
+/* ============ tick ============ */
+function step(){if(mode!=='play')return;tick++;G.tick++;G.seasonT++;var s=season(),yr=Math.floor(G.seasonT/YEAR);if(yr>G.year){G.year=yr;if(G.year>G.best){G.best=G.year;GK.ls.set('best',{years:G.best,peak:G.peak});GK.audio.tone(523,.2,'triangle',.05)}GK.audio.tone(784,.3,'triangle',.05,1,GK.audio.ctx&&GK.audio.ctx.currentTime+.12)}
+  if(G.tick%6===0&&dirty)rebuild();
+  if(G.tick%60===0){var mc=0;for(var i=0;i<MARK.length;i++)mc+=MARK[i];G.markCount=mc;assignRoles()}
+  /* pheromone */ if(G.tick%4===0)for(i=0;i<FER.length;i++){if(FER[i]>.01)FER[i]*=.97;else FER[i]=0}
+  /* ants */
+  for(var k=ants.length-1;k>=0;k--){var a=ants[k];a.age++;a.p+=a.wait>0?0:(a.role==='dig'?.2:.26);if(a.wait>0)a.wait--;
+    if(a.p>=1){a.cx=a.nx;a.cy=a.ny;a.p=1;if(open(a.cx,a.cy)){antThink(a)}else{/* sealed in: shuffle */a.nx=a.cx;a.ny=a.cy;wander(a)}}
+    else if(a.nx===a.cx&&a.ny===a.cy){antThink(a)}}
+  /* queen + brood */ G.eggT++;
+  if(G.eggT>Math.max(120,520-G.stores*6)&&G.stores>=3&&ants.length+brood.length<230){G.eggT=0;G.stores-=2;brood.push(tick+900)}
+  for(i=brood.length-1;i>=0;i--){if(tick>=brood[i]){brood.splice(i,1);addAnt(G.queenX+(rnd()-.5)*8,G.queenY+(rnd()-.5)*2);G.hatched++;GK.audio.tone(1100,.05,'sine',.01)}}
+  /* hunger */ if(G.tick%300===0){G.stores-=ants.length*(s===3?.14:.07);if(G.stores<0){G.stores=0;var kill=Math.ceil(ants.length*.08);for(var d=0;d<kill&&ants.length>3;d++){ants.splice((rnd()*ants.length)|0,1);G.lost++}}}
+  /* wild food + threats */ if(s<3&&G.tick%(s===2?240:520)===0&&foods.length<7){var fx=4+rnd()*(GW-8);foods.push({x:fx|0,y:SR-1,amt:6+(rnd()*6|0),wild:1})}
+  if(!G.tut&&G.tick>1500&&Math.random()<(.0004+G.year*.00012)&&threats.length<2){spawnThreat(Math.random()<.65?'beetle':'spider')}
+  stepThreats();
+  G.pop=ants.length;G.peak=Math.max(G.peak,G.pop);
+  if(ants.length===0&&brood.length===0){mode='over';G.deadT=0;GK.ls.set('best',{years:Math.max(G.best,G.year),peak:Math.max(G.peak,GK.ls.get('best',{peak:0}).peak)});GK.audio.tone(160,.6,'sawtooth',.06,.4)}
+  if(Auto.on&&!G.tut&&G.tick%75===0)botTick();
+  tut.tick()}
+/* ============ input ============ */
+var ptr=null;
+function cellOf(x,y){return[Math.floor(x/CELL),Math.floor(y/CELL)]}
+function applyTool(cx,cy,first){
+  if(tool==='dig'){for(var dy=-1;dy<=1;dy++)for(var dx=-1;dx<=1;dx++){if(dx*dx+dy*dy>2)continue;var x=cx+dx,y=cy+dy;if(inb(x,y)&&S[I(x,y)]===1&&y>SR){MARK[I(x,y)]=1;dirty=true}}if(first)GK.audio.tone(260,.05,'square',.02)}
+  else if(tool==='sugar'){if(first){var fx=GK.clamp(cx,2,GW-3);foods.push({x:fx,y:SR-1,amt:14,wild:0});GK.audio.tone(1200,.08,'sine',.04);if(G.tut)tutFlag.sugar=1}}
+  else if(tool==='pebble'){for(var dy2=-1;dy2<=0;dy2++)for(var dx2_=-1;dx2_<=0;dx2_++){var x2=cx+dx2_,y2=cy+dy2;if(inb(x2,y2)&&y2>=SR-1&&S[I(x2,y2)]!==2){S[I(x2,y2)]=2;MARK[I(x2,y2)]=0;dirty=true}}}
+  else if(tool==='erase'){for(var dy3=-1;dy3<=1;dy3++)for(var dx3=-1;dx3<=1;dx3++){var x3=cx+dx3,y3=cy+dy3;if(!inb(x3,y3))continue;var i3=I(x3,y3);MARK[i3]=0;if(S[i3]===2&&y3>SR&&y3<GH-3){S[i3]=0}}dirty=true}}
+GK.pointer(cv,{down:function(x,y){if(mode==='over'){if(G.deadT>40){reset()}return}var c=cellOf(x,y);ptr=c;applyTool(c[0],c[1],true)},move:function(x,y,e,dn){if(!dn)return;var c=cellOf(x,y);if(!ptr)ptr=c;var n=Math.max(Math.abs(c[0]-ptr[0]),Math.abs(c[1]-ptr[1]),1);for(var s=1;s<=n;s++)applyTool(Math.round(ptr[0]+(c[0]-ptr[0])*s/n),Math.round(ptr[1]+(c[1]-ptr[1])*s/n),false);ptr=c},up:function(){ptr=null}});
+/* ============ AUTO ============ */
+function botTick(){var s=season(),surfaceFood=0;foods.forEach(function(f){surfaceFood+=f.amt});
+  if(s<3&&(surfaceFood<10||G.stores<ants.length*.4+6)){foods.push({x:(10+rnd()*(GW-20))|0,y:SR-1,amt:14,wild:0})}
+  if(s===2&&surfaceFood<22)foods.push({x:(10+rnd()*(GW-20))|0,y:SR-1,amt:14});
+  /* tunnels: keep a roomy nest */ var cap=0;for(var y=SR+1;y<GH-2;y++)for(var x=0;x<GW;x++)if(S[I(x,y)]===0)cap++;
+  if(cap<90+ants.length*2.2&&(G.markCount||0)<24){var tries=40;while(tries--){var x2=(GW/2-30+rnd()*60)|0,y2=(SR+6+rnd()*34)|0;if(S[I(x2,y2)]===1&&(S[I(x2-1,y2)]===0||S[I(x2+1,y2)]===0||S[I(x2,y2-1)]===0||S[I(x2,y2+1)]===0)){for(var dy=-1;dy<=1;dy++)for(var dx=-1;dx<=2;dx++){var xx=x2+dx,yy=y2+dy;if(inb(xx,yy)&&S[I(xx,yy)]===1){MARK[I(xx,yy)]=1}}dirty=true;break}}}}
+/* ============ drawing ============ */
+var img=document.createElement('canvas');img.width=GW;img.height=GH;var ictx=img.getContext('2d'),idata=ictx.createImageData(GW,GH),px32=new Uint32Array(idata.data.buffer);
+function c32(r,g,b){return(255<<24)|(b<<16)|(g<<8)|r}
+var SOIL=[[122,79,46],[110,70,40],[96,61,35],[84,52,29],[70,44,24]],TUN=[[38,25,17],[44,29,20]],ROCK=[[112,112,116],[96,96,102]];
+function paintGrid(){var s=season();for(var y=0;y<GH;y++)for(var x=0;x<GW;x++){var i=I(x,y),v=VAR[i],c;
+    if(y<SR-2){c=null}
+    else if(S[i]===0){c=y<SR?null:TUN[v&1]}
+    else if(S[i]===2){c=ROCK[v&1]}
+    else{var band=Math.min(4,((y-SR)/13)|0);var b=SOIL[band];var j=(v-1.5)*6;c=[b[0]+j,b[1]+j*.7,b[2]+j*.5];if(MARK[i])c=[c[0]+30,c[1]+20,c[2]]}
+    if(!c){px32[i]=0;continue}px32[i]=c32(c[0]|0,c[1]|0,c[2]|0)}
+  ictx.putImageData(idata,0,0)}
+var SKY=['#a9c9a0','#d9d3a0','#d9a86a','#aab8c4'],GRASS=['#5a8a3a','#6a8a3a','#9a7a2a','#dfe6ea'];
+function render(){var v=GK.view;ctx.setTransform(v.dpr*v.s,0,0,v.dpr*v.s,0,0);var s=season();
+  /* sky */ ctx.fillStyle=SKY[s];ctx.fillRect(0,0,W,(SR-2)*CELL);ctx.fillStyle=s===3?'#dfe6ea':'#fff3b0';ctx.beginPath();ctx.arc(W-90,34,18,0,6.3);ctx.fill();
+  /* hills */ ctx.fillStyle=s===3?'#cdd6dc':'#7f9d6e';ctx.beginPath();ctx.moveTo(0,(SR-2)*CELL);var r=GK.rng(4);for(var x=0;x<=W;x+=40)ctx.lineTo(x,(SR-2)*CELL-14-r()*24);ctx.lineTo(W,(SR-2)*CELL);ctx.fill();
+  paintGrid();ctx.imageSmoothingEnabled=false;ctx.drawImage(img,0,0,W,H);
+  /* ground line and grass */ ctx.fillStyle=GRASS[s];ctx.fillRect(0,(SR-1)*CELL+2,W,6);
+  for(x=0;x<GW;x++){if(mound[x]){ctx.fillStyle='#7a4f2e';var mh=mound[x]*2.4;ctx.beginPath();ctx.moveTo(x*CELL-3,SR*CELL);ctx.lineTo(x*CELL+CELL/2,SR*CELL-mh);ctx.lineTo(x*CELL+CELL+3,SR*CELL);ctx.fill()}}
+  /* pheromone */ if(showFer){ctx.fillStyle=AMBER;for(var yy=SR-2;yy<GH;yy++)for(var xx=0;xx<GW;xx++){var f=FER[I(xx,yy)];if(f>.12){ctx.globalAlpha=Math.min(.55,f*.3);ctx.fillRect(xx*CELL+1,yy*CELL+1,CELL-2,CELL-2)}}ctx.globalAlpha=1}
+  /* marks hatch */ ctx.strokeStyle='rgba(255,180,46,.8)';ctx.lineWidth=1.4;ctx.beginPath();for(var my=SR;my<GH;my++)for(var mx=0;mx<GW;mx++){if(MARK[I(mx,my)]&&S[I(mx,my)]===1){ctx.moveTo(mx*CELL,my*CELL+CELL);ctx.lineTo(mx*CELL+CELL,my*CELL)}}ctx.stroke();
+  /* brood */ ctx.fillStyle='#f4ecd8';brood.forEach(function(b,i){var ex=G.queenX*CELL-20+(i%9)*6,ey=(G.queenY+1)*CELL+((i/9|0)%2)*6;ctx.beginPath();ctx.ellipse(ex,ey,2.6,3.4,0,0,6.3);ctx.fill()});
+  /* queen */ drawAnt(G.queenX*CELL+CELL/2,G.queenY*CELL+4,0,'queen');
+  /* food */ foods.forEach(function(f){ctx.fillStyle=AMBER;ctx.strokeStyle='#8a5a10';ctx.lineWidth=1.5;for(var k=0;k<Math.min(6,Math.ceil(f.amt/3));k++){var fx=f.x*CELL+(k%3)*5-5,fy=(SR-1)*CELL+4-((k/3)|0)*5;ctx.fillRect(fx,fy,5,5);ctx.strokeRect(fx,fy,5,5)}});
+  ants.forEach(function(a){var p=a.p>1?1:a.p,x=((a.cx+(a.nx-a.cx)*p)+.5)*CELL,y=((a.cy+(a.ny-a.cy)*p)+.5)*CELL;drawAnt(x,y,a.dir,a.role,a.carry,a.age)});
+  threats.forEach(drawThreat);
+  /* HUD */ drawHud();
+  if(mode==='over'){G.deadT++;ctx.fillStyle='rgba(20,15,10,.75)';ctx.fillRect(0,0,W,H);ctx.fillStyle=CREAM;ctx.font='800 90px Rokkitt';ctx.textAlign='center';ctx.fillText(String(G.year),W/2,H/2);ctx.fillStyle=AMBER;ctx.font='800 36px Rokkitt';ctx.fillText(String(G.peak),W/2,H/2+50);if(Auto.on&&G.deadT>100)reset()}
+  if(tut.active)tutDraw()}
+function drawAnt(x,y,dir,role,carry,age){var c=Math.cos(dir),s=Math.sin(dir),big=role==='queen';var sc=big?2.5:1.55,col=role==='guard'?'#6a1a12':role==='dig'?'#2a1a0e':'#111';
+  ctx.save();ctx.translate(x,y);ctx.rotate(dir);ctx.scale(sc,sc);ctx.fillStyle=col;ctx.strokeStyle=col;ctx.lineWidth=.7;
+  var leg=Math.sin((age||0)*.9)*1.2;ctx.beginPath();for(var k=-1;k<=1;k++){ctx.moveTo(0,0);ctx.lineTo(k*2.1+leg,3.4);ctx.moveTo(0,0);ctx.lineTo(k*2.1-leg,-3.4)}ctx.stroke();
+  ctx.beginPath();ctx.ellipse(-3.2,0,2.6,1.9,0,0,6.3);ctx.fill();ctx.beginPath();ctx.arc(0,0,1.5,0,6.3);ctx.fill();ctx.beginPath();ctx.arc(2.3,0,1.4,0,6.3);ctx.fill();
+  if(carry===1){ctx.fillStyle=AMBER;ctx.fillRect(1.4,-2.8,3,3)}else if(carry===2){ctx.fillStyle='#7a4f2e';ctx.beginPath();ctx.arc(3.6,-1.6,1.7,0,6.3);ctx.fill()}
+  if(big){ctx.fillStyle='#ffb42e';ctx.fillRect(-1,-3,2,1.4)}ctx.restore()}
+function drawThreat(t){var x=(t.x+.5)*CELL,y=(t.y+.5)*CELL;ctx.save();ctx.translate(x,y);
+  if(t.kind==='beetle'){ctx.fillStyle='#1b2a3a';ctx.strokeStyle='#050a10';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(0,-3,13,9,0,0,6.3);ctx.fill();ctx.stroke();ctx.beginPath();ctx.moveTo(-8,-5);ctx.lineTo(8,-5);ctx.stroke();ctx.fillStyle='#050a10';ctx.beginPath();ctx.arc(13,-3,5,0,6.3);ctx.fill();ctx.beginPath();ctx.moveTo(17,-5);ctx.lineTo(24,-9);ctx.moveTo(17,-1);ctx.lineTo(24,3);ctx.stroke()}
+  else{ctx.fillStyle='#2a1520';ctx.strokeStyle='#2a1520';ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,-6,7,0,6.3);ctx.fill();for(var k=0;k<4;k++){ctx.beginPath();ctx.moveTo(0,-6);ctx.lineTo(-14+k*3,-14+k*2);ctx.lineTo(-18+k*2,2);ctx.moveTo(0,-6);ctx.lineTo(14-k*3,-14+k*2);ctx.lineTo(18-k*2,2);ctx.stroke()}}
+  ctx.fillStyle='rgba(0,0,0,.5)';ctx.fillRect(-14,-24,28,4);ctx.fillStyle='#e0412f';ctx.fillRect(-14,-24,28*Math.max(0,t.hp/t.max),4);ctx.restore()}
+function drawHud(){ctx.fillStyle='rgba(20,15,10,.6)';ctx.fillRect(8,6,208,34);ctx.fillStyle=CREAM;ctx.font='800 22px Rokkitt';ctx.textAlign='left';
+  drawAnt(24,22,0,'forage',0,tick);ctx.fillStyle=CREAM;ctx.fillText(String(ants.length),40,30);ctx.fillStyle=AMBER;ctx.fillRect(90,16,10,10);ctx.fillStyle=CREAM;ctx.fillText(String(Math.floor(G.stores)),106,30);
+  /* year clock */ var s=season(),cx=190,cy=23;ctx.strokeStyle=CREAM;ctx.lineWidth=2;ctx.beginPath();ctx.arc(cx,cy,12,0,6.3);ctx.stroke();ctx.fillStyle=['#9cd06a','#ffe066','#e08a3a','#cfe6f2'][s];ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,12,-Math.PI/2+s*Math.PI/2,-Math.PI/2+(s+1)*Math.PI/2);ctx.fill();
+  var ang=-Math.PI/2+((G.seasonT%YEAR)/YEAR)*6.28;ctx.strokeStyle=CREAM;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx+Math.cos(ang)*12,cy+Math.sin(ang)*12);ctx.stroke();
+  ctx.fillStyle=CREAM;ctx.textAlign='right';ctx.fillText(String(G.year),W-12,30)}
+/* ============ tutorial ============ */
+var tutFlag={sugar:0,mark:0,dug:0};
+var tut=GK.tutorial({parent:document.getElementById('stage'),onStart:function(){reset();G.tut=true;tutFlag={sugar:0,mark:0,dug:0};tool='sugar';paintTools()},onEnd:function(){reset()},
+  steps:[{init:function(){tool='sugar';paintTools()},done:function(){return tutFlag.sugar&&G.stores>13},update:function(){}},
+   {init:function(){tool='dig';paintTools()},done:function(){var n=0;for(var i=0;i<MARK.length;i++)n+=MARK[i];return n>=8}},
+   {init:function(){tutFlag.dug0=G.dug},done:function(){return G.dug-tutFlag.dug0>=6}}]});
+function tutDraw(){var t=tut.t;if(tut.i===0)GK.pulse(ctx,W/2+120,(SR-1)*CELL,t,AMBER,16);else if(tut.i===1)GK.swipe(ctx,W/2-60,(SR+16)*CELL,W/2+60,(SR+16)*CELL,t,AMBER);else if(tut.i===2){}}
+/* ============ bar ============ */
+var tbtn={};
+var R=GK.controls(document.getElementById('bar'),{onHelp:function(){tut.start()},extra:[
+  {id:'t_dig',cls:'tl',html:'<svg viewBox="0 0 22 22"><path d="M5 17l9-9M14 8l3-3 2 2-3 3zM4 18l3-1-2-2z"/><path d="M12 4l6 6"/></svg>',title:'Dig',fn:function(){tool='dig';paintTools()}},
+  {id:'t_sugar',cls:'tl',html:'<svg viewBox="0 0 22 22"><rect x="5" y="9" width="8" height="8"/><rect x="10" y="5" width="7" height="7"/></svg>',title:'Sugar',fn:function(){tool='sugar';paintTools()}},
+  {id:'t_pebble',cls:'tl',html:'<svg viewBox="0 0 22 22"><path d="M4 16l3-7 6-2 5 4-2 6z"/></svg>',title:'Pebble',fn:function(){tool='pebble';paintTools()}},
+  {id:'t_erase',cls:'tl',html:'<svg viewBox="0 0 22 22"><path d="M5 5l12 12M17 5L5 17"/></svg>',title:'Erase',fn:function(){tool='erase';paintTools()}},
+  {id:'t_fer',cls:'tl',html:'<svg viewBox="0 0 22 22"><path d="M3 15c4-9 6 4 9-4s5 3 7-5" /></svg>',title:'Trails',fn:function(){showFer=!showFer;paintTools()}},
+  {id:'rs',html:GK.icon('restart'),title:'New colony',fn:function(){if(!tut.active)reset()}}]});
+function paintTools(){['dig','sugar','pebble','erase'].forEach(function(k){R['t_'+k].classList.toggle('on',tool===k)});R.t_fer.classList.toggle('on',showFer)}
+paintTools();
+function fit(){GK.fit(cv,stage,W,H,1.3)}addEventListener('resize',fit);addEventListener('orientationchange',fit);fit();
+reset();GK.loop(step,render);tut.maybe();
+window.__g={stats:function(){return{mode:mode,pop:ants.length,stores:Math.floor(G.stores),year:G.year,peak:G.peak,dug:G.dug,hatched:G.hatched,lost:G.lost,kills:G.kills||0,threats:threats.length,foods:foods.length,tut:tut.active}},tut:tut,reset:reset};
+</script>
+</body>
+</html>
