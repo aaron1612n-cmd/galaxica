@@ -18,7 +18,7 @@ Purpose: resume this chat with full context. Cap ~1,500 tokens; condense, don't 
 - AUDIT BEFORE DONE (user was annoyed by missed bugs): open More panel, tutorial and a toast in every game at both sizes and look at the pixels. Checks: no clipped words, no ovals (kit panels use --gk-pr), tutorial/toasts placed via `--gk-ty/--gk-toy` (logical canvas units) away from the HUD, particles in WORLD coords drawn inside the camera transform, touch pad below canvas.
 - Bots: exact short-horizon forward sims / BFS / time-expanded A* beat heuristics.
 
-## Games (26 live)
+## Games (23 live)
 galaxica, squeeze, pinprick, hairline, gravity-garden (challenges + #w= share links), powder-lab, tidewater, loom, moth-mail, cairn, tantrum, ant-kingdom, peg-song, switchyard, chirp (all with fun layer), floe, brass-pinball, ripple, cauldron, snail-rocket, deepdig, hedgerow, sneeze-heist.
 
 ## NEXT
