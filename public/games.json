@@ -110,5 +110,12 @@
     "blurb": "A penguin on sliding ice. You only stop at rocks and snow, so plan each slide to reach the igloo and catch every fish.",
     "added": "2026-10-15",
     "thumb": "games/floe/thumb.jpg"
+  },
+  {
+    "id": "brass-pinball",
+    "title": "Brass Pinball",
+    "blurb": "A Victorian parlour pinball table. Ring the bell, sink the saucer three times for multiball, and chase the missions on the backglass.",
+    "added": "2026-10-15",
+    "thumb": "games/brass-pinball/thumb.jpg"
   }
 ]
