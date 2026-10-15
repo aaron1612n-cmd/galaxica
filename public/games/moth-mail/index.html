@@ -26,7 +26,7 @@ canvas#c{cursor:none;border:2px solid #1f4350}
 <script>
 GK.id('mothmail');
 var cv=document.getElementById('c'),ctx=cv.getContext('2d'),stage=document.getElementById('stage');
-var W=720,H=560,GROUND=H-48;
+var PORT=innerHeight>innerWidth*1.15,W=PORT?420:720,H=PORT?740:560,GROUND=H-48;
 var SKY='#0c1a22',L1='#12303a',L2='#0e2630',L3='#081820',WIN='#ffc24b',CREAM='#efe5c9',BONE='#d8cdb0',DIM='#8f8870';
 /* ============ state ============ */
 var best=GK.ls.get('best',{nights:0,letters:0});

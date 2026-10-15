@@ -27,7 +27,7 @@ canvas#c{border:10px solid #3a2616;box-shadow:inset 0 0 0 3px #1a0f08,0 0 0 3px 
 <script>
 GK.id('antk');
 var cv=document.getElementById('c'),ctx=cv.getContext('2d'),stage=document.getElementById('stage');
-var GW=120,GH=80,CELL=6,W=GW*CELL,H=GH*CELL,SR=16; /* surface row */
+var PORT=innerHeight>innerWidth*1.15,GW=PORT?72:120,GH=PORT?118:80,CELL=6,W=GW*CELL,H=GH*CELL,SR=16; /* surface row */
 var AMBER='#ffb42e',CREAM='#f0e2c4';
 /* ============ world ============ */
 var S=new Uint8Array(GW*GH),MARK=new Uint8Array(GW*GH),NM=new Int16Array(GW*GH),SM=new Int16Array(GW*GH),DM=new Int16Array(GW*GH),TM=new Int16Array(GW*GH),FER=new Float32Array(GW*GH),VAR=new Uint8Array(GW*GH);
@@ -128,7 +128,7 @@ function botTick(){var s=season(),surfaceFood=0;foods.forEach(function(f){surfac
   if(s<3&&(surfaceFood<10||G.stores<ants.length*.4+6)){foods.push({x:(10+rnd()*(GW-20))|0,y:SR-1,amt:14,wild:0})}
   if(s===2&&surfaceFood<22)foods.push({x:(10+rnd()*(GW-20))|0,y:SR-1,amt:14});
   /* tunnels: keep a roomy nest */ var cap=0;for(var y=SR+1;y<GH-2;y++)for(var x=0;x<GW;x++)if(S[I(x,y)]===0)cap++;
-  if(cap<90+ants.length*2.2&&(G.markCount||0)<24){var tries=40;while(tries--){var x2=(GW/2-30+rnd()*60)|0,y2=(SR+6+rnd()*34)|0;if(S[I(x2,y2)]===1&&(S[I(x2-1,y2)]===0||S[I(x2+1,y2)]===0||S[I(x2,y2-1)]===0||S[I(x2,y2+1)]===0)){for(var dy=-1;dy<=1;dy++)for(var dx=-1;dx<=2;dx++){var xx=x2+dx,yy=y2+dy;if(inb(xx,yy)&&S[I(xx,yy)]===1){MARK[I(xx,yy)]=1}}dirty=true;break}}}}
+  if(cap<90+ants.length*2.2&&(G.markCount||0)<24){var tries=40;while(tries--){var x2=(GW/2-Math.min(30,GW/2-6)+rnd()*Math.min(60,GW-12))|0,y2=(SR+6+rnd()*34)|0;if(S[I(x2,y2)]===1&&(S[I(x2-1,y2)]===0||S[I(x2+1,y2)]===0||S[I(x2,y2-1)]===0||S[I(x2,y2+1)]===0)){for(var dy=-1;dy<=1;dy++)for(var dx=-1;dx<=2;dx++){var xx=x2+dx,yy=y2+dy;if(inb(xx,yy)&&S[I(xx,yy)]===1){MARK[I(xx,yy)]=1}}dirty=true;break}}}}
 /* ============ drawing ============ */
 var img=document.createElement('canvas');img.width=GW;img.height=GH;var ictx=img.getContext('2d'),idata=ictx.createImageData(GW,GH),px32=new Uint32Array(idata.data.buffer);
 function c32(r,g,b){return(255<<24)|(b<<16)|(g<<8)|r}

@@ -12,25 +12,11 @@ Host website(s) AND the Galaxica game for repo `aaron1612n-cmd/galaxica` using C
   - Worker/app: add `wrangler.jsonc`, `npx wrangler deploy`
 - Confirm with user before first deploy / any overwrite of an existing project.
 
-## Prerequisites (status)
-- [x] `CLOUDFLARE_API_TOKEN` env secret — set
-- [x] `CLOUDFLARE_ACCOUNT_ID` env secret — set
-- [x] Network: api.cloudflare.com + npm reachable (verified)
-- [x] Site content exists (hub + 1 game)
-
-## Current state
-- Hub + starter game scaffolded on PR #1 branch.
-- Draft PR #1 open (runbook), subscribed; no CI/reviews yet.
-
 ## Game / site structure (decided: collection of JS games added over time)
 - Static arcade hub. `public/index.html` lists games from `public/games.json`.
 - Each game = `public/games/<id>/index.html` (self-contained). To add a game: make the folder + append an entry to games.json.
 - `wrangler.jsonc` serves `./public` as static assets -> `npx wrangler deploy`.
 - Starter game: `galaxica` (canvas shooter, keyboard + touch). Syntax-checked only, not yet play-tested in browser.
-
-## Open questions
-- Next game ideas? Playtest/feedback on galaxica?
-- Custom domain or `*.pages.dev`/`*.workers.dev`?
 
 ## Deployed
 - LIVE (primary, Workers): https://play.galaxica.workers.dev (worker `play`, name set in wrangler.jsonc).
@@ -46,17 +32,7 @@ RULE: every game ships a first-run interactive tutorial: learn-by-doing steps, O
 RULE: research before designing anything new (search refs, avoid documented AI tells); screenshot-test mobile+desktop before deploy.
 Custom-rules paragraph for user's Claude settings: given in chat (begins "Design with a distinct, human look..."; add: games have no instruction text but ship a wordless first-run interactive tutorial, skippable and replayable).
 
-## Galaxica: 69 features (shipped 2026-10-14)
-Enemies 11: zigzag, sine-wave, diver, shooter, tank, splitter, homing kamikaze, shielded, mine-layer, V formations, asteroids.
-Bosses 6: every 5th wave, health bar, 3 phases, fan+spiral patterns, boss-rush mode, hit-stop mega explosion.
-Power-ups 14: spread, rapid, shield, bomb, 1UP, laser, homing missiles, slow-mo, magnet, x2 score, wingmen, piercing, buff timer chips, weapon levels (stars).
-Player 10: 2D movement, dash, i-frames, smart bomb, 3 ships, engine trail, charge shot (fills by kills/graze), visible hitbox core, 1UP every 5000, graze scoring.
-Progression 10: combo+multiplier, combo timer line, waves+banner, difficulty ramp, difficulty select, top-5 table per mode, end stats/accuracy, 6 achievements, daily seeded mode, wave-clear bonus.
-FX 9: 3-layer parallax, shake, hit flash, score popups, planets, sector palettes (every 5 waves), shockwave rings, debris, CRT toggle.
-Audio 3: synth SFX, chiptune loop, mute (SND/M).
-UX 6: haptics, gamepad, saved settings, icon menu (ship/mode/difficulty), pause (P/Esc/tab hidden), mobile BOMB btn + double-tap dash.
-Controls (desktop): arrows/WASD move, Space fire, Shift dash, B bomb, P pause, M mute. Mobile: drag, FIRE, BOMB, double-tap dash, auto-fire toggle.
-Research basis (shmup design notes): visible tiny hitbox, graze risk/reward, multi-phase bosses, power-ups as decisions. Stress-tested in Playwright (desktop+iPhone), no JS errors. Tutorial retained.
+## Galaxica (2026-10-14): 69 features shipped (11 enemies, 6 bosses, 14 power-ups, 3 ships, modes, daily seed, achievements, gamepad, mobile BOMB/dash). Controls: arrows/WASD, Space fire, Shift dash, B bomb, P pause, M mute.
 
 ## AUTO MODE (launcher-level) - RULE FOR EVERY GAME
 User wants an auto mode that plays/beats each game for them; this is why the hub is a launcher. `public/shared/auto.js` = global `Auto` ({on,set,toggle,watch,bind}), stored in localStorage `galaxicaAuto`, synced across tabs. AUTO button on the hub top bar AND in every game's button bar (id `bot`; `Auto.bind(btn)`).
@@ -98,6 +74,21 @@ Life: flux = sum lum*145^2/d^2 (lum=(m/400)^3). Class flux window -> habitable t
 AUTO = gardener: <=6 planets in the star's zone, one ringed giant with moons, rare comets.
 Wordless tutorial: tap ring -> drag arrow -> pulse speed box (skip/`?`).
 Ideas next: more presets, species interactions/wars, tides, sandbox challenges, shareable URLs.
+
+## GAMES 6-15: TEN NEW GAMES (2026-10-15) — all use shared `public/shared/gk.js`+`gk.css` (Game Kit v2: NO look, only plumbing)
+GK = GK.id/ls/rng, audio (tone/noise, shared mute), controls (back/pause/AUTO/speed/sound/? built from CSS vars --gk-bg/ink/acc/font/bw/r/sh/h), fit (letterbox), loop (Speed-aware), pointer(+keys), tutorial (wordless steps+pips+skip), pulse/swipe hint helpers. Each game: own page CSS = own identity. Test hook `window.__g={stats(),tut}` (+ per-game starters). `shared/matter.min.js` vendored for Cairn.
+RESEARCH 2026-10-15: AI-design tells also include Instrument Serif, Space Grotesk, Geist, Plus Jakarta, Inter (Gravity Garden uses Instrument Serif: swap if redesigning).
+1 powder-lab: falling-sand alchemy, 30 elements, 53 reactions logged in notebook (stamp pops), graph-paper look (Special Elite/Reenie Beanie). AUTO = experimenter targeting undiscovered reactions.
+2 tidewater: woodblock print tide puzzle; moon gauge sets tide 0-4; tiles passable if lo<=L<=hi (bridges), pearls+lighthouse; endless generated levels verified by BFS (needs tide changes), 60 levels/stars; AUTO = BFS solver.
+3 loom: rhythm; 4 lanes mirrored to 8 warp threads, hits stitch a cross-stitch cloth; 12 procedural bolts + dice; holds; synth backing from chart.
+4 moth-mail: boids swarm delivering letters at night; lamps recruit, zappers/bats/owls kill; quota per night + upgrade cards; portrait uses taller world.
+5 cairn: Matter.js stone stacking in wind; hoverY, wind accel formula in px/step^2; AUTO simulates candidate drops on a copy world.
+6 tantrum: crayon bullet-hell vs toddler (5 moods x 3 phases, rounds loop); AUTO = 16-frame rollout dodger. Mobile: finger offset 70px above touch.
+7 ant-kingdom: ant farm; pheromone trails + BFS maps (nest/surface/dig/threat); tools dig/sugar/pebble/erase; seasons, beetles, spiders, brood; portrait uses narrow tall grid.
+8 peg-song: Peggle-like, every peg a note, 10 shots, bucket, power pegs=multiball, compose mode; stuck-ball rescue after 2s.
+9 switchyard: Swiss timetable; Galton lattice of switches, trains by colour pattern (red/ring/bars); tap switch=throw, tap train=hold; AUTO assigns each switch to next train.
+10 chirp: chalk bat cave; echolocation LOS reveal (walls/moths/spiders/owls/stalactites), stereo-panned echo clicks, cave from cellular automata + BFS exit; AUTO uses true map.
+All AUTO bots verified headless (desktop+iPhone viewport, no JS errors). TODO ideas: leaderboards, daily seeds, real-phone playtest, balance pass (ant stores huge under bot, cairn strikes).
 
 ## Git (2026-10-15)
 DEPLOY RULE: pushing to main does NOT publish. After every game/change run `npx wrangler deploy` and verify the live games.json.

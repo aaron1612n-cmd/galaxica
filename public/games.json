@@ -82,5 +82,11 @@
     "title": "Switchyard",
     "blurb": "",
     "added": "2026-10-15"
+  },
+  {
+    "id": "chirp",
+    "title": "Chirp",
+    "blurb": "",
+    "added": "2026-10-15"
   }
 ]
