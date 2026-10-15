@@ -22,8 +22,13 @@ Purpose: resume this chat with full context. Cap ~1,500 tokens; condense, don't 
 ## Games (25 live)
 galaxica, squeeze, pinprick, hairline, gravity-garden (challenges + #w= share links), powder-lab, tidewater, loom, moth-mail, cairn, tantrum, ant-kingdom, peg-song, switchyard, chirp (all with fun layer), floe, brass-pinball, ripple, cauldron, snail-rocket, deepdig, hedgerow, sneeze-heist, bramble, rube-garden. User favourites: Deepdig, Hedgerow.
 
+## Pybench (public/pybench/, linked from hub "Workshop" row)
+- User asked "something to help me learn python ... like IDLE with everything + helpers". Built IDLE-style workbench: menus File/Edit/Format/Run/Shell/Debug/Options/Window/Help with IDLE shortcuts, editor tabs, shell (>>> / ..., history, input()), F5 restart-run, check module, live syntax squiggles, completions/calltips, code context, bdb debugger (step/over/out/go, breakpoints), stack viewer, vars, outline, files + sys.path, docs (F1), cheats, turtle canvas, 16 lessons with auto-checks, examples. Mobile: Code/Shell/Learn/Turtle/Tools nav + key row.
+- Files: index.html (CSS, palette Workbench: paper/kiln accent; Atkinson + Plex Mono), app.js, worker.js, bench.py (Python side), lessons.js, vendor/ (Pyodide 0.26.4, CodeMirror 5, fonts; all self-hosted).
+- Needs COOP/COEP via public/_headers (SharedArrayBuffer for input(), Stop, debugger). Local test: scratchpad coiserve.mjs on :8090.
+
 ## NEXT
-1. User picks from the new game ideas (dig- and hedge-like); build those next.
+1. Pybench feedback from user; game ideas still open if wanted.
 2. Later ideas: leaderboards, real-phone playtest, balance (Cauldron hard, Deepdig economy), runbook stays under cap.
 
 ## Test kit (scratchpad, ephemeral)

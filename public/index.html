@@ -57,6 +57,14 @@ fetch('games.json').then(function(r){return r.json()}).then(function(list){
     var go=document.createElement('span');go.className='go';go.textContent='PLAY';
     a.append(n,im,tx,go);el.append(a);
   });
+  var h=document.createElement('div');h.className='head px';h.style.display='block';h.style.marginTop='34px';h.textContent='Workshop';el.append(h);
+  var a=document.createElement('a');a.className='row';a.href='pybench/';
+  var n=document.createElement('span');n.className='no';n.textContent='PY';
+  var im=document.createElement('img');im.className='th';im.src='pybench/thumb.jpg';im.alt='';im.loading='lazy';im.width=132;im.height=99;
+  var tx=document.createElement('div');tx.className='tx';var t=document.createElement('div');t.className='t';t.textContent='Pybench';tx.appendChild(t);
+  var bl=document.createElement('div');bl.className='b';bl.textContent='Learn Python in a real workbench: editor, shell, debugger, turtle drawing and checked lessons, like IDLE but friendlier.';tx.appendChild(bl);
+  var go=document.createElement('span');go.className='go';go.textContent='OPEN';
+  a.append(n,im,tx,go);el.append(a);
 });
 </script>
 </body>
