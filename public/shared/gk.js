@@ -107,7 +107,7 @@ GK.tutorial=function(o){
   T.tick=function(){if(!T.active)return;T.t++;var s=T.steps[T.i];s.update&&s.update(T.t);
     if(s.done&&s.done(T.t)){T.i++;T.t=0;if(T.i>=T.steps.length){T.end();return}T.steps[T.i].init&&T.steps[T.i].init();paint()}};
   T.draw=function(ctx){if(!T.active)return;var s=T.steps[T.i];s.draw&&s.draw(ctx,T.t)};
-  T.maybe=function(){if(!T.seen)T.start()};
+  T.maybe=function(){if(!T.seen&&!(window.Auto&&Auto.on))T.start()};
   return T};
 
 /* helpers for hint animation: a pulsing ring + ghost finger dot */
