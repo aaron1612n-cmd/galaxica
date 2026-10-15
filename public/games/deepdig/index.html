@@ -122,17 +122,24 @@ function revive(){if(D.over||MODE!=='career'){newRun();return}D.dead=0;D.x=7;D.y
 /* ============ AUTO: a prospector with a budget ============ */
 var bot={plan:null,t:0};
 function botDir(){if(D.dead||D.act)return-1;
-  /* watchdog: parked in one cell for 5s of game time -> drop the plan and try another way */ var wk=D.x+','+D.y;if(wk===bot.wk)bot.wt++;else{bot.wk=wk;bot.wt=0}if(bot.wt>300){bot.wt=0;bot.plan=null;bot.hd=-(bot.hd||1);var ds=[0,1,2,3].filter(function(d){var nx=D.x+[1,0,-1,0][d],ny=D.y+[0,1,0,-1][d];return nx>=0&&nx<GW&&ny>=SR-1&&canEnter(mat(nx,ny))&&mat(nx,ny)!==8});if(ds.length)return ds[(Math.random()*ds.length)|0]}if(mat(D.x,D.y+1)===0&&D.fall>=8&&D.fuel>5&&D.y-1>=SR-1&&canEnter(mat(D.x,D.y-1)))return 3;var depth=D.y-SR+1,need=depth*(.62/(1+lv('engine')*.25)+.14)+6;
+  /* watchdog: parked in one cell for 5s of game time -> drop the plan and try another way */ var wk=D.x+','+D.y;bot.hist=bot.hist||[];bot.hist.push(wk);if(bot.hist.length>600)bot.hist.shift();var few=bot.hist.length>=600&&new Set(bot.hist).size<=3;if(wk===bot.wk)bot.wt++;else{bot.wk=wk;bot.wt=0}if(bot.wt>300||few){bot.hist=[];bot.home=null;bot.wt=0;bot.plan=null;bot.hd=-(bot.hd||1);var ds=[0,1,2,3].filter(function(d){var nx=D.x+[1,0,-1,0][d],ny=D.y+[0,1,0,-1][d];return nx>=0&&nx<GW&&ny>=SR-1&&canEnter(mat(nx,ny))&&mat(nx,ny)!==8});if(ds.length)return ds[(Math.random()*ds.length)|0]}if(mat(D.x,D.y+1)===0&&D.fall>=8&&D.fuel>5&&D.y-1>=SR-1&&canEnter(mat(D.x,D.y-1)))return 3;var depth=D.y-SR+1,need=depth*(.62/(1+lv('engine')*.25)+.14)+6;
   var home=D.cargo.length>=cap()||D.fuel<need*1.15||D.hull<hullMax()*.3||(MODE!=='career'&&D.timer<depth*14+200&&D.cargo.length>0);
   if(D.y===SR-1){/* surface errands */ if(D.won&&!D.cargo.length&&MODE==='career'){newRun();return-1}if(D.cargo.length&&D.x!==HUT.sell)return D.x<HUT.sell?0:2;
     if((D.fuel<tank()*.8&&(D.money>4||D.fuel<tank()*.45)||D.hull<hullMax()*.8&&(D.money>4||D.hull<hullMax()*.45))&&D.x!==HUT.fuel&&D.atHut!=='fuel')return D.x<HUT.fuel?0:2;
     var want=['cargo','drill','tank','engine','hull'].filter(function(k){return cost(k)&&D.money>=cost(k)+tank()/5+hullMax()/4+30});if(want.length&&MODE==='career'){if(D.x!==HUT.shop)return D.x<HUT.shop?0:2;buy(want[0]);return-1}
     var sx=bot.shaft==null?7:bot.shaft;if(D.x!==sx)return D.x<sx?0:2;return 1}
-  if(home){var up=mat(D.x,D.y-1);if(up!==8&&canEnter(up))return 3;for(var k=1;k<4;k++){if(mat(D.x+k,D.y-1)===0&&mat(D.x+k,D.y)===0)return 0;if(mat(D.x-k,D.y-1)===0&&mat(D.x-k,D.y)===0)return 2}return mat(D.x+1,D.y)!==7?0:2}
+  if(home){if(--bot.ht<=0||!bot.home||!bot.home.length){bot.home=homePath();bot.ht=30}if(bot.home&&bot.home.length)return bot.home.shift();var up=mat(D.x,D.y-1);if(up!==8&&canEnter(up))return 3;for(var k=1;k<4;k++){if(mat(D.x+k,D.y-1)===0&&mat(D.x+k,D.y)===0)return 0;if(mat(D.x-k,D.y-1)===0&&mat(D.x-k,D.y)===0)return 2}return mat(D.x+1,D.y)!==7?0:2}
   /* hunt ores nearby with a small Dijkstra */ if(--bot.t<=0||!bot.plan||!bot.plan.length){bot.plan=hunt();bot.t=40}
   if(bot.plan&&bot.plan.length){return bot.plan.shift()}
   var b=mat(D.x,D.y+1),deepOk=D.fuel>need*1.15+40;
   if(!deepOk||b===8||b===7||(b===5&&lv('drill')<2)||(b===6&&lv('drill')<4)){bot.hd=bot.hd||1;var nx=D.x+bot.hd,sm=mat(nx,D.y);if(nx<0||nx>=GW||sm===7||sm===8||(sm===5&&lv('drill')<2)||(sm===6&&lv('drill')<4)){bot.hd=-bot.hd;if(b!==8&&b!==7&&deepOk)return 1}return bot.hd>0?0:2}return 1}
+/* route to the surface: Dijkstra with a binary heap, never through lava or unbreakable rock */
+function homePath(){var N=GW*GH,dist=new Float32Array(N).fill(1e9),prev=new Int32Array(N).fill(-1),pd=new Int8Array(N),h=[],s0=D.y*GW+D.x;dist[s0]=0;h.push([0,s0]);
+  function push(a){h.push(a);var i=h.length-1;while(i>0){var p=(i-1)>>1;if(h[p][0]<=h[i][0])break;var t=h[p];h[p]=h[i];h[i]=t;i=p}}
+  function pop(){var top=h[0],last=h.pop();if(h.length){h[0]=last;var i=0;for(;;){var l=2*i+1,r=l+1,m=i;if(l<h.length&&h[l][0]<h[m][0])m=l;if(r<h.length&&h[r][0]<h[m][0])m=r;if(m===i)break;var t=h[m];h[m]=h[i];h[i]=t;i=m}}return top}
+  var goal=-1;while(h.length){var c=pop(),ci=c[1];if(c[0]>dist[ci])continue;var cx=ci%GW,cy=(ci/GW)|0;if(cy===SR-1){goal=ci;break}
+    for(var d=0;d<4;d++){var nx=cx+[1,0,-1,0][d],ny=cy+[0,1,0,-1][d];if(nx<0||nx>=GW||ny<SR-1||ny>=GH)continue;var m=mat(nx,ny);if(m===8||!canEnter(m))continue;var w=(m===0?1:hard(ny,m)*2)*(d===3?1.4:d===1?2.5:1);var ni=ny*GW+nx;if(c[0]+w<dist[ni]){dist[ni]=c[0]+w;prev[ni]=ci;pd[ni]=d;push([dist[ni],ni])}}}
+  if(goal<0)return null;var out=[],k=goal;while(k!==s0&&prev[k]>=0){out.unshift(pd[k]);k=prev[k]}return out.slice(0,12)}
 function hunt(){var R=9,best=null,dist={},prev={},q=[[0,D.x,D.y]],key=function(x,y){return x+','+y};dist[key(D.x,D.y)]=0;
   while(q.length){q.sort(function(a,b){return a[0]-b[0]});var c=q.shift(),cx=c[1],cy=c[2],cd=c[0];if(cd>dist[key(cx,cy)])continue;
     if(O[cy*GW+cx]&&O[cy*GW+cx]!==10&&!(cx===D.x&&cy===D.y)){var val=ORE[O[cy*GW+cx]].v/(cd+2);if(!best||val>best.v)best={v:val,x:cx,y:cy}}
