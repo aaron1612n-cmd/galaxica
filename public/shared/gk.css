@@ -29,10 +29,10 @@ canvas{display:block;touch-action:none}
 
 /* names mode */
 .gk-names .gk-b[data-cap]{height:auto;min-height:var(--gk-h,38px);flex-direction:column;gap:1px;padding:3px 6px}
-.gk-names .gk-b[data-cap]::after{content:attr(data-cap);display:block;font:600 9px/1.1 var(--gk-font,sans-serif);max-width:72px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gk-names .gk-b[data-cap]::after{content:attr(data-cap);display:block;font:600 9px/1.05 var(--gk-font,sans-serif);max-width:68px;white-space:normal;text-align:center;overflow-wrap:anywhere}
 .gk-names .gk-bar{align-items:flex-end}
 .gk-names .gk-g{align-items:flex-end}
-@media(max-width:700px){.gk-names .gk-bar{gap:4px 6px}.gk-names .gk-g{gap:4px}.gk-names .gk-b[data-cap]{padding:2px 4px;min-width:34px}.gk-names .gk-b[data-cap]::after{font-size:8px;max-width:58px}}
+@media(max-width:700px){.gk-names .gk-bar{gap:4px 6px}.gk-names .gk-g{gap:4px}.gk-names .gk-b[data-cap]{padding:2px 4px;min-width:34px}.gk-names .gk-b[data-cap]::after{font-size:8px;max-width:60px}}
 .gk-b.names.on{background:var(--gk-acc,#f60);border-color:var(--gk-acc,#f60);color:var(--gk-bg,#111)}
 
 #gkpause{position:absolute;inset:0;z-index:12;display:flex;gap:18px;align-items:center;justify-content:center;background:rgba(0,0,0,.38);cursor:pointer}
@@ -62,3 +62,6 @@ canvas{display:block;touch-action:none}
   [data-bar=left] .gk-more{bottom:10px;left:calc(100% + 6px);right:auto}
   [data-bar=right] .gk-more{bottom:10px;right:calc(100% + 6px);left:auto}
 }
+
+/* the More panel never inherits a bar skin's inverted speed widget */
+.gk-bar .gk-more .spd input,.gk-bar .gk-more .spd .btn{color:var(--gk-ink,#eee);border-color:var(--gk-ink,#eee);background:transparent}.gk-bar .gk-more .spd .btn:not(.ghost){background:var(--gk-ink,#eee);color:var(--gk-bg,#111)}.gk-bar .gk-more .spd b{color:var(--gk-ink,#eee)}
