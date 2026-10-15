@@ -65,6 +65,7 @@ h1 span{display:block;font-style:normal;color:var(--rust);padding-left:.8em}
 .spd.nudge{border-color:var(--rust);animation:nud .9s steps(1) infinite}
 @keyframes nud{50%{border-color:transparent}}
 .back{margin:auto 16px 14px;padding-top:10px;font:italic 400 20px var(--serif);color:var(--ink);text-decoration:none;border-bottom:1px solid var(--ink);align-self:flex-start}
+#exit{position:absolute;left:10px;top:10px;width:40px;height:40px;z-index:7;background:var(--paper)}
 #skip{position:absolute;right:14px;bottom:14px;height:36px;padding:0 14px;border:1px solid var(--ink);background:var(--paper);font:italic 400 20px var(--serif)}
 #mini{display:none;position:absolute;left:12px;top:10px;pointer-events:none;font:italic 400 22px/1 var(--serif)}
 #mini b{font-weight:400;color:var(--rust)}
@@ -123,8 +124,8 @@ textarea{width:100%;height:70px;background:transparent;color:var(--ink);border:1
   #sizes{margin-top:6px}#sizes .ib{height:26px}
   .rows{grid-template-columns:repeat(6,1fr)}
   .ib{height:38px}
-  #mini{display:block}
-  #insp{top:38px;left:8px;right:8px;width:auto;padding:8px 10px}#insp .kv,#insp .sp,#insp .bar{display:none}#insp .acts .ib{height:34px}
+  #mini{display:block;left:62px;top:16px}
+  #insp{top:58px;left:8px;right:8px;width:auto;padding:8px 10px}#insp .kv,#insp .sp,#insp .bar{display:none}#insp .acts .ib{height:34px}
   #r3{display:flex;gap:6px}#r3 .auto{width:64px;flex:none}#r3 .spd{flex:1}
   .sheet{padding:12px}
 }
@@ -147,7 +148,7 @@ textarea{width:100%;height:70px;background:transparent;color:var(--ink);border:1
 </head>
 <body>
 <div id="app">
-  <div id="stage"><canvas id="c"></canvas><div id="mini">Gravity Garden · <b id="mb">0</b></div><div id="toast"></div><div id="insp" hidden></div><button id="skip" hidden>skip</button></div>
+  <div id="stage"><canvas id="c"></canvas><a id="exit" class="ib" href="../../" title="Arcade" aria-label="Arcade"><svg viewBox="0 0 22 22"><path d="M14 4L7 11l7 7"/></svg></a><div id="mini">Gravity Garden · <b id="mb">0</b></div><div id="toast"></div><div id="insp" hidden></div><button id="skip" hidden>skip</button></div>
   <aside id="side">
     <div class="sec">
       <div class="hdr"><h1>Gravity<span>Garden</span></h1><canvas id="spark"></canvas></div>
