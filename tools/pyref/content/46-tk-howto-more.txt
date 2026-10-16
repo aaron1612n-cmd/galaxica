@@ -399,9 +399,11 @@ import tkinter as tk
 root = tk.Tk()
 root.title("Chat")
 def blink_title(times=6, on=True):
+    if times == 0:
+        root.title("Chat")                 # always end on the normal title
+        return
     root.title("★ New message ★" if on else "Chat")
-    if times:
-        root.after(30, blink_title, times - 1, not on)
+    root.after(30, blink_title, times - 1, not on)
 def flash_taskbar():
     if sys.platform == "win32":
         import ctypes
