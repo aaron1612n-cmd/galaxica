@@ -1,0 +1,617 @@
+# tk-data | Data apps | Tables from CSV/JSON/SQLite, editing, filtering, paging, exporting, charts with matplotlib | tkinter
+
+@@ tk.data.csv-table
+Q: How do I load a CSV file into a Treeview table?
+aka: csv to treeview, show csv in tkinter, open csv table, csv viewer, spreadsheet viewer
+A: Read it with `csv.reader`; the first row becomes the `columns` and headings, the rest are inserted as rows.
+see: py.csv, tk.treeview
+```py
+import csv
+import tkinter as tk
+from tkinter import ttk
+
+def load_csv(tv, path):
+    with open(path, newline="", encoding="utf-8") as f:
+        rows = list(csv.reader(f))
+    header, body = rows[0], rows[1:]
+    tv.delete(*tv.get_children())
+    tv["columns"] = header
+    tv["show"] = "headings"
+    for col in header:
+        tv.heading(col, text=col)
+        tv.column(col, width=100, anchor="w")
+    for row in body:
+        tv.insert("", "end", values=row)
+
+root = tk.Tk()
+tv = ttk.Treeview(root, height=6); tv.pack(fill="both", expand=True, padx=10, pady=10)
+load_csv(tv, "scores.csv")          # name,score / Ada,90 / Sam,72
+print(tv["columns"], len(tv.get_children()))
+root.mainloop()
+```
+```text
+('name', 'score') 2
+```
+
+@@ tk.data.export-csv
+Q: How do I save the rows of a Treeview to a CSV file?
+aka: treeview to csv, export table, save table csv, write treeview csv, download table
+A: Write the headings, then `tv.item(row, "values")` for every row from `get_children()`.
+see: tk.data.csv-table, tk.filedialog-save
+```py
+import csv
+import tkinter as tk
+from tkinter import ttk
+
+root = tk.Tk()
+tv = ttk.Treeview(root, columns=("fruit", "qty"), show="headings")
+for r in [("apple", 3), ("pear", 5)]:
+    tv.insert("", "end", values=r)
+
+def export(path):
+    with open(path, "w", newline="", encoding="utf-8") as f:
+        w = csv.writer(f)
+        w.writerow(tv["columns"])
+        for row in tv.get_children():
+            w.writerow(tv.item(row, "values"))
+
+export("out.csv")
+print(open("out.csv").read())
+root.mainloop()
+```
+```text
+fruit,qty
+apple,3
+pear,5
+```
+
+@@ tk.data.edit-cell
+Q: How do I edit a single cell of a Treeview by double-clicking it?
+aka: editable treeview cell, edit table cell, inline edit treeview, double click edit cell, entry over treeview
+A: On double-click, find the row and column with `identify_row`/`identify_column`, get the cell's box with `bbox(row, col)`, place an Entry exactly there, and on Enter write the value back with `tv.set`.
+see: tk.treeview-edit, ttk.treeview-ref
+```py
+import tkinter as tk
+from tkinter import ttk
+
+root = tk.Tk()
+tv = ttk.Treeview(root, columns=("name", "score"), show="headings", height=5)
+for c in ("name", "score"):
+    tv.heading(c, text=c.title())
+for r in [("Ada", 90), ("Sam", 72), ("Kai", 85)]:
+    tv.insert("", "end", values=r)
+tv.pack(padx=10, pady=10)
+
+def edit(event):
+    row, col = tv.identify_row(event.y), tv.identify_column(event.x)
+    if not row:
+        return
+    x, y, w, h = tv.bbox(row, col)
+    e = ttk.Entry(tv)
+    e.place(x=x, y=y, width=w, height=h)
+    e.insert(0, tv.set(row, col)); e.select_range(0, "end"); e.focus_set()
+    def save(_=None):
+        tv.set(row, col, e.get()); e.destroy()
+    e.bind("<Return>", save)
+    e.bind("<FocusOut>", save)
+    e.bind("<Escape>", lambda _: e.destroy())
+
+tv.bind("<Double-1>", edit)
+root.mainloop()
+```
+
+@@ tk.data.crud
+Q: How do I make an app to add, edit and delete records (CRUD) with a form and a table?
+aka: crud app, add edit delete, contact manager, record manager, form and table, inventory app
+A: A form on one side and a Treeview on the other. Selecting a row fills the form; Add inserts, Update changes the selected row, Delete removes it. Keep the data in a list/dict (or a database) as the source of truth.
+see: tk.data.sqlite-crud, tk.form.dict-out
+```py
+import tkinter as tk
+from tkinter import ttk
+
+root = tk.Tk()
+root.title("Contacts")
+FIELDS = ("name", "phone", "email")
+v = {f: tk.StringVar() for f in FIELDS}
+form = ttk.Frame(root, padding=10); form.grid(row=0, column=0, sticky="n")
+for i, f in enumerate(FIELDS):
+    ttk.Label(form, text=f.title()).grid(row=i, column=0, sticky="w")
+    ttk.Entry(form, textvariable=v[f]).grid(row=i, column=1, pady=2)
+tv = ttk.Treeview(root, columns=FIELDS, show="headings", height=8)
+for f in FIELDS:
+    tv.heading(f, text=f.title()); tv.column(f, width=110)
+tv.grid(row=0, column=1, padx=10, pady=10)
+
+def values():
+    return tuple(v[f].get().strip() for f in FIELDS)
+
+def add():
+    if values()[0]:
+        tv.insert("", "end", values=values()); clear()
+
+def update():
+    sel = tv.selection()
+    if sel:
+        tv.item(sel[0], values=values())
+
+def delete():
+    for row in tv.selection():
+        tv.delete(row)
+    clear()
+
+def clear():
+    for var in v.values():
+        var.set("")
+
+def on_select(event):
+    sel = tv.selection()
+    if sel:
+        for f, val in zip(FIELDS, tv.item(sel[0], "values")):
+            v[f].set(val)
+
+tv.bind("<<TreeviewSelect>>", on_select)
+btns = ttk.Frame(form); btns.grid(row=9, column=0, columnspan=2, pady=8)
+for text, cmd in (("Add", add), ("Update", update), ("Delete", delete), ("Clear", clear)):
+    ttk.Button(btns, text=text, command=cmd, width=7).pack(side="left", padx=1)
+
+for row in [("Ada", "0101", "ada@x.org"), ("Sam", "0202", "sam@x.org")]:
+    tv.insert("", "end", values=row)
+root.mainloop()
+```
+
+@@ tk.data.sqlite-crud
+Q: How do I connect a Treeview to an SQLite database (load, add, delete)?
+aka: sqlite treeview, database table gui, sqlite tkinter crud, show database in table, refresh table from database
+A: Keep one `sqlite3` connection. A `refresh()` function clears the Treeview and reloads `SELECT` results (use the row's id as the Treeview `iid`). Add/Delete run SQL with `?` placeholders, `commit()`, then `refresh()`.
+see: tk.sqlite, py.sqlite
+```py
+import sqlite3
+import tkinter as tk
+from tkinter import ttk
+
+db = sqlite3.connect("books.db")
+db.execute("CREATE TABLE IF NOT EXISTS books (id INTEGER PRIMARY KEY, title TEXT, year INTEGER)")
+db.commit()
+
+root = tk.Tk()
+tv = ttk.Treeview(root, columns=("title", "year"), show="headings", height=6)
+tv.heading("title", text="Title"); tv.heading("year", text="Year")
+tv.pack(padx=10, pady=10)
+title, year = tk.StringVar(), tk.StringVar()
+row = ttk.Frame(root); row.pack(padx=10, pady=(0, 10))
+ttk.Entry(row, textvariable=title, width=20).pack(side="left")
+ttk.Entry(row, textvariable=year, width=6).pack(side="left", padx=4)
+
+def refresh():
+    tv.delete(*tv.get_children())
+    for id_, t, y in db.execute("SELECT id, title, year FROM books ORDER BY year"):
+        tv.insert("", "end", iid=str(id_), values=(t, y))
+
+def add():
+    if title.get() and year.get().isdigit():
+        db.execute("INSERT INTO books (title, year) VALUES (?, ?)", (title.get(), int(year.get())))
+        db.commit(); refresh(); title.set(""); year.set("")
+
+def delete():
+    for iid in tv.selection():
+        db.execute("DELETE FROM books WHERE id = ?", (int(iid),))
+    db.commit(); refresh()
+
+ttk.Button(row, text="Add", command=add).pack(side="left")
+ttk.Button(row, text="Delete", command=delete).pack(side="left", padx=4)
+title.set("Dune"); year.set("1965"); add()
+print(db.execute("SELECT COUNT(*) FROM books").fetchone()[0] >= 1)
+root.protocol("WM_DELETE_WINDOW", lambda: (db.close(), root.destroy()))
+root.mainloop()
+```
+
+@@ tk.data.filter-table
+Q: How do I filter a table by several things at once (search box + dropdown)?
+aka: filter table combobox, filter by category, multiple filters, table search and filter, narrow down rows
+A: Keep the data list, and one `apply()` function that reads every filter widget and re-inserts the matching rows. Call it from the search box trace and the combobox event.
+see: ttk.treeview-search
+```py
+import tkinter as tk
+from tkinter import ttk
+
+ITEMS = [("Apple", "Fruit", 0.5), ("Carrot", "Veg", 0.3), ("Banana", "Fruit", 0.25), ("Leek", "Veg", 0.9), ("Cherry", "Fruit", 3.0)]
+root = tk.Tk()
+top = ttk.Frame(root, padding=8); top.pack(fill="x")
+q = tk.StringVar()
+ttk.Entry(top, textvariable=q).pack(side="left", fill="x", expand=True)
+kind = ttk.Combobox(top, values=["All", "Fruit", "Veg"], state="readonly", width=8); kind.current(0)
+kind.pack(side="left", padx=6)
+tv = ttk.Treeview(root, columns=("name", "kind", "price"), show="headings", height=6)
+for c in ("name", "kind", "price"):
+    tv.heading(c, text=c.title())
+tv.pack(fill="both", expand=True, padx=8, pady=(0, 8))
+count = ttk.Label(root); count.pack(anchor="e", padx=8)
+
+def apply(*_):
+    tv.delete(*tv.get_children())
+    text, k = q.get().lower(), kind.get()
+    for name, cat, price in ITEMS:
+        if text in name.lower() and (k == "All" or k == cat):
+            tv.insert("", "end", values=(name, cat, f"£{price:.2f}"))
+    count.config(text=f"{len(tv.get_children())} of {len(ITEMS)}")
+
+q.trace_add("write", apply)
+kind.bind("<<ComboboxSelected>>", apply)
+apply()
+kind.set("Fruit"); apply()
+print(count.cget("text"))
+root.mainloop()
+```
+```text
+3 of 5
+```
+
+@@ tk.data.paging
+Q: How do I show a big table one page at a time (pagination)?
+aka: pagination treeview, pages of rows, next page previous page, show 20 rows at a time, large data table
+A: Show `data[page * N:(page + 1) * N]` and move `page` with Prev/Next buttons; disable them at the ends.
+see: tk.data.csv-table
+```py
+import tkinter as tk
+from tkinter import ttk
+
+DATA = [(i, f"Item {i}", i * 7 % 100) for i in range(1, 96)]
+N = 10
+root = tk.Tk()
+tv = ttk.Treeview(root, columns=("id", "name", "value"), show="headings", height=N)
+for c in ("id", "name", "value"):
+    tv.heading(c, text=c.title()); tv.column(c, width=90)
+tv.pack(padx=10, pady=10)
+nav = ttk.Frame(root); nav.pack(pady=(0, 10))
+prev = ttk.Button(nav, text="◀ Prev"); info = ttk.Label(nav, width=14, anchor="center"); nxt = ttk.Button(nav, text="Next ▶")
+prev.pack(side="left"); info.pack(side="left"); nxt.pack(side="left")
+page = [0]
+pages = (len(DATA) + N - 1) // N
+
+def show():
+    tv.delete(*tv.get_children())
+    for row in DATA[page[0] * N:(page[0] + 1) * N]:
+        tv.insert("", "end", values=row)
+    info.config(text=f"Page {page[0] + 1} of {pages}")
+    prev.state(["disabled" if page[0] == 0 else "!disabled"])
+    nxt.state(["disabled" if page[0] == pages - 1 else "!disabled"])
+
+def go(d):
+    page[0] = max(0, min(pages - 1, page[0] + d)); show()
+
+prev.config(command=lambda: go(-1)); nxt.config(command=lambda: go(1))
+show(); go(1)
+print(info.cget("text"))
+root.mainloop()
+```
+```text
+Page 2 of 10
+```
+
+@@ tk.data.json-tree
+Q: How do I show JSON (nested dicts and lists) as a tree?
+aka: json viewer, json tree, nested dict treeview, display nested data, explore json
+A: Walk the data recursively: dicts and lists become parent rows (open-able), plain values become leaves with the value in a column.
+see: py.json, tk.treeview-tree
+```py
+import json
+import tkinter as tk
+from tkinter import ttk
+
+data = json.loads('{"name": "Ada", "langs": ["Python", "C"], "address": {"city": "London", "zip": "N1"}, "age": 36}')
+root = tk.Tk()
+tv = ttk.Treeview(root, columns=("value",), height=10)
+tv.heading("#0", text="Key"); tv.heading("value", text="Value")
+tv.pack(fill="both", expand=True, padx=10, pady=10)
+
+def add(parent, key, value):
+    if isinstance(value, dict):
+        node = tv.insert(parent, "end", text=key, values=("{…}",), open=True)
+        for k, v in value.items():
+            add(node, k, v)
+    elif isinstance(value, list):
+        node = tv.insert(parent, "end", text=key, values=(f"[{len(value)}]",), open=True)
+        for i, v in enumerate(value):
+            add(node, f"[{i}]", v)
+    else:
+        tv.insert(parent, "end", text=key, values=(json.dumps(value),))
+
+add("", "root", data)
+root.mainloop()
+```
+
+@@ tk.data.matplotlib
+Q: How do I put a matplotlib chart inside a tkinter window (and update it)?
+aka: matplotlib tkinter, embed plot, FigureCanvasTkAgg, chart in tkinter, graph in gui, update plot button, navigation toolbar
+A: Use `FigureCanvasTkAgg(fig, master=frame)` and pack `canvas.get_tk_widget()`. To update, change the data (e.g. `line.set_ydata`) or clear and replot, then `canvas.draw_idle()`. `NavigationToolbar2Tk` adds zoom/save buttons. Needs `pip install matplotlib`.
+see: tk.cv.line-graph
+```py
+import math
+import tkinter as tk
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
+
+root = tk.Tk()
+root.title("Plot")
+fig = Figure(figsize=(5, 3), dpi=100)
+ax = fig.add_subplot()
+xs = [i / 10 for i in range(100)]
+line, = ax.plot(xs, [math.sin(x) for x in xs], color="#c23b22")
+ax.set_xlabel("x"); ax.set_ylabel("sin(kx)")
+
+canvas = FigureCanvasTkAgg(fig, master=root)
+canvas.get_tk_widget().pack(fill="both", expand=True)
+NavigationToolbar2Tk(canvas, root).update()
+
+k = tk.DoubleVar(value=1)
+def redraw(*_):
+    line.set_ydata([math.sin(k.get() * x) for x in xs])
+    canvas.draw_idle()
+tk.Scale(root, from_=0.2, to=5, resolution=0.1, orient="horizontal", variable=k, command=redraw, label="k").pack(fill="x")
+root.mainloop()
+```
+Use `matplotlib.figure.Figure`, **not** `pyplot.figure()`, inside tkinter: pyplot opens its own windows and can stop your program closing.
+
+@@ tk.data.matplotlib-bar
+Q: How do I show a bar chart or pie chart from my data with matplotlib in tkinter?
+aka: bar chart matplotlib tkinter, pie chart tkinter, chart from dictionary, plot counts
+A: Same embedding as any matplotlib figure: `ax.bar(names, values)` or `ax.pie(values, labels=names)`; clear with `ax.clear()` before drawing new data.
+see: tk.data.matplotlib, tk.cv.arc-styles
+```py
+import tkinter as tk
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+
+sales = {"Mon": 12, "Tue": 18, "Wed": 9, "Thu": 22, "Fri": 30}
+root = tk.Tk()
+fig = Figure(figsize=(6, 2.8))
+bar_ax, pie_ax = fig.subplots(1, 2)
+bar_ax.bar(list(sales), list(sales.values()), color="#3b6ea8")
+bar_ax.set_title("Sales")
+pie_ax.pie(list(sales.values()), labels=list(sales), autopct="%d%%")
+fig.tight_layout()
+FigureCanvasTkAgg(fig, root).get_tk_widget().pack(fill="both", expand=True)
+root.mainloop()
+```
+
+@@ tk.data.live-table
+Q: How do I update a table every few seconds with new data (live dashboard)?
+aka: auto refresh table, live data treeview, dashboard refresh, poll data update table, update cell values
+A: Use `after` to call a refresh function regularly. Update existing rows with `tv.item(iid, values=...)` instead of rebuilding, so the selection and scroll position stay.
+see: tk.after, ttk.treeview-ref
+```py
+import random
+import tkinter as tk
+from tkinter import ttk
+
+STOCKS = ["AAA", "BBB", "CCC", "DDD"]
+root = tk.Tk()
+tv = ttk.Treeview(root, columns=("price", "change"), height=4)
+tv.heading("#0", text="Stock"); tv.heading("price", text="Price"); tv.heading("change", text="Change")
+tv.tag_configure("up", foreground="#2e7d4f"); tv.tag_configure("down", foreground="#c23b22")
+tv.pack(padx=10, pady=10)
+prices = {s: 100.0 for s in STOCKS}
+for s in STOCKS:
+    tv.insert("", "end", iid=s, text=s, values=("100.00", "0.00"))
+
+def refresh():
+    for s in STOCKS:
+        change = random.uniform(-2, 2)
+        prices[s] += change
+        tv.item(s, values=(f"{prices[s]:.2f}", f"{change:+.2f}"), tags=("up" if change >= 0 else "down",))
+    root.after(1000, refresh)
+refresh()
+root.mainloop()
+```
+
+@@ tk.data.totals
+Q: How do I show a total (sum) row or label under a table that updates?
+aka: table total, sum column treeview, footer totals, total price label, calculate column sum
+A: After any change, loop over `get_children()`, convert the column values with `float`, and show the sum in a Label (a separate label stays visible and doesn't get sorted with the rows).
+see: tk.data.crud
+```py
+import tkinter as tk
+from tkinter import ttk
+
+root = tk.Tk()
+tv = ttk.Treeview(root, columns=("item", "price"), show="headings", height=5)
+tv.heading("item", text="Item"); tv.heading("price", text="Price")
+tv.column("price", anchor="e")
+tv.pack(padx=10, pady=(10, 0))
+total = ttk.Label(root, font=("Arial", 11, "bold")); total.pack(anchor="e", padx=10, pady=(2, 10))
+
+def update_total():
+    s = sum(float(tv.set(r, "price")) for r in tv.get_children())
+    total.config(text=f"Total: £{s:.2f}")
+
+for item, price in [("Bread", 1.2), ("Milk", 0.95), ("Eggs", 2.1)]:
+    tv.insert("", "end", values=(item, f"{price:.2f}"))
+update_total()
+print(total.cget("text"))
+root.mainloop()
+```
+```text
+Total: £4.25
+```
+
+@@ tk.data.right-click-row
+Q: How do I add a right-click menu to Treeview rows (Edit, Delete...)?
+aka: treeview context menu, right click row, popup menu table row, delete row right click
+A: On right-click, select the row under the mouse with `identify_row(event.y)` and `selection_set`, then `menu.tk_popup(event.x_root, event.y_root)`.
+see: tk.right-click-menu
+```py
+import tkinter as tk
+from tkinter import ttk
+
+root = tk.Tk()
+tv = ttk.Treeview(root, columns=("n",), show="headings", height=5); tv.heading("n", text="Name")
+for n in ("Ada", "Sam", "Kai"):
+    tv.insert("", "end", values=(n,))
+tv.pack(padx=10, pady=10)
+menu = tk.Menu(root, tearoff=0)
+menu.add_command(label="Delete", command=lambda: [tv.delete(r) for r in tv.selection()])
+menu.add_command(label="Print", command=lambda: print([tv.set(r, "n") for r in tv.selection()]))
+
+def popup(event):
+    row = tv.identify_row(event.y)
+    if row:
+        tv.selection_set(row)
+        menu.tk_popup(event.x_root, event.y_root)
+
+tv.bind("<Button-3>", popup)          # right click (Windows/Linux)
+tv.bind("<Button-2>", popup)          # right click on some Macs
+root.mainloop()
+```
+
+@@ tk.data.drag-rows
+Q: How do I reorder Treeview rows by dragging them?
+aka: drag and drop treeview rows, reorder rows, move row up down, sortable list drag
+A: On press remember the row; on motion find the row under the mouse with `identify_row(y)` and `tv.move(dragged, "", tv.index(target))`.
+see: ttk.treeview-ref
+```py
+import tkinter as tk
+from tkinter import ttk
+
+root = tk.Tk()
+tv = ttk.Treeview(root, columns=("task",), show="headings", height=6, selectmode="browse")
+tv.heading("task", text="Drag to reorder")
+for t in ("Wake up", "Coffee", "Code", "Lunch", "More code"):
+    tv.insert("", "end", values=(t,))
+tv.pack(padx=10, pady=10)
+drag = {}
+
+def press(e):
+    drag["row"] = tv.identify_row(e.y)
+
+def motion(e):
+    target = tv.identify_row(e.y)
+    if drag.get("row") and target and target != drag["row"]:
+        tv.move(drag["row"], "", tv.index(target))
+
+tv.bind("<ButtonPress-1>", press, add="+")
+tv.bind("<B1-Motion>", motion)
+print([tv.set(r, "task") for r in tv.get_children()])
+root.mainloop()
+```
+
+@@ tk.data.listbox-two
+Q: How do I move items between two lists (available / chosen)?
+aka: dual listbox, move items between listboxes, transfer list, add remove selected, picklist
+A: Two Listboxes with buttons between them: copy the selected items into the other list and delete them from the first (delete from the highest index down).
+see: tk.listbox-delete
+```py
+import tkinter as tk
+
+root = tk.Tk()
+left = tk.Listbox(root, selectmode="extended", height=8, exportselection=False)
+right = tk.Listbox(root, selectmode="extended", height=8, exportselection=False)
+for x in ("Cheese", "Ham", "Olives", "Peppers", "Pineapple", "Tomato"):
+    left.insert("end", x)
+mid = tk.Frame(root)
+left.grid(row=0, column=0, padx=8, pady=8); mid.grid(row=0, column=1); right.grid(row=0, column=2, padx=8, pady=8)
+
+def move(src, dst):
+    picked = src.curselection()
+    for i in picked:                    # copy in order
+        dst.insert("end", src.get(i))
+    for i in reversed(picked):          # delete from the end so indexes don't shift
+        src.delete(i)
+
+tk.Button(mid, text="→", width=3, command=lambda: move(left, right)).pack(pady=2)
+tk.Button(mid, text="←", width=3, command=lambda: move(right, left)).pack(pady=2)
+left.selection_set(0, 2); move(left, right)
+print(right.get(0, "end"))
+root.mainloop()
+```
+```text
+('Cheese', 'Ham', 'Olives')
+```
+
+@@ tk.data.excel
+Q: How do I read or write an Excel file (.xlsx) from a tkinter app?
+aka: excel tkinter, xlsx, openpyxl, read excel, write excel, pandas excel treeview
+A: Install `openpyxl` (`pip install openpyxl`). `load_workbook(path).active.iter_rows(values_only=True)` gives tuples you can put straight into a Treeview. (pandas works too: `pd.read_excel`.)
+see: tk.data.csv-table
+```py norun
+import tkinter as tk
+from tkinter import ttk, filedialog
+from openpyxl import load_workbook, Workbook
+
+def open_xlsx(tv):
+    path = filedialog.askopenfilename(filetypes=[("Excel", "*.xlsx")])
+    if not path:
+        return
+    rows = list(load_workbook(path, read_only=True).active.iter_rows(values_only=True))
+    tv.delete(*tv.get_children())
+    tv["columns"] = [str(h) for h in rows[0]]
+    for h in tv["columns"]:
+        tv.heading(h, text=h)
+    for r in rows[1:]:
+        tv.insert("", "end", values=["" if v is None else v for v in r])
+
+def save_xlsx(tv, path="out.xlsx"):
+    wb = Workbook(); ws = wb.active
+    ws.append(list(tv["columns"]))
+    for r in tv.get_children():
+        ws.append(list(tv.item(r, "values")))
+    wb.save(path)
+
+root = tk.Tk()
+tv = ttk.Treeview(root, show="headings"); tv.pack(fill="both", expand=True)
+tk.Button(root, text="Open .xlsx", command=lambda: open_xlsx(tv)).pack()
+root.mainloop()
+```
+
+@@ tk.data.pandas
+Q: How do I show a pandas DataFrame in tkinter?
+aka: pandas tkinter, dataframe treeview, show dataframe gui, pandastable
+A: Columns from `df.columns`, rows from `df.itertuples(index=False)`. For a full spreadsheet-like widget, the `pandastable` package exists.
+see: tk.data.csv-table
+```py norun
+import pandas as pd
+import tkinter as tk
+from tkinter import ttk
+
+df = pd.DataFrame({"name": ["Ada", "Sam"], "score": [90, 72]})
+root = tk.Tk()
+tv = ttk.Treeview(root, columns=list(df.columns), show="headings")
+for c in df.columns:
+    tv.heading(c, text=c)
+for row in df.itertuples(index=False):
+    tv.insert("", "end", values=list(row))
+tv.pack(fill="both", expand=True)
+root.mainloop()
+```
+
+@@ tk.data.dashboard
+Q: How do I lay out a dashboard (stat cards, a chart and a table)?
+aka: dashboard layout, kpi cards, stats panel, admin panel tkinter, summary cards
+A: Use `grid`: a row of card Frames (big number + small label), then a chart and a table side by side with `columnconfigure(weight=1)` so they stretch.
+see: tk.grid-weight, tk.cv.line-graph
+```py
+import tkinter as tk
+from tkinter import ttk
+
+root = tk.Tk()
+root.title("Dashboard")
+root.configure(bg="#f2ede3")
+for i in range(3):
+    root.columnconfigure(i, weight=1)
+for i, (num, label) in enumerate([("1,204", "Visitors"), ("87", "Sign-ups"), ("7.2%", "Conversion")]):
+    card = tk.Frame(root, bg="white", padx=14, pady=10, highlightthickness=1, highlightbackground="#ddd5c4")
+    card.grid(row=0, column=i, sticky="ew", padx=6, pady=6)
+    tk.Label(card, text=num, font=("Georgia", 22), bg="white").pack(anchor="w")
+    tk.Label(card, text=label, fg="#666", bg="white").pack(anchor="w")
+
+chart = tk.Canvas(root, height=140, bg="white", highlightthickness=0)
+chart.grid(row=1, column=0, columnspan=2, sticky="nsew", padx=6, pady=6)
+vals = [3, 5, 4, 8, 6, 9, 12]
+for i, v in enumerate(vals):
+    chart.create_rectangle(20 + i * 40, 130 - v * 9, 46 + i * 40, 130, fill="#c23b22", outline="")
+tv = ttk.Treeview(root, columns=("page", "hits"), show="headings", height=5)
+tv.heading("page", text="Page"); tv.heading("hits", text="Hits"); tv.column("hits", width=50)
+for r in [("/", 640), ("/blog", 300), ("/about", 120)]:
+    tv.insert("", "end", values=r)
+tv.grid(row=1, column=2, sticky="nsew", padx=6, pady=6)
+root.mainloop()
+```
