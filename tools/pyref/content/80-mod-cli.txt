@@ -1,0 +1,175 @@
+# mod-cli | logging, argparse, getpass, pprint | Logging to console and files, command-line programs with options, hidden password input, pretty printing | modules
+
+@@ mod.logging.basics
+Q: How do I use logging (levels, format, logging to a file)?
+aka: logging module, logging basicconfig, log to file, log levels, log format time, debug info warning error
+A: `logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s", filename="app.log")` once at the start; then `logging.debug/info/warning/error/critical(...)`. Only messages at or above `level` are shown. Use `%s` arguments rather than f-strings so unused messages cost nothing.
+see: py.proj.logging-vs-print, py.exc.log-traceback
+```py
+import logging
+logging.basicConfig(level=logging.INFO, filename="app.log", filemode="w",
+                    format="%(levelname)-7s %(name)s: %(message)s")
+log = logging.getLogger("game")
+log.debug("not saved (below INFO)")
+log.info("level %d started", 3)
+log.warning("low health: %s", 12)
+log.error("save failed")
+print(open("app.log").read().strip())
+```
+```text
+INFO    game: level 3 started
+WARNING game: low health: 12
+ERROR   game: save failed
+```
+
+@@ mod.logging.handlers
+Q: How do I log to the console and a file at the same time, or rotate log files?
+aka: logging handlers, filehandler streamhandler, rotating log file, log size limit, multiple log outputs
+A: Create a logger, add a `StreamHandler` (console) and a `FileHandler` (or `RotatingFileHandler(maxBytes=, backupCount=)` to keep logs from growing forever), each with its own level and format.
+see: mod.logging.basics
+```py
+import logging, sys
+from logging.handlers import RotatingFileHandler
+
+log = logging.getLogger("app")
+log.setLevel(logging.DEBUG)
+console = logging.StreamHandler(sys.stdout)
+console.setLevel(logging.WARNING)
+console.setFormatter(logging.Formatter("%(levelname)s: %(message)s"))
+file = RotatingFileHandler("app_full.log", maxBytes=100_000, backupCount=3)
+file.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
+log.addHandler(console); log.addHandler(file)
+
+log.debug("only in the file")
+log.warning("in both")
+print(sum(1 for _ in open("app_full.log")))
+```
+```text
+WARNING: in both
+2
+```
+
+@@ mod.argparse.basics
+Q: How do I make a command-line program with arguments and options (argparse)?
+aka: argparse, command line arguments, cli options, --help, positional arguments, optional flags, argparse type
+A: `parser.add_argument("name")` for required positionals, `add_argument("-n", "--count", type=int, default=1)` for options, `action="store_true"` for on/off flags, `choices=[...]` to restrict values. `--help` is generated automatically.
+see: py.command-args
+```py
+import argparse
+parser = argparse.ArgumentParser(description="Greet people.")
+parser.add_argument("names", nargs="+", help="who to greet")
+parser.add_argument("-n", "--times", type=int, default=1, help="repeat count")
+parser.add_argument("--shout", action="store_true")
+parser.add_argument("--lang", choices=["en", "es"], default="en")
+
+args = parser.parse_args(["Ada", "Sam", "-n", "2", "--shout", "--lang", "es"])
+word = {"en": "hello", "es": "hola"}[args.lang]
+for _ in range(args.times):
+    text = f"{word} {' and '.join(args.names)}"
+    print(text.upper() if args.shout else text)
+```
+```text
+HOLA ADA AND SAM
+HOLA ADA AND SAM
+```
+
+@@ mod.argparse.subcommands
+Q: How do I make a CLI with subcommands (like git add / git commit)?
+aka: argparse subcommands, subparsers, cli commands, add_subparsers, command dispatch
+A: `sub = parser.add_subparsers(dest="cmd", required=True)`, then one `sub.add_parser("add")` per command with its own arguments; `set_defaults(func=...)` connects each to a function.
+see: mod.argparse.basics
+```py
+import argparse
+todos = []
+def cmd_add(a): todos.append(a.text); print("added", a.text)
+def cmd_list(a): print(todos[: a.limit])
+
+parser = argparse.ArgumentParser(prog="todo")
+sub = parser.add_subparsers(dest="cmd", required=True)
+p_add = sub.add_parser("add"); p_add.add_argument("text"); p_add.set_defaults(func=cmd_add)
+p_list = sub.add_parser("list"); p_list.add_argument("--limit", type=int, default=10); p_list.set_defaults(func=cmd_list)
+
+for argv in (["add", "buy milk"], ["add", "call Sam"], ["list", "--limit", "1"]):
+    args = parser.parse_args(argv)
+    args.func(args)
+```
+```text
+added buy milk
+added call Sam
+['buy milk']
+```
+
+@@ mod.argparse.help-errors
+Q: How do I show help text, or a nice error for bad arguments?
+aka: argparse help, print help, argparse error, invalid argument message, usage message, parser.error
+A: `parser.print_help()` prints usage; `parser.error("message")` prints usage plus your message and exits with code 2 (argparse does this itself for wrong types or missing arguments).
+see: mod.argparse.basics
+```py
+import argparse, contextlib, io
+parser = argparse.ArgumentParser(prog="resize", description="Resize an image.")
+parser.add_argument("width", type=int)
+buf = io.StringIO()
+with contextlib.redirect_stderr(buf):
+    try:
+        parser.parse_args(["wide"])
+    except SystemExit as e:
+        print("exit code", e.code)
+print(buf.getvalue().strip().splitlines()[-1])
+```
+```text
+exit code 2
+resize: error: argument width: invalid int value: 'wide'
+```
+
+@@ mod.getpass
+Q: How do I ask for a password without showing it as it's typed?
+aka: getpass, hide password input, password prompt terminal, input without echo, get username
+A: `getpass.getpass("Password: ")` reads input without echoing it (in a real terminal; some IDE consoles can't hide it). `getpass.getuser()` gives the login name.
+see: py.input
+```py norun
+import getpass
+user = getpass.getuser()
+pw = getpass.getpass(f"Password for {user}: ")
+print("thanks,", len(pw), "characters")
+```
+
+@@ mod.pprint
+Q: How do I print nested dicts and lists nicely (pprint)?
+aka: pprint, pretty print, print nested dict, print json nicely, pformat, width
+A: `pprint.pp(obj)` (or `pprint.pprint`) splits big structures over lines and sorts nothing by default with `pp`; `width=` controls line length; `pformat` returns the string. For JSON-like data, `json.dumps(obj, indent=2)` also works.
+see: mod.json.options
+```py
+from pprint import pformat, pp
+data = {"name": "Ada", "langs": ["Python", "C", "Rust"], "address": {"city": "London", "zip": "N1 9GU"}, "projects": list(range(12))}
+pp(data, width=60)
+print(len(pformat(data).splitlines()))
+```
+```text
+{'name': 'Ada',
+ 'langs': ['Python', 'C', 'Rust'],
+ 'address': {'city': 'London', 'zip': 'N1 9GU'},
+ 'projects': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]}
+4
+```
+
+@@ mod.input-menu
+Q: How do I make a nicer command-line menu (numbered choices, validation)?
+aka: cli menu, numbered menu, choose option terminal, console menu validation
+A: Show numbered options, loop until the answer is valid, and map numbers to functions with a dict.
+see: py.menu-loop
+```py
+OPTIONS = {"1": ("Say hello", lambda: print("hello")), "2": ("Count to 3", lambda: print(1, 2, 3)), "q": ("Quit", None)}
+
+def menu(answers):
+    for answer in answers:                       # in a real program: answer = input("> ")
+        for key, (label, _) in OPTIONS.items():
+            print(f" {key}) {label}")
+        if answer not in OPTIONS:
+            print("Please choose", "/".join(OPTIONS)); continue
+        label, action = OPTIONS[answer]
+        if action is None:
+            print("bye"); return
+        action()
+
+menu(["2", "x", "q"])
+```
