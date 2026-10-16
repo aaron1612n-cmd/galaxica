@@ -117,11 +117,11 @@ d = {"a": 1, "b": 2}
 k = d.keys()
 d["c"] = 3
 print(list(k), list(d.values()), list(d.items())[0], "a" in k)
-print(d.keys() & {"b", "z"}, d.keys() - {"a"})
+print(d.keys() & {"b", "z"}, sorted(d.keys() - {"a"}))      # sets have no fixed order: sort to show
 ```
 ```text
 ['a', 'b', 'c'] [1, 2, 3] ('a', 1) True
-{'b'} {'b', 'c'}
+{'b'} ['b', 'c']
 ```
 
 @@ py.cm.dict-update
