@@ -1,0 +1,569 @@
+# tk-meth | Every widget method A–Z | What each tkinter method does: after, bind, cget, clipboard, destroy, event, focus, grab, lift, option, selection, update, wait, winfo, wm and more | tkinter
+
+@@ tk.m.index
+Q: What methods does every tkinter widget have? (the complete list)
+aka: all tkinter methods, widget methods list, misc methods, tkinter method reference, list of methods tkinter, dir widget
+A: Every widget (and `Tk`/`Toplevel`) inherits about 140 methods from `tkinter.Misc`, plus the geometry methods (`pack_*`, `grid_*`, `place_*`); windows add about 30 `wm_*` window methods. Grouped: timers (`after*`), events (`bind*`, `event_*`, `unbind*`), options (`cget`, `config`, `keys`), clipboard (`clipboard_*`), focus (`focus*`, `tk_focus*`), grabs (`grab_*`), stacking (`lift`, `lower`, `tkraise`), loop control (`mainloop`, `quit`, `update*`, `wait_*`), info (`winfo_*`), option database (`option_*`), selection (`selection_*`), and `destroy`, `bell`, `nametowidget`, `register`. Each group has its own answer in this section.
+see: tk.ref.widget-methods
+```py
+import tkinter as tk
+names = sorted(n for n in dir(tk.Misc) if not n.startswith("_"))
+groups = {}
+for n in names:
+    groups.setdefault(n.split("_")[0], []).append(n)
+print(len(names), "methods on every widget")
+print({k: len(v) for k, v in groups.items() if len(v) > 3})
+```
+```text
+139 methods on every widget
+{'event': 4, 'focus': 6, 'grab': 5, 'grid': 8, 'option': 4, 'selection': 5, 'tk': 6, 'winfo': 49}
+```
+
+@@ tk.m.after
+Q: What do after(), after_idle() and after_cancel() do?
+aka: after method, after_idle, after_cancel, schedule function, timer tkinter, delay call, after ms
+A: `w.after(ms, func, *args)` calls `func(*args)` once after `ms` milliseconds and returns an id; `w.after_cancel(id)` cancels it; `w.after_idle(func)` runs it as soon as tkinter has nothing else to do (after redrawing). `w.after(ms)` with no function just waits (and freezes the window, so avoid it).
+see: tk.after, tk.after-cancel, tk.after-idle
+```py
+import tkinter as tk
+root = tk.Tk()
+log = []
+job = root.after(50, log.append, "after 50ms")
+root.after(10, log.append, "after 10ms")
+root.after_idle(log.append, "idle")
+cancel_me = root.after(20, log.append, "never")
+root.after_cancel(cancel_me)
+root.after(150, lambda: print(log))
+root.mainloop()
+```
+```text
+['idle', 'after 10ms', 'after 50ms']
+```
+
+@@ tk.m.bell
+Q: What does bell() do?
+aka: bell, beep, system beep, error sound tkinter, alert sound
+A: `w.bell()` plays the system's alert sound (a beep or whatever the OS uses). Handy when input is refused.
+see: tk.sound
+```py
+import tkinter as tk
+root = tk.Tk()
+e = tk.Entry(root); e.pack(padx=20, pady=20)
+def only_digits(event):
+    if event.char and not event.char.isdigit():
+        root.bell()                  # complain
+        return "break"               # and block the key
+e.bind("<Key>", only_digits)
+root.mainloop()
+```
+
+@@ tk.m.bind-family
+Q: What do bind, bind_all, bind_class, unbind, unbind_all, unbind_class and bindtags do?
+aka: bind methods, bind_all, bind_class, unbind_all, unbind_class, bindtags, bind add, bind returns funcid
+A: `w.bind(seq, func, add="+")` binds on one widget (`add="+"` keeps earlier bindings); it returns an id usable with `w.unbind(seq, id)`. `bind_all` binds on every widget in the app; `bind_class("Entry", ...)` on every widget of a class; `unbind_all`/`unbind_class` remove those. `bindtags()` shows or sets the order in which these levels run.
+see: tk.bind, tk.bind-all, tk.ev.bindtags, tk.unbind
+```py
+import tkinter as tk
+root = tk.Tk()
+e1, e2 = tk.Entry(root), tk.Entry(root)
+e1.pack(); e2.pack()
+calls = []
+root.bind_class("Entry", "<FocusIn>", lambda e: calls.append("class"), add="+")
+fid = e1.bind("<FocusIn>", lambda e: calls.append("widget"))
+root.bind_all("<FocusIn>", lambda e: e.widget is e1 and calls.append("all"), add="+")
+root.update(); calls.clear()
+e1.focus_force(); root.update()
+print(calls, e1.bindtags())
+e1.unbind("<FocusIn>", fid)
+root.mainloop()
+```
+```text
+['widget', 'class', 'all'] ('.!entry', 'Entry', '.', 'all')
+```
+
+@@ tk.m.config
+Q: What do config(), configure(), cget(), keys() and widget["option"] do?
+aka: config method, configure, cget, keys method, widget options read write, config with no arguments
+A: `w.config(opt=value)` (same as `configure`) changes options; `w.config()` with nothing returns every option's details; `w.cget("opt")` or `w["opt"]` reads one; `w["opt"] = v` sets one; `w.keys()` lists option names.
+see: tk.z.options, tk.widget-config-get
+```py
+import tkinter as tk
+root = tk.Tk()
+b = tk.Button(root, text="Hi", width=8)
+b.config(text="Hello", bg="yellow")
+b["width"] = 12
+print(b.cget("text"), b["width"], b["bg"])
+print(b.config("text"))                     # (name, db name, db class, default, current)
+print("command" in b.keys(), len(b.config()) > 30)
+root.mainloop()
+```
+```text
+Hello 12 yellow
+('text', 'text', 'Text', '', 'Hello')
+True True
+```
+
+@@ tk.m.clipboard
+Q: What do clipboard_clear, clipboard_append and clipboard_get do?
+aka: clipboard methods, clipboard_get, clipboard_append, clipboard_clear, copy paste code tkinter
+A: `clipboard_clear()` empties it, `clipboard_append(text)` adds text (call clear first to replace), `clipboard_get()` reads it (raises `TclError` if it's empty or not text). The text stays available after your app closes only on some systems; call `root.update()` after setting it.
+see: tk.clipboard
+```py
+import tkinter as tk
+root = tk.Tk()
+root.clipboard_clear()
+root.clipboard_append("copied ")
+root.clipboard_append("text")
+root.update()
+print(root.clipboard_get())
+root.mainloop()
+```
+```text
+copied text
+```
+
+@@ tk.m.destroy
+Q: What does destroy() do (on a widget, a Toplevel, or root)?
+aka: destroy method, delete widget, close window destroy, destroy children, destroy vs forget
+A: `w.destroy()` deletes the widget **and all its children** for good (unlike `pack_forget`, which just hides it). On a Toplevel it closes that window; on root it closes the whole app and ends `mainloop()`. Using a destroyed widget raises `TclError: invalid command name`.
+see: tk.widget-destroy, tk.quit-vs-destroy
+```py
+import tkinter as tk
+root = tk.Tk()
+f = tk.Frame(root); f.pack()
+b = tk.Button(f, text="x"); b.pack()
+f.destroy()
+print(f.winfo_exists(), b.winfo_exists(), root.winfo_exists())
+root.mainloop()
+```
+```text
+0 0 1
+```
+
+@@ tk.m.event-methods
+Q: What do event_generate, event_add, event_delete and event_info do?
+aka: event methods, event_generate, event_add, event_delete, event_info, simulate event
+A: `event_generate(seq, **fields)` fires an event now (or later with `when="tail"`); `event_add("<<Name>>", "<Control-s>", ...)` makes a virtual event triggered by real ones; `event_delete` removes that; `event_info()` lists virtual events (with an argument, the sequences of one).
+see: tk.ev.generate, tk.ev.custom-virtual, tk.ev.virtual-list
+```py
+import tkinter as tk
+root = tk.Tk()
+root.event_add("<<Go>>", "<F5>")
+print("<<Go>>" in root.event_info(), root.event_info("<<Go>>"))
+root.event_delete("<<Go>>", "<F5>")
+print("<<Go>>" in root.event_info())
+root.mainloop()
+```
+```text
+True ('<Key-F5>',)
+False
+```
+
+@@ tk.m.focus
+Q: What do focus_set, focus_force, focus_get, focus_lastfor, tk_focusNext and tk_focusPrev do?
+aka: focus methods, focus_set, focus_force, focus_get, focus_lastfor, tk_focusNext, tk_focusPrev, focus_displayof, tk_focusFollowsMouse
+A: `focus_set()` gives a widget the keyboard focus when its window is active; `focus_force()` grabs it even if the window isn't active; `focus_get()` returns the focused widget (or `None`); `focus_lastfor()` the widget that last had focus in that window; `tk_focusNext()/tk_focusPrev()` the next/previous widget in Tab order; `tk_focusFollowsMouse()` makes focus follow the pointer.
+see: tk.focus, tk.form.tab-order
+```py
+import tkinter as tk
+root = tk.Tk()
+a, b = tk.Entry(root), tk.Entry(root)
+a.pack(); b.pack()
+root.update()
+b.focus_force(); root.update()
+print(root.focus_get() is b, a.tk_focusNext() is b, b.tk_focusPrev() is a, root.focus_lastfor() is b)
+root.mainloop()
+```
+```text
+True True True True
+```
+
+@@ tk.m.grab
+Q: What do grab_set, grab_release, grab_current and grab_status do?
+aka: grab methods, grab_set, grab_release, grab_set_global, grab_current, grab_status, modal grab
+A: A **grab** sends all mouse and keyboard input to one window, making the others unclickable (that's how modal dialogs work). `grab_set()` takes it for the app; `grab_set_global()` for the whole screen (avoid); `grab_release()` gives it back; `grab_current()` shows who has it; `grab_status()` says `"local"`, `"global"` or `None`.
+see: tk.modal, tk.err2.grab-failed
+```py
+import tkinter as tk
+root = tk.Tk()
+win = tk.Toplevel(root)
+win.wait_visibility()
+win.grab_set()
+print(root.grab_current() is win, win.grab_status())
+win.grab_release()
+print(win.grab_status())
+root.mainloop()
+```
+```text
+True local
+None
+```
+
+@@ tk.m.stacking
+Q: What do lift(), lower() and tkraise() do?
+aka: lift method, lower method, tkraise, raise widget, bring to front, send to back
+A: They change stacking order: `lift()` (alias `tkraise()`) puts a window or widget on top; `lower()` puts it at the bottom; both take an optional widget to go just above/below. For Canvas items use `tag_raise`/`tag_lower` instead.
+see: tk.win.lift-lower, tk.pages
+```py
+import tkinter as tk
+root = tk.Tk()
+pages = [tk.Label(root, text=f"Page {i}", width=20, height=3, bg=c) for i, c in enumerate(("#ffd27a", "#9bd"))]
+for p in pages:
+    p.grid(row=0, column=0)
+pages[0].tkraise()
+root.update()
+print(root.winfo_containing(pages[0].winfo_rootx() + 5, pages[0].winfo_rooty() + 5).cget("text"))
+root.mainloop()
+```
+```text
+Page 0
+```
+
+@@ tk.m.loop-control
+Q: What do mainloop(), quit(), update() and update_idletasks() do exactly?
+aka: mainloop quit update update_idletasks, difference update update_idletasks, quit vs destroy method, process events
+A: `mainloop()` processes events until `quit()` is called or the root is destroyed. `quit()` stops `mainloop()` but leaves windows open. `update_idletasks()` finishes pending redraws and size calculations (safe and useful to measure widgets). `update()` processes **all** pending events including clicks (use rarely: it can re-enter your callbacks).
+see: tk.update, tk.quit-vs-destroy, tk.err2.recursion-update
+```py
+import tkinter as tk
+root = tk.Tk()
+l = tk.Label(root, text="measure me"); l.pack()
+print(l.winfo_width())              # 1: not laid out yet
+root.update_idletasks()
+print(l.winfo_width() > 1)
+root.after(50, root.quit)           # stop mainloop, window still exists
+root.mainloop()
+print("after quit, still exists:", bool(root.winfo_exists()))
+root.destroy()
+```
+```text
+1
+True
+after quit, still exists: True
+```
+
+@@ tk.m.wait
+Q: What do wait_window(), wait_variable() and wait_visibility() do?
+aka: wait_window, wait_variable, wait_visibility, waitvar, block until closed, pause until variable changes
+A: They pause your function **while still handling events**, until something happens: `wait_window(w)` until `w` is destroyed (modal dialogs), `wait_variable(var)` until a tkinter variable is set, `wait_visibility(w)` until `w` is on screen.
+see: tk.modal, tk.win.dialog-plain
+```py
+import tkinter as tk
+root = tk.Tk()
+answer = tk.StringVar()
+root.after(50, answer.set, "yes")         # something sets it later
+root.wait_variable(answer)                # pauses here until then
+print("got", answer.get())
+root.mainloop()
+```
+```text
+got yes
+```
+
+@@ tk.m.nametowidget
+Q: What do nametowidget(), winfo_name(), winfo_pathname() and str(widget) do?
+aka: nametowidget, widget name, path name, winfo_name, winfo_pathname, find widget by path, widget from string
+A: Each widget has a Tcl path like `.!frame.!button` (`str(w)`); `winfo_name()` is the last part; `nametowidget(path)` turns a path back into the Python widget (handy with `event.widget` strings or `focus_get` results); `winfo_pathname(id)` turns a window id into a path.
+see: tk.ref.name-option
+```py
+import tkinter as tk
+root = tk.Tk()
+b = tk.Button(tk.Frame(root, name="toolbar"), name="save")
+print(str(b), b.winfo_name(), root.nametowidget(".toolbar.save") is b)
+root.mainloop()
+```
+```text
+.toolbar.save save True
+```
+
+@@ tk.m.option-db
+Q: What do option_add, option_get, option_clear and option_readfile do (the option database)?
+aka: option_add, option database, default options all widgets, option_readfile, option_clear, option_get, Xresources tkinter
+A: The option database sets **defaults** for widgets created afterwards, by pattern: `root.option_add("*Font", "Arial 12")`, `root.option_add("*Button.background", "gold")`, `"*TCombobox*Listbox.font"` for the combobox drop-down. `option_readfile(path)` loads many from a file; `option_clear()` empties it.
+see: tk.option-add, ttk.style-combobox
+```py
+import tkinter as tk
+root = tk.Tk()
+root.option_add("*Button.background", "gold")
+root.option_add("*Font", "Helvetica 13")
+b = tk.Button(root, text="I'm gold"); b.pack(padx=20, pady=10)
+print(b.cget("bg"), b.cget("font"))
+root.mainloop()
+```
+```text
+gold Helvetica 13
+```
+
+@@ tk.m.selection
+Q: What do selection_get, selection_clear and selection_own do (the X selection / selected text)?
+aka: selection_get, selected text anywhere, selection_clear, selection_own, primary selection, get highlighted text
+A: `selection_get()` returns the currently selected text in the app (or system, on Linux the "PRIMARY" selection), raising `TclError` if nothing is selected; `selection_clear()` deselects; `selection_own()` makes a widget own the selection. For Text/Entry it's usually simpler to read `sel.first`/`sel.last`.
+see: tk.tx.bold-selection
+```py
+import tkinter as tk
+root = tk.Tk()
+e = tk.Entry(root); e.pack()
+e.insert(0, "select some of this")
+e.select_range(7, 11)
+root.update()
+print(repr(root.selection_get()))
+root.mainloop()
+```
+```text
+'some'
+```
+
+@@ tk.m.register
+Q: What does register() do (validatecommand, Tcl callbacks)?
+aka: register method, root.register, register validate, tcl callback name, %P register
+A: `register(func)` wraps a Python function so **Tcl** can call it by name, returning that name as a string. You need it for `validatecommand` (with `%P` etc.) and anywhere an option expects a Tcl script. tkinter does this automatically for `command=`.
+see: tk.form.validate-codes, tk.entry-validate
+```py
+import tkinter as tk
+root = tk.Tk()
+def ok(new_text):
+    return new_text.isdigit() or new_text == ""
+name = root.register(ok)
+print(type(name).__name__, root.tk.call(name, "123"), root.tk.call(name, "12a"))
+root.mainloop()
+```
+```text
+str 1 0
+```
+
+@@ tk.m.vars
+Q: What do getvar, setvar, getint, getdouble and getboolean do?
+aka: getvar setvar, getint getdouble getboolean, tcl variable, tcl boolean to python
+A: Low-level helpers: `setvar(name, value)`/`getvar(name)` read and write a Tcl variable by name (what `StringVar` uses inside); `getint`, `getdouble`, `getboolean` convert Tcl text like `"yes"`, `"1"`, `"3.5"` into Python values.
+see: tk.stringvar
+```py
+import tkinter as tk
+root = tk.Tk()
+v = tk.StringVar(name="greeting", value="hi")
+print(root.getvar("greeting"))
+root.setvar("greeting", "hello"); print(v.get())
+print(root.getboolean("yes"), root.getint("42"), root.getdouble("2.5"))
+root.mainloop()
+```
+```text
+hi
+hello
+True 42 2.5
+```
+
+@@ tk.m.images
+Q: What do image_names() and image_types() do?
+aka: image_names, image_types, list images tkinter, which images exist, image formats supported
+A: `image_names()` lists every image object Tk currently has (like `pyimage1`); `image_types()` lists the kinds (`photo`, `bitmap`). Useful for checking whether your PhotoImage still exists.
+see: tk.err.image-gone
+```py
+import tkinter as tk
+root = tk.Tk()
+img = tk.PhotoImage(width=4, height=4)
+name = str(img)
+print(root.image_types(), name in root.image_names())
+del img                                    # last reference gone: Tk deletes the image
+print(name in root.image_names())
+root.mainloop()
+```
+```text
+('photo', 'bitmap') True
+False
+```
+
+@@ tk.m.palette
+Q: What do tk_setPalette(), tk_bisque() and tk_strictMotif() do?
+aka: tk_setPalette, change all colours, tk_bisque, set palette, whole app colour, strict motif
+A: `root.tk_setPalette(background=..., foreground=...)` recolours **all** classic tk widgets at once (handy for a quick dark mode); `tk_bisque()` restores the old beige Tk look; `tk_strictMotif(True)` mimics an old Unix style. They don't affect ttk widgets.
+see: tk.dark-mode
+```py
+import tkinter as tk
+root = tk.Tk()
+root.tk_setPalette(background="#1f1e1b", foreground="#eeeeee", activeBackground="#3a3833")
+b = tk.Button(root, text="Dark"); b.pack(padx=30, pady=20)
+print(b.cget("bg"), b.cget("fg"))
+root.mainloop()
+```
+```text
+#1f1e1b #eeeeee
+```
+
+@@ tk.m.winfo-size
+Q: Which winfo methods give sizes and positions (width, height, x, y, rootx, reqwidth, geometry)?
+aka: winfo_width, winfo_height, winfo_x, winfo_y, winfo_rootx, winfo_rooty, winfo_reqwidth, winfo_reqheight, winfo_geometry, widget size position
+A: `winfo_width/height` = real size now; `winfo_reqwidth/reqheight` = the size it asks for; `winfo_x/y` = position inside its parent; `winfo_rootx/rooty` = position on the screen; `winfo_geometry()` = `"WxH+X+Y"` string. Call `update_idletasks()` first for correct numbers.
+see: tk.win.winfo
+```py
+import tkinter as tk
+root = tk.Tk()
+f = tk.Frame(root, padx=15, pady=10); f.pack()
+b = tk.Button(f, text="Size me", width=12); b.pack()
+root.update_idletasks()
+print(b.winfo_reqwidth() == b.winfo_width(), b.winfo_x(), b.winfo_y())
+print(b.winfo_geometry().count("x") == 1)
+root.mainloop()
+```
+```text
+True 15 10
+True
+```
+
+@@ tk.m.winfo-tree
+Q: Which winfo methods describe the widget tree (children, parent, toplevel, class, manager, exists, ismapped, viewable)?
+aka: winfo_children, winfo_parent, winfo_toplevel, winfo_class, winfo_manager, winfo_exists, winfo_ismapped, winfo_viewable, widget tree
+A: `winfo_children()` = list of child widgets; `winfo_parent()` = parent's path; `winfo_toplevel()` = the window it's in; `winfo_class()` = `"Button"`, `"TButton"`...; `winfo_manager()` = `"pack"`, `"grid"`, `"place"` or `""`; `winfo_exists()` = 1 if not destroyed; `winfo_ismapped()` = shown; `winfo_viewable()` = shown **and** all parents shown.
+see: tk.ref.widget-methods
+```py
+import tkinter as tk
+root = tk.Tk()
+f = tk.Frame(root); f.pack()
+a = tk.Label(f, text="a"); a.grid(row=0, column=0)
+b = tk.Label(f, text="b")
+root.update()
+print([w.winfo_class() for w in f.winfo_children()], a.winfo_manager(), repr(b.winfo_manager()))
+print(a.winfo_parent(), a.winfo_toplevel() is root, a.winfo_ismapped(), b.winfo_ismapped(), a.winfo_viewable())
+root.mainloop()
+```
+```text
+['Label', 'Label'] grid ''
+.!frame True 1 0 1
+```
+
+@@ tk.m.winfo-screen
+Q: Which winfo methods describe the screen and mouse (screenwidth, screenmmwidth, pointerxy, containing, fpixels, rgb)?
+aka: winfo_screenwidth, winfo_screenheight, winfo_screenmmwidth, winfo_pointerxy, winfo_containing, winfo_fpixels, winfo_pixels, winfo_rgb, winfo_screendepth, dpi
+A: `winfo_screenwidth/height` (pixels), `winfo_screenmmwidth/mmheight` (millimetres: use for DPI), `winfo_pointerx/y/xy` (mouse on screen), `winfo_containing(x, y)` (widget at a screen point), `winfo_pixels("2c")`/`winfo_fpixels("1i")` (convert distances), `winfo_rgb("orange")` (colour as 16-bit RGB), `winfo_screendepth()` (colour bits).
+see: tk.screen-size, tk.win.dpi-scaling
+```py
+import tkinter as tk
+root = tk.Tk()
+w, mm = root.winfo_screenwidth(), root.winfo_screenmmwidth()
+print(w > 0, mm > 0, round(w / (mm / 25.4)) > 0)          # DPI from the screen size
+print(root.winfo_pixels("1i") > 0, root.winfo_rgb("white"), root.winfo_screendepth() >= 8)
+print(len(root.winfo_pointerxy()))
+root.mainloop()
+```
+```text
+True True True
+True (65535, 65535, 65535) True
+2
+```
+
+@@ tk.m.winfo-misc
+Q: What are the rarer winfo methods (id, interps, server, visual, atom, cells, colormapfull...)?
+aka: winfo_id, winfo_interps, winfo_server, winfo_visual, winfo_atom, winfo_cells, winfo_colormapfull, winfo_depth, winfo_vrootwidth, winfo_screenvisual, window handle hwnd
+A: Mostly for special cases: `winfo_id()` = the native window handle (HWND on Windows; used to embed other programs like pygame or video players); `winfo_vrootwidth/height/x/y` = virtual desktop; `winfo_depth()`, `winfo_visual()`, `winfo_cells()`, `winfo_colormapfull()` = colour hardware details; `winfo_server()` = display server; `winfo_interps()` = other Tk programs (Unix); `winfo_atom/atomname` = X11 atoms.
+see: tk.x.pygame-embed
+```py
+import tkinter as tk
+root = tk.Tk()
+f = tk.Frame(root, width=100, height=50); f.pack(); root.update()
+print(f.winfo_id() > 0, root.winfo_depth() >= 8, root.winfo_visual() in ("truecolor", "directcolor", "pseudocolor", "staticgray", "grayscale", "staticcolor"))
+root.mainloop()
+```
+```text
+True True True
+```
+
+@@ tk.m.wm-all
+Q: What are all the window (wm) methods: title, geometry, state, iconify, protocol, transient, attributes...?
+aka: wm methods list, window methods, wm_title, wm_geometry, wm_state, iconify, deiconify, withdraw, protocol, transient, overrideredirect, attributes, minsize, maxsize, resizable, iconphoto, aspect, group, positionfrom, sizefrom, focusmodel, frame, command, client, manage, forget
+A: For `Tk` and `Toplevel`: `title`, `geometry`, `minsize`/`maxsize`, `resizable`, `aspect`, `state`, `iconify`/`deiconify`/`withdraw`, `attributes` (`-alpha`, `-topmost`, `-fullscreen`...), `overrideredirect` (no title bar), `protocol` (e.g. `WM_DELETE_WINDOW`), `transient`, `iconphoto`/`iconbitmap`/`iconname`, `group`, `frame` (native handle), `focusmodel`, `positionfrom`/`sizefrom`, and `wm_manage`/`wm_forget` (turn a Frame into a window and back!). Each also has a `wm_` name.
+see: tk.win.wm-commands, tk.win.state
+```py
+import tkinter as tk
+root = tk.Tk()
+f = tk.Frame(root, bg="#ffd27a", width=150, height=60)
+f.pack()
+root.wm_manage(f)              # the frame becomes its own window!
+root.update()
+print(f.winfo_toplevel() is f or f.winfo_manager() == "wm")
+root.wm_forget(f)              # and back to an ordinary frame
+f.pack(); root.update()
+print(f.winfo_manager())
+print(root.wm_title() == root.title(), root.resizable(), root.state())
+root.mainloop()
+```
+```text
+True
+pack
+True (1, 1) normal
+```
+
+@@ tk.m.pack-methods
+Q: What are all the pack methods (pack, pack_configure, pack_forget, pack_info, pack_slaves, pack_propagate)?
+aka: pack methods, pack_forget, pack_info, pack_slaves, pack_propagate, pack_configure, unpack widget
+A: `pack(**opts)` (= `pack_configure`) shows the widget; `pack_forget()` hides it (options forgotten); `pack_info()` returns its options; on a container, `pack_slaves()` lists packed children and `pack_propagate(False)` stops it resizing to fit them.
+see: tk.geo.pack-options, tk.geo.propagate
+```py
+import tkinter as tk
+root = tk.Tk()
+a = tk.Label(root, text="a"); a.pack(side="left", padx=5)
+b = tk.Label(root, text="b"); b.pack(side="left")
+print({k: a.pack_info()[k] for k in ("side", "padx")}, len(root.pack_slaves()))
+a.pack_forget()
+print(len(root.pack_slaves()))
+root.mainloop()
+```
+```text
+{'side': 'left', 'padx': 5} 2
+1
+```
+
+@@ tk.m.grid-methods
+Q: What are all the grid methods (grid_info, grid_remove, grid_forget, grid_size, grid_slaves, grid_bbox, grid_location, grid_anchor)?
+aka: grid methods, grid_remove, grid_forget, grid_info, grid_size, grid_slaves, grid_bbox, grid_location, grid_anchor, grid_propagate, rowconfigure columnconfigure
+A: On a widget: `grid(**opts)`, `grid_remove()` (hide, remember options), `grid_forget()` (hide, forget options), `grid_info()`. On a container: `grid_size()` = (columns, rows); `grid_slaves(row=, column=)`; `grid_bbox(col, row)` = a cell's pixel box; `grid_location(x, y)` = which cell is at a pixel; `grid_anchor("center")` = where the whole grid sits; `rowconfigure/columnconfigure` (weight, minsize, uniform, pad); `grid_propagate(False)`.
+see: tk.geo.grid-options, tk.geo.columnconfigure, tk.geo.slaves
+```py
+import tkinter as tk
+root = tk.Tk()
+root.geometry("300x150")
+f = tk.Frame(root); f.pack(fill="both", expand=True)
+for r in range(2):
+    for c in range(3):
+        tk.Label(f, text=f"{r},{c}", width=6, relief="ridge").grid(row=r, column=c)
+f.grid_anchor("center")
+root.update()
+x, y, w, h = f.grid_bbox(1, 1)
+print(f.grid_size(), f.grid_location(x + 2, y + 2), w > 0)
+root.mainloop()
+```
+```text
+(3, 2) (1, 1) True
+```
+
+@@ tk.m.place-methods
+Q: What are the place methods (place, place_configure, place_forget, place_info, place_slaves)?
+aka: place methods, place_forget, place_info, place_slaves, place_configure
+A: `place(**opts)` (= `place_configure`) positions a widget; `place_forget()` removes it; `place_info()` shows its options; a container's `place_slaves()` lists placed children.
+see: tk.geo.place-options
+```py
+import tkinter as tk
+root = tk.Tk()
+root.geometry("200x100")
+b = tk.Button(root, text="placed"); b.place(relx=0.5, rely=0.5, anchor="center")
+print({k: b.place_info()[k] for k in ("relx", "rely", "anchor")}, len(root.place_slaves()))
+root.mainloop()
+```
+```text
+{'relx': '0.5', 'rely': '0.5', 'anchor': 'center'} 1
+```
+
+@@ tk.m.send-misc
+Q: What are info_patchlevel(), deletecommand() and send()?
+aka: info_patchlevel, deletecommand, send method, tk patch level, tcl version full
+A: `info_patchlevel()` = the exact Tcl/Tk version (e.g. 9.0.2); `deletecommand(name)` removes a Tcl command made by `register` (cleanup); `send(app, cmd)` talks to another Tk program (Unix, rarely used).
+see: tk.tk-version, tk.m.register
+```py
+import tkinter as tk
+root = tk.Tk()
+v = root.info_patchlevel()
+print(v.major >= 8, str(v).count(".") >= 1)
+name = root.register(lambda: None)
+root.deletecommand(name)
+root.mainloop()
+```
+```text
+True True
+```
