@@ -1,0 +1,399 @@
+# py-deco | Decorators and with | Writing decorators, decorators with arguments, wraps, caching, retry; context managers and with | python
+
+@@ py.deco.basics
+Q: What is a decorator and how do I write one?
+aka: decorator, @ symbol function, wrapper function, how decorators work, @decorator syntax
+A: A decorator is a function that takes a function and returns a new one (usually a wrapper that does something before/after calling the original). `@deco` above `def f` means `f = deco(f)`.
+see: py.deco.wraps, py.fn.closure
+```py
+def shout(func):
+    def wrapper(*args, **kwargs):
+        result = func(*args, **kwargs)
+        return result.upper() + "!"
+    return wrapper
+
+@shout
+def greet(name):
+    return f"hello {name}"
+
+print(greet("sam"))           # same as shout(greet)("sam")
+```
+```text
+HELLO SAM!
+```
+
+@@ py.deco.wraps
+Q: Why should I use functools.wraps in my decorator?
+aka: functools wraps, decorator loses name, decorator docstring lost, __name__ wrapper, preserve function metadata
+A: Without it, the decorated function's name, docstring and signature become the wrapper's (`wrapper`), which confuses `help()`, debuggers and logging. `@wraps(func)` copies them over.
+see: py.deco.basics
+```py
+from functools import wraps
+
+def plain(func):
+    def wrapper(*a, **k):
+        return func(*a, **k)
+    return wrapper
+
+def proper(func):
+    @wraps(func)
+    def wrapper(*a, **k):
+        return func(*a, **k)
+    return wrapper
+
+@plain
+def one():
+    """Docs for one."""
+
+@proper
+def two():
+    """Docs for two."""
+
+print(one.__name__, one.__doc__)
+print(two.__name__, two.__doc__)
+```
+```text
+wrapper None
+two Docs for two.
+```
+
+@@ py.deco.timer
+Q: How do I write a decorator that times a function (or logs its calls)?
+aka: timing decorator, log calls decorator, measure function time, debug decorator, print arguments decorator
+A: The wrapper records the time before and after calling the original, then prints or logs it. Same shape for logging arguments and results.
+see: py.timing, py.deco.wraps
+```py
+import time
+from functools import wraps
+
+def timed(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        start = time.perf_counter()
+        try:
+            return func(*args, **kwargs)
+        finally:
+            ms = (time.perf_counter() - start) * 1000
+            print(f"{func.__name__} took {ms:.0f} ms")
+    return wrapper
+
+def logged(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        result = func(*args, **kwargs)
+        print(f"{func.__name__}{args} -> {result!r}")
+        return result
+    return wrapper
+
+@logged
+def add(a, b):
+    return a + b
+
+@timed
+def nap():
+    time.sleep(0.05)
+
+add(2, 3)
+nap()
+```
+
+@@ py.deco.args
+Q: How do I write a decorator that takes arguments, like @repeat(3)?
+aka: decorator with arguments, decorator factory, parameterized decorator, @retry(times=3), three level decorator
+A: Add one more layer: the outer function takes the arguments and **returns** the decorator.
+see: py.deco.basics, py.deco.retry
+```py
+from functools import wraps
+
+def repeat(times):
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            return [func(*args, **kwargs) for _ in range(times)]
+        return wrapper
+    return decorator
+
+@repeat(3)
+def roll():
+    return "🎲"
+
+print(roll())
+```
+```text
+['🎲', '🎲', '🎲']
+```
+
+@@ py.deco.retry
+Q: How do I automatically retry a function that sometimes fails (retry decorator)?
+aka: retry decorator, retry on exception, try again, backoff, flaky network retry
+A: Loop a few times inside the wrapper, catching the exceptions you expect, waiting a little longer each time; re-raise after the last attempt.
+see: py.deco.args, py.try-except
+```py
+import time
+from functools import wraps
+
+def retry(times=3, delay=0.01, on=(ConnectionError,)):
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            for attempt in range(1, times + 1):
+                try:
+                    return func(*args, **kwargs)
+                except on as e:
+                    print(f"attempt {attempt} failed: {e}")
+                    if attempt == times:
+                        raise
+                    time.sleep(delay * 2 ** attempt)        # wait longer each time
+        return wrapper
+    return decorator
+
+calls = {"n": 0}
+@retry(times=4)
+def flaky():
+    calls["n"] += 1
+    if calls["n"] < 3:
+        raise ConnectionError("server busy")
+    return "ok"
+
+print(flaky())
+```
+```text
+attempt 1 failed: server busy
+attempt 2 failed: server busy
+ok
+```
+
+@@ py.deco.class-based
+Q: How do I write a decorator as a class, or one that keeps state (like counting calls)?
+aka: class decorator, decorator with state, count calls decorator, __call__ decorator, function attribute counter
+A: A class with `__init__(self, func)` and `__call__(self, *args)` works as a decorator, and its attributes hold state. (Or store state as an attribute on the wrapper function.)
+see: py.dunder
+```py
+class CountCalls:
+    def __init__(self, func):
+        self.func = func
+        self.calls = 0
+    def __call__(self, *args, **kwargs):
+        self.calls += 1
+        return self.func(*args, **kwargs)
+
+@CountCalls
+def hello():
+    return "hi"
+
+hello(); hello(); hello()
+print(hello.calls)
+```
+```text
+3
+```
+
+@@ py.deco.stacking
+Q: What happens when I stack several decorators on one function?
+aka: multiple decorators, stacked decorators order, two decorators, decorator order
+A: They apply bottom-up: `@a` over `@b` over `def f` means `f = a(b(f))`. When called, `a`'s wrapper runs first (outermost).
+see: py.deco.basics
+```py
+def tag(name):
+    def deco(func):
+        def wrapper():
+            return f"<{name}>{func()}</{name}>"
+        return wrapper
+    return deco
+
+@tag("b")
+@tag("i")
+def text():
+    return "hi"
+
+print(text())
+```
+```text
+<b><i>hi</i></b>
+```
+
+@@ py.deco.builtin
+Q: Which decorators come with Python (property, staticmethod, classmethod, cache, dataclass...)?
+aka: built in decorators, common decorators, functools decorators, abc abstractmethod, contextmanager decorator, total_ordering, singledispatch
+A: Classes: `@property`, `@staticmethod`, `@classmethod`, `@dataclass`, `@functools.total_ordering`, `@abc.abstractmethod`. Functions: `@functools.cache`/`lru_cache`, `@functools.wraps`, `@functools.singledispatch`, `@contextlib.contextmanager`, `@atexit.register`.
+see: py.property, py.static-classmethod, py.fn.recursion-memo
+```py
+import atexit
+from functools import singledispatch
+
+@singledispatch
+def describe(x):
+    return f"something: {x!r}"
+
+@describe.register
+def _(x: int):
+    return f"an integer: {x}"
+
+@describe.register
+def _(x: list):
+    return f"a list of {len(x)}"
+
+print(describe(5), "|", describe([1, 2]), "|", describe("hi"))
+
+@atexit.register
+def goodbye():
+    print("program ending")
+```
+```text
+an integer: 5 | a list of 2 | something: 'hi'
+program ending
+```
+
+@@ py.ctx.with
+Q: What does `with` do, and why use it for files?
+aka: with statement, context manager, with open, why with, automatically close file, with as
+A: `with something as x:` sets something up and **guarantees** it's cleaned up when the block ends, even if an error happens. For files it closes the file; for locks it releases them; for database connections it commits or rolls back.
+see: py.file-read, py.ctx.custom
+```py
+with open("notes.txt", "w") as f:
+    f.write("hello\n")
+print(f.closed)                 # True: closed automatically
+
+try:
+    with open("notes.txt") as f:
+        1 / 0                   # an error inside the block
+except ZeroDivisionError:
+    pass
+print(f.closed)                 # still closed properly
+```
+```text
+True
+True
+```
+
+@@ py.ctx.custom
+Q: How do I write my own context manager (for use with `with`)?
+aka: custom context manager, __enter__ __exit__, contextlib contextmanager, make with statement, setup teardown
+A: Easiest: a generator with `@contextlib.contextmanager`: code before `yield` is the setup, the yielded value is what `as` gets, code after (in `finally`) is the cleanup. Or a class with `__enter__` and `__exit__`.
+see: py.ctx.with
+```py
+import time
+from contextlib import contextmanager
+
+@contextmanager
+def timer(label):
+    start = time.perf_counter()
+    try:
+        yield
+    finally:
+        print(f"{label} took {time.perf_counter() - start:.0f} s")
+
+class Indent:
+    level = 0
+    def __enter__(self):
+        Indent.level += 1
+        return self
+    def __exit__(self, exc_type, exc, tb):
+        Indent.level -= 1
+        return False                 # don't hide errors
+    def say(self, text):
+        print("  " * Indent.level + text)
+
+with timer("block"):
+    with Indent() as a:
+        a.say("one level")
+        with Indent() as b:
+            b.say("two levels")
+```
+```text
+  one level
+    two levels
+block took 0 s
+```
+
+@@ py.ctx.multiple
+Q: How do I open two files (or several things) in one with statement?
+aka: multiple context managers, with two files, open read and write same time, nested with, parenthesized with
+A: Separate them with commas: `with open(a) as src, open(b, "w") as dst:`. For many, put them in brackets across lines (Python 3.10+), or use `contextlib.ExitStack` for a variable number.
+see: py.ctx.with
+```py
+from contextlib import ExitStack
+
+with open("data.txt") as src, open("copy.txt", "w") as dst:
+    for line in src:
+        dst.write(line.upper())
+
+names = ["a.txt", "b.txt", "c.txt"]
+with ExitStack() as stack:
+    files = [stack.enter_context(open(n, "w")) for n in names]
+    for f in files:
+        f.write("hi")
+print(open("copy.txt").readline().strip(), all(f.closed for f in files))
+```
+```text
+FIRST LINE True
+```
+
+@@ py.ctx.suppress
+Q: How do I ignore a specific error in one line (contextlib.suppress)?
+aka: suppress exception, ignore error, contextlib suppress, try except pass shortcut, delete file if exists
+A: `with suppress(FileNotFoundError):` is a short way to write `try: ... except FileNotFoundError: pass`. Only suppress errors you expect.
+see: py.try-except
+```py
+import os
+from contextlib import suppress
+
+with suppress(FileNotFoundError):
+    os.remove("does-not-exist.txt")
+print("carried on")
+```
+```text
+carried on
+```
+
+@@ py.ctx.redirect
+Q: How do I capture what a function prints (redirect stdout)?
+aka: capture print output, redirect stdout, contextlib redirect_stdout, get printed text as string, StringIO
+A: `contextlib.redirect_stdout(io.StringIO())` sends everything printed inside the block into a string buffer.
+see: tk.tx.redirect-print
+```py
+import io
+from contextlib import redirect_stdout
+
+def noisy():
+    print("line one")
+    print("line two")
+
+buf = io.StringIO()
+with redirect_stdout(buf):
+    noisy()
+captured = buf.getvalue()
+print(captured.splitlines())
+```
+```text
+['line one', 'line two']
+```
+
+@@ py.ctx.chdir
+Q: How do I temporarily change the working folder, or set something and always reset it?
+aka: change directory temporarily, contextlib chdir, temporary setting, restore after, cd context manager
+A: Python 3.11+ has `contextlib.chdir(path)`. For any "set, then always restore" pattern, write a small `@contextmanager` with `try/finally`.
+see: py.ctx.custom
+```py
+import os
+from contextlib import contextmanager
+
+@contextmanager
+def cd(path):
+    old = os.getcwd()
+    os.chdir(path)
+    try:
+        yield
+    finally:
+        os.chdir(old)
+
+os.makedirs("sub", exist_ok=True)
+start = os.getcwd()
+with cd("sub"):
+    print(os.path.basename(os.getcwd()))
+print(os.getcwd() == start)
+```
+```text
+sub
+True
+```

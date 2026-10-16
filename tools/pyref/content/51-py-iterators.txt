@@ -1,0 +1,372 @@
+# py-it | Comprehensions and iterators | List/dict/set comprehensions, generator expressions, iter and next, yield from, lazy pipelines | python
+
+@@ py.it.comp-if-else
+Q: How do I use if and else inside a list comprehension?
+aka: list comprehension if else, conditional list comprehension, filter in comprehension, ternary in comprehension, comprehension else
+A: A **filter** goes at the end: `[x for x in xs if x > 0]`. A **choice** (if/else) goes at the start: `[x if x > 0 else 0 for x in xs]`. You can use both.
+see: py.list-comp, py.ternary
+```py
+nums = [3, -1, 0, 7, -5]
+print([n for n in nums if n > 0])                    # keep only some
+print([n if n > 0 else 0 for n in nums])             # change some
+print(["even" if n % 2 == 0 else "odd" for n in nums if n != 0])
+```
+```text
+[3, 7]
+[3, 0, 0, 7, 0]
+['odd', 'odd', 'odd', 'odd']
+```
+
+@@ py.it.comp-nested
+Q: How do nested list comprehensions work (two for loops, making a grid)?
+aka: nested list comprehension, two for loops comprehension, comprehension grid, flatten with comprehension, double loop comprehension
+A: Several `for`s in one comprehension run like nested loops, left to right: `[x for row in grid for x in row]`. A comprehension **inside** another builds a list of lists: `[[0] * w for _ in range(h)]`.
+see: py.2d-list, py.flatten
+```py
+grid = [[c + r * 3 for c in range(3)] for r in range(3)]      # list of lists
+print(grid)
+flat = [x for row in grid for x in row]                         # outer loop first
+print(flat)
+pairs = [(a, b) for a in "xy" for b in (1, 2)]
+print(pairs)
+transposed = [[row[i] for row in grid] for i in range(3)]
+print(transposed)
+```
+```text
+[[0, 1, 2], [3, 4, 5], [6, 7, 8]]
+[0, 1, 2, 3, 4, 5, 6, 7, 8]
+[('x', 1), ('x', 2), ('y', 1), ('y', 2)]
+[[0, 3, 6], [1, 4, 7], [2, 5, 8]]
+```
+
+@@ py.it.set-comp
+Q: What are set comprehensions and generator expressions?
+aka: set comprehension, generator expression, brackets vs parentheses comprehension, curly brace comprehension
+A: Same syntax, different brackets: `[...]` list, `{...}` set (no duplicates), `{k: v ...}` dict, `(...)` generator (lazy, one item at a time). Inside a function call you can drop the extra brackets: `sum(x * x for x in xs)`.
+see: py.dict-comp, py.it.generator-expr
+```py
+words = ["apple", "Avocado", "banana", "blueberry", "cherry"]
+print({w[0].lower() for w in words})              # set: unique first letters
+print({w: len(w) for w in words if len(w) > 5})   # dict
+gen = (len(w) for w in words)                     # generator
+print(gen, sum(gen))
+```
+
+@@ py.it.generator-expr
+Q: What's the difference between a list comprehension and a generator expression?
+aka: generator expression vs list comprehension, lazy evaluation, memory usage comprehension, parentheses comprehension
+A: A list comprehension builds the whole list in memory now. A generator expression (round brackets) makes items one at a time when asked, so it uses almost no memory and can stop early, but you can only loop over it **once**.
+see: py.generators, py.fn.generator-func-vs-list
+```py
+import sys
+
+lst = [n * n for n in range(100_000)]
+gen = (n * n for n in range(100_000))
+print(sys.getsizeof(lst) > 100_000, sys.getsizeof(gen) < 500)
+print(sum(gen))
+print(sum(gen))          # empty now: already used up
+print(any(n > 50 for n in range(10**9)))     # stops at 51 instantly
+```
+```text
+True True
+333328333350000
+0
+True
+```
+
+@@ py.it.iter-next
+Q: How do iter() and next() work, and what is an iterator?
+aka: iter next, iterator protocol, StopIteration, next default, iterable vs iterator, __iter__ __next__
+A: An **iterable** is anything you can loop over (list, str, dict, file). `iter(x)` gives an **iterator**, which hands out items with `next()` until it raises `StopIteration`. `for` loops do this for you. `next(it, default)` returns the default instead of raising.
+see: py.it.custom-iterator
+```py
+it = iter(["a", "b"])
+print(next(it), next(it))
+print(next(it, "no more"))
+
+with open("data.txt") as f:        # files are iterators too
+    header = next(f).strip()        # read the first line only
+    rest = [line.strip() for line in f]
+print(header, rest)
+```
+```text
+a b
+no more
+first line ['second line', 'third line']
+```
+
+@@ py.it.custom-iterator
+Q: How do I make my own class work in a for loop (custom iterator)?
+aka: make class iterable, __iter__ method, __next__, custom iterator class, iterable object
+A: Give the class an `__iter__` method. Simplest: write it as a generator (`yield` each item). A full iterator class has `__iter__` returning `self` and `__next__` raising `StopIteration` at the end.
+see: py.dunder, py.generators
+```py
+class Countdown:
+    def __init__(self, start):
+        self.start = start
+    def __iter__(self):                  # generator method: easiest way
+        n = self.start
+        while n > 0:
+            yield n
+            n -= 1
+
+class Squares:                           # the long way
+    def __init__(self, n):
+        self.i, self.n = 0, n
+    def __iter__(self):
+        return self
+    def __next__(self):
+        if self.i >= self.n:
+            raise StopIteration
+        self.i += 1
+        return self.i ** 2
+
+print(list(Countdown(3)), list(Squares(4)))
+```
+```text
+[3, 2, 1] [1, 4, 9, 16]
+```
+
+@@ py.it.yield-from
+Q: What does `yield from` do?
+aka: yield from, delegate generator, flatten generator, recursive generator, sub generator
+A: `yield from other` yields every item of another iterable/generator. It's the clean way to write recursive generators (walking trees, nested lists).
+see: py.generators
+```py
+def flatten(items):
+    for x in items:
+        if isinstance(x, list):
+            yield from flatten(x)        # all items of the sub-list
+        else:
+            yield x
+
+print(list(flatten([1, [2, [3, 4]], [], 5])))
+
+def chain(*iterables):
+    for it in iterables:
+        yield from it
+print(list(chain("ab", range(2), ["z"])))
+```
+```text
+[1, 2, 3, 4, 5]
+['a', 'b', 0, 1, 'z']
+```
+
+@@ py.it.pipeline
+Q: How do I process a big file step by step without loading it all (generator pipeline)?
+aka: generator pipeline, lazy processing, process large file, chain generators, streaming data
+A: Chain generators: each stage takes an iterator and yields results. Nothing is read until the last stage asks, and only one line is in memory at a time.
+see: py.it.generator-expr, py.file-read
+```py
+with open("big.log", "w") as f:
+    for i in range(1000):
+        f.write(f"{'ERROR' if i % 100 == 0 else 'INFO'} request {i} took {i % 7}ms\n")
+
+def read_lines(path):
+    with open(path) as f:
+        yield from f
+
+def only(level, lines):
+    return (l for l in lines if l.startswith(level))
+
+def durations(lines):
+    return (int(l.split()[-1].removesuffix("ms")) for l in lines)
+
+print(sum(durations(only("ERROR", read_lines("big.log")))))
+```
+```text
+27
+```
+
+@@ py.it.enumerate-start
+Q: How do I start enumerate at 1, or loop with an index over two things?
+aka: enumerate start 1, numbered list, index from 1, enumerate zip together, counter in loop
+A: `enumerate(items, start=1)`. To get an index and items from two lists: `for i, (a, b) in enumerate(zip(xs, ys))`.
+see: py.enumerate, py.zip
+```py
+for n, name in enumerate(["Ada", "Sam", "Kai"], start=1):
+    print(f"{n}. {name}")
+for i, (q, a) in enumerate(zip(["2+2", "3*3"], [4, 9])):
+    print(i, q, "=", a)
+```
+```text
+1. Ada
+2. Sam
+3. Kai
+0 2+2 = 4
+1 3*3 = 9
+```
+
+@@ py.it.zip-strict
+Q: What happens when I zip lists of different lengths?
+aka: zip different lengths, zip longest, zip strict, zip shortest, itertools zip_longest, unzip
+A: `zip` stops at the **shortest**. `itertools.zip_longest(..., fillvalue=x)` goes to the longest; `zip(..., strict=True)` raises an error if lengths differ. `zip(*pairs)` "unzips".
+see: py.zip
+```py
+from itertools import zip_longest
+
+a, b = [1, 2, 3], ["x", "y"]
+print(list(zip(a, b)))
+print(list(zip_longest(a, b, fillvalue="-")))
+try:
+    list(zip(a, b, strict=True))
+except ValueError as e:
+    print("error:", e)
+nums, letters = zip(*[(1, "x"), (2, "y")])
+print(nums, letters)
+```
+```text
+[(1, 'x'), (2, 'y')]
+[(1, 'x'), (2, 'y'), (3, '-')]
+error: zip() argument 2 is shorter than argument 1
+(1, 2) ('x', 'y')
+```
+
+@@ py.it.reversed-sorted
+Q: How do reversed(), sorted() and key= work together?
+aka: reversed vs reverse, sorted key, sort by length, sort by second item, sort descending, sort case insensitive
+A: `sorted(x)` returns a new sorted list; `reversed(x)` returns an iterator going backwards. `key=` is a function applied to each item to decide the order (`len`, `str.lower`, `lambda p: p[1]`); `reverse=True` for descending.
+see: py.sort, py.it.sort-multi
+```py
+words = ["banana", "Apple", "cherry", "fig"]
+print(sorted(words))                    # capitals first
+print(sorted(words, key=str.lower))
+print(sorted(words, key=len, reverse=True))
+print(list(reversed(words)))
+people = [("Ada", 36), ("Sam", 14), ("Kai", 22)]
+print(sorted(people, key=lambda p: p[1]))
+```
+```text
+['Apple', 'banana', 'cherry', 'fig']
+['Apple', 'banana', 'cherry', 'fig']
+['banana', 'cherry', 'Apple', 'fig']
+['fig', 'cherry', 'Apple', 'banana']
+[('Sam', 14), ('Kai', 22), ('Ada', 36)]
+```
+
+@@ py.it.sort-multi
+Q: How do I sort by several things (e.g. by score descending, then name)?
+aka: sort by multiple keys, sort two fields, tie breaker sort, sort descending and ascending, itemgetter
+A: Return a tuple from `key`: items are compared by the first element, then the second on ties. For "descending" on a number, negate it (`-score`). Or sort twice, least important key first (Python's sort is stable).
+see: py.it.reversed-sorted
+```py
+from operator import itemgetter
+
+players = [("Sam", 90), ("Ada", 95), ("Kai", 90), ("Bo", 80)]
+print(sorted(players, key=lambda p: (-p[1], p[0])))      # score high→low, then name A→Z
+
+rows = sorted(players, key=itemgetter(0))                 # by name...
+rows = sorted(rows, key=itemgetter(1), reverse=True)      # ...then by score (stable)
+print(rows)
+```
+```text
+[('Ada', 95), ('Kai', 90), ('Sam', 90), ('Bo', 80)]
+[('Ada', 95), ('Kai', 90), ('Sam', 90), ('Bo', 80)]
+```
+
+@@ py.it.loop-else
+Q: What does `else` after a for or while loop do?
+aka: for else, while else, loop else clause, else after loop, break else
+A: The `else` block runs if the loop finished **without** `break`. It's ideal for "search, and say if nothing was found".
+see: py.break-continue
+```py
+def find(names, target):
+    for i, n in enumerate(names):
+        if n == target:
+            print("found at", i)
+            break
+    else:
+        print("not found")
+
+find(["a", "b", "c"], "b")
+find(["a", "b", "c"], "z")
+```
+```text
+found at 1
+not found
+```
+
+@@ py.it.loop-dict-change
+Q: How do I loop over a dict or list while changing it?
+aka: change dict while looping, delete from dict in loop, modify list during iteration, iterate over copy
+A: Loop over a **copy** (`list(d)`, `d.copy()`, `items[:]`) or build a new one with a comprehension. Changing the size of a dict while looping over it raises `RuntimeError`.
+see: py.list-remove-loop, py.err2.dict-changed-size
+```py
+stock = {"apple": 0, "pear": 3, "fig": 0}
+for name in list(stock):          # copy of the keys
+    if stock[name] == 0:
+        del stock[name]
+print(stock)
+
+nums = [1, 2, 3, 4, 5, 6]
+nums = [n for n in nums if n % 2]  # new list instead of removing
+print(nums)
+```
+```text
+{'pear': 3}
+[1, 3, 5]
+```
+
+@@ py.it.infinite
+Q: How do I loop forever over a sequence, or count up without an end?
+aka: infinite loop, cycle list, itertools count, repeat forever, round robin, loop around list
+A: `itertools.cycle(items)` repeats a sequence forever; `itertools.count(start, step)` counts forever. Stop with `break` or take a slice with `islice`.
+see: mod.itertools.basics
+```py
+from itertools import cycle, count, islice
+
+turns = cycle(["red", "green", "blue"])
+print([next(turns) for _ in range(5)])
+for i in count(10, 5):
+    if i > 25:
+        break
+    print(i, end=" ")
+print()
+print(list(islice(count(1), 3)))
+```
+```text
+['red', 'green', 'blue', 'red', 'green']
+10 15 20 25
+[1, 2, 3]
+```
+
+@@ py.it.walk-pairs
+Q: How do I loop over pairs of neighbours (item and next item)?
+aka: pairwise, consecutive pairs, current and next item, adjacent elements, sliding window
+A: `itertools.pairwise(xs)` (Python 3.10+) gives `(a, b), (b, c), ...`; or `zip(xs, xs[1:])`. For a wider window, slice in a comprehension.
+see: py.zip
+```py
+from itertools import pairwise
+
+temps = [12, 15, 11, 18, 20]
+print([b - a for a, b in pairwise(temps)])
+print(list(zip(temps, temps[1:]))[:2])
+print([temps[i:i + 3] for i in range(len(temps) - 2)])     # windows of 3
+```
+```text
+[3, -4, 7, 2]
+[(12, 15), (15, 11)]
+[[12, 15, 11], [15, 11, 18], [11, 18, 20]]
+```
+
+@@ py.it.send
+Q: Can I send values into a generator (coroutine-style generators)?
+aka: generator send, coroutine generator, send value to generator, running average generator
+A: Yes: `value = yield result` receives what you pass with `gen.send(x)`. Start it with `next(gen)` first. Handy for running totals; for real async work use `async def` instead.
+see: py.generators, mod.asyncio.basics
+```py
+def averager():
+    total = count = 0
+    avg = None
+    while True:
+        x = yield avg
+        total += x; count += 1
+        avg = total / count
+
+a = averager()
+next(a)                      # run to the first yield
+print(a.send(10), a.send(20), a.send(60))
+```
+```text
+10.0 15.0 30.0
+```
