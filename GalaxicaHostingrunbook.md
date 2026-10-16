@@ -22,14 +22,15 @@ Purpose: resume this chat with full context. Cap ~1,500 tokens; condense, don't 
 ## Games (25 live)
 galaxica, squeeze, pinprick, hairline, gravity-garden (challenges + #w= share links), powder-lab, tidewater, loom, moth-mail, cairn, tantrum, ant-kingdom, peg-song, switchyard, chirp (all with fun layer), floe, brass-pinball, ripple, cauldron, snail-rocket, deepdig, hedgerow, sneeze-heist, bramble, rube-garden. User favourites: Deepdig, Hedgerow.
 
-## Pybench (public/pybench/, linked from hub "Workshop" row)
-- User asked "something to help me learn python ... like IDLE with everything + helpers". Built IDLE-style workbench: menus File/Edit/Format/Run/Shell/Debug/Options/Window/Help with IDLE shortcuts, editor tabs, shell (>>> / ..., history, input()), F5 restart-run, check module, live syntax squiggles, completions/calltips, code context, bdb debugger (step/over/out/go, breakpoints), stack viewer, vars, outline, files + sys.path, docs (F1), cheats, turtle canvas, 16 lessons with auto-checks, examples. Mobile: Code/Shell/Learn/Turtle/Tools nav + key row.
-- Files: index.html (CSS, palette Workbench: paper/kiln accent; Atkinson + Plex Mono), app.js, worker.js, bench.py (Python side), lessons.js, vendor/ (Pyodide 0.26.4, CodeMirror 5, fonts; all self-hosted).
-- Needs COOP/COEP via public/_headers (SharedArrayBuffer for input(), Stop, debugger). Local test: scratchpad coiserve.mjs on :8090.
+## Pybench (removed 2026-10-16)
+- Built an IDLE-style browser Python editor at public/pybench (Pyodide 0.26.4 + CodeMirror 5, lessons, debugger, turtle). User then said "no convert website, no more python editor, I'll just use shell": removed from site, hub row and public/_headers. Still recoverable from git commit 575eaa9 if ever wanted. Don't rebuild unless asked.
+- Facts learned (useful if Python help comes up again): in Pyodide 182/212 stdlib modules import; sqlite3/lzma/ssl are optional Pyodide packages; no threads, subprocess, sockets/urllib, tkinter in a browser.
+- User is learning Python and will use the real Python shell/IDLE on their computer; help there with explanations, not a web tool.
 
 ## NEXT
-1. Pybench feedback from user; game ideas still open if wanted.
-2. Later ideas: leaderboards, real-phone playtest, balance (Cauldron hard, Deepdig economy), runbook stays under cap.
+1. User is continuing in a new chat. Ask what they want next (arcade work, or Python help in their own shell).
+2. Game ideas still open (dig- and hedge-like, user favourites Deepdig + Hedgerow).
+3. Later: leaderboards, real-phone playtest, balance (Cauldron hard, Deepdig economy). Keep runbook under cap.
 
 ## Test kit (scratchpad, ephemeral)
 http-server public -p 8080; bot.mjs (AUTO stats), waitshot.mjs, tutshot.mjs, thumb.mjs + crop.py, audit.mjs (overflow/oval/clip/pad checks + screenshots), addgame.py (games.json).
