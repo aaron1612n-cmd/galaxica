@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Python Answer Book</title>
+<meta name="description" content="Searchable answers to Python and tkinter questions and errors, each with a tested example.">
+<meta name="theme-color" content="#f2ede3" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1a1916" media="(prefers-color-scheme: dark)">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Narrow:wght@500;600;700&family=IBM+Plex+Mono:ital,wght@0,400;0,600;1,400&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%231b1a17'/%3E%3Cpath d='M9 7h9a6 6 0 0 1 0 12h-4v6H9z' fill='%23f2ede3'/%3E%3Crect x='14' y='11' width='4' height='4' fill='%23c23b22'/%3E%3C/svg%3E">
+</head>
+<body>
+<header class="top">
+  <div class="bar">
+    <a class="mast" href="#/"><span class="mk">Py</span><span class="mt">Python Answer Book</span></a>
+    <nav class="tools">
+      <button id="idxBtn" class="tb" aria-label="Index" title="Index"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 5h14M3 10h14M3 15h9" stroke="currentColor" stroke-width="2" fill="none"/></svg></button>
+      <a class="tb arc" href="../" title="Back to the arcade">Arcade</a>
+      <button id="themeBtn" class="tb" aria-label="Light or dark" title="Light or dark"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="6" stroke="currentColor" stroke-width="2" fill="none"/><path d="M10 4a6 6 0 0 1 0 12z" fill="currentColor"/></svg></button>
+    </nav>
+  </div>
+  <form class="find" id="find" role="search" autocomplete="off">
+    <label for="q" class="vh">Search</label>
+    <input id="q" type="search" enterkeyhint="search" spellcheck="false" placeholder="Ask a question or paste an error">
+    <kbd class="slash" aria-hidden="true">/</kbd>
+  </form>
+</header>
+<div class="page">
+  <aside class="rail" id="rail" aria-label="Index"></aside>
+  <main id="main" tabindex="-1"></main>
+</div>
+<div class="scrim" id="scrim"></div>
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
