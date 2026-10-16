@@ -1,0 +1,601 @@
+# py-ex | Classic exercises and algorithms | Patterns of stars, leap years, factorials, sorting and searching by hand, ciphers, Hanoi, bank account class and more, each explained | python
+
+@@ py.ex.star-patterns
+Q: How do I print star patterns (triangle, pyramid, diamond, square)?
+aka: star pattern, pyramid of stars, triangle pattern, diamond pattern, print pattern python, nested loop pattern
+A: Each row is built from spaces and stars: row `i` of a pyramid has `n - i - 1` spaces then `2 * i + 1` stars. String multiplication (`"*" * k`) does the repeating.
+see: py.str-repeat, py.for
+```py
+n = 4
+for i in range(1, n + 1):                  # right-angled triangle
+    print("*" * i)
+for i in range(n):                         # pyramid
+    print(" " * (n - i - 1) + "*" * (2 * i + 1))
+for i in list(range(n)) + list(range(n - 2, -1, -1)):   # diamond
+    print(" " * (n - i - 1) + "*" * (2 * i + 1))
+```
+```text
+*
+**
+***
+****
+   *
+  ***
+ *****
+*******
+   *
+  ***
+ *****
+*******
+ *****
+  ***
+   *
+```
+
+@@ py.ex.number-patterns
+Q: How do I print number patterns (number triangles, Floyd's triangle, multiplication table)?
+aka: number pattern, floyd's triangle, multiplication table, times table python, number triangle, nested loops numbers
+A: Nested loops: the outer loop is the row, the inner builds that row. Use `end=" "` to stay on the line and a format width like `:3` to line up columns.
+see: py.ex.star-patterns, py.fmt.spec
+```py
+for i in range(1, 5):
+    print(" ".join(str(j) for j in range(1, i + 1)))
+n = 1
+for row in range(1, 5):                    # Floyd's triangle
+    print(" ".join(f"{n + k:2}" for k in range(row)))
+    n += row
+for a in range(1, 6):                      # times table
+    print("".join(f"{a * b:4}" for b in range(1, 6)))
+```
+```text
+1
+1 2
+1 2 3
+1 2 3 4
+ 1
+ 2  3
+ 4  5  6
+ 7  8  9 10
+   1   2   3   4   5
+   2   4   6   8  10
+   3   6   9  12  15
+   4   8  12  16  20
+   5  10  15  20  25
+```
+
+@@ py.ex.leap-year
+Q: How do I check if a year is a leap year?
+aka: leap year, is leap year, leap year python, february 29
+A: Divisible by 4, except centuries, unless divisible by 400: `y % 4 == 0 and (y % 100 != 0 or y % 400 == 0)`. `calendar.isleap(y)` does the same.
+see: mod.dt.calendar
+```py
+import calendar
+def is_leap(y):
+    return y % 4 == 0 and (y % 100 != 0 or y % 400 == 0)
+for y in (1900, 2000, 2024, 2026):
+    print(y, is_leap(y), calendar.isleap(y))
+```
+```text
+1900 False False
+2000 True True
+2024 True True
+2026 False False
+```
+
+@@ py.ex.factorial
+Q: How do I calculate a factorial (with a loop, recursion, or math)?
+aka: factorial, n factorial, factorial recursion, factorial loop, math.factorial
+A: n! = 1 × 2 × … × n (and 0! = 1). A loop multiplies up; recursion uses n! = n × (n−1)!; `math.factorial` is built in.
+see: py.recursion
+```py
+import math
+def fact_loop(n):
+    result = 1
+    for k in range(2, n + 1):
+        result *= k
+    return result
+def fact_rec(n):
+    return 1 if n <= 1 else n * fact_rec(n - 1)
+print(fact_loop(5), fact_rec(5), math.factorial(5), math.factorial(20))
+```
+```text
+120 120 120 2432902008176640000
+```
+
+@@ py.ex.gcd
+Q: How do I find the greatest common divisor (GCD) or lowest common multiple (LCM)?
+aka: gcd, hcf, highest common factor, lcm, euclid algorithm, greatest common divisor
+A: Euclid's algorithm: replace `(a, b)` with `(b, a % b)` until `b` is 0; then `a` is the GCD. LCM = a × b ÷ GCD. `math.gcd` / `math.lcm` are built in.
+see: mod.math.more
+```py
+import math
+def gcd(a, b):
+    while b:
+        a, b = b, a % b
+    return a
+print(gcd(48, 18), math.gcd(48, 18), 48 * 18 // gcd(48, 18), math.lcm(48, 18))
+```
+```text
+6 6 144 144
+```
+
+@@ py.ex.palindrome-number
+Q: How do I check Armstrong numbers, perfect numbers or palindrome numbers?
+aka: armstrong number, narcissistic number, perfect number, palindrome number, special numbers exercise
+A: Turn the number into a string to work with its digits. Armstrong: sum of each digit raised to the number of digits equals the number. Perfect: sum of divisors (excluding itself) equals it. Palindrome: reads the same reversed.
+see: py.digits
+```py
+def armstrong(n):
+    s = str(n)
+    return sum(int(d) ** len(s) for d in s) == n
+def perfect(n):
+    return n > 1 and sum(d for d in range(1, n) if n % d == 0) == n
+def palindrome(n):
+    return str(n) == str(n)[::-1]
+print([n for n in range(1, 1000) if armstrong(n)][9:])
+print([n for n in range(1, 10000) if perfect(n)], palindrome(12321), palindrome(1232))
+```
+```text
+[153, 370, 371, 407]
+[6, 28, 496, 8128] True False
+```
+
+@@ py.ex.anagram
+Q: How do I check if two words are anagrams?
+aka: anagram, check anagram, same letters, sorted letters, counter anagram
+A: Two words are anagrams if they have the same letters the same number of times: compare `sorted()` letters, or `Counter`s (ignore case and spaces first).
+see: py.counter
+```py
+from collections import Counter
+def anagram(a, b):
+    clean = lambda s: s.replace(" ", "").lower()
+    return Counter(clean(a)) == Counter(clean(b))
+print(anagram("Listen", "Silent"), anagram("Dormitory", "dirty room"), anagram("abc", "abd"))
+```
+```text
+True True False
+```
+
+@@ py.ex.vowels
+Q: How do I count vowels and consonants in a string?
+aka: count vowels, vowels consonants, count letters type, vowel counter
+A: Loop over the lowercase letters and test membership in `"aeiou"`; consonants are the other letters.
+see: py.fmt.char-counts
+```py
+text = "Hello, World!"
+letters = [c for c in text.lower() if c.isalpha()]
+vowels = sum(c in "aeiou" for c in letters)
+print(vowels, len(letters) - vowels)
+```
+```text
+3 7
+```
+
+@@ py.ex.linear-binary-search
+Q: How do linear search and binary search work?
+aka: linear search, binary search, search algorithm, find in sorted list, divide and conquer search
+A: **Linear**: check each item in turn (works on any list). **Binary**: on a **sorted** list, look at the middle; if the target is smaller search the left half, else the right; halve until found. Much faster for big lists (`bisect` does it for you).
+see: mod.bisect
+```py
+def linear_search(items, target):
+    for i, x in enumerate(items):
+        if x == target:
+            return i
+    return -1
+
+def binary_search(items, target):
+    lo, hi, steps = 0, len(items) - 1, 0
+    while lo <= hi:
+        steps += 1
+        mid = (lo + hi) // 2
+        if items[mid] == target:
+            return mid, steps
+        if items[mid] < target:
+            lo = mid + 1
+        else:
+            hi = mid - 1
+    return -1, steps
+
+data = list(range(0, 1000, 3))
+print(linear_search(data, 300), binary_search(data, 300), binary_search(data, 301))
+```
+```text
+100 (100, 7) (-1, 8)
+```
+
+@@ py.ex.bubble-selection-insertion
+Q: How do bubble sort, selection sort and insertion sort work?
+aka: bubble sort, selection sort, insertion sort, sorting algorithms, sort without sort function, simple sorts
+A: **Bubble**: repeatedly swap neighbours that are in the wrong order. **Selection**: find the smallest remaining item and put it next. **Insertion**: take each item and slide it left into place. All are fine for learning; `sorted()` is far faster in practice.
+see: py.sort, tk.thr.generator
+```py
+def bubble(a):
+    a = a[:]
+    for end in range(len(a) - 1, 0, -1):
+        for i in range(end):
+            if a[i] > a[i + 1]:
+                a[i], a[i + 1] = a[i + 1], a[i]
+    return a
+
+def selection(a):
+    a = a[:]
+    for i in range(len(a)):
+        m = min(range(i, len(a)), key=a.__getitem__)
+        a[i], a[m] = a[m], a[i]
+    return a
+
+def insertion(a):
+    a = a[:]
+    for i in range(1, len(a)):
+        x, j = a[i], i - 1
+        while j >= 0 and a[j] > x:
+            a[j + 1] = a[j]; j -= 1
+        a[j + 1] = x
+    return a
+
+nums = [5, 2, 9, 1, 5, 6]
+print(bubble(nums), selection(nums), insertion(nums), nums)
+```
+```text
+[1, 2, 5, 5, 6, 9] [1, 2, 5, 5, 6, 9] [1, 2, 5, 5, 6, 9] [5, 2, 9, 1, 5, 6]
+```
+
+@@ py.ex.merge-quick
+Q: How do merge sort and quicksort work?
+aka: merge sort, quicksort, quick sort, recursive sort, divide and conquer sort
+A: **Merge sort**: split the list in half, sort each half (recursively), then merge the two sorted halves. **Quicksort**: pick a pivot, put smaller items left and bigger right, sort each side (recursively). Both take about n·log n steps.
+see: py.ex.bubble-selection-insertion, py.recursion
+```py
+def merge_sort(a):
+    if len(a) <= 1:
+        return a
+    mid = len(a) // 2
+    left, right = merge_sort(a[:mid]), merge_sort(a[mid:])
+    out, i, j = [], 0, 0
+    while i < len(left) and j < len(right):
+        if left[i] <= right[j]:
+            out.append(left[i]); i += 1
+        else:
+            out.append(right[j]); j += 1
+    return out + left[i:] + right[j:]
+
+def quick_sort(a):
+    if len(a) <= 1:
+        return a
+    pivot, rest = a[0], a[1:]
+    return quick_sort([x for x in rest if x < pivot]) + [pivot] + quick_sort([x for x in rest if x >= pivot])
+
+nums = [38, 27, 43, 3, 9, 82, 10]
+print(merge_sort(nums), quick_sort(nums))
+```
+```text
+[3, 9, 10, 27, 38, 43, 82] [3, 9, 10, 27, 38, 43, 82]
+```
+
+@@ py.ex.caesar
+Q: How do I make a Caesar cipher (encrypt and decrypt by shifting letters)?
+aka: caesar cipher, shift cipher, encrypt text python, rot13, decrypt caesar, simple encryption
+A: Shift each letter by `k` places around the alphabet using `ord`/`chr` and `% 26`; leave other characters alone. Decrypt by shifting `-k`. (Fun, but not real security.)
+see: py.str-chars
+```py
+def caesar(text, k):
+    out = []
+    for ch in text:
+        if ch.isalpha():
+            base = ord("A") if ch.isupper() else ord("a")
+            out.append(chr((ord(ch) - base + k) % 26 + base))
+        else:
+            out.append(ch)
+    return "".join(out)
+
+secret = caesar("Hello, World!", 3)
+print(secret, caesar(secret, -3), caesar("Python", 13))
+```
+```text
+Khoor, Zruog! Hello, World! Clguba
+```
+
+@@ py.ex.morse
+Q: How do I translate text to Morse code and back?
+aka: morse code, morse translator, dictionary translator, encode morse
+A: A dict maps letters to codes; reverse it with a dict comprehension to decode. Words are separated with `/`.
+see: py.coll.invert-dict
+```py
+MORSE = {"A": ".-", "B": "-...", "C": "-.-.", "D": "-..", "E": ".", "F": "..-.", "G": "--.", "H": "....", "I": "..", "J": ".---",
+         "K": "-.-", "L": ".-..", "M": "--", "N": "-.", "O": "---", "P": ".--.", "Q": "--.-", "R": ".-.", "S": "...", "T": "-",
+         "U": "..-", "V": "...-", "W": ".--", "X": "-..-", "Y": "-.--", "Z": "--.."}
+BACK = {code: letter for letter, code in MORSE.items()}
+def encode(text):
+    return " / ".join(" ".join(MORSE[c] for c in word if c in MORSE) for word in text.upper().split())
+def decode(code):
+    return " ".join("".join(BACK[c] for c in word.split()) for word in code.split(" / "))
+m = encode("sos help")
+print(m, "|", decode(m))
+```
+```text
+... --- ... / .... . .-.. .--. | SOS HELP
+```
+
+@@ py.ex.hanoi
+Q: How does the Tower of Hanoi recursion work?
+aka: tower of hanoi, hanoi recursion, recursive puzzle, move disks
+A: To move n disks from A to C: move n−1 disks from A to B (using C), move the biggest from A to C, then move the n−1 disks from B to C (using A). It takes 2ⁿ − 1 moves.
+see: py.recursion
+```py
+moves = []
+def hanoi(n, src="A", spare="B", dst="C"):
+    if n == 0:
+        return
+    hanoi(n - 1, src, dst, spare)
+    moves.append(f"{src}->{dst}")
+    hanoi(n - 1, spare, src, dst)
+
+hanoi(3)
+print(len(moves), moves)
+```
+```text
+7 ['A->C', 'A->B', 'C->B', 'A->C', 'B->A', 'B->C', 'A->C']
+```
+
+@@ py.ex.bank-account
+Q: How do I write a bank account class (deposit, withdraw, balance, history)?
+aka: bank account class, oop exercise, deposit withdraw, class example beginner, account balance class
+A: Store the balance and a history list on `self`; methods change them and refuse invalid actions by raising errors.
+see: py.class-basics, py.exc.custom
+```py
+class Account:
+    def __init__(self, owner, balance=0):
+        self.owner, self.balance, self.history = owner, balance, []
+    def deposit(self, amount):
+        if amount <= 0:
+            raise ValueError("deposit must be positive")
+        self.balance += amount
+        self.history.append(("deposit", amount))
+    def withdraw(self, amount):
+        if amount > self.balance:
+            raise ValueError(f"insufficient funds: balance is {self.balance}")
+        self.balance -= amount
+        self.history.append(("withdraw", amount))
+    def __str__(self):
+        return f"{self.owner}: £{self.balance:.2f}"
+
+acc = Account("Ada", 50)
+acc.deposit(25); acc.withdraw(30)
+try:
+    acc.withdraw(100)
+except ValueError as e:
+    print("refused:", e)
+print(acc, acc.history)
+```
+```text
+refused: insufficient funds: balance is 45
+Ada: £45.00 [('deposit', 25), ('withdraw', 30)]
+```
+
+@@ py.ex.grades
+Q: How do I turn a score into a grade, and compute class statistics?
+aka: grade calculator, score to grade, marks to grade, class average, highest lowest score
+A: An if/elif chain from the top band down (or `bisect` with boundaries); then use `max`, `min`, `sum/len` on the scores.
+see: mod.bisect, py.if
+```py
+def grade(score):
+    if score >= 90: return "A"
+    elif score >= 80: return "B"
+    elif score >= 70: return "C"
+    elif score >= 60: return "D"
+    return "F"
+
+scores = {"Ada": 93, "Sam": 71, "Kai": 58, "Bo": 84}
+for name, s in scores.items():
+    print(f"{name:<4} {s:>3} {grade(s)}")
+print("avg", sum(scores.values()) / len(scores), "best", max(scores, key=scores.get))
+```
+```text
+Ada   93 A
+Sam   71 C
+Kai   58 F
+Bo    84 B
+avg 76.5 best Ada
+```
+
+@@ py.ex.coin-dice-sim
+Q: How do I simulate coin tosses or dice rolls and count the results?
+aka: dice simulation, coin toss simulation, probability simulation, monte carlo, roll dice many times
+A: Repeat a random choice many times and count with `Counter`; the percentages approach the true probabilities as the number of trials grows.
+see: mod.random.all, py.counter
+```py
+import random
+from collections import Counter
+random.seed(4)
+rolls = Counter(random.randint(1, 6) + random.randint(1, 6) for _ in range(36000))
+for total in range(2, 13):
+    print(f"{total:>2} {'#' * (rolls[total] // 300)}")
+```
+
+@@ py.ex.sieve
+Q: How do I find all prime numbers up to N quickly (Sieve of Eratosthenes)?
+aka: sieve of eratosthenes, primes up to n, fast prime list, prime sieve
+A: Start with a list of `True`s; for each number still marked prime, cross out all its multiples. What remains marked are primes.
+see: py.prime
+```py
+def primes_up_to(n):
+    is_prime = [True] * (n + 1)
+    is_prime[0:2] = [False, False]
+    for p in range(2, int(n ** 0.5) + 1):
+        if is_prime[p]:
+            is_prime[p * p::p] = [False] * len(range(p * p, n + 1, p))
+    return [i for i, ok in enumerate(is_prime) if ok]
+
+print(primes_up_to(50), len(primes_up_to(100_000)))
+```
+```text
+[2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47] 9592
+```
+
+@@ py.ex.rps-console
+Q: How do I make Rock, Paper, Scissors in the console (best of 3)?
+aka: rock paper scissors console, rps text game, game loop input, best of three
+A: A loop asking for a move, a random computer move, a dict of what beats what, and scores until someone reaches 2.
+see: tk.gm.rps
+```py
+import random
+BEATS = {"rock": "scissors", "paper": "rock", "scissors": "paper"}
+random.seed(7)
+moves = iter(["rock", "paper", "scissors", "rock", "paper"])     # in a real game: input("Your move: ")
+you = cpu = 0
+while you < 2 and cpu < 2:
+    me, them = next(moves), random.choice(list(BEATS))
+    if BEATS[me] == them: you += 1; r = "you win"
+    elif BEATS[them] == me: cpu += 1; r = "cpu wins"
+    else: r = "draw"
+    print(f"{me} vs {them}: {r} ({you}-{cpu})")
+print("You win the match!" if you == 2 else "CPU wins the match!")
+```
+
+@@ py.ex.hangman-console
+Q: How do I make Hangman in the console?
+aka: hangman console, hangman text, word guessing game console
+A: Keep the secret word and a set of guessed letters; show `_` for unguessed letters; count wrong guesses; stop when the word is complete or lives run out.
+see: tk.gm.hangman
+```py
+def hangman(word, guesses, lives=6):
+    found = set()
+    for g in guesses:                    # in a real game: g = input("Letter: ").lower()
+        if g in word:
+            found.add(g)
+        else:
+            lives -= 1
+        shown = " ".join(c if c in found else "_" for c in word)
+        print(f"{g}: {shown}  lives {lives}")
+        if set(word) <= found:
+            return "won"
+        if lives == 0:
+            return "lost"
+    return "unfinished"
+
+print(hangman("python", "aeoyptnh"))
+```
+```text
+a: _ _ _ _ _ _  lives 5
+e: _ _ _ _ _ _  lives 4
+o: _ _ _ _ o _  lives 4
+y: _ y _ _ o _  lives 4
+p: p y _ _ o _  lives 4
+t: p y t _ o _  lives 4
+n: p y t _ o n  lives 4
+h: p y t h o n  lives 4
+won
+```
+
+@@ py.ex.temperature-table
+Q: How do I print a conversion table (Celsius to Fahrenheit, km to miles)?
+aka: conversion table, celsius fahrenheit table, km miles table, print table loop
+A: Loop over the values with `range` and print each row with formatted widths.
+see: py.fmt.table
+```py
+print(f"{'°C':>5} {'°F':>6}")
+for c in range(-10, 41, 10):
+    print(f"{c:>5} {c * 9 / 5 + 32:>6.1f}")
+```
+```text
+   °C     °F
+  -10   14.0
+    0   32.0
+   10   50.0
+   20   68.0
+   30   86.0
+   40  104.0
+```
+
+@@ py.ex.word-frequency
+Q: How do I find the most common words in a text file?
+aka: word frequency, most common words, word count file, text analysis, top words
+A: Read the text, lower-case it, pull out words with a regex (ignores punctuation), count with `Counter`, and show `most_common(n)`.
+see: py.count-words, mod.collections.counter
+```py
+import re
+from collections import Counter
+text = "The cat sat. The cat ran! A dog sat, and the dog ran too."
+words = re.findall(r"[a-z']+", text.lower())
+for word, n in Counter(words).most_common(3):
+    print(word, n)
+```
+```text
+the 3
+cat 2
+sat 2
+```
+
+@@ py.ex.password-check
+Q: How do I check if a password meets rules (length, digit, uppercase, symbol)?
+aka: password checker, password validation, password rules, strong password check
+A: Test each rule with `any()` over the characters and collect the rules that fail, so you can tell the user exactly what's missing.
+see: tk.form.password-strength, mod.re.lookaround
+```py
+import string
+def problems(pw):
+    rules = {
+        "at least 8 characters": len(pw) >= 8,
+        "a digit": any(c.isdigit() for c in pw),
+        "an uppercase letter": any(c.isupper() for c in pw),
+        "a symbol": any(c in string.punctuation for c in pw),
+    }
+    return [name for name, ok in rules.items() if not ok]
+print(problems("password"), problems("Passw0rd!"))
+```
+```text
+['a digit', 'an uppercase letter', 'a symbol'] []
+```
+
+@@ py.ex.matrix-ops
+Q: How do I add or multiply two matrices (lists of lists)?
+aka: matrix addition, matrix multiplication, add two matrices, nested list maths
+A: Addition: add matching elements with nested comprehensions and `zip`. Multiplication: each result cell is the sum of a row of A times a column of B (`zip(*B)` gives the columns).
+see: py.coll.matrix
+```py
+A = [[1, 2], [3, 4]]
+B = [[5, 6], [7, 8]]
+add = [[a + b for a, b in zip(ra, rb)] for ra, rb in zip(A, B)]
+mul = [[sum(a * b for a, b in zip(row, col)) for col in zip(*B)] for row in A]
+print(add, mul)
+```
+```text
+[[6, 8], [10, 12]] [[19, 22], [43, 50]]
+```
+
+@@ py.ex.change-making
+Q: How do I give change with the fewest coins?
+aka: coin change, make change, fewest coins, greedy algorithm, cash register
+A: For normal currencies, the greedy method works: take as many of the biggest coin as fit, then the next. Work in whole pennies/cents to avoid float errors.
+see: py.num.decimal
+```py
+COINS = [200, 100, 50, 20, 10, 5, 2, 1]          # pence
+def change(pence):
+    out = {}
+    for c in COINS:
+        n, pence = divmod(pence, c)
+        if n:
+            out[c] = n
+    return out
+print(change(388))
+```
+```text
+{200: 1, 100: 1, 50: 1, 20: 1, 10: 1, 5: 1, 2: 1, 1: 1}
+```
+
+@@ py.ex.reverse-words
+Q: How do I reverse the order of words, or reverse each word, in a sentence?
+aka: reverse words in sentence, reverse each word, sentence backwards, word order reverse
+A: Split into words, reverse the list (or each word with `[::-1]`), and join again.
+see: py.reverse-str
+```py
+s = "the quick brown fox"
+print(" ".join(reversed(s.split())))
+print(" ".join(w[::-1] for w in s.split()))
+print(" ".join(w.capitalize() for w in s.split()))
+```
+```text
+fox brown quick the
+eht kciuq nworb xof
+The Quick Brown Fox
+```
