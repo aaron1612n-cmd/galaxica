@@ -22,7 +22,7 @@ refused: 2 ** 1000000
 
 @@ mod.ast.calculator
 Q: How do I make a safe calculator that evaluates maths typed by a user?
-aka: safe calculator, evaluate math expression, eval math safely, parse arithmetic, ast parse expression
+aka: safe calculator, evaluate math expression, eval math safely, parse arithmetic, ast parse expression, safe eval calculator, calculator eval
 A: Parse with `ast.parse(text, mode="eval")` and walk the tree yourself, allowing only numbers and the operators you choose. Anything else raises an error, so no code can sneak in.
 see: mod.ast.literal-eval, tk.recipe-calculator
 ```py

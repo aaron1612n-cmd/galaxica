@@ -103,7 +103,7 @@ False ['a.txt'] True
 
 @@ mod.shutil.disk
 Q: How do I check free disk space, find a program on the PATH, or make a zip of a folder?
-aka: disk space, free space, disk_usage, shutil which, find executable, make_archive, zip folder
+aka: disk space, free space, disk_usage, shutil which, find executable, make_archive
 A: `shutil.disk_usage(path)` gives total/used/free bytes; `shutil.which("git")` finds a program (or `None`); `shutil.make_archive("name", "zip", folder)` zips a whole folder.
 see: mod.zip.basics
 ```py

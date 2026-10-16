@@ -29,7 +29,7 @@ hello zip
 
 @@ mod.zip.folder
 Q: How do I zip a whole folder (keeping subfolders), or unzip safely?
-aka: zip folder recursively, zip directory, make_archive, unpack_archive, zip with subfolders
+aka: zip folder recursively, zip directory, make_archive, unpack_archive, zip with subfolders, zip folder, zip a folder
 A: Easiest: `shutil.make_archive("backup", "zip", folder)` and `shutil.unpack_archive("backup.zip", dest)`. For control (skipping files), walk the folder and `z.write(path, arcname=relative_path)`. Only extract zips you trust: names like `../../x` could write outside the folder (Python warns and cleans these up, but be careful with old versions).
 see: mod.zip.basics, mod.os.walk
 ```py

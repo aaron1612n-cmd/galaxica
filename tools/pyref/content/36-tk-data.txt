@@ -322,7 +322,7 @@ root.mainloop()
 
 @@ tk.data.matplotlib
 Q: How do I put a matplotlib chart inside a tkinter window (and update it)?
-aka: matplotlib tkinter, embed plot, FigureCanvasTkAgg, chart in tkinter, graph in gui, update plot button, navigation toolbar
+aka: matplotlib tkinter, embed plot, FigureCanvasTkAgg, chart in tkinter, graph in gui, update plot button, navigation toolbar, matplotlib in tkinter, matplotlib tkinter
 A: Use `FigureCanvasTkAgg(fig, master=frame)` and pack `canvas.get_tk_widget()`. To update, change the data (e.g. `line.set_ydata`) or clear and replot, then `canvas.draw_idle()`. `NavigationToolbar2Tk` adds zoom/save buttons. Needs `pip install matplotlib`.
 see: tk.cv.line-graph
 ```py

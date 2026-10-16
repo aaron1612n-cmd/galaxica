@@ -2,7 +2,7 @@
 
 @@ py.fmt.spec
 Q: What can go after the colon in an f-string ({x:>10,.2f})? The full format spec
-aka: format spec mini language, f-string formatting codes, width alignment fill, format specifier, :>10, :^, :<, :0>5, :+, :e, :%, :x, :b
+aka: format spec mini language, f-string formatting codes, width alignment fill, format specifier, :>10, :^, :<, :0>5, :+, :e, :%, :x, :b, f-string format spec, format spec
 A: The order is `{value:[fill][align][sign][#][0][width][,][.precision][type]}`. Align `<` left, `>` right, `^` centre (fill = any character before it). Sign `+` shows +/-. `,` or `_` groups thousands. `.2f` 2 decimals; types: `f` fixed, `e` scientific, `%` percent, `g` general, `d` integer, `b` binary, `x` hex, `o` octal, `c` character, `s` string.
 see: py.fstring, py.format-decimals
 ```py

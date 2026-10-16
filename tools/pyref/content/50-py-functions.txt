@@ -29,7 +29,7 @@ module sees global
 
 @@ py.fn.nonlocal
 Q: What does nonlocal do?
-aka: nonlocal keyword, change outer function variable, closure counter, modify enclosing variable
+aka: nonlocal keyword, change outer function variable, closure counter, modify enclosing variable, nonlocal, what is nonlocal
 A: `nonlocal x` lets an inner function **change** a variable of the function around it (reading works without it). It's how you keep state in a closure, like a counter.
 see: py.fn.closure, py.global
 ```py
@@ -87,7 +87,7 @@ print([f() for f in right])
 
 @@ py.fn.mutable-default
 Q: Why does my function's default list keep growing between calls?
-aka: mutable default argument, default list shared, default dict remembers, def f(x=[]), default argument bug
+aka: mutable default argument, default list shared, default dict remembers, def f(x=[]), default argument bug, mutable default, default list argument
 A: Default values are made **once**, when the function is defined, and shared by every call. A list or dict default therefore remembers changes. Use `None` and create a new one inside.
 see: py.default-args
 ```py

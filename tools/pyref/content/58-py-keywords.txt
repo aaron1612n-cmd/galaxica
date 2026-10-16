@@ -251,7 +251,7 @@ print([http_status(c) for c in (200, 404, 503, 418)])
 
 @@ py.match.sequence
 Q: How do I match lists or tuples by shape (case [x, y], case [first, *rest])?
-aka: match list pattern, match tuple, sequence pattern, star pattern, destructuring match, command parser match
+aka: match list pattern, match tuple, sequence pattern, star pattern, destructuring match, command parser match, match case list, match list
 A: A list pattern matches sequences of that length and binds the parts to names; `*rest` collects the remainder. Great for parsing commands split into words.
 see: py.match.literals
 ```py

@@ -41,7 +41,7 @@ print(average({"Ada": [90, 80], "Sam": [70]}))
 
 @@ py.typing.optional
 Q: How do I say a value can be None, or one of several types (Optional, Union, |)?
-aka: optional type hint, union type, int or none, x | None, Optional[str], multiple types hint
+aka: optional type hint, union type, int or none, x | None, Optional[str], multiple types hint, type hints optional, optional type
 A: Write `int | None` (Python 3.10+) or `Optional[int]` for "an int or None"; `int | str` (or `Union[int, str]`) for "either". Functions that may return nothing should say `-> str | None`.
 see: py.none
 ```py

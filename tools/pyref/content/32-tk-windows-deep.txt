@@ -67,7 +67,7 @@ root.mainloop()
 
 @@ tk.win.state
 Q: How do I minimise, maximise or restore a window from code (and know its state)?
-aka: iconify, deiconify, minimise window, maximize window, zoomed, window state normal, root.state(), minimized event, restore window
+aka: iconify, deiconify, minimise window, maximize window, zoomed, window state normal, root.state(), minimized event, restore window, minimize window, maximize window, minimize, maximize
 A: `root.iconify()` minimises, `root.deiconify()` restores, `root.state("zoomed")` maximises on Windows/macOS (on Linux use `root.attributes("-zoomed", True)`). `root.state()` returns `"normal"`, `"iconic"`, `"withdrawn"` or `"zoomed"`. `<Unmap>`/`<Map>` events fire on minimise/restore.
 see: tk.fullscreen, tk.withdraw
 ```py

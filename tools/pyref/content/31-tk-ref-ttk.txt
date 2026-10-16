@@ -98,7 +98,7 @@ The drop-down list colours/font come from the option database: `root.option_add(
 
 @@ ttk.combobox-autocomplete
 Q: How do I make a Combobox that filters its list as I type (autocomplete)?
-aka: autocomplete combobox, searchable combobox, filter combobox, type ahead, suggest as you type
+aka: autocomplete combobox, searchable combobox, filter combobox, type ahead, suggest as you type, combobox autocomplete
 A: Keep the full list, and on every `<KeyRelease>` set `values` to the items that contain what's typed.
 see: ttk.combobox-ref, tk.form.autocomplete
 ```py
