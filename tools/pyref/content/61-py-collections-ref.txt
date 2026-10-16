@@ -1,0 +1,320 @@
+# py-coll | List, dict and set reference | Every method of list, dict, set and tuple; slicing in depth; choosing the right collection | python
+
+@@ py.coll.list-methods
+Q: What methods does a list have? (complete list)
+aka: list methods, all list methods, list functions, append extend insert remove pop clear index count sort reverse copy
+A: `append(x)`, `extend(iterable)`, `insert(i, x)`, `remove(x)` (first match), `pop(i=-1)`, `clear()`, `index(x)`, `count(x)`, `sort(key=, reverse=)`, `reverse()`, `copy()`. Methods that change the list return `None`.
+see: py.list-add, py.list-remove
+```py
+xs = [3, 1]
+xs.append(4); xs.extend([1, 5]); xs.insert(0, 9)
+print(xs, xs.index(1), xs.count(1))
+xs.remove(1); last = xs.pop(); first = xs.pop(0)
+print(xs, last, first)
+xs.sort(); ys = xs.copy(); ys.reverse()
+print(xs, ys)
+xs.clear(); print(xs)
+```
+```text
+[9, 3, 1, 4, 1, 5] 2 2
+[3, 4, 1] 5 9
+[1, 3, 4] [4, 3, 1]
+[]
+```
+
+@@ py.coll.list-ops
+Q: Which operators work on lists (+, *, in, ==, <, slicing, del)?
+aka: list operators, add lists, multiply list, compare lists, list equality, list slicing assignment
+A: `a + b` joins (new list), `a * 3` repeats, `a += b` extends in place, `x in a`, `a == b` compares item by item, `a < b` compares like words in a dictionary, `a[i:j] = [...]` replaces a slice, `del a[i:j]` removes one.
+see: py.coll.slicing
+```py
+a, b = [1, 2], [3]
+print(a + b, a * 2, [0] * 3, 2 in a, [1, 2] == [1, 2], [1, 2] < [1, 3])
+c = [1, 2, 3, 4, 5]
+c[1:3] = ["two", "three", "extra"]
+del c[-1]
+print(c)
+```
+```text
+[1, 2, 3] [1, 2, 1, 2] [0, 0, 0] True True True
+[1, 'two', 'three', 'extra', 4]
+```
+
+@@ py.coll.slicing
+Q: How does slicing work in full ([start:stop:step], negatives, out of range)?
+aka: slicing, slice notation, negative index, step slice, [::-1], every other item, last n items, slice out of range
+A: `seq[start:stop:step]`: start included, stop excluded, either can be left out. Negative numbers count from the end (`-1` = last). Slices never raise errors for out-of-range values: they just return fewer items. `[::-1]` reverses, `[::2]` takes every other.
+see: py.str-basics
+```py
+s = "0123456789"
+print(s[2:5], s[:3], s[7:], s[-3:], s[:-3])
+print(s[::2], s[1::2], s[::-1], s[8:2:-2])
+print(s[5:100], repr(s[20:]), s[-100:2])
+```
+```text
+234 012 789 789 0123456
+02468 13579 9876543210 864
+56789 '' 01
+```
+
+@@ py.coll.dict-methods
+Q: What methods does a dict have? (complete list)
+aka: dict methods, all dictionary methods, get setdefault update pop popitem keys values items fromkeys copy clear
+A: `get(k, default)`, `setdefault(k, default)`, `update(other)`, `pop(k, default)`, `popitem()` (last added), `keys()`, `values()`, `items()`, `copy()`, `clear()`, `dict.fromkeys(keys, value)`; operators `d | other` (merge), `d |= other`, `k in d`, `del d[k]`.
+see: py.dict-basics
+```py
+d = {"a": 1}
+print(d.get("b"), d.get("b", 0), d.setdefault("b", 2), d)
+d.update(c=3, a=10)
+print(d)
+print(d.pop("c"), d.pop("zz", "none"), d.popitem(), d)
+print(list({"x": 1, "y": 2}.items()), {"x": 1} | {"y": 2})
+```
+```text
+None 0 2 {'a': 1, 'b': 2}
+{'a': 10, 'b': 2, 'c': 3}
+3 none ('b', 2) {'a': 10}
+[('x', 1), ('y', 2)] {'x': 1, 'y': 2}
+```
+
+@@ py.coll.dict-order
+Q: Do dictionaries keep their order? How do I get the first or last key?
+aka: dict order, ordered dict, dictionary insertion order, first key, last key, OrderedDict
+A: Yes: since Python 3.7, dicts keep the order keys were **added**. First key: `next(iter(d))`; last: `next(reversed(d))`. `collections.OrderedDict` adds `move_to_end` and order-sensitive equality.
+see: py.err2.dict-keys-subscript
+```py
+from collections import OrderedDict
+
+d = {"b": 2, "a": 1, "c": 3}
+print(list(d), next(iter(d)), next(reversed(d)))
+od = OrderedDict(d); od.move_to_end("b")
+print(list(od))
+```
+```text
+['b', 'a', 'c'] b c
+['a', 'c', 'b']
+```
+
+@@ py.coll.set-methods
+Q: What methods and operators does a set have? (complete list)
+aka: set methods, union intersection difference symmetric difference, issubset issuperset, isdisjoint, add discard remove
+A: Change: `add`, `update`, `remove` (error if missing), `discard` (no error), `pop`, `clear`. Combine: `|` union, `&` intersection, `-` difference, `^` symmetric difference (same as methods `union`, `intersection`, ...). Test: `<=` subset, `>=` superset, `isdisjoint`.
+see: py.set
+```py
+a, b = {1, 2, 3}, {3, 4}
+print(a | b, a & b, a - b, a ^ b)
+print({1, 2} <= a, a >= {3}, a.isdisjoint({9}))
+a.add(7); a.discard(99); a.remove(1)
+print(sorted(a))
+```
+```text
+{1, 2, 3, 4} {3} {1, 2} {1, 2, 4}
+True True True
+[2, 3, 7]
+```
+
+@@ py.coll.tuple-methods
+Q: What can I do with a tuple (methods, unpacking, named tuples)?
+aka: tuple methods, tuple count index, single item tuple, tuple unpacking, namedtuple, tuple packing
+A: Tuples have just `count` and `index`, plus slicing, `+`, `*`, `in` and unpacking. A one-item tuple needs a trailing comma: `(5,)`. `namedtuple` gives fields names.
+see: py.tuple, py.fn.multiple-return-names
+```py
+from collections import namedtuple
+
+t = (1, 2, 2, 3)
+print(t.count(2), t.index(3), t[1:], (5,), type((5)).__name__)
+x, *middle, y = t
+print(x, middle, y)
+Car = namedtuple("Car", ["make", "year"])
+c = Car("Mini", 1959)
+print(c.make, c[1], c._replace(year=2001), c._asdict())
+```
+```text
+2 3 (2, 2, 3) (5,) int
+1 [2, 2] 3
+Mini 1959 Car(make='Mini', year=2001) {'make': 'Mini', 'year': 1959}
+```
+
+@@ py.coll.choose
+Q: Which should I use: list, tuple, dict, set, deque or something else?
+aka: which data structure, list vs tuple vs set vs dict, choose collection, data structure python, when to use set
+A: **list**: ordered items you add to/change. **tuple**: a fixed group (a record, a coordinate, a dict key). **dict**: look things up by a key. **set**: unique items and fast "is x in it?". **deque**: add/remove at both ends (queues). **Counter**: counting. **dataclass**: a record with named fields.
+see: mod.collections.deque, py.dataclass
+```py
+import timeit
+names_list = [str(i) for i in range(10_000)]
+names_set = set(names_list)
+t_list = timeit.timeit(lambda: "9999" in names_list, number=200)
+t_set = timeit.timeit(lambda: "9999" in names_set, number=200)
+print("set lookup is much faster:", t_set * 10 < t_list)
+```
+```text
+set lookup is much faster: True
+```
+
+@@ py.coll.nested-copy-update
+Q: How do I safely update a value deep inside nested dicts/lists?
+aka: update nested dict, deep set, nested key path, get nested value safely, dict path
+A: Walk down with a loop over the keys, creating missing levels with `setdefault`. For reading, use `.get()` at each level (or a small helper with a default).
+see: py.nested-dict
+```py
+def deep_set(d, path, value):
+    for key in path[:-1]:
+        d = d.setdefault(key, {})
+    d[path[-1]] = value
+
+def deep_get(d, path, default=None):
+    for key in path:
+        if not isinstance(d, dict) or key not in d:
+            return default
+        d = d[key]
+    return d
+
+cfg = {}
+deep_set(cfg, ["window", "size", "w"], 800)
+deep_set(cfg, ["window", "title"], "App")
+print(cfg)
+print(deep_get(cfg, ["window", "size", "w"]), deep_get(cfg, ["audio", "volume"], 5))
+```
+```text
+{'window': {'size': {'w': 800}, 'title': 'App'}}
+800 5
+```
+
+@@ py.coll.invert-dict
+Q: How do I swap keys and values in a dict (or group keys by value)?
+aka: invert dictionary, swap keys values, reverse dict, keys by value, dict value to key
+A: `{v: k for k, v in d.items()}` if values are unique. If several keys share a value, collect them in lists with `defaultdict(list)`.
+see: py.dict-key-from-value
+```py
+from collections import defaultdict
+
+codes = {"uk": "+44", "fr": "+33"}
+print({v: k for k, v in codes.items()})
+grades = {"Ada": "A", "Sam": "B", "Kai": "A"}
+by_grade = defaultdict(list)
+for name, g in grades.items():
+    by_grade[g].append(name)
+print(dict(by_grade))
+```
+```text
+{'+44': 'uk', '+33': 'fr'}
+{'A': ['Ada', 'Kai'], 'B': ['Sam']}
+```
+
+@@ py.coll.list-of-dicts
+Q: How do I sort, filter and search a list of dictionaries?
+aka: list of dicts, sort list of dictionaries by key, filter list of dicts, find dict in list, records
+A: Sort with `key=lambda r: r["field"]` (or `operator.itemgetter`), filter with a comprehension, and find one with `next((r for r in rows if ...), None)`.
+see: py.it.sort-multi, py.objects-list
+```py
+from operator import itemgetter
+
+rows = [{"name": "Ada", "age": 36}, {"name": "Sam", "age": 14}, {"name": "Kai", "age": 22}]
+print([r["name"] for r in sorted(rows, key=itemgetter("age"))])
+print([r["name"] for r in rows if r["age"] >= 18])
+sam = next((r for r in rows if r["name"] == "Sam"), None)
+print(sam, sum(r["age"] for r in rows) / len(rows))
+```
+```text
+['Sam', 'Kai', 'Ada']
+['Ada', 'Kai']
+{'name': 'Sam', 'age': 14} 24.0
+```
+
+@@ py.coll.rotate-shift
+Q: How do I rotate a list (move items from the end to the front)?
+aka: rotate list, shift list, circular shift, move first to last, deque rotate
+A: Slicing: `xs[k:] + xs[:k]` rotates left by k. `collections.deque.rotate(n)` does it in place (positive = right).
+see: mod.collections.deque
+```py
+from collections import deque
+
+xs = [1, 2, 3, 4, 5]
+k = 2
+print(xs[k:] + xs[:k], xs[-k:] + xs[:-k])
+d = deque(xs); d.rotate(1)
+print(list(d))
+```
+```text
+[3, 4, 5, 1, 2] [4, 5, 1, 2, 3]
+[5, 1, 2, 3, 4]
+```
+
+@@ py.coll.frequency-top
+Q: How do I find the most common items, or items that appear more than once?
+aka: most common items, duplicates in list, find duplicates, frequency, top n
+A: `Counter(items).most_common(n)` for the top n; duplicates are the items with a count above 1.
+see: py.counter
+```py
+from collections import Counter
+
+votes = ["red", "blue", "red", "green", "blue", "red"]
+c = Counter(votes)
+print(c.most_common(2))
+print([item for item, n in c.items() if n > 1])
+```
+```text
+[('red', 3), ('blue', 2)]
+['red', 'blue']
+```
+
+@@ py.coll.compare-lists
+Q: How do I find what's in one list but not another (differences between lists)?
+aka: difference between two lists, items not in other list, compare two lists, common items, missing items
+A: Turn them into sets: `set(a) - set(b)` (in a but not b), `set(a) & set(b)` (in both), `set(a) ^ set(b)` (in one only). To keep the original order, use a comprehension with a set for lookups.
+see: py.coll.set-methods
+```py
+a = ["apple", "pear", "fig", "kiwi"]
+b = ["fig", "plum", "apple"]
+print(sorted(set(a) - set(b)), sorted(set(a) & set(b)), sorted(set(a) ^ set(b)))
+bs = set(b)
+print([x for x in a if x not in bs])
+```
+```text
+['kiwi', 'pear'] ['apple', 'fig'] ['kiwi', 'pear', 'plum']
+['pear', 'kiwi']
+```
+
+@@ py.coll.matrix
+Q: How do I work with a matrix (rows, columns, transpose, diagonal) without numpy?
+aka: matrix python, transpose list, column of 2d list, diagonal, matrix multiply, rotate grid
+A: A list of rows. Column `j`: `[row[j] for row in m]`; transpose: `list(map(list, zip(*m)))`; diagonal: `[m[i][i] for i in range(n)]`; rotate 90° clockwise: `[list(r) for r in zip(*m[::-1])]`.
+see: py.2d-list
+```py
+m = [[1, 2, 3],
+     [4, 5, 6],
+     [7, 8, 9]]
+print([row[1] for row in m], [m[i][i] for i in range(3)])
+print(list(map(list, zip(*m))))
+print([list(r) for r in zip(*m[::-1])])
+def matmul(a, b):
+    return [[sum(x * y for x, y in zip(row, col)) for col in zip(*b)] for row in a]
+print(matmul([[1, 2]], [[3], [4]]))
+```
+```text
+[2, 5, 8] [1, 5, 9]
+[[1, 4, 7], [2, 5, 8], [3, 6, 9]]
+[[7, 4, 1], [8, 5, 2], [9, 6, 3]]
+[[11]]
+```
+
+@@ py.coll.stack-queue
+Q: How do I make a stack or a queue?
+aka: stack python, queue python, fifo lifo, push pop, deque queue, queue module
+A: Stack (last in, first out): a list with `append` and `pop()`. Queue (first in, first out): `collections.deque` with `append` and `popleft()` (a list's `pop(0)` gets slow for big lists). For threads, use `queue.Queue`.
+see: mod.collections.deque, tk.thr.queue
+```py
+from collections import deque
+
+stack = []
+stack.append("a"); stack.append("b")
+print(stack.pop(), stack)
+q = deque()
+q.append("first"); q.append("second")
+print(q.popleft(), list(q))
+```
+```text
+b ['a']
+first ['second']
+```

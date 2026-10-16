@@ -1,0 +1,282 @@
+# mod-dt | datetime, time, calendar, zoneinfo | Dates and times: parsing, formatting, arithmetic, time zones, timestamps, weekdays, calendars | modules
+
+@@ mod.dt.parse
+Q: How do I turn a string like "25/12/2026" into a date (strptime, fromisoformat)?
+aka: parse date string, strptime, string to date, string to datetime, fromisoformat, date format codes
+A: `datetime.strptime(text, "%d/%m/%Y")` with format codes that match the text exactly. ISO strings (`"2026-12-25"`, `"2026-12-25T14:30"`) parse faster with `datetime.fromisoformat`/`date.fromisoformat`.
+see: py.datetime-format, mod.dt.codes
+```py
+from datetime import date, datetime
+
+print(datetime.strptime("25/12/2026 14:30", "%d/%m/%Y %H:%M"))
+print(datetime.strptime("Mar 9, 2026", "%b %d, %Y").date())
+print(date.fromisoformat("2026-12-25"), datetime.fromisoformat("2026-12-25T08:15:00").hour)
+try:
+    datetime.strptime("2026-13-01", "%Y-%m-%d")
+except ValueError as e:
+    print("bad date:", e)
+```
+```text
+2026-12-25 14:30:00
+2026-03-09
+2026-12-25 8
+bad date: time data '2026-13-01' does not match format '%Y-%m-%d'
+```
+
+@@ mod.dt.codes
+Q: What are all the strftime/strptime format codes (%Y, %m, %d, %H, %A...)?
+aka: strftime codes, date format codes, %Y %m %d, %H %M %S, %A %B, %I %p, %j week number, format codes table
+A: `%Y` 2026, `%y` 26, `%m` 03, `%B` March, `%b` Mar, `%d` 09, `%A` Monday, `%a` Mon, `%H` 14 (24h), `%I` 02 (12h), `%p` PM, `%M` minutes, `%S` seconds, `%f` microseconds, `%j` day of year, `%U`/`%W` week number, `%z` +0100, `%Z` zone name, `%%` a literal %. Python ignores locale-free extras; `%-d` (no zero) only works on macOS/Linux.
+see: mod.dt.parse
+```py
+from datetime import datetime
+d = datetime(2026, 3, 9, 14, 5, 7)
+for code in ("%Y %y", "%m %B %b", "%d %A %a", "%H %I %p", "%M:%S", "%j", "%W", "%Y-%m-%dT%H:%M:%S", "100%%"):
+    print(f"{code:<18} {d.strftime(code)}")
+```
+```text
+%Y %y              2026 26
+%m %B %b           03 March Mar
+%d %A %a           09 Monday Mon
+%H %I %p           14 02 PM
+%M:%S              05:07
+%j                 068
+%W                 10
+%Y-%m-%dT%H:%M:%S  2026-03-09T14:05:07
+100%%              100%
+```
+
+@@ mod.dt.timedelta
+Q: How do I add or subtract days, hours or weeks, and find the difference between two dates?
+aka: timedelta, add days, subtract dates, days between dates, hours between times, date difference, total_seconds
+A: `date + timedelta(days=7)`; subtracting two dates gives a `timedelta` with `.days` and `.total_seconds()`. timedelta has no months/years (they vary in length): see the next answer.
+see: py.date-math
+```py
+from datetime import date, datetime, timedelta
+
+today = date(2026, 3, 9)
+print(today + timedelta(days=30), today - timedelta(weeks=2))
+gap = date(2026, 12, 25) - today
+print(gap.days, "days until Christmas")
+start, end = datetime(2026, 3, 9, 9, 30), datetime(2026, 3, 9, 17, 15)
+d = end - start
+print(d, d.total_seconds() / 3600, "hours")
+```
+```text
+2026-04-08 2026-02-23
+291 days until Christmas
+7:45:00 7.75 hours
+```
+
+@@ mod.dt.months
+Q: How do I add months or years to a date (and handle the 31st)?
+aka: add months to date, add year, next month, end of month, last day of month, month arithmetic
+A: Build the new date from year/month numbers and clip the day to that month's length (`calendar.monthrange`). The `python-dateutil` package has `relativedelta(months=1)` which does it for you.
+see: mod.dt.calendar
+```py
+import calendar
+from datetime import date
+
+def add_months(d, n):
+    m = d.month - 1 + n
+    year, month = d.year + m // 12, m % 12 + 1
+    day = min(d.day, calendar.monthrange(year, month)[1])
+    return date(year, month, day)
+
+print(add_months(date(2026, 1, 31), 1), add_months(date(2026, 11, 15), 3), add_months(date(2024, 2, 29), 12))
+last = date(2026, 2, calendar.monthrange(2026, 2)[1])
+print("last day of Feb 2026:", last)
+```
+```text
+2026-02-28 2027-02-15 2025-02-28
+last day of Feb 2026: 2026-02-28
+```
+
+@@ mod.dt.weekday
+Q: How do I get the day of the week, the next Monday, or the week number?
+aka: day of week, weekday name, next monday, isocalendar, week number, is weekend
+A: `d.weekday()` (Monday=0 … Sunday=6), `d.isoweekday()` (Monday=1), `d.strftime("%A")` for the name, `d.isocalendar()` for ISO year/week/day. Next Monday: add `(7 - d.weekday()) % 7 or 7` days.
+see: mod.dt.timedelta
+```py
+from datetime import date, timedelta
+
+d = date(2026, 3, 11)
+print(d.weekday(), d.isoweekday(), d.strftime("%A"), d.weekday() >= 5)
+print(d + timedelta(days=(7 - d.weekday()) % 7 or 7))
+print(d.isocalendar().week, tuple(d.isocalendar()))
+```
+```text
+2 3 Wednesday False
+2026-03-16
+11 (2026, 11, 3)
+```
+
+@@ mod.dt.age
+Q: How do I calculate someone's age from their birthday?
+aka: calculate age, age from birth date, years between dates, birthday age python
+A: Subtract the years, then take one off if this year's birthday hasn't happened yet (compare `(month, day)` tuples).
+see: mod.dt.timedelta
+```py
+from datetime import date
+
+def age(born, today=None):
+    today = today or date.today()
+    return today.year - born.year - ((today.month, today.day) < (born.month, born.day))
+
+print(age(date(2010, 6, 15), date(2026, 6, 14)), age(date(2010, 6, 15), date(2026, 6, 15)))
+```
+```text
+15 16
+```
+
+@@ mod.dt.timestamps
+Q: How do I convert between datetimes and Unix timestamps (seconds since 1970)?
+aka: unix timestamp, epoch time, time.time, fromtimestamp, timestamp to date, milliseconds timestamp
+A: `datetime.now().timestamp()` → float seconds; `datetime.fromtimestamp(ts)` → local time; `datetime.fromtimestamp(ts, timezone.utc)` → UTC. JavaScript-style milliseconds: divide by 1000.
+see: mod.dt.timezones
+```py
+from datetime import datetime, timezone
+
+ts = 1_800_000_000
+print(datetime.fromtimestamp(ts, timezone.utc))
+print(datetime(2026, 1, 1, tzinfo=timezone.utc).timestamp())
+print(datetime.fromtimestamp(1700000000123 / 1000, timezone.utc).isoformat(timespec="milliseconds"))
+```
+```text
+2027-01-15 08:00:00+00:00
+1767225600.0
+2023-11-14T22:13:20.123+00:00
+```
+
+@@ mod.dt.timezones
+Q: How do I work with time zones (UTC, convert to another city's time)?
+aka: time zone, timezone, zoneinfo, utc now, convert timezone, local time other country, aware datetime, pytz
+A: Use aware datetimes: `datetime.now(timezone.utc)`, and `zoneinfo.ZoneInfo("Europe/London")` for named zones (Python 3.9+; on Windows `pip install tzdata`). Convert with `.astimezone(zone)`. Store and compare times in UTC.
+see: mod.dt.timestamps
+```py
+from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
+
+meeting = datetime(2026, 7, 1, 15, 0, tzinfo=ZoneInfo("Europe/London"))
+for city in ("America/New_York", "Asia/Tokyo", "UTC"):
+    print(f"{city:<17} {meeting.astimezone(ZoneInfo(city)):%Y-%m-%d %H:%M %Z}")
+print(meeting.utcoffset())
+```
+```text
+America/New_York  2026-07-01 10:00 EDT
+Asia/Tokyo        2026-07-01 23:00 JST
+UTC               2026-07-01 14:00 UTC
+1:00:00
+```
+
+@@ mod.dt.naive-aware
+Q: TypeError: can't compare offset-naive and offset-aware datetimes
+aka: can't compare offset-naive and offset-aware datetimes, naive vs aware, can't subtract offset-naive, tzinfo none
+err: can't compare offset-naive and offset-aware datetimes|can't subtract offset-naive and offset-aware datetimes
+A: One datetime has a time zone and the other doesn't. Make both aware: `naive.replace(tzinfo=timezone.utc)` (if you know it was UTC) or `naive.astimezone()` (treat as local time).
+see: mod.dt.timezones
+```py raises
+from datetime import datetime, timezone
+datetime.now() < datetime.now(timezone.utc)
+```
+```py
+from datetime import datetime, timezone
+naive = datetime(2026, 1, 1, 12, 0)
+aware = datetime(2026, 1, 1, 12, 0, tzinfo=timezone.utc)
+print(naive.replace(tzinfo=timezone.utc) == aware)
+```
+```text
+True
+```
+
+@@ mod.dt.time-module
+Q: What's the difference between time.time(), time.perf_counter() and time.monotonic()?
+aka: time module, time.time vs perf_counter, monotonic, measure elapsed time, current time seconds, sleep
+A: `time.time()` = wall-clock seconds since 1970 (can jump if the clock changes); `time.perf_counter()` = high-resolution timer for **measuring** durations; `time.monotonic()` = never goes backwards (timeouts). `time.sleep(s)` pauses. `time.strftime` formats local time.
+see: py.timing
+```py
+import time
+t0 = time.perf_counter()
+time.sleep(0.05)
+elapsed = time.perf_counter() - t0
+print(0.04 < elapsed < 0.5, time.time() > 1.7e9, time.monotonic() > 0)
+print(len(time.strftime("%H:%M:%S")))
+```
+```text
+True True True
+8
+```
+
+@@ mod.dt.calendar
+Q: How do I print a month calendar, check leap years, or count days in a month?
+aka: calendar module, print calendar, leap year, days in month, monthrange, month name
+A: `calendar.month(y, m)` returns a text calendar; `calendar.isleap(y)`; `calendar.monthrange(y, m)` → (weekday of the 1st, number of days; Python 3.12+ prints the weekday as `calendar.SUNDAY`, which still equals 6); `calendar.month_name[m]`, `calendar.day_name[i]`.
+see: mod.dt.months
+```py
+import calendar
+print(calendar.month(2026, 2))
+print(calendar.isleap(2024), calendar.isleap(2100), calendar.monthrange(2026, 2))
+print(calendar.month_name[3], calendar.day_name[0], calendar.leapdays(2000, 2030))
+```
+```text
+   February 2026
+Mo Tu We Th Fr Sa Su
+                   1
+ 2  3  4  5  6  7  8
+ 9 10 11 12 13 14 15
+16 17 18 19 20 21 22
+23 24 25 26 27 28
+
+True False (calendar.SUNDAY, 28)
+March Monday 8
+```
+
+@@ mod.dt.range
+Q: How do I loop over every day (or month) between two dates?
+aka: date range, loop over days, iterate dates, list of dates, every day between
+A: Start at the first date and add `timedelta(days=1)` in a loop (or a comprehension over the number of days).
+see: mod.dt.timedelta
+```py
+from datetime import date, timedelta
+
+start, end = date(2026, 2, 26), date(2026, 3, 2)
+days = [start + timedelta(days=i) for i in range((end - start).days + 1)]
+print([d.strftime("%a %d") for d in days])
+weekdays = [d for d in days if d.weekday() < 5]
+print(len(weekdays), "working days")
+```
+```text
+['Thu 26', 'Fri 27', 'Sat 28', 'Sun 01', 'Mon 02']
+3 working days
+```
+
+@@ mod.dt.duration-format
+Q: How do I show a duration nicely ("2h 05m", "3 days ago")?
+aka: format timedelta, human readable duration, time ago, humanize time, hours minutes from seconds
+A: Break `total_seconds()` into days/hours/minutes with `divmod`, then pick the biggest unit for "ago" style text.
+see: py.time-ago
+```py
+from datetime import datetime, timedelta
+
+def short(td):
+    s = int(td.total_seconds())
+    h, rem = divmod(s, 3600)
+    m, s = divmod(rem, 60)
+    return f"{h}h {m:02d}m" if h else f"{m}m {s:02d}s"
+
+def ago(then, now):
+    s = int((now - then).total_seconds())
+    for unit, size in (("day", 86400), ("hour", 3600), ("minute", 60)):
+        if s >= size:
+            n = s // size
+            return f"{n} {unit}{'s' if n > 1 else ''} ago"
+    return "just now"
+
+now = datetime(2026, 3, 9, 12, 0)
+print(short(timedelta(minutes=125)), short(timedelta(seconds=95)))
+print(ago(now - timedelta(days=3, hours=2), now), ago(now - timedelta(minutes=1), now), ago(now, now))
+```
+```text
+2h 05m 1m 35s
+3 days ago 1 minute ago just now
+```

@@ -1,0 +1,266 @@
+# mod-turtle | turtle | Drawing with the turtle: moving, colours, filling, speed, shapes, text, keyboard and mouse, simple games | modules
+
+@@ mod.turtle.basics
+Q: How do I get started with turtle graphics?
+aka: turtle module, turtle basics, draw with turtle, forward left right, turtle tutorial, import turtle
+A: `import turtle`, make a turtle `t = turtle.Turtle()`, then move it: `forward(n)`, `back(n)`, `left(deg)`, `right(deg)`, `goto(x, y)`. `penup()`/`pendown()` stop/start drawing. End with `turtle.done()` so the window stays open.
+see: mod.turtle.speed, tk.x.turtle-embed
+```py
+import turtle
+t = turtle.Turtle()
+t.speed(0)
+for _ in range(4):                 # a square
+    t.forward(100)
+    t.left(90)
+t.penup(); t.goto(-150, 0); t.pendown()
+for _ in range(3):                 # a triangle
+    t.forward(80)
+    t.left(120)
+print(t.position(), t.heading())
+turtle.done()
+```
+```text
+(-150.00,0.00) 0.0
+```
+
+@@ mod.turtle.speed
+Q: How do I make turtle draw instantly (it's too slow)?
+aka: turtle speed, turtle tracer, turtle update, draw instantly, turtle too slow, hide turtle
+A: `t.speed(0)` is the fastest animation; `turtle.tracer(0)` turns animation off completely: draw everything, then call `turtle.update()` once. `t.hideturtle()` hides the arrow.
+see: mod.turtle.basics
+```py
+import turtle
+turtle.tracer(0)
+t = turtle.Turtle(); t.hideturtle()
+for i in range(200):
+    t.forward(i * 1.5)
+    t.left(91)
+turtle.update()
+print("drawn instantly")
+turtle.done()
+```
+```text
+drawn instantly
+```
+
+@@ mod.turtle.colours
+Q: How do I change colours, pen size, fill shapes and the background in turtle?
+aka: turtle color, fill color, begin_fill end_fill, pensize, bgcolor, turtle rgb colours, colormode
+A: `t.pencolor("red")`, `t.fillcolor("gold")` (or `t.color(pen, fill)`), `t.pensize(4)`, `turtle.bgcolor("black")`. Wrap a closed shape in `begin_fill()` / `end_fill()` to fill it. For RGB numbers 0–255, call `turtle.colormode(255)`.
+see: mod.turtle.basics
+```py
+import turtle
+turtle.tracer(0)
+turtle.bgcolor("#1b1a17")
+t = turtle.Turtle(); t.hideturtle()
+t.pensize(3)
+t.color("white", "#ffb000")
+t.begin_fill()
+for _ in range(5):                 # a filled star
+    t.forward(150); t.right(144)
+t.end_fill()
+turtle.colormode(255)
+t.penup(); t.goto(-60, -80); t.pendown()
+t.pencolor(194, 59, 34); t.circle(30)
+turtle.update()
+print(t.fillcolor(), t.pencolor())       # in colormode 255 colours come back as RGB numbers
+turtle.done()
+```
+```text
+(255.0, 176.0, 0.0) (194.0, 59.0, 34.0)
+```
+
+@@ mod.turtle.shapes
+Q: How do I draw circles, arcs, polygons, dots and stamps with turtle?
+aka: turtle circle, turtle arc, turtle polygon, turtle dot, turtle stamp, draw regular polygon
+A: `circle(r)` (negative r goes the other way), `circle(r, extent=180)` for an arc, `circle(r, steps=6)` for a hexagon, `dot(size, colour)`, `stamp()` leaves a copy of the turtle shape. Any regular polygon: repeat `forward(side); left(360 / n)`.
+see: mod.turtle.basics
+```py
+import turtle
+turtle.tracer(0)
+t = turtle.Turtle(); t.hideturtle()
+
+def polygon(sides, length):
+    for _ in range(sides):
+        t.forward(length); t.left(360 / sides)
+
+polygon(6, 50)
+t.penup(); t.goto(120, 0); t.pendown()
+t.circle(40)
+t.penup(); t.goto(-120, 0); t.pendown()
+t.circle(40, extent=180)
+t.dot(20, "red")
+turtle.update()
+print(round(t.heading()))
+turtle.done()
+```
+```text
+180
+```
+
+@@ mod.turtle.text
+Q: How do I write text with turtle (score, labels)?
+aka: turtle write, turtle text, turtle font, turtle score display, clear text turtle
+A: `t.write("text", align="center", font=("Arial", 16, "bold"))` writes at the turtle's position. To update a score, use a separate hidden turtle and call `clear()` before writing again.
+see: mod.turtle.game
+```py
+import turtle
+turtle.tracer(0)
+pen = turtle.Turtle(); pen.hideturtle(); pen.penup(); pen.goto(0, 150)
+for score in (0, 10, 20):
+    pen.clear()
+    pen.write(f"Score: {score}", align="center", font=("Arial", 18, "bold"))
+turtle.update()
+print("final score shown")
+turtle.done()
+```
+```text
+final score shown
+```
+
+@@ mod.turtle.events
+Q: How do I control turtle with the keyboard or mouse clicks?
+aka: turtle onkey, turtle keyboard, turtle onclick, turtle listen, move turtle with arrow keys, onscreenclick
+A: `screen.onkey(func, "Up")` (or `onkeypress` for held keys) and then `screen.listen()`; `screen.onscreenclick(func)` gets `(x, y)` of clicks; `t.ondrag(t.goto)` lets you drag the turtle.
+see: mod.turtle.game
+```py
+import turtle
+screen = turtle.Screen()
+t = turtle.Turtle(); t.shape("turtle"); t.speed(0)
+screen.onkey(lambda: t.forward(20), "Up")
+screen.onkey(lambda: t.left(30), "Left")
+screen.onkey(lambda: t.right(30), "Right")
+screen.onscreenclick(lambda x, y: (t.penup(), t.goto(x, y), t.pendown()))
+t.ondrag(t.goto)
+screen.listen()
+turtle.done()
+```
+
+@@ mod.turtle.timer
+Q: How do I animate with turtle (move things every few milliseconds)?
+aka: turtle ontimer, turtle animation, turtle loop, turtle game loop, move automatically
+A: `screen.ontimer(func, ms)` calls a function later; have the function reschedule itself to make a loop (like tkinter's `after`). With `tracer(0)`, call `screen.update()` each frame.
+see: tk.game-loop
+```py
+import turtle
+screen = turtle.Screen()
+screen.tracer(0)
+ball = turtle.Turtle("circle"); ball.penup()
+vx, vy = 4, 3
+frames = [0]
+
+def frame():
+    global vx, vy
+    x, y = ball.position()
+    if abs(x) > 200: vx = -vx
+    if abs(y) > 150: vy = -vy
+    ball.goto(x + vx, y + vy)
+    screen.update()
+    frames[0] += 1
+    screen.ontimer(frame, 16)
+
+frame()
+turtle.done()
+print("frames drawn:", frames[0] > 1)
+```
+```text
+frames drawn: True
+```
+
+@@ mod.turtle.game
+Q: How do I make a simple turtle game (catch the target, score)?
+aka: turtle game, catch game turtle, turtle collision, distance turtle, turtle score game
+A: Move the player with keys; each frame check `player.distance(target) < 20`; on a hit, add to the score, move the target to a random place, and rewrite the score text.
+see: mod.turtle.events, mod.turtle.text
+```py
+import random
+import turtle
+screen = turtle.Screen(); screen.tracer(0); screen.bgcolor("#dff0ff")
+player = turtle.Turtle("turtle"); player.penup(); player.color("#2e7d4f")
+target = turtle.Turtle("circle"); target.penup(); target.color("#c23b22")
+pen = turtle.Turtle(); pen.hideturtle(); pen.penup(); pen.goto(0, 170)
+state = {"score": 0}
+
+def place():
+    target.goto(random.randint(-180, 180), random.randint(-140, 140))
+
+def show():
+    pen.clear(); pen.write(f"Score {state['score']}", align="center", font=("Arial", 16, "bold"))
+
+for key, angle in (("Up", 90), ("Down", 270), ("Left", 180), ("Right", 0)):
+    screen.onkeypress(lambda a=angle: (player.setheading(a), player.forward(15)), key)
+screen.listen()
+
+def tick():
+    if player.distance(target) < 20:
+        state["score"] += 1; place(); show()
+    screen.update()
+    screen.ontimer(tick, 30)
+
+place(); show(); tick()
+turtle.done()
+```
+
+@@ mod.turtle.screen
+Q: How do I set the turtle window size, title, background image or coordinates?
+aka: turtle screen size, turtle setup, turtle title, turtle bgpic, setworldcoordinates, turtle window size
+A: `screen.setup(width, height)`, `screen.title("...")`, `screen.bgpic("image.gif")` (GIF/PNG), `screen.setworldcoordinates(x1, y1, x2, y2)` to choose your own coordinate system. `screen.exitonclick()` closes on a click.
+see: mod.turtle.basics
+```py
+import turtle
+screen = turtle.Screen()
+screen.setup(400, 300)
+screen.title("My drawing")
+screen.setworldcoordinates(0, 0, 10, 10)        # now (0,0) is bottom-left, (10,10) top-right
+screen.tracer(0)
+t = turtle.Turtle(); t.hideturtle(); t.penup(); t.goto(1, 1); t.pendown()
+t.goto(9, 9)
+screen.update()
+print(screen.window_width(), screen.window_height(), t.position())
+turtle.done()
+```
+```text
+400 300 (9.00,9.00)
+```
+
+@@ mod.turtle.fractal
+Q: How do I draw a fractal tree or snowflake with turtle (recursion)?
+aka: fractal tree turtle, koch snowflake, recursive drawing, turtle recursion
+A: A recursive function draws a branch, then calls itself for smaller branches at an angle, and moves back. Stop when the length is small.
+see: py.recursion
+```py
+import turtle
+turtle.tracer(0)
+t = turtle.Turtle(); t.hideturtle(); t.left(90); t.penup(); t.goto(0, -150); t.pendown()
+count = [0]
+
+def tree(length):
+    if length < 8:
+        return
+    count[0] += 1
+    t.forward(length)
+    t.left(25); tree(length * 0.7)
+    t.right(50); tree(length * 0.7)
+    t.left(25)
+    t.back(length)
+
+tree(90)
+turtle.update()
+print(count[0], "branches")
+turtle.done()
+```
+```text
+127 branches
+```
+
+@@ mod.turtle.errors
+Q: turtle.Terminator error, or the turtle window freezes / won't close
+aka: turtle terminator, turtle window not responding, turtle closes immediately, turtle bye, turtle in IDLE
+A: `Terminator` happens when you draw after the window was closed (or re-run in IDLE after closing it): restart the shell, or call `turtle.bye()` / avoid drawing after `done()`. Always end with `turtle.done()` (or `exitonclick()`), so the window stays open and responds; and don't name your file `turtle.py`.
+see: py.proj.shadow-module
+```py
+import turtle
+t = turtle.Turtle()
+t.forward(50)
+turtle.done()            # last line: keeps the window open until you close it
+```

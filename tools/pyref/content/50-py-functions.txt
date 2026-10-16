@@ -1,0 +1,385 @@
+# py-func | Functions in depth | Scope, closures, keyword-only and positional-only arguments, mutable defaults, docstrings, partial | python
+
+@@ py.fn.scope
+Q: How does variable scope work in Python (local, global, LEGB)?
+aka: variable scope, local vs global, LEGB rule, enclosing scope, builtins scope, where variables live
+A: Python looks a name up in this order: **L**ocal (inside the current function), **E**nclosing (functions around it), **G**lobal (the module), **B**uilt-in (`print`, `len`...). Assigning to a name inside a function makes it local unless you say `global` or `nonlocal`.
+see: py.global, py.fn.nonlocal
+```py
+x = "global"
+
+def outer():
+    x = "enclosing"
+    def inner():
+        x = "local"
+        print("inner sees", x)
+    inner()
+    print("outer sees", x)
+
+outer()
+print("module sees", x)
+print(len)            # found in builtins
+```
+```text
+inner sees local
+outer sees enclosing
+module sees global
+<built-in function len>
+```
+
+@@ py.fn.nonlocal
+Q: What does nonlocal do?
+aka: nonlocal keyword, change outer function variable, closure counter, modify enclosing variable, nonlocal, what is nonlocal
+A: `nonlocal x` lets an inner function **change** a variable of the function around it (reading works without it). It's how you keep state in a closure, like a counter.
+see: py.fn.closure, py.global
+```py
+def make_counter():
+    count = 0
+    def increment():
+        nonlocal count          # without this: UnboundLocalError
+        count += 1
+        return count
+    return increment
+
+c = make_counter()
+print(c(), c(), c())
+```
+```text
+1 2 3
+```
+
+@@ py.fn.closure
+Q: What is a closure?
+aka: closure, function returning function, function factory, remember variables, inner function keeps value
+A: A function defined inside another function that **remembers** the outer function's variables even after the outer one has finished. Useful for factories and callbacks.
+see: py.fn.nonlocal, tk.lambda-loop
+```py
+def multiplier(n):
+    def times(x):
+        return x * n          # n is remembered
+    return times
+
+double = multiplier(2)
+triple = multiplier(3)
+print(double(5), triple(5))
+print(double.__closure__[0].cell_contents)
+```
+```text
+10 15
+2
+```
+
+@@ py.fn.late-binding
+Q: Why do all my lambdas (or functions made in a loop) use the last value?
+aka: late binding closure, lambda in loop same value, functions in loop last value, default argument capture
+A: Closures look up variables when they **run**, not when they're made. By then the loop variable has its last value. Capture the current value with a default argument: `lambda i=i: ...`.
+see: tk.lambda-loop, py.fn.closure
+```py
+wrong = [lambda: i for i in range(3)]
+right = [lambda i=i: i for i in range(3)]
+print([f() for f in wrong])
+print([f() for f in right])
+```
+```text
+[2, 2, 2]
+[0, 1, 2]
+```
+
+@@ py.fn.mutable-default
+Q: Why does my function's default list keep growing between calls?
+aka: mutable default argument, default list shared, default dict remembers, def f(x=[]), default argument bug, mutable default, default list argument
+A: Default values are made **once**, when the function is defined, and shared by every call. A list or dict default therefore remembers changes. Use `None` and create a new one inside.
+see: py.default-args
+```py
+def add_bad(item, items=[]):
+    items.append(item)
+    return items
+
+def add_good(item, items=None):
+    if items is None:
+        items = []
+    items.append(item)
+    return items
+
+print(add_bad("a"), add_bad("b"))
+print(add_good("a"), add_good("b"))
+```
+```text
+['a', 'b'] ['a', 'b']
+['a'] ['b']
+```
+
+@@ py.fn.keyword-only
+Q: What do `*` and `/` mean in a function's parameters (keyword-only and positional-only)?
+aka: keyword only arguments, positional only arguments, star in parameters, slash in parameters, def f(a, *, b), def f(a, /)
+A: Parameters after a bare `*` must be given **by name**; parameters before `/` must be given **by position**. This makes calls clearer and lets you rename positional parameters later.
+see: py.default-args, py.args-kwargs
+```py
+def connect(host, port=80, *, timeout=10, retries=3):
+    return f"{host}:{port} timeout={timeout} retries={retries}"
+
+print(connect("example.com", 8080, timeout=5))
+# connect("example.com", 8080, 5)   -> TypeError: takes from 1 to 2 positional arguments
+
+def distance(x, y, /):
+    return (x * x + y * y) ** 0.5
+
+print(distance(3, 4))
+# distance(x=3, y=4)                -> TypeError: got some positional-only arguments passed as keyword arguments
+```
+```text
+example.com:8080 timeout=5 retries=3
+5.0
+```
+
+@@ py.fn.unpack-call
+Q: How do I pass a list or dict as separate arguments to a function (* and ** in a call)?
+aka: unpack list into arguments, splat, star in function call, double star call, pass dict as keyword arguments, apply list to function
+A: `f(*items)` passes each list/tuple item as a separate positional argument; `f(**options)` passes each dict key as a keyword argument.
+see: py.args-kwargs, py.unpack-star
+```py
+def describe(name, age, city="?"):
+    return f"{name}, {age}, from {city}"
+
+row = ["Ada", 36]
+extra = {"city": "London"}
+print(describe(*row, **extra))
+print(max(*[4, 9, 2]))
+print("{} + {} = {}".format(*(1, 2, 3)))
+```
+```text
+Ada, 36, from London
+9
+1 + 2 = 3
+```
+
+@@ py.fn.docstring
+Q: How do I write a docstring, and how do I read a function's help?
+aka: docstring, document function, help(), __doc__, function documentation, triple quote comment function
+A: Put a string as the first line inside the function. `help(func)` and IDEs show it; `func.__doc__` holds it. Describe what it does, its arguments and what it returns.
+see: py.comments
+```py
+def area(width, height=1):
+    """Return the area of a rectangle.
+
+    width:  length of one side
+    height: length of the other side (default 1)
+    """
+    return width * height
+
+print(area.__doc__.splitlines()[0])
+print(area.__name__, area.__defaults__)
+```
+```text
+Return the area of a rectangle.
+area (1,)
+```
+
+@@ py.fn.first-class
+Q: Can I store functions in variables, lists or dicts and pass them around?
+aka: functions as values, first class functions, dict of functions, pass function as argument, function list, dispatch table
+A: Yes. A function is an object: assign it, put it in a dict, pass it as an argument (**without** brackets). A dict of functions is a neat replacement for long if/elif chains.
+see: py.match, py.lambda
+```py
+def add(a, b): return a + b
+def sub(a, b): return a - b
+
+OPS = {"+": add, "-": sub, "*": lambda a, b: a * b}
+
+def calc(a, op, b):
+    return OPS[op](a, b)
+
+def apply_twice(f, x):
+    return f(f(x))
+
+print(calc(6, "*", 7), calc(9, "-", 4))
+print(apply_twice(str.upper, "hi"), apply_twice(lambda n: n * 3, 2))
+```
+```text
+42 5
+HI 18
+```
+
+@@ py.fn.partial
+Q: What is functools.partial (pre-filling some arguments)?
+aka: functools partial, preset arguments, fix arguments, partial function, callback with arguments
+A: `partial(f, a)` makes a new function like `f` with the first arguments already filled in. Handy for callbacks (tkinter `command=`) instead of a lambda.
+see: tk.button-args
+```py
+from functools import partial
+
+def power(base, exp):
+    return base ** exp
+
+square = partial(power, exp=2)
+two_to = partial(power, 2)
+print(square(9), two_to(10))
+
+print_csv = partial(print, sep=",")
+print_csv("a", "b", "c")
+```
+```text
+81 1024
+a,b,c
+```
+
+@@ py.fn.recursion-limit
+Q: How deep can recursion go, and how do I turn a recursive function into a loop?
+aka: recursion depth, sys.setrecursionlimit, recursion to iteration, stack overflow python, deep recursion
+A: The default limit is about 1000 calls deep (`sys.getrecursionlimit()`). You can raise it with `sys.setrecursionlimit`, but deep recursion can still crash. Rewriting with a loop and your own stack (a list) has no limit.
+see: py.recursion, py.err.recursion
+```py
+import sys
+
+print(sys.getrecursionlimit())
+
+def total_recursive(n):
+    return 0 if n == 0 else n + total_recursive(n - 1)
+
+def total_loop(n):
+    t = 0
+    while n:
+        t += n; n -= 1
+    return t
+
+print(total_recursive(500), total_loop(100_000))
+```
+```text
+1000
+125250 5000050000
+```
+
+@@ py.fn.callbacks
+Q: What is a callback function?
+aka: callback, pass function to be called later, on event function, hook function, callback with arguments
+A: A function you hand to other code so **it** can call it later (when a button is clicked, when sorting, when a download finishes). Pass the function itself, not the result of calling it.
+see: tk.err.command-runs-early, py.fn.first-class
+```py
+def download(url, on_done):
+    data = f"<contents of {url}>"     # pretend work
+    on_done(data)                     # call back
+
+def show(result):
+    print("got", result)
+
+download("example.com", show)                   # show, not show()
+download("python.org", lambda r: print(len(r)))
+```
+```text
+got <contents of example.com>
+24
+```
+
+@@ py.fn.multiple-return-names
+Q: How do I return several named values from a function (not just a tuple)?
+aka: return named values, return dict, namedtuple return, return object, return several results clearly
+A: A tuple works but positions are easy to mix up. Return a `dict`, a `namedtuple`, or a `dataclass` so the caller can use names.
+see: py.return-multiple, py.dataclass
+```py
+from collections import namedtuple
+
+Stats = namedtuple("Stats", "low high mean")
+
+def stats(nums):
+    return Stats(min(nums), max(nums), sum(nums) / len(nums))
+
+s = stats([4, 8, 15, 16, 23, 42])
+print(s.high, round(s.mean, 1))
+low, high, mean = s                 # still unpacks like a tuple
+print(low)
+```
+```text
+42 18.0
+4
+```
+
+@@ py.fn.attributes
+Q: How do I find out a function's name, parameters and defaults (inspect)?
+aka: function name, inspect signature, function parameters list, __name__, get arguments of function
+A: `f.__name__` is its name; `inspect.signature(f)` describes its parameters, defaults and annotations.
+see: py.fn.docstring
+```py
+import inspect
+
+def greet(name: str, greeting: str = "Hello", *, punct="!") -> str:
+    return f"{greeting}, {name}{punct}"
+
+sig = inspect.signature(greet)
+print(greet.__name__, sig)
+for p in sig.parameters.values():
+    print(p.name, p.kind.name, p.default if p.default is not p.empty else "-")
+```
+```text
+greet (name: str, greeting: str = 'Hello', *, punct='!') -> str
+name POSITIONAL_OR_KEYWORD -
+greeting POSITIONAL_OR_KEYWORD Hello
+punct KEYWORD_ONLY !
+```
+
+@@ py.fn.pure
+Q: What is a pure function and why should my functions return values instead of printing?
+aka: pure function, side effects, return instead of print, testable function, function design
+A: A pure function only uses its arguments and returns a result: no printing, no globals, no changing inputs. It's easy to test and reuse. Do the printing/input once at the edges of your program.
+see: py.return-vs-print, tk.mvc
+```py
+def apply_discount(prices, percent):          # pure: returns a new list
+    return [round(p * (1 - percent / 100), 2) for p in prices]
+
+prices = [10.0, 25.0]
+new = apply_discount(prices, 20)
+print(prices, new)                            # original unchanged
+assert apply_discount([100], 10) == [90.0]    # trivial to test
+```
+```text
+[10.0, 25.0] [8.0, 20.0]
+```
+
+@@ py.fn.recursion-memo
+Q: My recursive function is very slow (like Fibonacci). How do I speed it up (memoization, lru_cache)?
+aka: memoization, lru_cache, cache decorator, slow recursion, functools cache, dynamic programming
+A: Cache results so each input is computed once: put `@functools.cache` (or `@lru_cache(maxsize=None)`) on the function. The arguments must be hashable (numbers, strings, tuples).
+see: py.fibonacci, py.deco.basics
+```py
+import time
+from functools import cache
+
+def fib_slow(n):
+    return n if n < 2 else fib_slow(n - 1) + fib_slow(n - 2)
+
+@cache
+def fib(n):
+    return n if n < 2 else fib(n - 1) + fib(n - 2)
+
+t = time.perf_counter(); fib_slow(24); slow = time.perf_counter() - t
+t = time.perf_counter(); fib(24); fast = time.perf_counter() - t
+print(fib(100))
+print(fast < slow)
+```
+```text
+354224848179261915075
+True
+```
+
+@@ py.fn.generator-func-vs-list
+Q: Should my function return a list or yield items (generator)?
+aka: return list or yield, generator function vs list, lazy results, memory efficient function
+A: Return a list when the result is small and you'll use it several times. `yield` when the results are many/endless, or when the caller may stop early: items are made one at a time and use almost no memory.
+see: py.generators, py.it.generator-expr
+```py
+def squares_list(n):
+    return [i * i for i in range(n)]
+
+def squares_gen(n):
+    for i in range(n):
+        yield i * i
+
+print(squares_list(5))
+g = squares_gen(10**12)        # instant: nothing computed yet
+print(next(g), next(g), next(g))
+print(sum(squares_gen(1000)))
+```
+```text
+[0, 1, 4, 9, 16]
+0 1 4
+332833500
+```

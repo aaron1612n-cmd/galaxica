@@ -1,0 +1,890 @@
+# tk-games | Games | Complete small games: Pong, Breakout, Flappy, platformer, memory, hangman, minesweeper, 2048 and more | tkinter
+
+@@ tk.gm.structure
+Q: How should I structure a tkinter game (loop, states, input, restart)?
+aka: game structure, game states menu play gameover, game class, restart game, game loop design, pause game
+A: One class holding the game state, a `reset()` that sets everything up, a `step()` called with `after` that updates and draws, a set of held keys, and a `state` (`"menu"`, `"play"`, `"over"`) that decides what `step` does and what keys mean.
+see: tk.game-loop, tk.key-held
+```py
+import tkinter as tk
+
+class Game:
+    W, H = 400, 300
+    def __init__(self, root):
+        self.root = root
+        self.c = tk.Canvas(root, width=self.W, height=self.H, bg="#111", highlightthickness=0)
+        self.c.pack()
+        self.keys = set()
+        root.bind("<KeyPress>", self.key_down)
+        root.bind("<KeyRelease>", lambda e: self.keys.discard(e.keysym))
+        self.state = "menu"
+        self.paused = False
+        self.draw_menu()
+        self.step()
+
+    def key_down(self, e):
+        self.keys.add(e.keysym)
+        if self.state in ("menu", "over") and e.keysym == "space":
+            self.reset()
+        elif self.state == "play" and e.keysym == "p":
+            self.paused = not self.paused
+
+    def reset(self):
+        self.state, self.score, self.x = "play", 0, self.W / 2
+        self.c.delete("all")
+        self.player = self.c.create_rectangle(0, 0, 30, 14, fill="#ffb000", outline="")
+        self.text = self.c.create_text(8, 8, anchor="nw", fill="white", font=("Arial", 12))
+
+    def draw_menu(self, title="MY GAME"):
+        self.c.delete("all")
+        self.c.create_text(self.W / 2, self.H / 2 - 10, text=title, fill="white", font=("Arial", 24, "bold"))
+        self.c.create_text(self.W / 2, self.H / 2 + 24, text="press space", fill="#888", font=("Arial", 12))
+
+    def step(self):
+        if self.state == "play" and not self.paused:
+            self.x += 5 * (("Right" in self.keys) - ("Left" in self.keys))
+            self.x = max(15, min(self.W - 15, self.x))
+            self.c.coords(self.player, self.x - 15, self.H - 30, self.x + 15, self.H - 16)
+            self.score += 1
+            self.c.itemconfig(self.text, text=f"Score {self.score // 10}")
+            if self.score > 600:
+                self.state = "over"
+                self.draw_menu("TIME UP")
+        self.root.after(16, self.step)
+
+root = tk.Tk()
+game = Game(root)
+root.mainloop()
+```
+
+@@ tk.gm.pong
+Q: How do I make Pong in tkinter?
+aka: pong game, paddle ball game, two player pong, ping pong
+A: Two paddles moved by held keys (W/S and Up/Down), a ball with a velocity that flips on walls and paddles, and a score when it leaves the side.
+see: tk.cv.bounce, tk.key-held
+```py
+import tkinter as tk
+
+W, H, PW, PH, R = 600, 400, 12, 80, 8
+root = tk.Tk()
+root.title("Pong")
+c = tk.Canvas(root, width=W, height=H, bg="black", highlightthickness=0); c.pack()
+c.create_line(W / 2, 0, W / 2, H, fill="#444", dash=(6, 6))
+left = c.create_rectangle(20, H / 2 - PH / 2, 20 + PW, H / 2 + PH / 2, fill="white")
+right = c.create_rectangle(W - 20 - PW, H / 2 - PH / 2, W - 20, H / 2 + PH / 2, fill="white")
+ball = c.create_oval(0, 0, 2 * R, 2 * R, fill="white")
+score_text = c.create_text(W / 2, 30, fill="white", font=("Courier", 24, "bold"))
+score = [0, 0]
+v = [5, 3]
+keys = set()
+root.bind("<KeyPress>", lambda e: keys.add(e.keysym))
+root.bind("<KeyRelease>", lambda e: keys.discard(e.keysym))
+
+def serve(direction):
+    c.coords(ball, W / 2 - R, H / 2 - R, W / 2 + R, H / 2 + R)
+    v[0], v[1] = 5 * direction, 3
+    c.itemconfig(score_text, text=f"{score[0]}   {score[1]}")
+
+def move_paddle(p, up, down):
+    dy = 7 * ((down in keys) - (up in keys))
+    _, y1, _, y2 = c.coords(p)
+    if 0 <= y1 + dy and y2 + dy <= H:
+        c.move(p, 0, dy)
+
+def step():
+    move_paddle(left, "w", "s")
+    move_paddle(right, "Up", "Down")
+    c.move(ball, *v)
+    x1, y1, x2, y2 = c.coords(ball)
+    if y1 <= 0 or y2 >= H:
+        v[1] = -v[1]
+    for p in (left, right):
+        if p in c.find_overlapping(x1, y1, x2, y2):
+            v[0] = -v[0] * 1.05                     # speed up a little
+            py1, py2 = c.coords(p)[1], c.coords(p)[3]
+            v[1] = ((y1 + y2) / 2 - (py1 + py2) / 2) / 8   # angle from where it hit
+            c.move(ball, v[0], 0)
+    if x2 < 0:
+        score[1] += 1; serve(1)
+    elif x1 > W:
+        score[0] += 1; serve(-1)
+    root.after(16, step)
+
+serve(1)
+step()
+root.mainloop()
+```
+
+@@ tk.gm.breakout
+Q: How do I make Breakout (paddle, ball and bricks)?
+aka: breakout game, brick breaker, arkanoid, bricks game
+A: Bricks are rectangles with tag `"brick"`. Each frame move the ball, bounce off walls and the paddle, and if `find_overlapping` hits a brick, delete it and reverse the vertical speed.
+see: tk.gm.pong, tk.collision
+```py
+import tkinter as tk
+
+W, H = 480, 400
+root = tk.Tk()
+root.title("Breakout")
+c = tk.Canvas(root, width=W, height=H, bg="#1b1a17", highlightthickness=0); c.pack()
+COLS = ["#c23b22", "#e08a00", "#c9b200", "#2e7d4f", "#3b6ea8"]
+for row in range(5):
+    for col in range(8):
+        x = 8 + col * 59
+        c.create_rectangle(x, 40 + row * 22, x + 55, 58 + row * 22, fill=COLS[row], outline="", tags="brick")
+paddle = c.create_rectangle(W / 2 - 40, H - 30, W / 2 + 40, H - 20, fill="#f2ede3", outline="")
+ball = c.create_oval(W / 2 - 7, H - 60, W / 2 + 7, H - 46, fill="white", outline="")
+info = c.create_text(W / 2, 18, fill="white", font=("Arial", 12))
+v, lives, score = [3.5, -3.5], [3], [0]
+c.bind("<Motion>", lambda e: c.coords(paddle, e.x - 40, H - 30, e.x + 40, H - 20))
+root.bind("<Left>", lambda e: c.move(paddle, -30, 0)); root.bind("<Right>", lambda e: c.move(paddle, 30, 0))
+
+def step():
+    c.move(ball, *v)
+    x1, y1, x2, y2 = c.coords(ball)
+    if x1 <= 0 or x2 >= W: v[0] = -v[0]
+    if y1 <= 0: v[1] = -v[1]
+    hits = c.find_overlapping(x1, y1, x2, y2)
+    if paddle in hits and v[1] > 0:
+        px1, _, px2, _ = c.coords(paddle)
+        v[0] = ((x1 + x2) / 2 - (px1 + px2) / 2) / 8
+        v[1] = -v[1]
+    bricks = [h for h in hits if "brick" in c.gettags(h)]
+    if bricks:
+        c.delete(bricks[0]); v[1] = -v[1]; score[0] += 10
+    if y2 >= H:
+        lives[0] -= 1
+        c.coords(ball, W / 2 - 7, H - 60, W / 2 + 7, H - 46); v[:] = [3.5, -3.5]
+    c.itemconfig(info, text=f"Score {score[0]}   Lives {lives[0]}")
+    if lives[0] == 0 or not c.find_withtag("brick"):
+        c.create_text(W / 2, H / 2, text="YOU WIN" if lives[0] else "GAME OVER", fill="white", font=("Arial", 28, "bold"))
+        return
+    root.after(16, step)
+step()
+root.mainloop()
+```
+
+@@ tk.gm.flappy
+Q: How do I make a Flappy Bird style game?
+aka: flappy bird, tap to fly, pipes game, gravity flap game, endless obstacle
+A: Gravity pulls the bird down each frame; Space sets a negative vertical speed. Pipes (pairs of rectangles with a gap) move left; new ones spawn every so often; touching one or the floor ends the game.
+see: tk.cv.gravity, tk.gm.structure
+```py
+import random
+import tkinter as tk
+
+W, H, GAP = 400, 500, 140
+root = tk.Tk()
+root.title("Flappy")
+c = tk.Canvas(root, width=W, height=H, bg="#bfe3f5", highlightthickness=0); c.pack()
+bird = c.create_oval(80, 230, 110, 255, fill="#ffb000", outline="#7a5a00", width=2)
+score_t = c.create_text(W / 2, 40, font=("Arial", 26, "bold"), fill="white", text="0")
+s = {"vy": 0.0, "pipes": [], "score": 0, "t": 0, "alive": True}
+
+def flap(e=None):
+    if s["alive"]:
+        s["vy"] = -7.5
+    else:
+        root.destroy()
+
+def add_pipe():
+    top = random.randint(60, H - GAP - 60)
+    a = c.create_rectangle(W, 0, W + 60, top, fill="#2e7d4f", outline="")
+    b = c.create_rectangle(W, top + GAP, W + 60, H, fill="#2e7d4f", outline="")
+    s["pipes"].append([a, b, False])
+
+def step():
+    s["t"] += 1
+    if s["t"] % 90 == 1:
+        add_pipe()
+    s["vy"] += 0.4
+    c.move(bird, 0, s["vy"])
+    bx1, by1, bx2, by2 = c.coords(bird)
+    for p in s["pipes"][:]:
+        c.move(p[0], -3, 0); c.move(p[1], -3, 0)
+        x2 = c.coords(p[0])[2]
+        if not p[2] and x2 < bx1:
+            p[2] = True; s["score"] += 1; c.itemconfig(score_t, text=s["score"])
+        if x2 < 0:
+            c.delete(p[0]); c.delete(p[1]); s["pipes"].remove(p)
+    hit = set(c.find_overlapping(bx1 + 3, by1 + 3, bx2 - 3, by2 - 3)) - {bird, score_t}
+    if hit or by2 >= H or by1 <= 0:
+        s["alive"] = False
+        c.create_text(W / 2, H / 2, text="GAME OVER", font=("Arial", 30, "bold"), fill="#c23b22")
+        return
+    root.after(16, step)
+
+root.bind("<space>", flap)
+c.bind("<Button-1>", flap)
+step()
+root.mainloop()
+```
+
+@@ tk.gm.platformer
+Q: How do I make a platformer (run, jump, land on platforms)?
+aka: platformer, platform game, jump on platforms, mario style, collision with platforms, side scroller
+A: Move horizontally first, then vertically with gravity. When moving down, check each platform: if the player's feet crossed the top of a platform this frame (and they overlap horizontally), snap onto it and set `vy = 0`, `on_ground = True`.
+see: tk.cv.gravity, tk.key-held
+```py
+import tkinter as tk
+
+W, H = 560, 360
+PLATFORMS = [(0, 330, 560, 360), (80, 260, 200, 274), (240, 200, 360, 214), (400, 140, 520, 154), (260, 90, 330, 104)]
+root = tk.Tk()
+root.title("Platformer")
+c = tk.Canvas(root, width=W, height=H, bg="#dff0ff", highlightthickness=0); c.pack()
+for p in PLATFORMS:
+    c.create_rectangle(*p, fill="#6a8f3a", outline="")
+star = c.create_oval(282, 60, 306, 84, fill="#ffb000", outline="")
+pl = {"x": 30.0, "y": 300.0, "vx": 0.0, "vy": 0.0, "ground": False, "w": 22, "h": 30}
+body = c.create_rectangle(0, 0, 0, 0, fill="#c23b22", outline="")
+keys = set()
+root.bind("<KeyPress>", lambda e: keys.add(e.keysym))
+root.bind("<KeyRelease>", lambda e: keys.discard(e.keysym))
+
+def step():
+    p = pl
+    p["vx"] = 4 * (("Right" in keys or "d" in keys) - ("Left" in keys or "a" in keys))
+    if ("space" in keys or "Up" in keys or "w" in keys) and p["ground"]:
+        p["vy"] = -10.5
+    p["x"] = max(0, min(W - p["w"], p["x"] + p["vx"]))
+    p["vy"] = min(p["vy"] + 0.55, 12)
+    old_bottom = p["y"] + p["h"]
+    p["y"] += p["vy"]
+    p["ground"] = False
+    for x1, y1, x2, y2 in PLATFORMS:
+        overlaps_x = p["x"] + p["w"] > x1 and p["x"] < x2
+        if overlaps_x and p["vy"] >= 0 and old_bottom <= y1 <= p["y"] + p["h"]:
+            p["y"], p["vy"], p["ground"] = y1 - p["h"], 0, True
+    c.coords(body, p["x"], p["y"], p["x"] + p["w"], p["y"] + p["h"])
+    if star in c.find_overlapping(*c.coords(body)):
+        c.create_text(W / 2, 40, text="You got the star!", font=("Arial", 20, "bold"))
+        c.delete(star)
+    root.after(16, step)
+step()
+root.mainloop()
+```
+
+@@ tk.gm.memory
+Q: How do I make a memory (matching pairs) card game?
+aka: memory game, matching pairs, concentration game, flip cards, card matching
+A: Shuffle a list with every symbol twice, make a button per card showing nothing, reveal on click, and after two reveals either keep them (match) or hide both again after a short `after` delay.
+see: tk.button-grid, tk.lambda-loop
+```py
+import random
+import tkinter as tk
+
+SYMBOLS = list("ABCDEFGH") * 2
+random.shuffle(SYMBOLS)
+root = tk.Tk()
+root.title("Memory")
+buttons, shown, matched = [], [], set()
+moves = tk.IntVar()
+
+def click(i):
+    if i in matched or i in shown or len(shown) == 2:
+        return
+    buttons[i].config(text=SYMBOLS[i], bg="#ffd27a")
+    shown.append(i)
+    if len(shown) == 2:
+        moves.set(moves.get() + 1)
+        a, b = shown
+        if SYMBOLS[a] == SYMBOLS[b]:
+            matched.update(shown); shown.clear()
+            for k in (a, b):
+                buttons[k].config(bg="#9be3a8")
+            if len(matched) == len(SYMBOLS):
+                tk.Label(root, text=f"Done in {moves.get()} moves!", font=("Arial", 14)).grid(row=5, column=0, columnspan=4)
+        else:
+            root.after(700, hide)
+
+def hide():
+    for k in shown:
+        buttons[k].config(text="", bg="#ddd")
+    shown.clear()
+
+for i in range(16):
+    b = tk.Button(root, text="", width=5, height=2, font=("Arial", 18, "bold"), bg="#ddd", command=lambda i=i: click(i))
+    b.grid(row=i // 4, column=i % 4, padx=2, pady=2)
+    buttons.append(b)
+tk.Label(root, textvariable=moves).grid(row=4, column=0, columnspan=4)
+root.mainloop()
+```
+
+@@ tk.gm.hangman
+Q: How do I make Hangman with a GUI?
+aka: hangman game, guess the word, letter buttons, word guessing gui
+A: Show the word as `_ _ _`, a button per letter (disabled after use), count wrong guesses and draw one more part on a Canvas for each.
+see: tk.button-grid
+```py
+import random, string
+import tkinter as tk
+
+WORDS = ["python", "window", "button", "canvas", "widget"]
+root = tk.Tk()
+root.title("Hangman")
+c = tk.Canvas(root, width=200, height=200, bg="white", highlightthickness=0); c.grid(row=0, column=0, rowspan=2)
+word_l = tk.Label(root, font=("Courier", 24)); word_l.grid(row=0, column=1, padx=10)
+keys = tk.Frame(root); keys.grid(row=1, column=1, padx=10)
+PARTS = [lambda: c.create_line(20, 190, 120, 190), lambda: c.create_line(50, 190, 50, 20), lambda: c.create_line(50, 20, 140, 20),
+         lambda: c.create_line(140, 20, 140, 45), lambda: c.create_oval(125, 45, 155, 75), lambda: c.create_line(140, 75, 140, 130),
+         lambda: c.create_line(140, 90, 115, 110), lambda: c.create_line(140, 90, 165, 110), lambda: c.create_line(140, 130, 120, 165),
+         lambda: c.create_line(140, 130, 160, 165)]
+g = {}
+
+def new_game():
+    g.update(word=random.choice(WORDS), guessed=set(), wrong=0)
+    c.delete("all")
+    for b in keys.winfo_children():
+        b.config(state="normal")
+    show()
+
+def show():
+    word_l.config(text=" ".join(ch if ch in g["guessed"] else "_" for ch in g["word"]))
+
+def guess(ch, btn):
+    btn.config(state="disabled")
+    g["guessed"].add(ch)
+    if ch not in g["word"]:
+        PARTS[g["wrong"]](); g["wrong"] += 1
+    show()
+    won = all(x in g["guessed"] for x in g["word"])
+    if won or g["wrong"] == len(PARTS):
+        word_l.config(text=("You win: " if won else "Lost: ") + g["word"])
+        for b in keys.winfo_children():
+            b.config(state="disabled")
+        root.after(2000, new_game)
+
+for i, ch in enumerate(string.ascii_lowercase):
+    b = tk.Button(keys, text=ch.upper(), width=3)
+    b.config(command=lambda ch=ch, b=b: guess(ch, b))
+    b.grid(row=i // 7, column=i % 7)
+new_game()
+root.mainloop()
+```
+
+@@ tk.gm.minesweeper
+Q: How do I make Minesweeper?
+aka: minesweeper, mines game, flood fill reveal, right click flag, count neighbours
+A: A grid of buttons; place mines randomly; each cell's number = mines among its 8 neighbours. Left-click reveals (and if 0, reveals neighbours recursively: flood fill); right-click toggles a flag.
+see: tk.button-grid, py.recursion
+```py
+import random
+import tkinter as tk
+
+N, MINES = 9, 10
+root = tk.Tk()
+root.title("Minesweeper")
+mines = set(random.sample(range(N * N), MINES))
+shown, flags, btns = set(), set(), {}
+COLORS = {1: "#3b6ea8", 2: "#2e7d4f", 3: "#c23b22", 4: "#5a2d82"}
+
+def neighbours(r, c):
+    return [(r + dr, c + dc) for dr in (-1, 0, 1) for dc in (-1, 0, 1)
+            if (dr or dc) and 0 <= r + dr < N and 0 <= c + dc < N]
+
+def count(r, c):
+    return sum((nr * N + nc) in mines for nr, nc in neighbours(r, c))
+
+def reveal(r, c):
+    if (r, c) in shown or (r, c) in flags:
+        return
+    shown.add((r, c))
+    b = btns[r, c]
+    if r * N + c in mines:
+        b.config(text="✸", bg="#c23b22", relief="sunken")
+        for m in mines:
+            btns[divmod(m, N)].config(text="✸")
+        title.config(text="Boom! Game over")
+        return
+    n = count(r, c)
+    b.config(text=n or "", relief="sunken", bg="#eee", fg=COLORS.get(n, "black"))
+    if n == 0:
+        for nr, nc in neighbours(r, c):
+            reveal(nr, nc)
+    if len(shown) == N * N - MINES:
+        title.config(text="You cleared the field!")
+
+def flag(r, c):
+    if (r, c) in shown:
+        return
+    flags.symmetric_difference_update({(r, c)})
+    btns[r, c].config(text="⚑" if (r, c) in flags else "", fg="#c23b22")
+
+title = tk.Label(root, text=f"{MINES} mines", font=("Arial", 12)); title.grid(row=0, column=0, columnspan=N)
+for r in range(N):
+    for c in range(N):
+        b = tk.Button(root, width=2, height=1, font=("Arial", 11, "bold"), command=lambda r=r, c=c: reveal(r, c))
+        b.bind("<Button-3>", lambda e, r=r, c=c: flag(r, c))
+        b.grid(row=r + 1, column=c)
+        btns[r, c] = b
+root.mainloop()
+```
+
+@@ tk.gm.2048
+Q: How do I make 2048?
+aka: 2048 game, slide tiles merge, sliding puzzle numbers, arrow keys merge tiles
+A: Keep a 4×4 list. One function slides and merges a single row to the left; every other direction is the same after rotating/reversing the board. Add a 2 (or 4) in a random empty cell after any move that changed something.
+see: py.2d-list
+```py
+import random
+import tkinter as tk
+
+N = 4
+board = [[0] * N for _ in range(N)]
+
+def slide_row(row):
+    tiles = [x for x in row if x]
+    out, i = [], 0
+    while i < len(tiles):
+        if i + 1 < len(tiles) and tiles[i] == tiles[i + 1]:
+            out.append(tiles[i] * 2); i += 2
+        else:
+            out.append(tiles[i]); i += 1
+    return out + [0] * (N - len(out))
+
+def move(b, d):          # d: Left, Right, Up, Down
+    t = lambda m: [list(r) for r in zip(*m)]          # transpose
+    if d in ("Up", "Down"):
+        b = t(b)
+    if d in ("Right", "Down"):
+        b = [r[::-1] for r in b]
+    b = [slide_row(r) for r in b]
+    if d in ("Right", "Down"):
+        b = [r[::-1] for r in b]
+    if d in ("Up", "Down"):
+        b = t(b)
+    return b
+
+def add_tile():
+    empty = [(r, c) for r in range(N) for c in range(N) if not board[r][c]]
+    if empty:
+        r, c = random.choice(empty)
+        board[r][c] = 4 if random.random() < 0.1 else 2
+
+print(slide_row([2, 2, 4, 0]), slide_row([2, 2, 2, 2]))
+
+root = tk.Tk()
+root.title("2048")
+COL = {0: "#cdc1b4", 2: "#eee4da", 4: "#ede0c8", 8: "#f2b179", 16: "#f59563", 32: "#f67c5f", 64: "#f65e3b", 128: "#edcf72", 256: "#edcc61", 512: "#edc850", 1024: "#edc53f", 2048: "#edc22e"}
+cells = [[tk.Label(root, width=5, height=2, font=("Arial", 22, "bold")) for _ in range(N)] for _ in range(N)]
+for r in range(N):
+    for c in range(N):
+        cells[r][c].grid(row=r, column=c, padx=3, pady=3)
+
+def draw():
+    for r in range(N):
+        for c in range(N):
+            v = board[r][c]
+            cells[r][c].config(text=v or "", bg=COL.get(v, "#3c3a32"), fg="#776e65" if v < 8 else "white")
+
+def key(e):
+    global board
+    if e.keysym in ("Left", "Right", "Up", "Down"):
+        new = move(board, e.keysym)
+        if new != board:
+            board = new; add_tile(); draw()
+
+root.bind("<Key>", key)
+add_tile(); add_tile(); draw()
+root.mainloop()
+```
+```text
+[4, 4, 0, 0] [4, 4, 0, 0]
+```
+
+@@ tk.gm.rps
+Q: How do I make Rock, Paper, Scissors with buttons?
+aka: rock paper scissors gui, rps game, computer random choice game
+A: Three buttons call `play(choice)`; the computer picks `random.choice`; a dict of what beats what decides the result.
+see: py.random-choice
+```py
+import random
+import tkinter as tk
+
+BEATS = {"rock": "scissors", "paper": "rock", "scissors": "paper"}
+root = tk.Tk()
+root.title("Rock Paper Scissors")
+score = {"you": 0, "cpu": 0}
+result = tk.Label(root, font=("Arial", 14), width=32); result.pack(pady=10)
+board = tk.Label(root, font=("Arial", 12)); board.pack()
+
+def play(you):
+    cpu = random.choice(list(BEATS))
+    if you == cpu:
+        msg = "Draw"
+    elif BEATS[you] == cpu:
+        msg = "You win"; score["you"] += 1
+    else:
+        msg = "You lose"; score["cpu"] += 1
+    result.config(text=f"You: {you}  CPU: {cpu}  →  {msg}")
+    board.config(text=f"You {score['you']} – {score['cpu']} CPU")
+
+row = tk.Frame(root); row.pack(pady=10)
+for ch in BEATS:
+    tk.Button(row, text=ch.title(), width=10, command=lambda ch=ch: play(ch)).pack(side="left", padx=4)
+play("rock")
+root.mainloop()
+```
+
+@@ tk.gm.whack
+Q: How do I make a whack-a-mole / reaction clicking game with a timer?
+aka: whack a mole, click the target, reaction game, clicking game timer, aim trainer
+A: Every so often move the target to a random cell; clicking it scores; a countdown with `after` ends the round.
+see: tk.after, tk.recipe-stopwatch
+```py
+import random
+import tkinter as tk
+
+root = tk.Tk()
+root.title("Whack!")
+c = tk.Canvas(root, width=360, height=300, bg="#6a8f3a", highlightthickness=0); c.pack()
+holes = [(60 + col * 120, 70 + row * 100) for row in range(3) for col in range(3)]
+for x, y in holes:
+    c.create_oval(x - 40, y - 15, x + 40, y + 25, fill="#3d2a14", outline="")
+mole = c.create_oval(0, 0, 0, 0, fill="#8b5a2b", outline="", state="hidden")
+hud = c.create_text(180, 290, fill="white", font=("Arial", 12))
+g = {"score": 0, "time": 20}
+
+def pop():
+    if g["time"] <= 0:
+        return
+    x, y = random.choice(holes)
+    c.coords(mole, x - 28, y - 40, x + 28, y + 15)
+    c.itemconfig(mole, state="normal")
+    root.after(random.randint(500, 900), pop)
+
+def hit(e):
+    if g["time"] > 0:
+        g["score"] += 1
+        c.itemconfig(mole, state="hidden")
+
+def clock():
+    c.itemconfig(hud, text=f"Score {g['score']}    Time {g['time']}")
+    if g["time"] > 0:
+        g["time"] -= 1
+        root.after(1000, clock)
+    else:
+        c.create_text(180, 150, text=f"Final score: {g['score']}", fill="white", font=("Arial", 22, "bold"))
+
+c.tag_bind(mole, "<Button-1>", hit)
+pop(); clock()
+root.mainloop()
+```
+
+@@ tk.gm.typing
+Q: How do I make a typing speed test (words per minute)?
+aka: typing test, wpm, typing speed, typing game, accuracy typing
+A: Show a sentence, start a timer at the first key, compare the typed text with the target as they type (colour correct/incorrect), and when they finish compute words per minute = (characters / 5) / minutes.
+see: tk.text-tags, py.timing
+```py
+import time
+import tkinter as tk
+
+TARGET = "the quick brown fox jumps over the lazy dog"
+root = tk.Tk()
+root.title("Typing test")
+show = tk.Text(root, width=48, height=2, font=("Courier", 14), wrap="word", bd=0); show.pack(padx=10, pady=10)
+show.insert("1.0", TARGET); show.config(state="disabled")
+show.tag_config("ok", foreground="#2e7d4f"); show.tag_config("bad", background="#f5c2b8")
+entry = tk.Entry(root, width=48, font=("Courier", 14)); entry.pack(padx=10)
+res = tk.Label(root, font=("Arial", 12)); res.pack(pady=10)
+start = [None]
+
+def typed(event=None):
+    s = entry.get()
+    if start[0] is None and s:
+        start[0] = time.perf_counter()
+    show.tag_remove("ok", "1.0", "end"); show.tag_remove("bad", "1.0", "end")
+    for i, ch in enumerate(s[:len(TARGET)]):
+        show.tag_add("ok" if ch == TARGET[i] else "bad", f"1.{i}", f"1.{i + 1}")
+    if s == TARGET:
+        mins = (time.perf_counter() - start[0]) / 60
+        res.config(text=f"{len(TARGET) / 5 / mins:.0f} words per minute")
+        entry.config(state="disabled")
+
+entry.bind("<KeyRelease>", typed)
+entry.focus_set()
+root.mainloop()
+```
+
+@@ tk.gm.simon
+Q: How do I make a Simon (repeat the colour sequence) game?
+aka: simon says game, memory sequence, colour sequence game, flash buttons sequence
+A: Keep a growing list of colours. Play it back by lighting each button with chained `after` calls, then check each click against the list; when they finish the sequence, add one more.
+see: tk.after
+```py
+import random
+import tkinter as tk
+
+COLORS = {"red": ("#7a1f10", "#ff5a3c"), "green": ("#1c4f31", "#4fd17c"), "blue": ("#1d3b66", "#5aa0ff"), "yellow": ("#7a6a00", "#ffe14d")}
+root = tk.Tk()
+root.title("Simon")
+btn = {}
+for i, (name, (dim, lit)) in enumerate(COLORS.items()):
+    b = tk.Button(root, bg=dim, activebackground=lit, width=10, height=5, relief="flat", command=lambda n=name: press(n))
+    b.grid(row=i // 2, column=i % 2, padx=3, pady=3)
+    btn[name] = b
+status = tk.Label(root, font=("Arial", 12)); status.grid(row=2, column=0, columnspan=2)
+seq, pos = [], [0]
+
+def flash(name, ms=400):
+    btn[name].config(bg=COLORS[name][1])
+    root.after(ms, lambda: btn[name].config(bg=COLORS[name][0]))
+
+def play_back(i=0):
+    if i < len(seq):
+        flash(seq[i])
+        root.after(600, play_back, i + 1)
+    else:
+        pos[0] = 0
+        status.config(text="Your turn")
+
+def next_round():
+    seq.append(random.choice(list(COLORS)))
+    status.config(text=f"Watch… (round {len(seq)})")
+    root.after(600, play_back)
+
+def press(name):
+    flash(name, 150)
+    if name != seq[pos[0]]:
+        status.config(text=f"Wrong! You reached round {len(seq)}"); seq.clear(); root.after(1500, next_round); return
+    pos[0] += 1
+    if pos[0] == len(seq):
+        root.after(500, next_round)
+
+next_round()
+root.mainloop()
+```
+
+@@ tk.gm.maze
+Q: How do I generate a random maze and move through it with the arrow keys?
+aka: maze generator, random maze, maze game, depth first search maze, labyrinth
+A: Generate with a depth-first search that knocks down walls between cells; draw the remaining walls; the player can move only where there's no wall.
+see: py.recursion
+```py
+import random
+import tkinter as tk
+
+N, S = 12, 30
+walls = {(r, c): {"N", "S", "E", "W"} for r in range(N) for c in range(N)}
+MOVES = {"N": (-1, 0, "S"), "S": (1, 0, "N"), "E": (0, 1, "W"), "W": (0, -1, "E")}
+
+def carve(r=0, c=0, seen=None):
+    seen = seen or {(0, 0)}
+    stack = [(r, c)]
+    while stack:
+        r, c = stack[-1]
+        options = [(d, r + dr, c + dc, back) for d, (dr, dc, back) in MOVES.items()
+                   if (r + dr, c + dc) in walls and (r + dr, c + dc) not in seen]
+        if not options:
+            stack.pop(); continue
+        d, nr, nc, back = random.choice(options)
+        walls[r, c].discard(d); walls[nr, nc].discard(back)
+        seen.add((nr, nc)); stack.append((nr, nc))
+carve()
+
+root = tk.Tk()
+root.title("Maze")
+cv = tk.Canvas(root, width=N * S + 4, height=N * S + 4, bg="white", highlightthickness=0); cv.pack()
+for (r, c), w in walls.items():
+    x, y = c * S + 2, r * S + 2
+    if "N" in w: cv.create_line(x, y, x + S, y, width=2)
+    if "S" in w: cv.create_line(x, y + S, x + S, y + S, width=2)
+    if "W" in w: cv.create_line(x, y, x, y + S, width=2)
+    if "E" in w: cv.create_line(x + S, y, x + S, y + S, width=2)
+cv.create_rectangle((N - 1) * S + 8, (N - 1) * S + 8, N * S - 4, N * S - 4, fill="#9be3a8", outline="")
+me = {"r": 0, "c": 0}
+dot = cv.create_oval(8, 8, S - 4, S - 4, fill="#c23b22", outline="")
+KEYS = {"Up": "N", "Down": "S", "Left": "W", "Right": "E"}
+
+def key(e):
+    d = KEYS.get(e.keysym)
+    if d and d not in walls[me["r"], me["c"]]:
+        dr, dc, _ = MOVES[d]
+        me["r"] += dr; me["c"] += dc
+        cv.move(dot, dc * S, dr * S)
+        if (me["r"], me["c"]) == (N - 1, N - 1):
+            cv.create_text(N * S / 2, N * S / 2, text="Escaped!", font=("Arial", 26, "bold"), fill="#c23b22")
+root.bind("<Key>", key)
+root.mainloop()
+```
+
+@@ tk.gm.clicker
+Q: How do I make a cookie-clicker / idle game with upgrades?
+aka: clicker game, idle game, incremental game, cookie clicker, upgrades shop, per second income
+A: A counter, a click button that adds `per_click`, upgrade buttons that cost points and raise `per_click` or `per_second`, and an `after` loop adding `per_second` every second. Disable upgrades you can't afford.
+see: tk.after, tk.button-state
+```py
+import tkinter as tk
+
+root = tk.Tk()
+root.title("Clicker")
+g = {"cookies": 0.0, "per_click": 1, "per_sec": 0.0}
+UPGRADES = [["Better finger", 15, "per_click", 1], ["Grandma", 50, "per_sec", 1], ["Factory", 300, "per_sec", 8]]
+big = tk.Label(root, font=("Arial", 26)); big.pack(pady=(14, 0))
+rate = tk.Label(root, fg="#666"); rate.pack()
+tk.Button(root, text="🍪 Click", font=("Arial", 16), width=10, command=lambda: add(g["per_click"])).pack(pady=10)
+shop = []
+for name, cost, stat, amount in UPGRADES:
+    b = tk.Button(root, width=28)
+    b.pack(pady=2, padx=14)
+    shop.append(b)
+
+def add(n):
+    g["cookies"] += n; draw()
+
+def buy(i):
+    name, cost, stat, amount = UPGRADES[i]
+    if g["cookies"] >= cost:
+        g["cookies"] -= cost; g[stat] += amount
+        UPGRADES[i][1] = int(cost * 1.15)          # each one costs more
+        draw()
+
+def draw():
+    big.config(text=f"{int(g['cookies'])} cookies")
+    rate.config(text=f"{g['per_sec']:.0f} per second · {g['per_click']} per click")
+    for i, (b, (name, cost, stat, amount)) in enumerate(zip(shop, UPGRADES)):
+        b.config(text=f"{name} (+{amount} {stat.replace('_', ' ')}) – {cost}", command=lambda i=i: buy(i),
+                 state="normal" if g["cookies"] >= cost else "disabled")
+
+def tick():
+    add(g["per_sec"] / 10)
+    root.after(100, tick)
+tick()
+root.mainloop()
+```
+
+@@ tk.gm.highscore
+Q: How do I save a high score (or a top-10 list) between games?
+aka: save high score, high score file, leaderboard local, top scores json, best score persist
+A: Store the scores in a JSON file: load it at start (default to empty if missing), add the new score, sort, keep the top 10, write it back.
+see: py.json, tk.save-settings
+```py
+import json, os
+
+FILE = "highscores.json"
+
+def load_scores():
+    try:
+        with open(FILE) as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return []
+
+def add_score(name, score):
+    scores = load_scores()
+    scores.append({"name": name, "score": score})
+    scores.sort(key=lambda s: s["score"], reverse=True)
+    scores = scores[:10]
+    with open(FILE, "w") as f:
+        json.dump(scores, f, indent=1)
+    return scores
+
+for name, sc in [("Ada", 120), ("Sam", 300), ("Kai", 90)]:
+    top = add_score(name, sc)
+print([f"{s['name']} {s['score']}" for s in top])
+```
+```text
+['Sam 300', 'Ada 120', 'Kai 90']
+```
+
+@@ tk.gm.grid-game
+Q: How do I make a grid-based game (like Sokoban or a roguelike) with a level made of text?
+aka: tile game, level from text, sokoban, grid movement, roguelike tkinter, tile map
+A: Write the level as a list of strings (`#` wall, `.` floor, `@` player...). Draw one square per character; arrow keys move the player one cell if the target isn't a wall.
+see: tk.canvas-grid
+```py
+import tkinter as tk
+
+LEVEL = ["##########",
+         "#@...#...#",
+         "#.##.#.#.#",
+         "#..#...#$#",
+         "##########"]
+S = 40
+COL = {"#": "#3c3a32", ".": "#f2ede3", "$": "#ffb000"}
+root = tk.Tk()
+grid = [list(row) for row in LEVEL]
+cv = tk.Canvas(root, width=len(grid[0]) * S, height=len(grid) * S, highlightthickness=0); cv.pack()
+pos = next((r, c) for r, row in enumerate(grid) for c, ch in enumerate(row) if ch == "@")
+grid[pos[0]][pos[1]] = "."
+for r, row in enumerate(grid):
+    for c, ch in enumerate(row):
+        cv.create_rectangle(c * S, r * S, c * S + S, r * S + S, fill=COL[ch], outline="#ddd5c4")
+player = cv.create_oval(0, 0, 0, 0, fill="#c23b22", outline="")
+gold = [0]
+
+def draw():
+    r, c = pos
+    cv.coords(player, c * S + 6, r * S + 6, c * S + S - 6, r * S + S - 6)
+
+def move(dr, dc):
+    global pos
+    r, c = pos[0] + dr, pos[1] + dc
+    if grid[r][c] != "#":
+        pos = (r, c)
+        if grid[r][c] == "$":
+            grid[r][c] = "."; gold[0] += 1
+            cv.create_rectangle(c * S, r * S, c * S + S, r * S + S, fill=COL["."], outline="#ddd5c4"); cv.tag_raise(player)
+        draw()
+
+for key, d in {"Up": (-1, 0), "Down": (1, 0), "Left": (0, -1), "Right": (0, 1)}.items():
+    root.bind(f"<{key}>", lambda e, d=d: move(*d))
+draw()
+root.mainloop()
+```
+
+@@ tk.gm.dice
+Q: How do I make a dice roller with dice faces (and a rolling animation)?
+aka: dice roller, roll dice gui, dice faces canvas, random dice animation
+A: Draw a die as a rounded square with dots at fixed positions for each number. "Roll" by showing a few random faces quickly with `after`, then the final one.
+see: py.random
+```py
+import random
+import tkinter as tk
+
+DOTS = {1: [(1, 1)], 2: [(0, 0), (2, 2)], 3: [(0, 0), (1, 1), (2, 2)], 4: [(0, 0), (0, 2), (2, 0), (2, 2)],
+        5: [(0, 0), (0, 2), (1, 1), (2, 0), (2, 2)], 6: [(0, 0), (0, 2), (1, 0), (1, 2), (2, 0), (2, 2)]}
+root = tk.Tk()
+c = tk.Canvas(root, width=260, height=130, bg="#2e7d4f", highlightthickness=0); c.pack()
+
+def draw_die(x, n):
+    c.create_rectangle(x, 20, x + 90, 110, fill="white", outline="", tags="die")
+    for col, row in DOTS[n]:
+        cx, cy = x + 20 + col * 25, 40 + row * 25
+        c.create_oval(cx - 7, cy - 7, cx + 7, cy + 7, fill="black", tags="die")
+
+def roll(frames=8):
+    a, b = random.randint(1, 6), random.randint(1, 6)
+    c.delete("die"); draw_die(25, a); draw_die(145, b)
+    if frames:
+        root.after(60, roll, frames - 1)
+    else:
+        total.config(text=f"Total: {a + b}")
+
+total = tk.Label(root, font=("Arial", 14)); total.pack()
+tk.Button(root, text="Roll", command=roll).pack(pady=6)
+roll()
+root.mainloop()
+```
+
+@@ tk.gm.sound-game
+Q: How do I add sound effects to a tkinter game?
+aka: game sound effects, play sound on hit, pygame mixer tkinter, sound without lag, simpleaudio
+A: For short effects use `pygame.mixer` (`pip install pygame`): load each sound once at start and call `.play()`, which doesn't block. On Windows only, `winsound.PlaySound(file, winsound.SND_ASYNC)` works without installing anything; `root.bell()` beeps anywhere.
+see: tk.sound
+```py norun
+import tkinter as tk
+import pygame
+
+pygame.mixer.init()
+HIT = pygame.mixer.Sound("hit.wav")          # load once
+pygame.mixer.music.load("music.ogg")
+pygame.mixer.music.play(-1)                  # loop background music
+
+root = tk.Tk()
+tk.Button(root, text="Hit!", command=HIT.play).pack(padx=40, pady=30)
+root.protocol("WM_DELETE_WINDOW", lambda: (pygame.mixer.quit(), root.destroy()))
+root.mainloop()
+```

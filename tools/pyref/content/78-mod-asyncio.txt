@@ -1,0 +1,230 @@
+# mod-async | asyncio | Coroutines, running tasks together, timeouts, queues, async iteration, mixing with blocking code | modules
+
+@@ mod.asyncio.basics
+Q: How do I get started with asyncio (async def, await, asyncio.run)?
+aka: asyncio basics, async def, await, asyncio run, coroutine, event loop, async tutorial
+A: Write `async def` functions and `await` other async things inside them; start everything with `asyncio.run(main())`. While one coroutine awaits (network, sleep), others run, all in one thread.
+see: py.kw.async-await, mod.asyncio.gather
+```py
+import asyncio
+
+async def greet(name, delay):
+    await asyncio.sleep(delay)
+    print("hello", name)
+    return len(name)
+
+async def main():
+    n = await greet("Ada", 0.01)           # one at a time
+    print("returned", n)
+
+asyncio.run(main())
+```
+```text
+hello Ada
+returned 3
+```
+
+@@ mod.asyncio.gather
+Q: How do I run several async tasks at the same time (gather, create_task, TaskGroup)?
+aka: asyncio gather, create_task, taskgroup, run concurrently, parallel coroutines, async multiple requests
+A: `await asyncio.gather(a(), b(), c())` runs them together and returns results in order. `asyncio.create_task(coro)` starts one in the background. Python 3.11+ `async with asyncio.TaskGroup() as tg:` cancels the others if one fails.
+see: mod.asyncio.basics
+```py
+import asyncio, time
+
+async def job(name, secs):
+    await asyncio.sleep(secs)
+    return f"{name}:{secs}"
+
+async def main():
+    t = time.perf_counter()
+    print(await asyncio.gather(job("a", 0.1), job("b", 0.1), job("c", 0.1)))
+    async with asyncio.TaskGroup() as tg:
+        t1 = tg.create_task(job("x", 0.05))
+        t2 = tg.create_task(job("y", 0.02))
+    print(t1.result(), t2.result(), time.perf_counter() - t < 0.3)
+
+asyncio.run(main())
+```
+```text
+['a:0.1', 'b:0.1', 'c:0.1']
+x:0.05 y:0.02 True
+```
+
+@@ mod.asyncio.timeout
+Q: How do I add a timeout to an async operation?
+aka: asyncio timeout, wait_for, async timeout, cancel after seconds, asyncio.timeout
+A: `await asyncio.wait_for(coro, timeout=2)` or (3.11+) `async with asyncio.timeout(2):`. Both raise `TimeoutError` and cancel the slow work.
+see: py.exc.timeout
+```py
+import asyncio
+
+async def slow():
+    await asyncio.sleep(10)
+    return "done"
+
+async def main():
+    try:
+        await asyncio.wait_for(slow(), timeout=0.05)
+    except TimeoutError:
+        print("wait_for timed out")
+    try:
+        async with asyncio.timeout(0.05):
+            await slow()
+    except TimeoutError:
+        print("timeout block timed out")
+
+asyncio.run(main())
+```
+```text
+wait_for timed out
+timeout block timed out
+```
+
+@@ mod.asyncio.queue
+Q: How do I build async producers and consumers (asyncio.Queue)?
+aka: asyncio queue, async worker pool, async producer consumer, limit concurrency asyncio, semaphore
+A: `asyncio.Queue` works like `queue.Queue` with `await q.put(x)` / `await q.get()`. To limit how many things run at once, use `asyncio.Semaphore(n)` with `async with sem:`.
+see: mod.queue.producer-consumer
+```py
+import asyncio
+
+async def worker(name, q, out):
+    while True:
+        n = await q.get()
+        await asyncio.sleep(0.01)
+        out.append(n * 10)
+        q.task_done()
+
+async def main():
+    q, out = asyncio.Queue(), []
+    workers = [asyncio.create_task(worker(i, q, out)) for i in range(3)]
+    for n in range(6):
+        await q.put(n)
+    await q.join()
+    for w in workers:
+        w.cancel()
+    print(sorted(out))
+
+    sem = asyncio.Semaphore(2)
+    running = []
+    async def limited(i):
+        async with sem:
+            running.append(i)
+            await asyncio.sleep(0.01)
+    await asyncio.gather(*(limited(i) for i in range(5)))
+    print(len(running))
+
+asyncio.run(main())
+```
+```text
+[0, 10, 20, 30, 40, 50]
+5
+```
+
+@@ mod.asyncio.blocking
+Q: How do I call slow normal (blocking) code from async code without freezing everything?
+aka: asyncio to_thread, run blocking in executor, time.sleep in async, requests in asyncio, blocking call async
+A: A normal blocking call (like `time.sleep` or `requests.get`) stops the whole event loop. Run it in a thread with `await asyncio.to_thread(func, args)`. And inside async code use `await asyncio.sleep`, never `time.sleep`.
+see: mod.asyncio.basics
+```py
+import asyncio, time
+
+def blocking_io(n):
+    time.sleep(0.1)                  # e.g. a library without async support
+    return n * 2
+
+async def main():
+    start = time.perf_counter()
+    results = await asyncio.gather(*(asyncio.to_thread(blocking_io, i) for i in range(5)))
+    print(results, time.perf_counter() - start < 0.4)
+
+asyncio.run(main())
+```
+```text
+[0, 2, 4, 6, 8] True
+```
+
+@@ mod.asyncio.async-for
+Q: What are async for, async with and async generators?
+aka: async for, async with, async generator, async iterator, aiter, asynchronous context manager
+A: `async for` loops over an **async iterator** (one that awaits between items, e.g. a stream); an `async def` with `yield` makes one. `async with` uses an async context manager (setup/cleanup that awaits, e.g. network sessions).
+see: py.bi.aiter-anext
+```py
+import asyncio
+from contextlib import asynccontextmanager
+
+async def ticker(n):
+    for i in range(n):
+        await asyncio.sleep(0.01)
+        yield i
+
+@asynccontextmanager
+async def connection(name):
+    print("open", name)
+    try:
+        yield name.upper()
+    finally:
+        print("close", name)
+
+async def main():
+    async with connection("db") as conn:
+        async for i in ticker(3):
+            print(conn, i)
+
+asyncio.run(main())
+```
+```text
+open db
+DB 0
+DB 1
+DB 2
+close db
+```
+
+@@ mod.asyncio.http
+Q: How do I make many web requests at once with asyncio (aiohttp, httpx)?
+aka: aiohttp, async http requests, httpx async, concurrent requests, async download many urls
+A: The standard library has no async HTTP client; install `aiohttp` or `httpx`. Share one session, start the requests with `gather`, and limit concurrency with a Semaphore.
+see: mod.asyncio.queue
+```py norun
+import asyncio
+import aiohttp                         # pip install aiohttp
+
+URLS = ["https://www.python.org", "https://docs.python.org", "https://pypi.org"]
+
+async def fetch(session, url):
+    async with session.get(url, timeout=aiohttp.ClientTimeout(total=10)) as r:
+        return url, r.status, len(await r.text())
+
+async def main():
+    async with aiohttp.ClientSession() as session:
+        for url, status, size in await asyncio.gather(*(fetch(session, u) for u in URLS)):
+            print(status, size, url)
+
+asyncio.run(main())
+```
+
+@@ mod.asyncio.errors
+Q: RuntimeError: asyncio.run() cannot be called from a running event loop / coroutine was never awaited
+aka: asyncio run cannot be called from running event loop, coroutine was never awaited, jupyter asyncio, RuntimeWarning coroutine never awaited
+err: asyncio.run() cannot be called from a running event loop|coroutine '*' was never awaited
+A: "never awaited": you called an `async def` function without `await` (it just made a coroutine object). "cannot be called from a running event loop": you're already inside a loop (e.g. Jupyter); there use `await main()` directly instead of `asyncio.run`.
+see: mod.asyncio.basics
+```py
+import asyncio
+
+async def get_value():
+    return 42
+
+async def main():
+    coro = get_value()
+    print(type(coro).__name__)        # forgot await: just a coroutine object
+    print(await coro)                 # await it to get the value
+
+asyncio.run(main())
+```
+```text
+coroutine
+42
+```

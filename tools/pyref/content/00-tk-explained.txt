@@ -1,0 +1,727 @@
+# tk-zero | tkinter explained from zero | What every word in a tkinter program means: imports, root, Tk(), mainloop, widgets, parents, options, pack, constants, callbacks, events, classes | tkinter
+
+@@ tk.z.import-star
+Q: What does `from tkinter import *` mean and do?
+aka: from tkinter import *, from tkinter import star, import star, import *, what is import *, star import, wildcard import, from tkinter import all, what does the star mean in import
+A: It copies **every public name** from the `tkinter` module straight into your program, so you can write `Tk()`, `Button(...)`, `Label(...)`, `END`, `LEFT` without any prefix. It brings in 131 names: all the widget classes, the variable classes, and constants like `END`, `BOTH`, `N`. It does **not** bring in the sub-modules `ttk`, `messagebox`, `filedialog`... and it can silently overwrite names you already had (like Pillow's `Image`).
+see: tk.z.import-as, tk.z.import-compare, tk.z.star-clash, tk.import-style
+```py
+from tkinter import *          # "*" means "everything public in tkinter"
+
+root = Tk()                    # no "tkinter." or "tk." needed
+Label(root, text="Hello").pack(side=LEFT, padx=10)
+Button(root, text="Quit", command=root.destroy).pack(side=LEFT)
+root.mainloop()
+```
+What actually happened, step by step:
+1. Python finds and loads the `tkinter` module (once per program).
+2. It reads the module's list of public names (its `__all__` list, or every name not starting with `_`).
+3. It creates a variable with each of those names **in your file**, pointing at the same object: your `Button` *is* `tkinter.Button`.
+```py
+ns = {}
+exec("from tkinter import *", ns)          # do the star import into an empty dictionary
+names = sorted(n for n in ns if not n.startswith("__"))
+print(len(names), "names")
+print([n for n in names if n[0].isupper() and not n.isupper()][:12])   # classes
+print([n for n in names if n.isupper()][:16])                           # constants
+print("ttk" in ns, "messagebox" in ns)                                  # sub-modules are NOT included
+```
+```text
+131 names
+['BaseWidget', 'BitmapImage', 'BooleanVar', 'Button', 'CallWrapper', 'Canvas', 'Checkbutton', 'DoubleVar', 'Entry', 'Event', 'EventType', 'Frame']
+['ACTIVE', 'ALL', 'ANCHOR', 'ARC', 'BASELINE', 'BEVEL', 'BOTH', 'BOTTOM', 'BROWSE', 'BUTT', 'CASCADE', 'CENTER', 'CHAR', 'CHECKBUTTON', 'CHORD', 'COMMAND']
+False False
+```
+
+@@ tk.z.import-as
+Q: What does `import tkinter as tk` mean, and why do examples write `tk.Button`?
+aka: import tkinter as tk, what is tk., tk dot, why tk.Button, import as, alias import, tk prefix
+A: `import tkinter` loads the module and gives you **one** name, `tkinter`; `as tk` renames that name to the shorter `tk`. Everything inside is then reached with a dot: `tk.Button`, `tk.Label`, `tk.END`. The dot means "the `Button` that lives inside `tk`". It's the style most guides recommend because you can always see where a name comes from.
+see: tk.z.import-star, tk.z.import-compare, py.z.dot
+```py
+import tkinter as tk          # tk is now another name for the tkinter module
+
+print(tk.__name__)            # the module's real name
+print(tk.Button)              # the Button class inside it
+root = tk.Tk()
+tk.Label(root, text="tk.Label means: the Label from tkinter").pack(padx=20, pady=20)
+root.mainloop()
+```
+```text
+tkinter
+<class 'tkinter.Button'>
+```
+
+@@ tk.z.import-compare
+Q: What's the difference between `import tkinter`, `import tkinter as tk`, `from tkinter import *` and `from tkinter import Button`?
+aka: import styles, ways to import tkinter, import vs from import, which import should i use, import tkinter vs from tkinter
+A: They all load the same module; they differ only in **which names you get**. `import tkinter` → one name `tkinter` (write `tkinter.Button`). `import tkinter as tk` → one name `tk` (write `tk.Button`). `from tkinter import Button, Label` → only those names (write `Button`). `from tkinter import *` → all 131 names (write `Button`). The first three are clear about where names come from; the star import is quick for tiny scripts but can hide clashes.
+see: tk.z.import-star, tk.z.import-as, py.import
+```py
+import tkinter
+import tkinter as tk
+from tkinter import Button, END
+from tkinter import *
+
+print(tkinter.Button is tk.Button is Button)     # all the very same class
+print(END, tk.END, tkinter.END)                  # the constant END is just the text "end"
+```
+```text
+True
+end end end
+```
+Rule of thumb: **`import X` gives you the name X; `from X import Y` gives you the name Y; `as Z` renames it to Z.**
+
+@@ tk.z.star-clash
+Q: Why is `from tkinter import *` called bad practice? (name clashes)
+aka: import star bad practice, star import problems, Image clash pil tkinter, name clash import, wildcard import bad, from PIL import Image tkinter
+A: Because it creates 131 names you didn't ask for, and a later import with the same name **silently replaces** an earlier one. The classic bug: `from PIL import Image` then `from tkinter import *` → tkinter's `Image` replaces Pillow's, and `Image.open(...)` breaks. It also hides where `Button` came from (tk or ttk?), which confuses readers and editors.
+see: tk.z.import-star, tk.pillow
+```py
+from PIL import Image
+print(Image.__name__)          # PIL.Image (Pillow) ...
+from tkinter import *
+print(Image)                   # ...now replaced by tkinter's Image class!
+```
+```text
+PIL.Image
+<class 'tkinter.Image'>
+```
+Fix: `import tkinter as tk` (or import Pillow **after** the star import, or `from PIL import Image as PILImage`).
+
+@@ tk.z.star-ttk
+Q: I used `from tkinter import *` and `from tkinter.ttk import *`. Which Button am I using?
+aka: from tkinter.ttk import *, ttk star import, which button tk or ttk, ttk overrides tk widgets, both star imports
+A: The **last** import wins for each name. `from tkinter.ttk import *` after `from tkinter import *` replaces `Button`, `Label`, `Entry`, `Frame`, `Checkbutton`, `Scale`, `Scrollbar`... with ttk versions (which don't accept `bg`/`fg`), while `Text`, `Canvas`, `Listbox`, `Tk` stay classic. Many tutorials do this on purpose; just be aware of it.
+see: tk.ttk-vs-tk, tk.err2.ttk-option
+```py
+from tkinter import *
+print(Button.__module__)            # tkinter
+from tkinter.ttk import *
+print(Button.__module__, Canvas.__module__, Text.__module__)
+```
+```text
+tkinter
+tkinter.ttk tkinter tkinter
+```
+
+@@ tk.z.star-convert
+Q: How do I change code from `from tkinter import *` style to `import tkinter as tk` style (or back)?
+aka: convert import star to tk, rewrite tkinter imports, tk prefix everywhere, change import style
+A: Replace the import line, then put `tk.` in front of every tkinter name: classes (`Tk`, `Button`, `Label`, `StringVar`...) and constants (`END`, `LEFT`, `BOTH`...). Constants can also become plain strings: `END` → `"end"`, `LEFT` → `"left"`. Names that came from `messagebox`/`ttk` were never part of the star import, so they stay as they are.
+see: tk.z.constants
+```py
+# Before:
+#   from tkinter import *
+#   root = Tk()
+#   e = Entry(root); e.pack(side=LEFT, fill=BOTH)
+#   e.insert(END, "hi")
+# After:
+import tkinter as tk
+root = tk.Tk()
+e = tk.Entry(root); e.pack(side=tk.LEFT, fill=tk.BOTH)
+e.insert(tk.END, "hi")           # or: e.insert("end", "hi")
+print(e.get())
+root.mainloop()
+```
+```text
+hi
+```
+
+@@ tk.z.what-is-tkinter
+Q: What is tkinter (and what are Tcl and Tk)?
+aka: what is tkinter, tcl tk, what is tk, tkinter meaning, how tkinter works, tkinter vs tk, toolkit
+A: **Tk** is a toolkit for drawing windows, buttons and text fields; it's written for a language called **Tcl**. **tkinter** ("Tk interface") is the Python module that lets Python talk to Tcl/Tk. Every time you make a widget, tkinter quietly sends a Tcl command. It comes with Python, so there's nothing to install on Windows or macOS.
+see: tk.tk-version, tk.install
+```py
+import tkinter as tk
+root = tk.Tk()
+print("Tk version:", tk.TkVersion, "Tcl version:", tk.TclVersion)
+print(root.tk.eval("expr {6 * 7}"))      # you can even run Tcl directly
+b = tk.Button(root, text="Hi")
+print(str(b))                            # the Tcl name tkinter gave this button
+root.mainloop()
+```
+```text
+Tk version: 9.0 Tcl version: 9.0
+42
+.!button
+```
+
+@@ tk.z.root
+Q: What is `root` and what does `root = tk.Tk()` do?
+aka: what does tk.Tk() do, what does Tk() do, tk.Tk(), what is root, root = tk.Tk(), what does Tk() do, Tk object, main window, root window, window variable name, master window
+A: `tk.Tk()` creates the **main window** of your program (and starts Tcl/Tk behind it). `root` is just a variable name people usually choose for it; you could call it `window` or `app`. Every other widget goes inside it (directly or inside frames in it). A program should have **one** `Tk()`; extra windows are `tk.Toplevel()`.
+see: tk.first-window, tk.z.mainloop, tk.toplevel
+```py
+import tkinter as tk
+
+window = tk.Tk()                 # same thing, different variable name
+window.title("My first window")
+window.geometry("300x150")
+print(type(window).__name__, str(window))     # the root window's Tcl name is "."
+window.mainloop()
+```
+```text
+Tk .
+```
+
+@@ tk.z.mainloop
+Q: What does `mainloop()` do and why is it the last line?
+aka: what is mainloop, root.mainloop, why mainloop at the end, event loop, without mainloop, mainloop meaning, window closes immediately
+A: `mainloop()` starts the **event loop**: it waits for things to happen (clicks, key presses, timers, redraws) and calls your functions when they do. It keeps running until the window is closed, so code after it only runs at the end. Without it, a script reaches the end and the window disappears straight away.
+see: tk.mainloop, tk.err2.two-mainloops, tk.z.callback
+```py
+import tkinter as tk
+
+root = tk.Tk()
+tk.Button(root, text="Click", command=lambda: print("clicked (called by mainloop)")).pack(padx=40, pady=20)
+print("1. building the window")
+root.after(100, lambda: root.nametowidget(".!button").invoke())   # pretend a click
+root.mainloop()                       # 2. waits here, handling events...
+print("3. window closed, mainloop returned")
+```
+```text
+1. building the window
+clicked (called by mainloop)
+3. window closed, mainloop returned
+```
+
+@@ tk.z.widget
+Q: What is a widget?
+aka: what is a widget, widget meaning, tkinter widgets list, gui element, control, component
+A: A widget is any piece of the window: a Button, Label, Entry (one-line text box), Text (big text box), Canvas (drawing area), Frame (an invisible box that groups other widgets), Listbox, Checkbutton, Scale (slider)... In code, each widget is an **object**: you create it from a class (`tk.Button(...)`) and then call its methods (`.pack()`, `.config()`).
+see: tk.ref.common-options, ttk.overview
+```py
+import tkinter as tk
+
+root = tk.Tk()
+widgets = [tk.Label(root, text="Label"), tk.Button(root, text="Button"), tk.Entry(root),
+           tk.Checkbutton(root, text="Checkbutton"), tk.Scale(root, orient="horizontal"),
+           tk.Listbox(root, height=2), tk.Canvas(root, width=80, height=30, bg="white")]
+for w in widgets:
+    w.pack(pady=2)
+print([type(w).__name__ for w in widgets])
+root.mainloop()
+```
+```text
+['Label', 'Button', 'Entry', 'Checkbutton', 'Scale', 'Listbox', 'Canvas']
+```
+
+@@ tk.z.parent
+Q: What is the first argument when making a widget, like `root` in `tk.Button(root, ...)`? (parent / master)
+aka: master argument, parent widget, first argument widget, what is master, button root, widget inside frame, master=
+A: It's the widget's **parent** (tkinter calls it `master`): the window or frame it lives inside. `tk.Button(root)` puts the button in the main window; `tk.Button(frame)` puts it inside `frame`. If you leave it out, tkinter uses the main window, which is why widgets sometimes "appear in the wrong window".
+see: tk.z.widget, tk.frame, tk.err2.cant-pack-inside
+```py
+import tkinter as tk
+
+root = tk.Tk()
+box = tk.Frame(root, bg="#ffd27a", padx=10, pady=10)
+box.pack(padx=10, pady=10)
+inside = tk.Button(box, text="I'm inside the frame")         # parent = box
+outside = tk.Button(root, text="I'm in the window")          # parent = root
+inside.pack(); outside.pack(pady=(0, 10))
+print(inside.master is box, outside.master is root, str(inside))
+root.mainloop()
+```
+```text
+True True .!frame.!button
+```
+
+@@ tk.z.options
+Q: What are `text=`, `bg=`, `font=` and the other things inside the brackets? (widget options)
+aka: widget options, keyword arguments widget, text= meaning, what are options, configure options, arguments in button
+A: They're **keyword arguments** that set the widget's options: `text="Hi"` sets the text, `bg="yellow"` the background, `font=("Arial", 14)` the font, `width=10` the width. You can set them when creating the widget, change them later with `widget.config(text="new")` (or `widget["text"] = "new"`), and read them with `widget.cget("text")`.
+see: tk.ref.common-options, tk.widget-config-get, py.default-args
+```py
+import tkinter as tk
+
+root = tk.Tk()
+label = tk.Label(root, text="Hello", bg="yellow", fg="black", font=("Arial", 16), padx=10)
+label.pack(padx=20, pady=20)
+label.config(text="Changed!")          # change one later
+label["bg"] = "lightblue"              # another way to change
+print(label.cget("text"), label["bg"], label["padx"])
+root.mainloop()
+```
+```text
+Changed! lightblue 10
+```
+
+@@ tk.z.pack-why
+Q: Why doesn't my widget show up? What do `.pack()`, `.grid()` and `.place()` do?
+aka: widget not showing, button not appearing, why pack, what does pack do, geometry manager, widget invisible
+A: Creating a widget only **makes** it; it isn't shown until you tell a **geometry manager** where to put it: `.pack()` (stack them), `.grid(row=, column=)` (a table), or `.place(x=, y=)` (exact spot). Use one of them on every widget (and only one kind per container).
+see: tk.layout-which, tk.err.pack-grid
+```py
+import tkinter as tk
+
+root = tk.Tk()
+a = tk.Label(root, text="I was packed")
+b = tk.Label(root, text="I was never packed, so you can't see me")
+a.pack(padx=20, pady=20)
+root.update()
+print(a.winfo_ismapped(), b.winfo_ismapped())      # 1 = on screen, 0 = not
+root.mainloop()
+```
+```text
+1 0
+```
+
+@@ tk.z.pack-none
+Q: Why can't I write `b = tk.Button(...).pack()` and then use `b`?
+aka: pack returns none, variable is none after pack, button.pack() none, chaining pack, NoneType has no attribute
+A: `.pack()` (and `.grid()`, `.place()`) **returns `None`**. So `b = tk.Button(...).pack()` stores `None` in `b`, not the button. Create and store the widget first, then pack it on the next line.
+see: tk.err.none-grid
+```py
+import tkinter as tk
+
+root = tk.Tk()
+bad = tk.Button(root, text="A").pack()
+good = tk.Button(root, text="B")
+good.pack()
+print(bad, type(good).__name__)
+root.mainloop()
+```
+```text
+None Button
+```
+
+@@ tk.z.constants
+Q: What are END, LEFT, BOTH, N, E, W, S (and why do some examples use "end" in quotes)?
+aka: tkinter constants, tk.END, END meaning, LEFT RIGHT TOP BOTTOM, BOTH X Y, N S E W, NSEW, constants list, tk.END vs "end", INSERT, DISABLED NORMAL
+A: They're named **strings** that tkinter provides so typos become errors: `tk.END == "end"`, `tk.LEFT == "left"`, `tk.BOTH == "both"`, `tk.N == "n"`, `tk.NSEW == "nsew"`, `tk.DISABLED == "disabled"`. Writing the string yourself is exactly the same. Directions are compass points: N = top, S = bottom, E = right, W = left.
+see: tk.z.star-convert, tk.grid-sticky
+```py
+import tkinter as tk
+for name in ("END", "INSERT", "LEFT", "RIGHT", "TOP", "BOTTOM", "BOTH", "X", "Y", "N", "NE", "NSEW",
+             "CENTER", "DISABLED", "NORMAL", "HORIZONTAL", "VERTICAL", "WORD", "SUNKEN", "RAISED"):
+    print(f"tk.{name:<10} = {getattr(tk, name)!r}")
+```
+```text
+tk.END        = 'end'
+tk.INSERT     = 'insert'
+tk.LEFT       = 'left'
+tk.RIGHT      = 'right'
+tk.TOP        = 'top'
+tk.BOTTOM     = 'bottom'
+tk.BOTH       = 'both'
+tk.X          = 'x'
+tk.Y          = 'y'
+tk.N          = 'n'
+tk.NE         = 'ne'
+tk.NSEW       = 'nsew'
+tk.CENTER     = 'center'
+tk.DISABLED   = 'disabled'
+tk.NORMAL     = 'normal'
+tk.HORIZONTAL = 'horizontal'
+tk.VERTICAL   = 'vertical'
+tk.WORD       = 'word'
+tk.SUNKEN     = 'sunken'
+tk.RAISED     = 'raised'
+```
+
+@@ tk.z.end-index
+Q: What do `0`, `END`, `"1.0"` and `"end-1c"` mean in `insert` and `delete`?
+aka: entry delete 0 end, text get 1.0 end, what is 1.0, end-1c meaning, insert end, index meaning tkinter
+A: They're **positions**. In an Entry, positions are character numbers: `0` = before the first character, `END` = after the last; `e.delete(0, END)` = delete everything. In a Text box, positions are `"line.column"` strings: `"1.0"` = line 1, column 0 (the very start); `"end"` = after the end, which includes an extra newline the Text always keeps, so `"end-1c"` ("end minus one character") is the real end of your text.
+see: tk.text-indexes, tk.entry-set
+```py
+import tkinter as tk
+
+root = tk.Tk()
+e = tk.Entry(root); e.pack()
+e.insert(0, "world"); e.insert(0, "hello ")        # 0 = at the start
+e.insert(tk.END, "!")                              # END = at the end
+print(repr(e.get()))
+t = tk.Text(root, height=3); t.pack()
+t.insert("1.0", "first line\nsecond")
+print(repr(t.get("1.0", "end")), repr(t.get("1.0", "end-1c")))
+print(repr(t.get("2.0", "2.3")))                   # line 2, columns 0 to 3
+root.mainloop()
+```
+```text
+'hello world!'
+'first line\nsecond\n' 'first line\nsecond'
+'sec'
+```
+
+@@ tk.z.callback
+Q: What is `command=`, and why do I write `command=my_function` without brackets?
+aka: command option, callback, why no brackets command, command= meaning, button function, function reference, passing a function
+A: `command=` takes a **function** for the button to call later, when it's clicked. `my_function` (no brackets) hands over the function itself; `my_function()` would call it **right now** and hand over whatever it returns (usually `None`). A function you hand over to be called later is called a **callback**.
+see: tk.err.command-runs-early, tk.button-args, py.fn.callbacks
+```py
+import tkinter as tk
+
+def say_hi():
+    print("hi")
+
+root = tk.Tk()
+right = tk.Button(root, text="Right", command=say_hi)       # the function itself
+wrong = tk.Button(root, text="Wrong", command=say_hi())     # runs now! prints "hi", command becomes None
+right.pack(); wrong.pack()
+print("now clicking Right:")
+right.invoke()
+root.mainloop()
+```
+```text
+hi
+now clicking Right:
+hi
+```
+
+@@ tk.z.lambda
+Q: Why do tkinter examples use `lambda` in `command=`?
+aka: lambda in tkinter, command lambda, lambda button arguments, why lambda, command with parameters
+A: Because `command=` calls the function with **no arguments**. If your function needs arguments, wrap the call in a tiny function made with `lambda`: `command=lambda: add(5)` means "when clicked, call `add(5)`". `lambda: ...` is just a one-line, nameless `def`.
+see: tk.button-args, tk.lambda-loop, py.lambda
+```py
+import tkinter as tk
+
+total = 0
+def add(n):
+    global total
+    total += n
+    print("total", total)
+
+root = tk.Tk()
+plus5 = tk.Button(root, text="+5", command=lambda: add(5))
+def plus10_function():              # the same thing as a lambda, written as a def
+    add(10)
+plus10 = tk.Button(root, text="+10", command=plus10_function)
+plus5.pack(); plus10.pack()
+plus5.invoke(); plus10.invoke()
+root.mainloop()
+```
+```text
+total 5
+total 15
+```
+
+@@ tk.z.event
+Q: What is `event` in `def on_key(event):`, and why does bind need it but command doesn't?
+aka: event parameter, what is event, event object, bind event argument, def f(event), event.x, why event
+A: `bind` calls your function with **one argument**: an Event object describing what happened (`event.x`, `event.y` for the mouse, `event.keysym` / `event.char` for keys, `event.widget` for which widget). `command=` calls with **no** arguments. A function used for both can take `event=None`.
+see: tk.bind, tk.event-attrs, tk.err.bind-missing-arg
+```py
+import tkinter as tk
+
+root = tk.Tk()
+def shout(event=None):               # works with bind (event given) and command (no event)
+    where = f"key {event.keysym}" if event else "button"
+    print("called from", where)
+
+b = tk.Button(root, text="Go", command=shout); b.pack(padx=40, pady=20)
+root.bind("<Return>", shout)
+b.invoke()
+root.focus_force(); root.update()
+root.event_generate("<Return>")
+root.mainloop()
+```
+```text
+called from button
+called from key Return
+```
+
+@@ tk.z.bind-string
+Q: What do the strings in `bind("<Button-1>", ...)` mean?
+aka: bind string meaning, <Button-1>, <Key>, <Return>, event pattern, angle brackets bind, event sequence
+A: It's an **event pattern** in angle brackets: `<modifier-type-detail>`. Type = what happened (`Button` = mouse press, `Key`, `Motion`, `Enter`...); detail = which button or key (`1` left mouse, `Return`, `a`); modifiers in front (`Control-`, `Shift-`, `Double-`). So `<Control-s>` = Ctrl+S, `<Double-Button-1>` = double left click, `<B1-Motion>` = moving with the left button held.
+see: tk.event-names, tk.ev.types, tk.ev.keysym-table
+```py
+import tkinter as tk
+
+root = tk.Tk()
+patterns = {"<Button-1>": "left click", "<Button-3>": "right click (Windows/Linux)", "<Double-Button-1>": "double click",
+            "<B1-Motion>": "drag with left button", "<Key>": "any key", "<Return>": "Enter key",
+            "<Control-s>": "Ctrl+S", "<Enter>": "mouse moves onto the widget", "<Configure>": "resized or moved"}
+for p in patterns:
+    root.bind(p, lambda e: None)                # all valid patterns
+for p, meaning in patterns.items():
+    print(f"{p:<18} {meaning}")
+root.mainloop()
+```
+```text
+<Button-1>         left click
+<Button-3>         right click (Windows/Linux)
+<Double-Button-1>  double click
+<B1-Motion>        drag with left button
+<Key>              any key
+<Return>           Enter key
+<Control-s>        Ctrl+S
+<Enter>            mouse moves onto the widget
+<Configure>        resized or moved
+```
+
+@@ tk.z.walkthrough
+Q: Explain a whole small tkinter program line by line
+aka: explain tkinter code, line by line tkinter, tkinter program explained, beginner tkinter walkthrough, what does each line do
+A: Every tkinter program has the same five parts: **import**, **make the window**, **make widgets** (with a parent and options), **place them** (pack/grid/place), **write the functions they call**, and finally **start the event loop**. The comments below explain each line.
+see: tk.z.root, tk.z.mainloop, tk.z.callback
+```py
+import tkinter as tk                       # load tkinter, call it "tk"
+
+def greet():                               # a function the button will call
+    name = entry.get()                     # read what's typed in the entry box
+    result.config(text=f"Hello, {name}!")  # change the result label's text
+
+root = tk.Tk()                             # make the main window
+root.title("Greeter")                      # text in the window's title bar
+
+prompt = tk.Label(root, text="Your name:") # a label inside root
+prompt.pack(padx=20, pady=(20, 5))         # show it, with some space around
+
+entry = tk.Entry(root)                     # a one-line text box
+entry.pack(padx=20)                        # show it
+
+button = tk.Button(root, text="Greet", command=greet)   # call greet() when clicked
+button.pack(pady=10)                       # show it
+
+result = tk.Label(root, text="")           # empty for now; greet() fills it
+result.pack(pady=(0, 20))
+
+entry.insert(0, "Ada"); button.invoke()    # (only for this demo: type + click)
+print(result.cget("text"))
+root.mainloop()                            # start reacting to clicks and keys
+```
+```text
+Hello, Ada!
+```
+
+@@ tk.z.class-walkthrough
+Q: Explain a class-based tkinter app line by line (class App(tk.Tk), self, super().__init__)
+aka: tkinter class explained, class App(tk.Tk), self in tkinter, super().__init__ tkinter, why self.label, object oriented tkinter explained, self.master
+A: `class App(tk.Tk)` makes a new kind of window that **is a** Tk window plus your own stuff. `__init__` runs when you create it; `super().__init__()` lets the original Tk set itself up first. `self` is the window object itself, so `tk.Label(self, ...)` puts the label in it, and storing widgets as `self.something` lets other methods use them. Methods are functions that belong to the app (`self.greet`).
+see: tk.app-class, py.class-basics, py.inheritance
+```py
+import tkinter as tk
+
+class App(tk.Tk):                          # App is a Tk window with extras
+    def __init__(self):                    # runs when we write App()
+        super().__init__()                 # let tk.Tk build the real window first
+        self.title("Counter")              # self = this window
+        self.count = 0                     # data stored on the window object
+        self.label = tk.Label(self, text="0", font=("Arial", 24))   # parent = self
+        self.label.pack(padx=40, pady=10)
+        tk.Button(self, text="+1", command=self.add).pack(pady=(0, 10))  # self.add = this window's add method
+
+    def add(self):                         # a method: gets the window as self
+        self.count += 1
+        self.label.config(text=self.count)
+
+app = App()                                # create the window (runs __init__)
+app.add(); app.add()
+print(app.count, app.label.cget("text"))
+app.mainloop()                             # same mainloop as always
+```
+```text
+2 2
+```
+
+@@ tk.z.frame-class
+Q: What does `class App(tk.Frame)` with `def __init__(self, master)` mean (the other common class style)?
+aka: class App(tk.Frame), master=None, self.master, tk.Frame.__init__(self, master), frame subclass explained, Application(Frame)
+A: Here your app is a **Frame** (a box of widgets) instead of the whole window. `master` is the window to put it in, passed when you create it: `App(root)`. Older code calls `tk.Frame.__init__(self, master)`, which does the same as `super().__init__(master)`. `self.master` then refers to that window.
+see: tk.z.class-walkthrough
+```py
+import tkinter as tk
+
+class App(tk.Frame):
+    def __init__(self, master=None):
+        super().__init__(master)          # same as: tk.Frame.__init__(self, master)
+        self.master = master
+        self.pack(padx=20, pady=20)       # the frame packs itself into the window
+        tk.Button(self, text="Quit", command=self.master.destroy).pack()
+
+root = tk.Tk()
+app = App(master=root)
+print(app.master is root, str(app))
+app.mainloop()                            # a Frame can call mainloop too (same loop)
+```
+```text
+True .!app
+```
+
+@@ tk.z.methods-vs-options
+Q: What's the difference between an option (text=) and a method (.pack(), .config())?
+aka: options vs methods, what is a method tkinter, dot methods widget, widget functions, attribute vs method
+A: **Options** are settings stored in the widget (text, colour, size), set with `name=value`. **Methods** are actions the widget can do, called with a dot and brackets: `.pack()` shows it, `.config()` changes options, `.destroy()` removes it, `.bind()` connects events, `.get()` reads an Entry. Every widget has dozens of methods; see the widget reference sections.
+see: tk.ref.widget-methods, tk.z.options
+```py
+import tkinter as tk
+
+root = tk.Tk()
+e = tk.Entry(root, width=20, fg="blue")   # options: width, fg
+e.pack()                                  # method: show it
+e.insert(0, "typed")                      # method: put text in
+print(e.get(), e.cget("width"))           # methods: read text, read an option
+print(len(e.keys()), "options;", len([m for m in dir(e) if not m.startswith("_")]), "methods and attributes")
+root.mainloop()
+```
+
+@@ tk.z.submodules
+Q: What are tkinter's sub-modules (ttk, messagebox, filedialog, simpledialog, colorchooser, font, scrolledtext...)?
+aka: tkinter submodules, tkinter.ttk, tkinter.messagebox, tkinter.filedialog, tkinter.font, tkinter.scrolledtext, tkinter.simpledialog, tkinter.colorchooser, tkinter.dnd, tkinter.constants
+A: Separate files inside the tkinter package, each imported on its own: `ttk` (themed widgets), `messagebox` (popups), `filedialog` (open/save pickers), `simpledialog` (ask for a value), `colorchooser` (colour picker), `font` (font objects), `scrolledtext` (Text with a scrollbar built in), `dnd` (simple drag and drop inside one app), `constants` (the `END`, `LEFT`... names).
+see: tk.import-style, tk.z.scrolledtext
+```py
+import tkinter as tk
+from tkinter import ttk, messagebox, filedialog, simpledialog, colorchooser, font, scrolledtext, dnd, constants
+for m in (ttk, messagebox, filedialog, simpledialog, colorchooser, font, scrolledtext, dnd, constants):
+    print(m.__name__)
+```
+```text
+tkinter.ttk
+tkinter.messagebox
+tkinter.filedialog
+tkinter.simpledialog
+tkinter.colorchooser
+tkinter.font
+tkinter.scrolledtext
+tkinter.dnd
+tkinter.constants
+```
+
+@@ tk.z.scrolledtext
+Q: What is ScrolledText (a Text box with a scrollbar already attached)?
+aka: scrolledtext, ScrolledText, text with scrollbar easy, tkinter.scrolledtext, scrolling text box
+A: `tkinter.scrolledtext.ScrolledText` is a Text widget that comes with a vertical scrollbar, so you don't have to connect one yourself. It has all the normal Text methods.
+see: tk.text-scroll
+```py
+import tkinter as tk
+from tkinter import scrolledtext
+
+root = tk.Tk()
+st = scrolledtext.ScrolledText(root, width=40, height=6, wrap="word")
+st.pack(padx=10, pady=10, fill="both", expand=True)
+st.insert("end", "\n".join(f"Line {i}" for i in range(1, 51)))
+st.see("end")
+print(st.get("50.0", "50.end"))
+root.mainloop()
+```
+```text
+Line 50
+```
+
+@@ tk.z.order
+Q: In what order should I write a tkinter program? (Why does my function say a widget is not defined?)
+aka: order of tkinter code, function before widget, name is not defined tkinter, where to put functions, program structure beginner
+A: Python runs top to bottom, but functions only run when **called**. So: imports → functions → window → widgets → `mainloop()`. A function may mention a widget created further down, as long as the widget exists by the time the function is **called** (e.g. when the button is clicked).
+see: tk.z.walkthrough, py.err.nameerror
+```py
+import tkinter as tk
+
+def clear():                     # defined first; uses `entry`, which doesn't exist YET
+    entry.delete(0, tk.END)      # fine: this line only runs when the button is clicked
+
+root = tk.Tk()
+entry = tk.Entry(root); entry.pack()     # now `entry` exists
+entry.insert(0, "some text")
+tk.Button(root, text="Clear", command=clear).pack()
+clear()                                  # calling it now works
+print(repr(entry.get()))
+root.mainloop()
+```
+```text
+''
+```
+
+@@ tk.z.geometry-string
+Q: What does the string in `root.geometry("400x300+50+100")` mean?
+aka: geometry string meaning, 400x300, +50+100, window size string, geometry format explained
+A: `"WIDTHxHEIGHT+X+Y"`: width and height in pixels (lowercase `x` between), then optionally the position of the window's top-left corner from the screen's left (`+X`) and top (`+Y`) edges. You can give only the size (`"400x300"`) or only the position (`"+50+100"`).
+see: tk.geometry, tk.err2.geometry
+```py
+import tkinter as tk
+
+root = tk.Tk()
+root.geometry("400x300+50+100")
+root.update()
+print(root.winfo_width(), root.winfo_height(), root.geometry())
+root.mainloop()
+```
+
+@@ tk.z.colors-fonts
+Q: How do I write colours and fonts in tkinter (what formats are allowed)?
+aka: colour format, color names, hex colour, rgb tkinter, font tuple explained, font string, font family size style
+A: Colours: a name (`"red"`, `"light blue"`, `"SystemButtonFace"`) or hex `"#rrggbb"` (`"#ff8800"`). Fonts: a tuple `(family, size, style...)` like `("Arial", 14, "bold")`, a string `"Arial 14 bold"`, or a `tkinter.font.Font` object. Use `{}` around family names with spaces in the string form: `"{Courier New} 12"`.
+see: tk.colors, tk.label-font, tk.font-object
+```py
+import tkinter as tk
+
+root = tk.Tk()
+tk.Label(root, text="name + tuple", fg="dark green", font=("Arial", 14, "bold")).pack()
+tk.Label(root, text="hex + string", fg="#c23b22", font="Helvetica 12 italic").pack()
+tk.Label(root, text="spaces in family", font="{Courier New} 12").pack()
+print(root.winfo_rgb("dark green"))         # how tkinter reads a colour (16-bit values)
+root.mainloop()
+```
+```text
+(0, 25700, 0)
+```
+
+@@ tk.z.glossary
+Q: tkinter glossary: what do all these words mean (widget, master, geometry manager, callback, event, binding...)?
+aka: tkinter glossary, tkinter terms, tkinter vocabulary, tkinter words meaning, definitions tkinter
+A: The words you'll meet in every tkinter guide, in one place.
+see: tk.z.widget, tk.z.parent, tk.z.mainloop
+- **Tk / root**: the main window object; one per program.
+- **Toplevel**: an extra window.
+- **widget**: any element of the window (Button, Label, Entry...).
+- **master / parent**: the widget another widget lives inside (first argument).
+- **child**: a widget inside another; `winfo_children()` lists them.
+- **option**: a setting of a widget (`text`, `bg`, `width`), set with `name=value` or `config()`.
+- **geometry manager**: what positions widgets: `pack`, `grid` or `place`.
+- **event**: something that happened (click, key, resize).
+- **binding**: connecting an event pattern to a function with `bind`.
+- **callback / handler**: a function given to tkinter to call later (`command=`, `bind`, `after`).
+- **event loop / mainloop**: the waiting loop that runs callbacks.
+- **Variable (StringVar...)**: a value widgets can share and watch.
+- **ttk**: the themed versions of widgets.
+- **Tcl/Tk**: the toolkit tkinter talks to.
+- **index**: a position in an Entry/Text/Listbox (`0`, `END`, `"1.0"`).
+- **tag**: a name for a group of canvas items or a range of Text.
+- **focus**: which widget receives the keyboard.
+- **modal**: a window that blocks the others until closed.
+- **widget path**: tkinter's internal name like `.!frame.!button`.
+```py
+import tkinter as tk
+root = tk.Tk()
+f = tk.Frame(root); f.pack()
+b = tk.Button(f, text="child"); b.pack()
+print(b.master is f, f.winfo_children() == [b], str(b), b.winfo_toplevel() is root)
+root.mainloop()
+```
+```text
+True True .!frame.!button True
+```
+
+@@ tk.z.first-steps
+Q: I'm completely new to tkinter. What should I learn first, in what order?
+aka: learn tkinter, tkinter for beginners, where to start tkinter, tkinter roadmap, tkinter learning path
+A: 1) A window and a label. 2) Buttons and `command=`. 3) Entry boxes: reading and changing text. 4) Layout with `pack`, then `grid`. 5) Frames for grouping. 6) `bind` for keys and mouse. 7) `after` for timers and animation (never `time.sleep`). 8) Canvas for drawing and games. 9) Organise bigger programs with a class. Each step has its own section in this book; the example below combines steps 1–4.
+see: tk.z.walkthrough, tk.layout-which, tk.after-not-sleep
+```py
+import tkinter as tk
+
+root = tk.Tk()
+root.title("Step 1 to 4")
+tk.Label(root, text="Celsius:").grid(row=0, column=0, padx=8, pady=8)
+c = tk.Entry(root, width=8); c.grid(row=0, column=1)
+out = tk.Label(root, text="")
+out.grid(row=1, column=0, columnspan=3, pady=(0, 8))
+def convert():
+    try:
+        out.config(text=f"{float(c.get()) * 9 / 5 + 32:.1f} °F")
+    except ValueError:
+        out.config(text="Please type a number")
+tk.Button(root, text="Convert", command=convert).grid(row=0, column=2, padx=8)
+c.insert(0, "100"); convert()
+print(out.cget("text"))
+root.mainloop()
+```
+```text
+212.0 °F
+```

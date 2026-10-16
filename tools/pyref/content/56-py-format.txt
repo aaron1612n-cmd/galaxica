@@ -1,0 +1,353 @@
+# py-fmt | Formatting and string methods | The full f-string format spec, every str method, bytes and encodings, Unicode, natural sorting | python
+
+@@ py.fmt.spec
+Q: What can go after the colon in an f-string ({x:>10,.2f})? The full format spec
+aka: format spec mini language, f-string formatting codes, width alignment fill, format specifier, :>10, :^, :<, :0>5, :+, :e, :%, :x, :b, f-string format spec, format spec
+A: The order is `{value:[fill][align][sign][#][0][width][,][.precision][type]}`. Align `<` left, `>` right, `^` centre (fill = any character before it). Sign `+` shows +/-. `,` or `_` groups thousands. `.2f` 2 decimals; types: `f` fixed, `e` scientific, `%` percent, `g` general, `d` integer, `b` binary, `x` hex, `o` octal, `c` character, `s` string.
+see: py.fstring, py.format-decimals
+```py
+n = 1234.5678
+print(f"[{n:10.2f}] [{n:<10.1f}] [{n:^12,.2f}] [{n:*>12.0f}]")
+print(f"[{42:05d}] [{42:+d}] [{-42:+d}] [{42:#x}] [{42:#b}] [{65:c}]")
+print(f"[{0.256:.1%}] [{n:e}] [{n:.3g}] [{1234567:_d}]")
+print(f"[{'hi':>6}] [{'hi':-^8}] [{'long text':.4}]")
+```
+```text
+[   1234.57] [1234.6    ] [  1,234.57  ] [********1235]
+[00042] [+42] [-42] [0x2a] [0b101010] [A]
+[25.6%] [1.234568e+03] [1.23e+03] [1_234_567]
+[    hi] [---hi---] [long]
+```
+
+@@ py.fmt.debug
+Q: What does {x=} in an f-string do, and what are !r and !s?
+aka: f-string equals, self documenting f-string, debug print variable, !r repr, !s str, !a ascii
+A: `f"{x=}"` prints the expression and its value (great for debugging). `!r` uses `repr()` (shows quotes on strings), `!s` uses `str()`, `!a` uses `ascii()`.
+see: py.debug-print, py.str-method
+```py
+name, items = "Ada", [1, 2]
+print(f"{name=} {items=} {len(items) * 2=}")
+print(f"{name!r} {name!s} {'café'!a}")
+print(f"{name = }")
+```
+```text
+name='Ada' items=[1, 2] len(items) * 2=4
+'Ada' Ada 'caf\xe9'
+name = 'Ada'
+```
+
+@@ py.fmt.nested
+Q: How do I use a variable for the width or precision in an f-string?
+aka: dynamic width f-string, variable precision, nested f-string format, width from variable, f-string braces escape
+A: Put a field inside the spec: `f"{value:>{width}.{decimals}f}"`. To print a literal brace, double it: `{{` and `}}`.
+see: py.fmt.spec
+```py
+rows = [("apple", 1.5), ("watermelon", 3.25)]
+w = max(len(name) for name, _ in rows)
+for name, price in rows:
+    print(f"{name:<{w}} | {price:>{6}.{2}f}")
+print(f"{{literal braces}} and {w}")
+```
+```text
+apple      |   1.50
+watermelon |   3.25
+{literal braces} and 10
+```
+
+@@ py.fmt.dates
+Q: How do I format dates and times inside an f-string?
+aka: f-string date format, datetime in f-string, strftime f-string, format date inline
+A: Datetime objects accept `strftime` codes directly after the colon: `f"{now:%Y-%m-%d %H:%M}"`.
+see: py.datetime-format
+```py
+from datetime import datetime
+
+d = datetime(2026, 3, 9, 14, 5)
+print(f"{d:%Y-%m-%d} | {d:%d/%m/%y} | {d:%A %d %B} | {d:%I:%M %p} | {d:%H:%M}")
+```
+```text
+2026-03-09 | 09/03/26 | Monday 09 March | 02:05 PM | 14:05
+```
+
+@@ py.fmt.table
+Q: How do I print a neat table with lined-up columns?
+aka: print table, align columns, tabular output, format table console, column width
+A: Work out each column's width from the longest value, then format every row with `<` for text and `>` for numbers. (The `tabulate` package does it for you.)
+see: py.str-pad, py.fmt.nested
+```py
+rows = [("Name", "Qty", "Price"), ("Apple", 3, 0.5), ("Watermelon", 1, 3.2), ("Fig", 12, 0.25)]
+widths = [max(len(str(r[i])) for r in rows) for i in range(3)]
+for i, (name, qty, price) in enumerate(rows):
+    if i == 0:
+        print(f"{name:<{widths[0]}}  {qty:>{widths[1]}}  {price:>6}")
+        print("-" * (widths[0] + widths[1] + 10))
+    else:
+        print(f"{name:<{widths[0]}}  {qty:>{widths[1]}}  {price:>6.2f}")
+```
+```text
+Name        Qty   Price
+-----------------------
+Apple         3    0.50
+Watermelon    1    3.20
+Fig          12    0.25
+```
+
+@@ py.fmt.old-styles
+Q: What are % formatting and .format(), and should I use them?
+aka: percent formatting, %s %d, str.format, format method, old style formatting, printf style
+A: Older ways that still work: `"%s is %d" % (name, age)` and `"{} is {}".format(name, age)`. f-strings are clearer for most code; `.format()` is still handy when the template is stored separately (e.g. in a file or translation).
+see: py.fstring
+```py
+name, age = "Ada", 36
+print("%s is %d years old" % (name, age))
+print("%-6s|%6.2f|%03d" % ("ab", 3.14159, 7))
+print("{} is {} years old".format(name, age))
+print("{0} {1} {0}".format("ho", "hey"))
+TEMPLATE = "Dear {name}, your order {order:05d} has shipped."
+print(TEMPLATE.format(name="Sam", order=42))
+```
+```text
+Ada is 36 years old
+ab    |  3.14|007
+Ada is 36 years old
+ho hey ho
+Dear Sam, your order 00042 has shipped.
+```
+
+@@ py.fmt.methods-all
+Q: What string methods are there? (complete list with examples)
+aka: string methods list, all str methods, str functions, string functions python, cheat sheet string methods
+A: Case: `lower upper title capitalize swapcase casefold`. Search: `find rfind index rindex count startswith endswith in`. Test: `isdigit isnumeric isdecimal isalpha isalnum isspace isupper islower istitle isidentifier isprintable isascii`. Change: `replace strip lstrip rstrip removeprefix removesuffix`. Split/join: `split rsplit splitlines partition rpartition join`. Pad: `center ljust rjust zfill expandtabs`. Other: `format format_map translate maketrans encode`.
+see: py.str-basics, py.str-checks
+```py
+s = "  Hello, World  "
+print(s.strip().lower(), "|", s.strip().swapcase(), "|", "hello world".title())
+print("banana".find("an"), "banana".rfind("an"), "banana".count("a"))
+print("report.pdf".endswith((".pdf", ".doc")), "v1.2".removeprefix("v"))
+print("a,b,,c".split(","), "a b  c".split(), "k=v=w".partition("="))
+print("7".zfill(3), "hi".center(8, "*"), "hi".ljust(5, ".") + "|")
+print("line1\nline2\r\n".splitlines(), "-".join(["2026", "01", "31"]))
+print("Straße".casefold() == "strasse", "x_1".isidentifier(), "Ⅷ".isnumeric(), "Ⅷ".isdigit())
+```
+```text
+hello, world | hELLO, wORLD | Hello World
+1 3 3
+True 1.2
+['a', 'b', '', 'c'] ['a', 'b', 'c'] ('k', '=', 'v=w')
+007 ***hi*** hi...|
+['line1', 'line2'] 2026-01-31
+True True True False
+```
+
+@@ py.fmt.translate
+Q: How do I replace or remove many different characters at once (translate, maketrans)?
+aka: translate maketrans, remove punctuation, replace several characters, character mapping, strip accents
+A: `str.maketrans("abc", "xyz", "remove")` builds a table (swap a→x, b→y, c→z, delete the characters in the third argument); `text.translate(table)` applies it in one fast pass.
+see: py.replace
+```py
+import string
+
+text = "Hello, World! It's 2026..."
+no_punct = text.translate(str.maketrans("", "", string.punctuation))
+print(no_punct)
+leet = str.maketrans("aeio", "4310")
+print("python is cool".translate(leet))
+```
+```text
+Hello World Its 2026
+pyth0n 1s c00l
+```
+
+@@ py.fmt.accents
+Q: How do I remove accents from letters (café → cafe) or compare Unicode text properly?
+aka: remove accents, strip diacritics, unicodedata normalize, unicode normalization, compare unicode strings, NFC NFD
+A: `unicodedata.normalize("NFD", s)` splits letters from their accents; drop the accent marks (category `Mn`). Normalise both sides with `"NFC"` before comparing text that may have been typed differently.
+see: py.fmt.translate
+```py
+import unicodedata
+
+def strip_accents(s):
+    return "".join(c for c in unicodedata.normalize("NFD", s) if unicodedata.category(c) != "Mn")
+
+print(strip_accents("Crème brûlée à Zürich"))
+a, b = "café", "cafe\u0301"                       # same look, different code points
+print(a == b, unicodedata.normalize("NFC", a) == unicodedata.normalize("NFC", b))
+print(unicodedata.name("é"), len(a), len(b))
+```
+```text
+Creme brulee a Zurich
+False True
+LATIN SMALL LETTER E WITH ACUTE 4 5
+```
+
+@@ py.fmt.bytes
+Q: What's the difference between str and bytes (encode, decode, b"...")?
+aka: bytes vs str, encode decode, utf-8, b prefix, convert bytes to string, bytes to str, UnicodeDecodeError bytes
+A: `str` is text (Unicode characters); `bytes` is raw data (numbers 0–255), what files and networks really carry. `text.encode("utf-8")` turns text into bytes; `data.decode("utf-8")` turns bytes back into text.
+see: py.encoding
+```py
+text = "naïve ☕"
+data = text.encode("utf-8")
+print(data, len(text), len(data))
+print(data.decode("utf-8"))
+print(b"abc"[0], list(b"hi"), bytes([72, 105]))
+print("☕".encode("utf-8").hex(" "))
+print(b"caf\xc3\xa9".decode("utf-8"), b"caf\xe9".decode("latin-1"))
+```
+```text
+b'na\xc3\xafve \xe2\x98\x95' 7 10
+naïve ☕
+97 [104, 105] b'Hi'
+e2 98 95
+café café
+```
+
+@@ py.fmt.natural-sort
+Q: How do I sort strings with numbers naturally (file2 before file10)?
+aka: natural sort, sort numbers in strings, human sort, file10 before file2, alphanumeric sort
+A: Split each string into text and number parts and sort by those, turning the number parts into ints.
+see: py.it.reversed-sorted
+```py
+import re
+
+def natural_key(s):
+    return [int(part) if part.isdigit() else part.lower() for part in re.split(r"(\d+)", s)]
+
+files = ["file10.txt", "file2.txt", "File1.txt", "file1b.txt"]
+print(sorted(files))
+print(sorted(files, key=natural_key))
+```
+```text
+['File1.txt', 'file10.txt', 'file1b.txt', 'file2.txt']
+['File1.txt', 'file1b.txt', 'file2.txt', 'file10.txt']
+```
+
+@@ py.fmt.template
+Q: How do I fill in a text template safely (string.Template, format_map with missing keys)?
+aka: string template, safe substitute, template with placeholders, mail merge, format_map default missing key
+A: `string.Template("Hi $name")` with `.safe_substitute(...)` leaves unknown placeholders alone, which is safer for templates written by users. With `format_map`, give a dict subclass with `__missing__` to fill gaps.
+see: py.fmt.old-styles
+```py
+from string import Template
+
+t = Template("Hi $name, your code is $code. ${count}x reminders.")
+print(t.safe_substitute(name="Sam", count=3))
+
+class Default(dict):
+    def __missing__(self, key):
+        return f"<{key}?>"
+print("{greeting}, {name}!".format_map(Default(greeting="Hello")))
+```
+```text
+Hi Sam, your code is $code. 3x reminders.
+Hello, <name?>!
+```
+
+@@ py.fmt.wrap
+Q: How do I wrap long text to a width, indent it, or shorten it with "..."?
+aka: textwrap, wrap text, fill text width, indent text, dedent, shorten text ellipsis, truncate string
+A: `textwrap.fill(text, width=40)` wraps; `textwrap.indent(text, "> ")` prefixes lines; `textwrap.dedent` removes common leading spaces; `textwrap.shorten(text, 30)` cuts at a word and adds `[...]`. For a plain cut: `s[:27] + "..."`.
+see: mod.textwrap
+```py
+import textwrap
+
+text = "Python is a programming language that lets you work quickly and integrate systems more effectively."
+print(textwrap.fill(text, width=34))
+print(textwrap.shorten(text, width=40, placeholder="…"))
+print(textwrap.indent("one\ntwo", "> "))
+print(textwrap.dedent("""
+    indented
+      more
+""").strip("\n"))
+```
+```text
+Python is a programming language
+that lets you work quickly and
+integrate systems more
+effectively.
+Python is a programming language that…
+> one
+> two
+indented
+  more
+```
+
+@@ py.fmt.case-convert
+Q: How do I convert between camelCase, snake_case and kebab-case?
+aka: camelcase to snake case, snake case to camel case, convert naming style, kebab case, PascalCase
+A: A small regular expression inserts `_` before capitals; splitting on `_` and capitalising goes the other way.
+see: py.regex
+```py
+import re
+
+def to_snake(name):
+    return re.sub(r"(?<!^)(?=[A-Z])", "_", name).lower()
+
+def to_camel(name, pascal=False):
+    parts = name.replace("-", "_").split("_")
+    first = parts[0].capitalize() if pascal else parts[0]
+    return first + "".join(p.capitalize() for p in parts[1:])
+
+print(to_snake("userAccountId"), to_snake("HTTPServer"))
+print(to_camel("user_account_id"), to_camel("max-speed", pascal=True))
+```
+```text
+user_account_id h_t_t_p_server
+userAccountId MaxSpeed
+```
+
+@@ py.fmt.char-counts
+Q: How do I count each character, vowels, or the most common letter in a string?
+aka: count characters, count vowels, most common letter, letter frequency, character frequency
+A: `collections.Counter(text)` counts every character; `.most_common(n)` gives the top ones. For vowels, count with a generator: `sum(c in "aeiou" for c in text.lower())`.
+see: py.counter, py.count-words
+```py
+from collections import Counter
+
+text = "Mississippi river"
+letters = Counter(c for c in text.lower() if c.isalpha())
+print(letters.most_common(3))
+print(sum(c in "aeiou" for c in text.lower()))
+```
+```text
+[('i', 5), ('s', 4), ('p', 2)]
+6
+```
+
+@@ py.fmt.multiline-fstring
+Q: How do I write a long f-string over several lines?
+aka: multiline f-string, long string split lines, implicit string concatenation, triple quoted f-string
+A: Either a triple-quoted f-string (keeps the line breaks), or several strings inside brackets, which Python joins automatically (no line breaks added).
+see: py.multiline-str
+```py
+name, total = "Ada", 42.5
+receipt = f"""Customer: {name}
+Total:    £{total:.2f}"""
+print(receipt)
+msg = (f"Hello {name}, "
+       f"your total is £{total:.2f}. "
+       "Thanks!")
+print(msg)
+```
+```text
+Customer: Ada
+Total:    £42.50
+Hello Ada, your total is £42.50. Thanks!
+```
+
+@@ py.fmt.repr-escape
+Q: How do I see hidden characters in a string (tabs, newlines, spaces at the end)?
+aka: show hidden characters, invisible characters, repr string, trailing spaces, \t \n visible, why strings not equal
+A: Print `repr(s)` (or use `{s!r}`): it shows quotes, `\n`, `\t`, and spaces at the ends, which explains most "these look the same but aren't equal" bugs.
+see: py.strip, py.fmt.debug
+```py
+a = "hello\n"
+b = "hello "
+c = "hello\t"
+print(a == "hello", repr(a), repr(b), repr(c))
+print(repr("café"), ascii("café"), repr("\u200b"))
+```
+```text
+False 'hello\n' 'hello ' 'hello\t'
+'café' 'caf\xe9' '\u200b'
+```

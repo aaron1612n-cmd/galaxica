@@ -1,0 +1,589 @@
+# tk-form | Forms and validation | Validating input, error messages, tab order, masks, autocomplete, building forms | tkinter
+
+@@ tk.form.validate-codes
+Q: What do %P, %S, %d and the other validatecommand codes mean?
+aka: validatecommand substitution, %P %S %d %i %s %v %V %W, validate codes, register validate, validate key focusout all
+A: Register your function with `root.register(func)`, then pass the codes you want: `%P` = text **after** the change, `%s` = text before, `%S` = the text being inserted/deleted, `%d` = action (`1` insert, `0` delete, `-1` other), `%i` = index, `%V` = why validation ran (`key`, `focusin`, `focusout`, `forced`), `%W` = widget name. `validate=` chooses when: `"key"`, `"focusout"`, `"focus"`, `"all"`.
+see: tk.entry-validate
+```py
+import tkinter as tk
+
+root = tk.Tk()
+def check(action, index, after, before, inserted, reason, widget):
+    print(f"action={action} index={index} after={after!r} before={before!r} inserted={inserted!r} reason={reason}")
+    return True                    # allow every change
+
+vcmd = (root.register(check), "%d", "%i", "%P", "%s", "%S", "%V", "%W")
+e = tk.Entry(root, validate="all", validatecommand=vcmd)
+e.pack(padx=20, pady=20)
+e.insert(0, "hi")
+root.mainloop()
+```
+
+@@ tk.form.int-range
+Q: How do I only allow a whole number in a range (e.g. 0–120) while typing?
+aka: entry integer range, age entry validate, number between, digit only entry max value, validate int
+A: In the `%P` validator, allow empty text (so the user can delete), otherwise require `isdigit()` and the value within range.
+see: tk.entry-validate, tk.form.validate-codes
+```py
+import tkinter as tk
+
+root = tk.Tk()
+def ok_age(text):
+    if text == "":
+        return True
+    return text.isdigit() and int(text) <= 120
+
+vcmd = (root.register(ok_age), "%P")
+age = tk.Entry(root, validate="key", validatecommand=vcmd, width=6)
+age.pack(padx=40, pady=20)
+age.insert(0, "42")
+age.insert("end", "9")          # 429 refused
+print(age.get())                # 42
+root.mainloop()
+```
+```text
+42
+```
+
+@@ tk.form.float
+Q: How do I only allow decimal numbers (like 3.14 or -2.5) in an Entry?
+aka: float entry, decimal only entry, allow minus and dot, validate float, price input
+A: Allow text that is a valid float **or** a valid start of one (`""`, `"-"`, `"."`, `"-."`). Use a regular expression for that.
+see: tk.form.int-range
+```py
+import re
+import tkinter as tk
+
+root = tk.Tk()
+pattern = re.compile(r"-?\d*\.?\d*$")         # partial numbers allowed while typing
+vcmd = (root.register(lambda p: bool(pattern.match(p))), "%P")
+price = tk.Entry(root, validate="key", validatecommand=vcmd)
+price.pack(padx=40, pady=20)
+for ch in "-12.5x.3":
+    price.insert("end", ch)
+print(price.get())              # -12.53  (x and the second dot refused)
+root.mainloop()
+```
+
+@@ tk.form.error-label
+Q: How do I show an error message next to a field when the input is wrong?
+aka: validation error message, red error text under field, form error label, highlight invalid field, field turns red
+A: Put an empty Label under (or beside) each field. When checking, set its text and turn the Entry's border red (`highlightbackground`, `highlightthickness`); clear both when it's fixed.
+see: tk.form.submit
+```py
+import re
+import tkinter as tk
+
+root = tk.Tk()
+f = tk.Frame(root, padx=16, pady=12); f.pack()
+tk.Label(f, text="Email").grid(row=0, column=0, sticky="w")
+email = tk.Entry(f, width=28, highlightthickness=2, highlightbackground="#ccc", highlightcolor="#3b6ea8")
+email.grid(row=1, column=0)
+err = tk.Label(f, text="", fg="#c23b22", font=("Arial", 9))
+err.grid(row=2, column=0, sticky="w")
+
+def check(event=None):
+    ok = re.fullmatch(r"[^@\s]+@[^@\s]+\.\w+", email.get()) is not None
+    err.config(text="" if ok else "Please enter an email like name@example.com")
+    email.config(highlightbackground="#ccc" if ok else "#c23b22", highlightcolor="#3b6ea8" if ok else "#c23b22")
+    return ok
+
+email.bind("<FocusOut>", check)
+email.bind("<KeyRelease>", lambda e: err.cget("text") and check())
+email.insert(0, "not-an-email")
+check()
+print(err.cget("text"))
+root.mainloop()
+```
+
+@@ tk.form.submit
+Q: How do I build a complete form with labels, fields, validation and a Submit button?
+aka: registration form, form example, sign up form, contact form, collect form data, form submit validate all fields
+A: Keep each field in a dict, lay them out with `grid` (labels column 0, fields column 1), and on Submit validate every field, show errors, and only continue when all pass.
+see: tk.form.error-label, tk.widget-from-list
+```py
+import re
+import tkinter as tk
+from tkinter import ttk
+
+root = tk.Tk()
+root.title("Sign up")
+form = ttk.Frame(root, padding=16); form.pack()
+RULES = {
+    "Name":     lambda v: len(v.strip()) >= 2 or "At least 2 letters",
+    "Email":    lambda v: bool(re.fullmatch(r"[^@\s]+@[^@\s]+\.\w+", v)) or "Not a valid email",
+    "Age":      lambda v: (v.isdigit() and 13 <= int(v) <= 120) or "Age 13 to 120",
+    "Password": lambda v: len(v) >= 8 or "8 characters or more",
+}
+fields, errors = {}, {}
+for r, name in enumerate(RULES):
+    ttk.Label(form, text=name).grid(row=r * 2, column=0, sticky="w", pady=(6, 0))
+    e = ttk.Entry(form, width=28, show="•" if name == "Password" else "")
+    e.grid(row=r * 2, column=1, pady=(6, 0))
+    msg = ttk.Label(form, text="", foreground="#c23b22", font=("Arial", 9))
+    msg.grid(row=r * 2 + 1, column=1, sticky="w")
+    fields[name], errors[name] = e, msg
+
+def submit():
+    good = True
+    for name, rule in RULES.items():
+        result = rule(fields[name].get())
+        errors[name].config(text="" if result is True else result)
+        good = good and result is True
+    if good:
+        data = {n: e.get() for n, e in fields.items() if n != "Password"}
+        print("saved", data)
+
+ttk.Button(form, text="Sign up", command=submit).grid(row=99, column=1, sticky="e", pady=(10, 0))
+root.bind("<Return>", lambda e: submit())
+for n, v in {"Name": "Ada", "Email": "ada@example.com", "Age": "36", "Password": "analytical"}.items():
+    fields[n].insert(0, v)
+submit()
+root.mainloop()
+```
+
+@@ tk.form.tab-order
+Q: How do I change the Tab key order between fields, or skip a widget?
+aka: tab order, focus order, tabbing order, skip widget tab, takefocus, next field focus, lift tab order
+A: Tab follows the **stacking order** of siblings, which is the order they were created. Change it by creating them in a different order, or with `w.lift(other)`, which moves `w` to just after `other`. Skip a widget with `takefocus=False`.
+see: tk.focus, tk.form.enter-next
+```py
+import tkinter as tk
+
+root = tk.Tk()
+a = tk.Entry(root, name="a"); b = tk.Entry(root, name="b"); c = tk.Entry(root, name="c")
+help_btn = tk.Button(root, text="?", takefocus=False)       # Tab skips this
+for w in (a, help_btn, b, c):
+    w.pack(padx=20, pady=3)
+b.lift(c)       # b now comes after c, so Tab goes a -> c -> b
+a.focus_set()
+root.update()   # focus order only counts widgets that are on screen
+print(a.tk_focusNext(), a.tk_focusNext().tk_focusNext())
+root.mainloop()
+```
+```text
+.c .b
+```
+
+@@ tk.form.enter-next
+Q: How do I make Enter move to the next field (and submit on the last one)?
+aka: enter next field, return key focus next, enter moves down, tk_focusNext, form keyboard navigation
+A: Bind `<Return>` on every entry to `event.widget.tk_focusNext().focus_set()`; bind the last one to your submit function instead.
+see: tk.form.tab-order
+```py
+import tkinter as tk
+
+root = tk.Tk()
+entries = [tk.Entry(root, width=24) for _ in range(3)]
+for e in entries:
+    e.pack(padx=20, pady=3)
+
+def next_field(event):
+    event.widget.tk_focusNext().focus_set()
+    return "break"
+
+for e in entries[:-1]:
+    e.bind("<Return>", next_field)
+entries[-1].bind("<Return>", lambda e: print("submit", [x.get() for x in entries]))
+entries[0].focus_set()
+root.mainloop()
+```
+
+@@ tk.form.mask
+Q: How do I format input automatically as the user types (phone number, date, card number)?
+aka: input mask, phone format, date mask, auto format entry, credit card spaces, auto insert dashes
+A: On `<KeyRelease>`, keep only the digits, rebuild the formatted string, put it back, and move the cursor to the end.
+see: tk.form.validate-codes
+```py
+import tkinter as tk
+
+def fmt_phone(d):            # 0123456789 -> (012) 345-6789
+    d = d[:10]
+    if len(d) > 6: return f"({d[:3]}) {d[3:6]}-{d[6:]}"
+    if len(d) > 3: return f"({d[:3]}) {d[3:]}"
+    return d
+
+def fmt_date(d):             # 25122026 -> 25/12/2026
+    d = d[:8]
+    return "/".join(p for p in (d[:2], d[2:4], d[4:]) if p)
+
+root = tk.Tk()
+def masked(fmt):
+    e = tk.Entry(root, width=20, font=("Consolas", 13))
+    def again(event):
+        if event.keysym in ("Left", "Right", "Tab"):
+            return
+        digits = "".join(ch for ch in e.get() if ch.isdigit())
+        e.delete(0, "end"); e.insert(0, fmt(digits)); e.icursor("end")
+    e.bind("<KeyRelease>", again)
+    e.pack(padx=20, pady=5)
+    return e
+
+phone, date = masked(fmt_phone), masked(fmt_date)
+print(fmt_phone("0123456789"), fmt_date("25122026"))
+root.mainloop()
+```
+
+@@ tk.form.autocomplete
+Q: How do I make an Entry that suggests matches in a list below it as I type?
+aka: autocomplete entry, search suggestions listbox, entry with dropdown suggestions, live search list, typeahead
+A: Put a Listbox under the Entry; on each change show the items that start with (or contain) the text; arrow Down moves into the list, Enter or click picks.
+see: ttk.combobox-autocomplete, tk.tx.autocomplete
+```py
+import tkinter as tk
+
+COUNTRIES = ["Argentina", "Australia", "Austria", "Belgium", "Brazil", "Canada", "Chile", "China", "Denmark", "Egypt", "France", "Germany", "Ghana", "Greece", "India", "Ireland", "Italy", "Japan", "Kenya", "Mexico", "Nepal", "Norway", "Peru", "Spain", "Sweden"]
+root = tk.Tk()
+text = tk.StringVar()
+e = tk.Entry(root, textvariable=text, width=28, font=("Arial", 12)); e.pack(padx=20, pady=(20, 0))
+lb = tk.Listbox(root, width=28, height=6, font=("Arial", 12))
+
+def update(*_):
+    t = text.get().lower()
+    hits = [c for c in COUNTRIES if c.lower().startswith(t)] if t else []
+    lb.delete(0, "end")
+    for h in hits:
+        lb.insert("end", h)
+    if hits and hits != [text.get()]:
+        lb.pack(padx=20)
+    else:
+        lb.pack_forget()
+
+def pick(event=None):
+    if lb.curselection():
+        text.set(lb.get(lb.curselection()[0]))
+        lb.pack_forget(); e.icursor("end"); e.focus_set()
+
+def down(event):
+    if lb.size():
+        lb.focus_set(); lb.selection_set(0); lb.activate(0)
+
+text.trace_add("write", update)
+e.bind("<Down>", down)
+lb.bind("<Return>", pick); lb.bind("<ButtonRelease-1>", pick)
+text.set("Gr")
+print(lb.get(0, "end"))
+root.mainloop()
+```
+
+@@ tk.form.required
+Q: How do I disable the Submit button until all required fields are filled?
+aka: enable button when filled, required fields, submit disabled until valid, form complete check, live validation button
+A: Trace every field's StringVar; on any change, enable the button only if all are non-empty (and valid).
+see: tk.trace, tk.button-state
+```py
+import tkinter as tk
+
+root = tk.Tk()
+vars_ = [tk.StringVar() for _ in range(3)]
+for label, v in zip(("Name", "City", "Phone"), vars_):
+    tk.Label(root, text=label).pack(anchor="w", padx=20)
+    tk.Entry(root, textvariable=v).pack(padx=20, pady=(0, 6))
+send = tk.Button(root, text="Send", state="disabled")
+send.pack(pady=8)
+
+def refresh(*_):
+    send.config(state="normal" if all(v.get().strip() for v in vars_) else "disabled")
+
+for v in vars_:
+    v.trace_add("write", refresh)
+vars_[0].set("Ada"); vars_[1].set("London"); vars_[2].set("123")
+print(send.cget("state"))
+root.mainloop()
+```
+
+@@ tk.form.clear
+Q: How do I clear (reset) all the fields in a form?
+aka: reset form, clear all entries, clear fields button, empty all widgets, reset checkboxes
+A: Loop over the widgets: `delete(0, "end")` for Entries, `delete("1.0", "end")` for Text, `set(...)` for variables. Walking `winfo_children()` recursively catches everything in nested frames.
+see: tk.ref.widget-methods
+```py
+import tkinter as tk
+
+def clear(widget):
+    for w in widget.winfo_children():
+        if isinstance(w, tk.Entry):
+            w.delete(0, "end")
+        elif isinstance(w, tk.Text):
+            w.delete("1.0", "end")
+        clear(w)                  # look inside frames too
+
+root = tk.Tk()
+f = tk.Frame(root); f.pack(padx=20, pady=10)
+e = tk.Entry(f); e.pack(); e.insert(0, "something")
+t = tk.Text(f, height=3, width=20); t.pack(); t.insert("1.0", "notes")
+agree = tk.BooleanVar(value=True)
+tk.Checkbutton(f, text="Agree", variable=agree).pack()
+
+def reset():
+    clear(root)
+    agree.set(False)
+tk.Button(root, text="Clear", command=reset).pack(pady=6)
+reset()
+print(repr(e.get()), repr(t.get("1.0", "end-1c")), agree.get())
+root.mainloop()
+```
+
+@@ tk.form.date-input
+Q: How do I let the user enter a date (and check it's a real date)?
+aka: date input, date entry validate, choose date, day month year dropdown, is valid date, datetime strptime entry
+A: Three Spinboxes/Comboboxes (day, month, year) avoid typing errors; or one Entry checked with `datetime.strptime(text, "%d/%m/%Y")` inside `try`. For a calendar popup install `tkcalendar` (see the calendar answer).
+see: tk.calendar, py.datetime-format
+```py
+import calendar
+from datetime import date, datetime
+import tkinter as tk
+from tkinter import ttk
+
+root = tk.Tk()
+row = ttk.Frame(root, padding=16); row.pack()
+day = ttk.Spinbox(row, from_=1, to=31, width=4)
+month = ttk.Combobox(row, values=list(calendar.month_abbr)[1:], width=5, state="readonly")
+year = ttk.Spinbox(row, from_=1900, to=2100, width=6)
+for w in (day, month, year):
+    w.pack(side="left", padx=2)
+today = date.today()
+day.set(today.day); month.current(today.month - 1); year.set(today.year)
+
+def read_date():
+    try:
+        return date(int(year.get()), month.current() + 1, int(day.get()))
+    except ValueError as e:
+        print("not a real date:", e)
+
+print(read_date())
+day.set(31); month.current(1)            # 31 February
+read_date()
+
+def parse(text):
+    try:
+        return datetime.strptime(text, "%d/%m/%Y").date()
+    except ValueError:
+        return None
+print(parse("29/02/2024"), parse("29/02/2023"))
+root.mainloop()
+```
+
+@@ tk.form.password-strength
+Q: How do I show a password strength meter and a show/hide button?
+aka: password strength, show password checkbox, hide password toggle, eye button password, password meter
+A: Toggle the Entry's `show` option between `"•"` and `""`. For strength, score length and character kinds on each key release and colour a Progressbar or Canvas bar.
+see: tk.entry-password
+```py
+import re
+import tkinter as tk
+
+root = tk.Tk()
+pw = tk.Entry(root, show="•", width=26, font=("Arial", 12)); pw.pack(padx=20, pady=(20, 4))
+show = tk.BooleanVar()
+tk.Checkbutton(root, text="Show password", variable=show,
+               command=lambda: pw.config(show="" if show.get() else "•")).pack(anchor="w", padx=20)
+bar = tk.Canvas(root, width=240, height=8, bg="#eee", highlightthickness=0); bar.pack(padx=20, pady=6)
+label = tk.Label(root, text=""); label.pack(pady=(0, 16))
+
+def strength(event=None):
+    p = pw.get()
+    score = sum([len(p) >= 8, len(p) >= 12, bool(re.search(r"[a-z]", p)) and bool(re.search(r"[A-Z]", p)),
+                 bool(re.search(r"\d", p)), bool(re.search(r"[^\w]", p))])
+    names = ["Very weak", "Weak", "Fair", "Good", "Strong", "Very strong"]
+    colours = ["#c23b22", "#c23b22", "#e08a00", "#c9b200", "#4f9a3a", "#2e7d4f"]
+    bar.delete("all")
+    bar.create_rectangle(0, 0, 240 * score / 5, 8, fill=colours[score], outline="")
+    label.config(text=names[score], fg=colours[score])
+
+pw.bind("<KeyRelease>", strength)
+pw.insert(0, "Tr0ub4dor&3")
+strength()
+print(label.cget("text"))
+root.mainloop()
+```
+
+@@ tk.form.char-counter
+Q: How do I show "20 characters left" under a field and stop at the limit?
+aka: characters remaining, character counter entry, max length entry counter, tweet length counter
+A: Validate with `%P` to refuse text longer than the limit, and trace the variable to update a label.
+see: tk.entry-validate, tk.tx.max-length
+```py
+import tkinter as tk
+
+LIMIT = 20
+root = tk.Tk()
+v = tk.StringVar()
+vcmd = (root.register(lambda p: len(p) <= LIMIT), "%P")
+tk.Entry(root, textvariable=v, validate="key", validatecommand=vcmd, width=30).pack(padx=20, pady=(20, 2))
+left = tk.Label(root, anchor="e", fg="#888"); left.pack(fill="x", padx=20, pady=(0, 20))
+v.trace_add("write", lambda *a: left.config(text=f"{LIMIT - len(v.get())} left"))
+v.set("hello")
+print(left.cget("text"))
+root.mainloop()
+```
+
+@@ tk.form.scroll-long
+Q: My form is too tall for the window. How do I make it scroll (with the mouse wheel)?
+aka: long form scroll, scrollable form, form too big, many fields scroll, mousewheel scroll frame
+A: Put the form in a Frame inside a Canvas with a Scrollbar (a scrollable frame), and bind the mouse wheel to `canvas.yview_scroll`.
+see: tk.scroll-frame, tk.mousewheel
+```py
+import tkinter as tk
+
+root = tk.Tk()
+root.geometry("320x260")
+canvas = tk.Canvas(root, highlightthickness=0)
+sb = tk.Scrollbar(root, command=canvas.yview)
+canvas.config(yscrollcommand=sb.set)
+sb.pack(side="right", fill="y"); canvas.pack(side="left", fill="both", expand=True)
+form = tk.Frame(canvas)
+win = canvas.create_window(0, 0, window=form, anchor="nw")
+form.bind("<Configure>", lambda e: canvas.config(scrollregion=canvas.bbox("all")))
+canvas.bind("<Configure>", lambda e: canvas.itemconfig(win, width=e.width))
+
+for i in range(1, 26):
+    tk.Label(form, text=f"Question {i}").grid(row=i, column=0, sticky="w", padx=10, pady=3)
+    tk.Entry(form).grid(row=i, column=1, sticky="ew", padx=10)
+form.columnconfigure(1, weight=1)
+
+def wheel(e):
+    canvas.yview_scroll(-1 if (e.num == 4 or getattr(e, "delta", 0) > 0) else 1, "units")
+root.bind_all("<MouseWheel>", wheel)
+root.bind_all("<Button-4>", wheel); root.bind_all("<Button-5>", wheel)
+root.mainloop()
+```
+
+@@ tk.form.wizard
+Q: How do I make a step-by-step wizard (Next / Back pages)?
+aka: wizard, multi step form, next back buttons, setup wizard, steps form pages
+A: Stack one Frame per step in the same grid cell and `tkraise()` the current one; Back/Next change the index, and Next on the last step becomes Finish.
+see: tk.pages
+```py
+import tkinter as tk
+from tkinter import ttk
+
+root = tk.Tk()
+root.title("Setup")
+body = ttk.Frame(root, padding=16); body.pack(fill="both", expand=True)
+name, colour = tk.StringVar(), tk.StringVar(value="red")
+steps = []
+for build in (
+    lambda f: (ttk.Label(f, text="Step 1: your name").pack(anchor="w"), ttk.Entry(f, textvariable=name).pack(fill="x")),
+    lambda f: [ttk.Label(f, text="Step 2: favourite colour").pack(anchor="w")] + [ttk.Radiobutton(f, text=c, value=c, variable=colour).pack(anchor="w") for c in ("red", "green", "blue")],
+    lambda f: ttk.Label(f, text="Step 3: all done! Click Finish.").pack(anchor="w"),
+):
+    f = ttk.Frame(body); f.grid(row=0, column=0, sticky="nsew"); build(f); steps.append(f)
+
+nav = ttk.Frame(root, padding=(16, 0, 16, 16)); nav.pack(fill="x")
+back = ttk.Button(nav, text="Back"); nxt = ttk.Button(nav, text="Next")
+back.pack(side="left"); nxt.pack(side="right")
+i = [0]
+
+def show():
+    steps[i[0]].tkraise()
+    back.state(["disabled"] if i[0] == 0 else ["!disabled"])
+    nxt.config(text="Finish" if i[0] == len(steps) - 1 else "Next")
+
+def go(d):
+    if i[0] + d == len(steps):
+        print("finished:", name.get(), colour.get()); root.destroy(); return
+    i[0] = max(0, i[0] + d); show()
+
+back.config(command=lambda: go(-1)); nxt.config(command=lambda: go(1))
+show()
+root.mainloop()
+```
+
+@@ tk.form.focus-highlight
+Q: How do I highlight the field that has focus (change its colour)?
+aka: focus highlight, active field colour, highlightcolor, focusin focusout colour, current field border
+A: Classic Entry: `highlightthickness=2, highlightcolor="blue"` (colour when focused) and `highlightbackground` (when not). Or bind `<FocusIn>`/`<FocusOut>` and change `bg`.
+see: tk.focus
+```py
+import tkinter as tk
+
+root = tk.Tk()
+for _ in range(3):
+    e = tk.Entry(root, highlightthickness=2, highlightcolor="#c23b22", highlightbackground="#ddd", relief="flat")
+    e.pack(padx=20, pady=5, ipady=4)
+    e.bind("<FocusIn>", lambda ev: ev.widget.config(bg="#fff8e6"))
+    e.bind("<FocusOut>", lambda ev: ev.widget.config(bg="white"))
+root.mainloop()
+```
+
+@@ tk.form.select-on-focus
+Q: How do I select all the text when an Entry gets focus (or is clicked)?
+aka: select all on focus, select all on click entry, highlight entry text, ctrl a entry
+A: On `<FocusIn>`, call `select_range(0, "end")` (via `after_idle` so the click doesn't immediately unselect it). Ctrl+A: bind it to the same.
+see: tk.ref.entry
+```py
+import tkinter as tk
+
+root = tk.Tk()
+e = tk.Entry(root, width=24); e.pack(padx=20, pady=20)
+e.insert(0, "replace me")
+
+def select_all(event):
+    w = event.widget
+    w.after_idle(lambda: (w.select_range(0, "end"), w.icursor("end")))
+    return "break" if event.type == tk.EventType.KeyPress else None
+
+e.bind("<FocusIn>", select_all)
+e.bind("<Control-a>", select_all)
+e.focus_set()
+root.mainloop()
+```
+
+@@ tk.form.upper
+Q: How do I force typed text to uppercase (or strip spaces) automatically?
+aka: force uppercase entry, auto capitalize, convert input as typed, upper case textvariable
+A: Trace the StringVar and set it to the converted value when it differs (the check stops it looping forever).
+see: tk.trace
+```py
+import tkinter as tk
+
+root = tk.Tk()
+code = tk.StringVar()
+def upper(*_):
+    s = code.get()
+    if s != s.upper():
+        code.set(s.upper())
+code.trace_add("write", upper)
+e = tk.Entry(root, textvariable=code); e.pack(padx=20, pady=20)
+e.insert(0, "ab12cd")
+print(code.get())
+root.mainloop()
+```
+```text
+AB12CD
+```
+
+@@ tk.form.dict-out
+Q: How do I get all the form values as a dictionary (and fill a form from one)?
+aka: form to dict, get all values, load form from dict, edit record form, fill form with data
+A: Keep one variable per field in a dict keyed by field name. Reading is a dict comprehension; filling is a loop over `.set()`.
+see: tk.widget-from-list
+```py
+import tkinter as tk
+
+root = tk.Tk()
+SPEC = {"name": tk.StringVar, "age": tk.IntVar, "member": tk.BooleanVar}
+v = {k: cls() for k, cls in SPEC.items()}
+for k, var in v.items():
+    if isinstance(var, tk.BooleanVar):
+        tk.Checkbutton(root, text=k, variable=var).pack(anchor="w", padx=20)
+    else:
+        tk.Label(root, text=k).pack(anchor="w", padx=20)
+        tk.Entry(root, textvariable=var).pack(padx=20)
+
+def get_form():
+    return {k: var.get() for k, var in v.items()}
+
+def set_form(data):
+    for k, val in data.items():
+        v[k].set(val)
+
+set_form({"name": "Sam", "age": 14, "member": True})
+print(get_form())
+root.mainloop()
+```
+```text
+{'name': 'Sam', 'age': 14, 'member': True}
+```

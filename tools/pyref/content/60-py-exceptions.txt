@@ -1,0 +1,403 @@
+# py-exc | Exceptions in depth | else and finally, several excepts, chaining, custom errors, logging tracebacks, retries, warnings, the exception tree | python
+
+@@ py.exc.else-finally
+Q: What do `else` and `finally` do in try/except?
+aka: try except else finally, finally block, else in try, cleanup code, always runs
+A: `else` runs only if **no** exception happened (keep the risky line alone in `try`, the rest in `else`). `finally` **always** runs, error or not, even after `return`: use it for cleanup.
+see: py.try-except
+```py
+def read_number(text):
+    try:
+        n = int(text)
+    except ValueError:
+        print("not a number:", text)
+        return None
+    else:
+        print("got", n)
+        return n * 2
+    finally:
+        print("checked", repr(text))
+
+print(read_number("21"))
+print(read_number("abc"))
+```
+```text
+got 21
+checked '21'
+42
+not a number: abc
+checked 'abc'
+None
+```
+
+@@ py.exc.multiple
+Q: How do I catch several different exceptions (separately or together)?
+aka: catch multiple exceptions, except tuple, several except blocks, handle different errors, except order
+A: Several `except` blocks are tried in order (put specific ones before general ones). To handle several the same way, use a tuple: `except (ValueError, KeyError) as e:`.
+see: py.try-except
+```py
+def lookup(data, key):
+    try:
+        return 100 / int(data[key])
+    except KeyError:
+        return "missing key"
+    except (ValueError, TypeError) as e:
+        return f"bad value ({type(e).__name__})"
+    except ZeroDivisionError:
+        return "zero"
+
+d = {"a": "4", "b": "x", "c": "0", "d": None}
+print([lookup(d, k) for k in "abcde"])
+```
+```text
+[25.0, 'bad value (ValueError)', 'zero', 'bad value (TypeError)', 'missing key']
+```
+
+@@ py.exc.bare-except
+Q: Why is `except:` (or `except Exception:` everywhere) a bad idea?
+aka: bare except, except exception pass, catch all errors, swallow exceptions, hide errors
+A: A bare `except:` also catches Ctrl+C (`KeyboardInterrupt`) and `sys.exit()`, and `except Exception: pass` hides **every** bug, including typos. Catch the specific errors you expect; if you must catch everything (e.g. at the top of a program), at least log the traceback.
+see: py.exc.log-traceback
+```py
+def safe_div(a, b):
+    try:
+        return a / b
+    except ZeroDivisionError:       # only the case we planned for
+        return float("inf")
+
+print(safe_div(1, 0))
+try:
+    safe_div("1", 2)                # a real bug: let it show
+except TypeError as e:
+    print("bug found:", e)
+```
+```text
+inf
+bug found: unsupported operand type(s) for /: 'str' and 'int'
+```
+
+@@ py.exc.custom
+Q: How do I make my own exception classes (with extra information)?
+aka: custom exception class, own exception, exception with data, exception hierarchy app, inherit Exception
+A: Subclass `Exception` (one base class for your app, then specific ones). Add attributes in `__init__` and pass a message to `super().__init__`.
+see: py.raise
+```py
+class ShopError(Exception):
+    """Base class for this app's errors."""
+
+class OutOfStock(ShopError):
+    def __init__(self, item, wanted, have):
+        super().__init__(f"only {have} {item} left, wanted {wanted}")
+        self.item, self.wanted, self.have = item, wanted, have
+
+def buy(item, n, stock={"apple": 2}):
+    if stock.get(item, 0) < n:
+        raise OutOfStock(item, n, stock.get(item, 0))
+    stock[item] -= n
+
+try:
+    buy("apple", 5)
+except ShopError as e:              # catches any of our own errors
+    print(e, "| short by", e.wanted - e.have)
+```
+```text
+only 2 apple left, wanted 5 | short by 3
+```
+
+@@ py.exc.chain
+Q: What does `raise ... from ...` do (exception chaining)?
+aka: raise from, exception chaining, during handling of the above exception another exception occurred, from None, wrap exception
+A: When you raise a new error inside `except`, Python shows both ("During handling of the above exception, another exception occurred"). `raise New(...) from e` marks the first as the **cause** (clearer); `from None` hides the original.
+see: py.exc.custom
+```py
+class ConfigError(Exception):
+    pass
+
+def load_port(settings):
+    try:
+        return int(settings["port"])
+    except (KeyError, ValueError) as e:
+        raise ConfigError("port setting is missing or not a number") from e
+
+try:
+    load_port({"port": "eighty"})
+except ConfigError as e:
+    print(e)
+    print("caused by:", repr(e.__cause__))
+```
+```text
+port setting is missing or not a number
+caused by: ValueError("invalid literal for int() with base 10: 'eighty'")
+```
+
+@@ py.exc.reraise
+Q: How do I catch an error, do something, and still let it crash (re-raise)?
+aka: reraise exception, raise inside except, log and raise, bare raise
+A: A bare `raise` inside `except` re-raises the same exception with its original traceback, after you've logged or cleaned up.
+see: py.exc.log-traceback
+```py
+def risky():
+    return {}["missing"]
+
+try:
+    try:
+        risky()
+    except KeyError:
+        print("logging the problem, then passing it on")
+        raise
+except KeyError as e:
+    print("outer handler saw", repr(e))
+```
+```text
+logging the problem, then passing it on
+outer handler saw KeyError('missing')
+```
+
+@@ py.exc.log-traceback
+Q: How do I print or log the full traceback without stopping the program?
+aka: print traceback, log exception, traceback format_exc, logging exception, error log file, print stack trace
+A: `traceback.print_exc()` prints it; `traceback.format_exc()` returns it as a string; `logging.exception("msg")` (inside `except`) logs the message plus the traceback.
+see: py.read-traceback, mod.logging.basics
+```py
+import logging, sys, traceback
+
+logging.basicConfig(stream=sys.stdout, format="%(levelname)s %(message)s")
+
+def parse(x):
+    return int(x)
+
+for value in ["1", "x"]:
+    try:
+        parse(value)
+    except ValueError:
+        text = traceback.format_exc()
+        print("last line:", text.strip().splitlines()[-1])
+        logging.exception("could not parse %r", value)
+```
+
+@@ py.exc.hierarchy
+Q: How are Python's built-in exceptions related (the exception tree)?
+aka: exception hierarchy, exception tree, base exception, which exception to catch, LookupError, ArithmeticError, OSError subclasses
+A: Everything comes from `BaseException`. Your code should catch subclasses of `Exception`. Useful parents: `LookupError` (covers `IndexError` and `KeyError`), `ArithmeticError` (`ZeroDivisionError`, `OverflowError`), `OSError` (`FileNotFoundError`, `PermissionError`, `TimeoutError`, `ConnectionError`...), `ValueError` (`UnicodeError`...).
+see: py.exc.multiple
+```py
+def tree(cls, depth=0, limit=2):
+    print("  " * depth + cls.__name__)
+    if depth < limit:
+        for sub in sorted(cls.__subclasses__(), key=lambda c: c.__name__):
+            if sub.__module__ == "builtins":
+                tree(sub, depth + 1, limit)
+
+tree(LookupError)
+tree(ArithmeticError)
+print(issubclass(FileNotFoundError, OSError), issubclass(KeyboardInterrupt, Exception))
+```
+```text
+LookupError
+  IndexError
+  KeyError
+ArithmeticError
+  FloatingPointError
+  OverflowError
+  ZeroDivisionError
+True False
+```
+
+@@ py.exc.retry-loop
+Q: How do I keep retrying something until it works (with a limit)?
+aka: retry loop, try again until success, retry attempts, loop until no error
+A: Loop a fixed number of times; `break` (or `return`) on success; use the loop's `else` for "all attempts failed".
+see: py.deco.retry, py.it.loop-else
+```py
+import random
+
+random.seed(3)
+def connect():
+    if random.random() < 0.6:
+        raise ConnectionError("no answer")
+    return "connected"
+
+for attempt in range(1, 6):
+    try:
+        print(connect(), "on attempt", attempt)
+        break
+    except ConnectionError as e:
+        print(f"attempt {attempt}: {e}")
+else:
+    print("gave up")
+```
+
+@@ py.exc.eafp
+Q: Should I check first ("look before you leap") or just try it ("easier to ask forgiveness")?
+aka: EAFP vs LBYL, check before or try except, if key in dict or try, pythonic error handling
+A: Python style often prefers trying and catching (**EAFP**), especially when the check could become wrong before you act (files can vanish between "exists?" and "open"). Checking first (**LBYL**) is fine when it's clear and cheap, like `if key in d`.
+see: py.dict-get
+```py
+d = {"a": 1}
+# LBYL
+value = d["b"] if "b" in d else 0
+# EAFP
+try:
+    value2 = d["b"]
+except KeyError:
+    value2 = 0
+# Often simplest of all
+value3 = d.get("b", 0)
+print(value, value2, value3)
+```
+```text
+0 0 0
+```
+
+@@ py.exc.warnings
+Q: How do I show a warning (not an error), or silence warnings from a library?
+aka: warnings module, warn deprecation, ignore warnings, suppress warnings, DeprecationWarning, filterwarnings
+A: `warnings.warn("message", DeprecationWarning)` warns without stopping. Silence specific ones with `warnings.filterwarnings("ignore", category=..., message=...)` or temporarily inside `with warnings.catch_warnings():`.
+see: py.exc.bare-except
+```py
+import warnings
+
+def old_api():
+    warnings.warn("old_api() is deprecated; use new_api()", DeprecationWarning, stacklevel=2)
+    return 1
+
+with warnings.catch_warnings(record=True) as caught:
+    warnings.simplefilter("always")
+    old_api()
+print(caught[0].category.__name__, "-", caught[0].message)
+
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore")
+    old_api()                         # silent
+print("done")
+```
+```text
+DeprecationWarning - old_api() is deprecated; use new_api()
+done
+```
+
+@@ py.exc.group
+Q: What are ExceptionGroup and except* (several errors at once)?
+aka: exceptiongroup, except star, multiple errors at once, taskgroup errors, aggregate exceptions
+A: Python 3.11+ can raise several exceptions together in an `ExceptionGroup` (e.g. from parallel tasks). `except* ValueError:` handles the ValueErrors in the group while letting the others through to other `except*` blocks.
+see: mod.asyncio.basics
+```py
+def validate(rows):
+    problems = []
+    for i, r in enumerate(rows):
+        if not r.get("name"):
+            problems.append(ValueError(f"row {i}: missing name"))
+        if not isinstance(r.get("age"), int):
+            problems.append(TypeError(f"row {i}: age must be int"))
+    if problems:
+        raise ExceptionGroup("invalid rows", problems)
+
+try:
+    validate([{"name": "Ada", "age": 36}, {"name": "", "age": "x"}])
+except* ValueError as g:
+    print("value problems:", [str(e) for e in g.exceptions])
+except* TypeError as g:
+    print("type problems:", [str(e) for e in g.exceptions])
+```
+```text
+value problems: ['row 1: missing name']
+type problems: ['row 1: age must be int']
+```
+
+@@ py.exc.add-note
+Q: How do I add extra context to an exception before re-raising it (add_note)?
+aka: add_note exception, exception note, add context to error, which file caused error
+A: Python 3.11+: `e.add_note("while reading settings.ini")` attaches extra lines that appear in the traceback, without changing the exception type.
+see: py.exc.reraise
+```py
+import traceback
+
+def parse_line(line):
+    return int(line)
+
+try:
+    for n, line in enumerate(["1", "two"], 1):
+        try:
+            parse_line(line)
+        except ValueError as e:
+            e.add_note(f"in data.txt, line {n}")
+            raise
+except ValueError as e:
+    print(e)
+    print(e.__notes__)
+```
+```text
+invalid literal for int() with base 10: 'two'
+['in data.txt, line 2']
+```
+
+@@ py.exc.top-level
+Q: How do I catch any crash at the top of my program and show a friendly message?
+aka: global exception handler, catch all crashes, sys.excepthook, friendly error message, crash log
+A: Wrap `main()` in one `try/except Exception` at the very top, log the traceback to a file, and show a short message. (Or set `sys.excepthook`.) Keep specific handling deeper in the code.
+see: py.exc.log-traceback, tk.err2.callback-exception
+```py
+import traceback
+
+def main():
+    data = {}
+    return data["settings"]["theme"]
+
+if __name__ == "__main__":
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("stopped")
+    except Exception:
+        with open("crash.log", "w") as f:
+            f.write(traceback.format_exc())
+        print("Sorry, something went wrong. Details saved to crash.log")
+```
+```text
+Sorry, something went wrong. Details saved to crash.log
+```
+
+@@ py.exc.timeout
+Q: How do I give up on something that takes too long (timeout)?
+aka: timeout function, time limit, stop function after seconds, network timeout, input timeout
+A: Most blocking calls have a `timeout=` argument (`urlopen`, `requests.get`, `socket`, `queue.get`, `subprocess.run`, `thread.join`); use it and catch `TimeoutError` / the library's timeout exception. For your own slow function, run it in a thread or process and wait with a timeout.
+see: tk.thr.result
+```py
+import subprocess, sys
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeout
+import time
+
+try:
+    subprocess.run([sys.executable, "-c", "import time; time.sleep(5)"], timeout=0.2)
+except subprocess.TimeoutExpired:
+    print("command took too long")
+
+pool = ThreadPoolExecutor(1)
+fut = pool.submit(time.sleep, 0.5)
+try:
+    fut.result(timeout=0.05)
+except FutureTimeout:
+    print("function took too long")
+pool.shutdown(wait=False, cancel_futures=True)
+```
+```text
+command took too long
+function took too long
+```
+
+@@ py.exc.exit-codes
+Q: How do I end a script with an error code (so other programs know it failed)?
+aka: exit code, sys.exit 1, return code, error status, exit status script
+A: `sys.exit(0)` = success, `sys.exit(1)` (or any non-zero number) = failure; `sys.exit("message")` prints the message to stderr and exits with 1. An uncaught exception also exits with 1.
+see: py.exit
+```py
+import subprocess, sys
+r = subprocess.run([sys.executable, "-c", "import sys; sys.exit(3)"])
+print("exit code:", r.returncode)
+r = subprocess.run([sys.executable, "-c", "1/0"], capture_output=True, text=True)
+print("exit code:", r.returncode, "|", r.stderr.strip().splitlines()[-1])
+```
+```text
+exit code: 3
+exit code: 1 | ZeroDivisionError: division by zero
+```

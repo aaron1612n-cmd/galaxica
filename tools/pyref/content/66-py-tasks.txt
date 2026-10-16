@@ -1,0 +1,320 @@
+# py-task | Everyday small tasks | Lists from input, lists to and from files, specific lines, appending JSON, comparing dicts, checking the internet and other frequently asked jobs | python
+
+@@ py.t.input-list
+Q: How do I read several numbers typed on one line into a list?
+aka: input list of numbers, split input into list, map int input, read space separated numbers, input comma separated
+A: `[int(x) for x in input().split()]` (or `list(map(int, ...))`); for commas, `split(",")` and `strip()` each part.
+see: py.input-number, py.split
+```py
+line = "3 14 15 92"                          # e.g. line = input("Numbers: ")
+nums = [int(x) for x in line.split()]
+csv_line = "1.5, 2.25 ,3"
+vals = [float(x.strip()) for x in csv_line.split(",")]
+print(nums, sum(nums), vals)
+```
+```text
+[3, 14, 15, 92] 124 [1.5, 2.25, 3.0]
+```
+
+@@ py.t.input-until-blank
+Q: How do I keep reading input until the user enters a blank line (or "done")?
+aka: input until blank, read lines until empty, input loop sentinel, collect inputs list
+A: Loop forever, `break` on the stop value, otherwise append. The walrus `:=` makes it compact.
+see: py.while, py.walrus
+```py
+answers = iter(["milk", "eggs", "bread", ""])
+def fake_input(prompt=""):
+    return next(answers)                     # stands in for input()
+items = []
+while (item := fake_input("Item (blank to finish): ").strip()):
+    items.append(item)
+print(items)
+```
+```text
+['milk', 'eggs', 'bread']
+```
+
+@@ py.t.list-file
+Q: How do I save a list to a file and load it back?
+aka: write list to file, save list text file, read list from file, store list, one item per line
+A: One item per line: `"\n".join(items)` to write, `read().splitlines()` to read. For lists containing numbers or nested data, JSON keeps the types.
+see: py.json, py.file-write
+```py
+import json
+names = ["Ada", "Sam", "Kai"]
+with open("names.txt", "w") as f:
+    f.write("\n".join(names))
+with open("names.txt") as f:
+    print(f.read().splitlines())
+scores = [90, [1, 2], {"k": 3}]
+with open("scores.json", "w") as f:
+    json.dump(scores, f)
+with open("scores.json") as f:
+    print(json.load(f) == scores)
+```
+```text
+['Ada', 'Sam', 'Kai']
+True
+```
+
+@@ py.t.specific-line
+Q: How do I read a specific line (like line 3) or the last line of a file?
+aka: read specific line, read line number, last line of file, nth line, tail file
+A: Small files: `lines = f.read().splitlines()` then `lines[2]` (line 3) or `lines[-1]`. Big files: `itertools.islice(f, n, n + 1)` for line n, or `collections.deque(f, maxlen=1)` for the last line, without loading everything.
+see: py.file-read
+```py
+from collections import deque
+from itertools import islice
+with open("data.txt") as f:
+    print(f.read().splitlines()[2])
+with open("data.txt") as f:
+    print(next(islice(f, 1, 2)).strip())
+with open("data.txt") as f:
+    print(deque(f, maxlen=1)[0].strip())
+```
+```text
+third line
+second line
+third line
+```
+
+@@ py.t.append-json
+Q: How do I add a new record to a JSON file?
+aka: append to json file, add to json, update json file, json list append
+A: JSON can't be appended to like text: load it, change the data, write it all back (default to an empty list if the file doesn't exist yet). For big logs, use JSON Lines instead.
+see: py.json, mod.json.lines
+```py
+import json, os
+def add_record(path, record):
+    data = []
+    if os.path.exists(path):
+        with open(path) as f:
+            data = json.load(f)
+    data.append(record)
+    with open(path, "w") as f:
+        json.dump(data, f, indent=1)
+    return len(data)
+for r in ({"name": "Ada"}, {"name": "Sam"}):
+    n = add_record("people.json", r)
+print(n, json.load(open("people.json"))[-1])
+```
+```text
+2 {'name': 'Sam'}
+```
+
+@@ py.t.list-string
+Q: How do I convert a list to a string and a string back to a list?
+aka: list to string, string to list, convert list str, str of list, parse list string
+A: Join with a separator (`", ".join(items)`) and `split` it back. If you have the text form of a Python list like `"[1, 2]"`, use `ast.literal_eval` (or `json.loads` for JSON).
+see: py.join, mod.ast.literal-eval
+```py
+import ast
+items = ["a", "b", "c"]
+s = ",".join(items)
+print(s, s.split(","), list("abc"))
+print(ast.literal_eval("[1, 2, 3]"), str([1, 2]))
+```
+```text
+a,b,c ['a', 'b', 'c'] ['a', 'b', 'c']
+[1, 2, 3] [1, 2]
+```
+
+@@ py.t.compare-dicts
+Q: How do I compare two dictionaries (what was added, removed or changed)?
+aka: compare dictionaries, dict difference, diff two dicts, changed keys, dict equality
+A: `d1 == d2` checks if they're identical. For differences use set operations on the keys and compare values of the shared keys.
+see: py.coll.compare-lists
+```py
+old = {"name": "Ada", "age": 36, "city": "London"}
+new = {"name": "Ada", "age": 37, "email": "a@x.org"}
+added = new.keys() - old.keys()
+removed = old.keys() - new.keys()
+changed = {k: (old[k], new[k]) for k in old.keys() & new.keys() if old[k] != new[k]}
+print(old == new, added, removed, changed)
+```
+```text
+False {'email'} {'city'} {'age': (36, 37)}
+```
+
+@@ py.t.internet
+Q: How do I check if there's an internet connection?
+aka: check internet connection, am i online, test connectivity, ping python
+A: Try to open a quick connection to a reliable server with a short timeout; failure means you're offline (or it's blocked).
+see: mod.socket.tcp
+```py
+import socket
+def online(host="1.1.1.1", port=53, timeout=2):
+    try:
+        socket.create_connection((host, port), timeout=timeout).close()
+        return True
+    except OSError:
+        return False
+print(type(online()).__name__)
+```
+```text
+bool
+```
+
+@@ py.t.random-string
+Q: How do I generate a random string (letters and digits, a code, a filename)?
+aka: random string, random code, random letters, generate id string, random filename
+A: Pick characters with `random.choices` (or `secrets.choice` for anything security-related) and join them.
+see: mod.secrets, mod.uuid
+```py
+import random, secrets, string
+random.seed(1)
+code = "".join(random.choices(string.ascii_uppercase + string.digits, k=6))
+token = "".join(secrets.choice(string.ascii_letters) for _ in range(10))
+print(code, len(token))
+```
+```text
+E41JRQ 10
+```
+
+@@ py.t.chunk-string
+Q: How do I split a string into pieces of N characters?
+aka: split string every n characters, chunk string, groups of characters, split into pairs
+A: A comprehension with slicing: `[s[i:i + n] for i in range(0, len(s), n)]` (or `textwrap.wrap` for words).
+see: py.list-chunks
+```py
+s = "ABCDEFGHIJ"
+print([s[i:i + 3] for i in range(0, len(s), 3)])
+print(" ".join(s[i:i + 2] for i in range(0, len(s), 2)))
+```
+```text
+['ABC', 'DEF', 'GHI', 'J']
+AB CD EF GH IJ
+```
+
+@@ py.t.running-total
+Q: How do I keep a running total (cumulative sum) or a running average?
+aka: running total, cumulative sum, accumulate, running average, moving average
+A: `itertools.accumulate(nums)` gives running totals; a running average divides each total by how many items so far. A moving average over the last k values uses a `deque(maxlen=k)`.
+see: mod.itertools.basics
+```py
+from collections import deque
+from itertools import accumulate
+nums = [4, 8, 6, 2, 10]
+totals = list(accumulate(nums))
+print(totals, [round(t / (i + 1), 1) for i, t in enumerate(totals)])
+window, moving = deque(maxlen=3), []
+for x in nums:                               # average of the last 3 values
+    window.append(x)
+    moving.append(round(sum(window) / len(window), 2))
+print(moving)
+```
+```text
+[4, 12, 18, 20, 30] [4.0, 6.0, 6.0, 5.0, 6.0]
+[4.0, 6.0, 6.0, 5.33, 6.0]
+```
+
+@@ py.t.second-largest
+Q: How do I find the second largest number (or the top 3) in a list?
+aka: second largest, second highest, top three, nlargest, largest without duplicates
+A: `sorted(set(nums))[-2]` (ignores duplicates), or `heapq.nlargest(3, nums)` for the top 3 including duplicates.
+see: mod.heapq
+```py
+import heapq
+nums = [7, 3, 9, 9, 4]
+print(sorted(set(nums))[-2], heapq.nlargest(3, nums), sorted(nums, reverse=True)[:3])
+```
+```text
+7 [9, 9, 7] [9, 9, 7]
+```
+
+@@ py.t.missing-number
+Q: How do I find missing or duplicated numbers in a sequence?
+aka: missing number, find missing numbers list, duplicates in sequence, gaps in sequence
+A: Compare with the full `range` using sets: `set(range(lo, hi + 1)) - set(nums)` gives the missing ones; `Counter` finds duplicates.
+see: py.coll.compare-lists
+```py
+from collections import Counter
+nums = [1, 2, 4, 4, 7, 8]
+print(sorted(set(range(min(nums), max(nums) + 1)) - set(nums)))
+print([n for n, c in Counter(nums).items() if c > 1])
+```
+```text
+[3, 5, 6]
+[4]
+```
+
+@@ py.t.merge-sorted
+Q: How do I merge two sorted lists, or interleave two lists?
+aka: merge sorted lists, interleave lists, alternate items two lists, heapq merge
+A: `heapq.merge(a, b)` merges sorted lists efficiently; to alternate items, zip them and flatten.
+see: mod.heapq, py.flatten
+```py
+import heapq
+from itertools import chain, zip_longest
+a, b = [1, 4, 9], [2, 3, 10, 12]
+print(list(heapq.merge(a, b)))
+print([x for x in chain.from_iterable(zip_longest(a, b)) if x is not None])
+```
+```text
+[1, 2, 3, 4, 9, 10, 12]
+[1, 2, 4, 3, 9, 10, 12]
+```
+
+@@ py.t.file-wordcount
+Q: How do I count the lines, words and characters in a file (like wc)?
+aka: count lines in file, count words in file, file statistics, wc python
+A: Read it once and use `len(text.splitlines())`, `len(text.split())` and `len(text)`; for big files, loop over the lines and add up.
+see: py.file-lines-count
+```py
+with open("data.txt", encoding="utf-8") as f:
+    text = f.read()
+print(len(text.splitlines()), "lines", len(text.split()), "words", len(text), "characters")
+```
+```text
+3 lines 6 words 34 characters
+```
+
+@@ py.t.dedupe-keep-order
+Q: How do I remove duplicates but keep the original order?
+aka: remove duplicates keep order, unique in order, dict fromkeys dedupe, ordered unique
+A: `list(dict.fromkeys(items))` keeps the first occurrence of each, in order (a `set` would lose the order).
+see: py.dedupe
+```py
+items = ["b", "a", "b", "c", "a"]
+print(list(dict.fromkeys(items)), sorted(set(items)))
+```
+```text
+['b', 'a', 'c'] ['a', 'b', 'c']
+```
+
+@@ py.t.dict-from-lists
+Q: How do I make a dictionary from two lists (keys and values)?
+aka: dict from two lists, zip to dict, combine lists into dictionary, keys values lists
+A: `dict(zip(keys, values))`. Extra items in the longer list are ignored (use `strict=True` to catch a mismatch).
+see: py.zip
+```py
+keys = ["name", "age", "city"]
+values = ["Ada", 36, "London"]
+print(dict(zip(keys, values)))
+```
+```text
+{'name': 'Ada', 'age': 36, 'city': 'London'}
+```
+
+@@ py.t.time-input
+Q: How do I ask the user for a date or time and validate it?
+aka: input date, validate date input, ask user for time, date from input
+A: Loop until `datetime.strptime` succeeds with your expected format, telling the user the format.
+see: mod.dt.parse
+```py
+from datetime import datetime
+answers = iter(["31-02-2026", "2026/03/09", "09/03/2026"])
+while True:
+    text = next(answers)                    # text = input("Date (dd/mm/yyyy): ")
+    try:
+        d = datetime.strptime(text, "%d/%m/%Y").date()
+        break
+    except ValueError:
+        print(f"{text!r} isn't a valid dd/mm/yyyy date")
+print("got", d)
+```
+```text
+'31-02-2026' isn't a valid dd/mm/yyyy date
+'2026/03/09' isn't a valid dd/mm/yyyy date
+got 2026-03-09
+```

@@ -1,0 +1,189 @@
+# mod-pathlib | pathlib | Paths as objects: joining, parts, reading and writing, globbing, creating and deleting | modules
+
+@@ mod.pathlib.basics
+Q: How do I use pathlib (Path objects) instead of os.path?
+aka: pathlib, Path, path objects, join paths with slash, pathlib tutorial, Path vs os.path
+A: `from pathlib import Path`. Join with `/`: `Path("data") / "scores.csv"`. A path knows its parts (`.name`, `.stem`, `.suffix`, `.parent`) and can read/write directly. It works on Windows, macOS and Linux.
+see: py.pathlib, mod.os.overview
+```py
+from pathlib import Path
+
+p = Path("data") / "2026" / "scores.final.csv"
+print(p.as_posix(), p.name, p.stem, p.suffix, p.suffixes)
+print(p.parent.as_posix(), p.parent.parent.name, p.parts)
+print(p.with_suffix(".json").name, p.with_name("other.csv").as_posix(), p.with_stem("x").name)
+```
+```text
+data/2026/scores.final.csv scores.final.csv scores.final .csv ['.final', '.csv']
+data/2026 data ('data', '2026', 'scores.final.csv')
+scores.final.json data/2026/other.csv x.csv
+```
+
+@@ mod.pathlib.read-write
+Q: How do I read or write a whole file with pathlib in one line?
+aka: read_text, write_text, read_bytes, write_bytes, pathlib open, one line file read
+A: `Path(p).read_text(encoding="utf-8")`, `.write_text(text, encoding="utf-8")`, `.read_bytes()`, `.write_bytes(data)`. For line-by-line or appending, `with p.open("a") as f:`.
+see: py.file-read
+```py
+from pathlib import Path
+
+p = Path("note.txt")
+p.write_text("first\nsecond\n", encoding="utf-8")
+print(p.read_text(encoding="utf-8").splitlines())
+with p.open("a", encoding="utf-8") as f:
+    f.write("third\n")
+print(len(p.read_text().splitlines()), p.stat().st_size)
+```
+```text
+['first', 'second']
+3 19
+```
+
+@@ mod.pathlib.glob
+Q: How do I list or find files with pathlib (iterdir, glob, rglob)?
+aka: iterdir, pathlib glob, rglob, list files pathlib, find all files pathlib, files only
+A: `p.iterdir()` lists a folder; `p.glob("*.txt")` matches in that folder; `p.rglob("*.py")` searches all subfolders. Filter with `.is_file()` / `.is_dir()`.
+see: mod.glob, mod.os.walk
+```py
+from pathlib import Path
+
+root = Path("proj")
+(root / "src" / "pkg").mkdir(parents=True, exist_ok=True)
+for f in ("README.md", "src/main.py", "src/pkg/util.py", "src/pkg/data.json"):
+    (root / f).touch()
+print(sorted(p.name for p in root.iterdir()))
+print(sorted(p.relative_to(root).as_posix() for p in root.rglob("*.py")))
+print(sum(1 for p in root.rglob("*") if p.is_file()))
+```
+```text
+['README.md', 'src']
+['src/main.py', 'src/pkg/util.py']
+4
+```
+
+@@ mod.pathlib.create-delete
+Q: How do I create folders, rename, move or delete files with pathlib?
+aka: pathlib mkdir, pathlib delete file, unlink, rmdir, rename pathlib, touch, exists
+A: `p.mkdir(parents=True, exist_ok=True)`, `p.touch()`, `p.rename(new)` / `p.replace(new)`, `p.unlink(missing_ok=True)` deletes a file, `p.rmdir()` deletes an **empty** folder (use `shutil.rmtree` for full ones). Check with `p.exists()`, `p.is_file()`, `p.is_dir()`.
+see: mod.shutil.copy-move
+```py
+from pathlib import Path
+
+d = Path("work/out")
+d.mkdir(parents=True, exist_ok=True)
+f = d / "a.txt"
+f.touch()
+g = f.rename(d / "b.txt")
+print(f.exists(), g.exists(), g.is_file(), d.is_dir())
+g.unlink()
+g.unlink(missing_ok=True)       # no error the second time
+d.rmdir()
+print(d.exists())
+```
+```text
+False True True True
+False
+```
+
+@@ mod.pathlib.absolute
+Q: How do I get the full (absolute) path, or a path relative to another one?
+aka: absolute path, resolve path, relative path, relative_to, full path of file, cwd, path of script
+A: `p.resolve()` gives the absolute path with `..` cleaned up; `Path.cwd()` is the working folder; `Path(__file__).resolve().parent` is the script's own folder; `p.relative_to(base)` gives the part after `base`.
+see: py.script-dir
+```py
+from pathlib import Path
+
+p = Path("a/b/../c.txt")
+full = p.resolve()
+print(full.is_absolute(), full.name, full.parent.name)
+print(full.relative_to(Path.cwd()).as_posix())
+print(Path("/home/user/project/src/app.py").relative_to("/home/user/project").as_posix())
+```
+```text
+True c.txt a
+a/c.txt
+src/app.py
+```
+
+@@ mod.pathlib.unique-name
+Q: How do I save a file without overwriting an existing one (file (1).txt, file (2).txt)?
+aka: unique filename, avoid overwrite, increment filename, file exists add number, safe save name
+A: Loop: while the path exists, try the next name built from `stem` and `suffix`.
+see: mod.pathlib.basics
+```py
+from pathlib import Path
+
+def unique_path(p):
+    p = Path(p)
+    n = 1
+    candidate = p
+    while candidate.exists():
+        candidate = p.with_name(f"{p.stem} ({n}){p.suffix}")
+        n += 1
+    return candidate
+
+Path("report.txt").touch()
+Path("report (1).txt").touch()
+print(unique_path("report.txt").name, unique_path("new.txt").name)
+```
+```text
+report (2).txt new.txt
+```
+
+@@ mod.pathlib.sizes
+Q: How do I get the total size of a folder (and show it as KB/MB)?
+aka: folder size, directory size, human readable size, bytes to MB, file size format
+A: Add up `stat().st_size` of every file from `rglob("*")`, then format with a small function that divides by 1024.
+see: mod.os.stat
+```py
+from pathlib import Path
+
+def human(n):
+    for unit in ("B", "KB", "MB", "GB"):
+        if n < 1024:
+            return f"{n:.0f} {unit}" if unit == "B" else f"{n:.1f} {unit}"
+        n /= 1024
+    return f"{n:.1f} TB"
+
+d = Path("sizes"); d.mkdir(exist_ok=True)
+(d / "a.bin").write_bytes(b"x" * 3000)
+(d / "b.bin").write_bytes(b"x" * 2_000_000)
+total = sum(f.stat().st_size for f in d.rglob("*") if f.is_file())
+print(total, human(total), human(512))
+```
+```text
+2003000 1.9 MB 512 B
+```
+
+@@ mod.pathlib.windows-paths
+Q: How do I write Windows paths with backslashes in Python?
+aka: windows path backslash, raw string path, C:\Users path, path with \n problem, PureWindowsPath
+A: Backslashes start escape codes (`"\new"` contains a newline!). Use a raw string `r"C:\Users\me\new"`, forward slashes `"C:/Users/me/new"` (Windows accepts them), or `Path("C:/Users") / "me"`.
+see: py.err.oserror-path
+```py
+from pathlib import PureWindowsPath
+bad = "C:\new\table.txt"
+good = r"C:\new\table.txt"
+print(len(bad), len(good))
+p = PureWindowsPath("C:/Users/me") / "notes.txt"
+print(p, p.drive, p.name)
+```
+```text
+14 16
+C:\Users\me\notes.txt C: notes.txt
+```
+
+@@ mod.pathlib.compare-os
+Q: What are the pathlib equivalents of os.path functions?
+aka: os.path vs pathlib, pathlib cheat sheet, convert os.path to pathlib
+A: `os.path.join(a, b)` → `Path(a) / b`; `exists` → `.exists()`; `basename` → `.name`; `dirname` → `.parent`; `splitext` → `.stem`, `.suffix`; `abspath` → `.resolve()`; `getsize` → `.stat().st_size`; `os.listdir` → `.iterdir()`; `os.makedirs` → `.mkdir(parents=True)`; `os.remove` → `.unlink()`; `open(p)` → `p.open()`. Most functions also accept Path objects directly.
+see: mod.pathlib.basics
+```py
+import os
+from pathlib import Path
+p = Path("x") / "y.txt"
+print(os.path.join("x", "y.txt") == str(p), os.path.basename(p) == p.name, os.path.splitext(p)[1] == p.suffix)
+```
+```text
+True True True
+```

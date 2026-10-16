@@ -38,8 +38,8 @@ Other causes:
 @@ tk.import-style
 Q: Should I use `import tkinter as tk` or `from tkinter import *`?
 aka: import tkinter, from tkinter import star, tkinter vs Tkinter, ttk import, import ttk
-A: Prefer `import tkinter as tk` (and `from tkinter import ttk`). It keeps names clear and avoids clashes. `from tkinter import *` works but hides where names come from.
-see: tk.install, tk.ttk-vs-tk
+A: Both work. `from tkinter import *` copies all 131 public tkinter names (`Tk`, `Button`, `END`, `LEFT`...) into your file so you can drop the prefix; `import tkinter as tk` gives you one name, `tk`, and you write `tk.Button`. Prefer `import tkinter as tk` (plus `from tkinter import ttk`): it keeps names clear and avoids clashes such as tkinter's `Image` replacing Pillow's.
+see: tk.z.import-star, tk.z.import-compare, tk.z.star-clash, tk.install, tk.ttk-vs-tk
 ```py
 import tkinter as tk
 from tkinter import ttk, messagebox

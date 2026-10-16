@@ -1,0 +1,199 @@
+# mod-test | unittest, doctest, pytest, timeit | Writing tests, checking errors, fake objects (mocks), doctests, measuring speed | modules
+
+@@ mod.unittest.basics
+Q: How do I write tests with unittest?
+aka: unittest, unit tests, test case, assertEqual, run tests, testing python code, test class
+A: Make a class that inherits `unittest.TestCase`, write methods whose names start with `test_`, and check results with `self.assertEqual`, `assertTrue`, `assertIn`, `assertRaises`... Run with `python -m unittest` (finds `test_*.py` files) or `unittest.main()`.
+see: mod.pytest, tk.ev.testing
+```py
+import sys, unittest
+
+def add_vat(price, rate=0.2):
+    if price < 0:
+        raise ValueError("negative price")
+    return round(price * (1 + rate), 2)
+
+class TestVat(unittest.TestCase):
+    def test_default_rate(self):
+        self.assertEqual(add_vat(10), 12.0)
+    def test_custom_rate(self):
+        self.assertAlmostEqual(add_vat(10, 0.05), 10.5)
+    def test_negative(self):
+        with self.assertRaises(ValueError):
+            add_vat(-1)
+
+result = unittest.main(argv=["x"], exit=False, testRunner=unittest.TextTestRunner(stream=sys.stdout, verbosity=0)).result
+print("ran", result.testsRun, "failures", len(result.failures))
+```
+
+@@ mod.unittest.asserts
+Q: Which assert methods does unittest have?
+aka: unittest assert methods, assertEqual assertTrue, assertIn, assertIsNone, assertRaises, assertAlmostEqual, assertCountEqual
+A: `assertEqual/NotEqual`, `assertTrue/False`, `assertIs/IsNot`, `assertIsNone/IsNotNone`, `assertIn/NotIn`, `assertIsInstance`, `assertAlmostEqual` (floats), `assertGreater/Less(Equal)`, `assertCountEqual` (same items, any order), `assertRaises`, `assertRaisesRegex`, `assertWarns`, `assertRegex`.
+see: mod.unittest.basics
+```py
+import sys, unittest
+
+class Demo(unittest.TestCase):
+    def test_many(self):
+        self.assertIn("a", "cat")
+        self.assertIsNone({}.get("x"))
+        self.assertAlmostEqual(0.1 + 0.2, 0.3)
+        self.assertCountEqual([3, 1, 2], [1, 2, 3])
+        self.assertGreater(5, 3)
+        self.assertRaisesRegex(ValueError, "invalid literal", int, "x")
+
+r = unittest.main(argv=["x"], exit=False, testRunner=unittest.TextTestRunner(stream=sys.stdout, verbosity=0)).result
+print(r.wasSuccessful())
+```
+
+@@ mod.unittest.setup
+Q: How do I prepare data before each test (setUp, tearDown, temporary files)?
+aka: setup teardown, test fixtures, setUpClass, temporary directory test, clean up after test
+A: `setUp` runs before **each** test and `tearDown` after; `setUpClass`/`tearDownClass` once for the class. Use `tempfile.TemporaryDirectory()` so tests don't leave files behind.
+see: mod.tempfile
+```py
+import os, sys, tempfile, unittest
+
+def save_score(folder, name, score):
+    with open(os.path.join(folder, "scores.txt"), "a") as f:
+        f.write(f"{name},{score}\n")
+
+class TestScores(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+    def tearDown(self):
+        self.tmp.cleanup()
+    def test_append(self):
+        save_score(self.tmp.name, "Ada", 9)
+        save_score(self.tmp.name, "Sam", 7)
+        with open(os.path.join(self.tmp.name, "scores.txt")) as f:
+            self.assertEqual(len(f.readlines()), 2)
+
+r = unittest.main(argv=["x"], exit=False, testRunner=unittest.TextTestRunner(stream=sys.stdout, verbosity=0)).result
+print(r.testsRun, r.wasSuccessful())
+```
+
+@@ mod.unittest.mock
+Q: How do I test code that uses the network, time or random (mocks)?
+aka: unittest mock, patch, MagicMock, fake object, mock requests, mock input, mock datetime
+A: `unittest.mock.patch("module.name", ...)` temporarily replaces something with a fake you control, e.g. make `input()` return set answers, or a web call return fixed data. `Mock()` objects record how they were called.
+see: mod.unittest.basics
+```py
+import random
+from unittest.mock import Mock, patch
+
+def roll_message():
+    return "six!" if random.randint(1, 6) == 6 else "try again"
+
+def ask_name():
+    return input("Name? ").strip().title()
+
+with patch("random.randint", return_value=6):
+    print(roll_message())
+with patch("builtins.input", return_value="  ada lovelace "):
+    print(ask_name())
+send = Mock(return_value=True)
+send("hi", to="sam")
+print(send.call_count, send.call_args)
+```
+```text
+six!
+Ada Lovelace
+1 call('hi', to='sam')
+```
+
+@@ mod.doctest
+Q: What are doctests (examples in docstrings that are tested)?
+aka: doctest, test examples docstring, >>> in docstring, testmod
+A: Write `>>>` examples in a docstring with the expected output under them; `doctest.testmod()` runs them and reports differences. Great for small functions: the docs stay correct.
+see: py.fn.docstring
+```py
+import doctest
+
+def initials(name):
+    """Return the initials of a full name.
+
+    >>> initials("ada lovelace")
+    'AL'
+    >>> initials("Guido van Rossum")
+    'GVR'
+    """
+    return "".join(part[0].upper() for part in name.split())
+
+print(doctest.testmod())
+```
+```text
+TestResults(failed=0, attempted=2)
+```
+
+@@ mod.pytest
+Q: How do I use pytest (the popular test runner)?
+aka: pytest, pytest tutorial, assert in tests, pytest raises, pytest fixtures, parametrize
+A: `pip install pytest`, write functions named `test_*` in files named `test_*.py` using plain `assert`, then run `pytest` in the folder. `pytest.raises` checks errors, `@pytest.mark.parametrize` runs one test with many inputs, fixtures like `tmp_path` give temporary folders.
+see: mod.unittest.basics
+```py norun
+# test_maths.py
+import pytest
+from maths import add_vat
+
+def test_default_rate():
+    assert add_vat(10) == 12.0
+
+@pytest.mark.parametrize("price, rate, expected", [(10, 0.2, 12.0), (5, 0, 5.0), (0, 0.2, 0.0)])
+def test_rates(price, rate, expected):
+    assert add_vat(price, rate) == expected
+
+def test_negative():
+    with pytest.raises(ValueError, match="negative"):
+        add_vat(-1)
+
+def test_file(tmp_path):
+    p = tmp_path / "out.txt"
+    p.write_text("hi")
+    assert p.read_text() == "hi"
+```
+```sh
+pip install pytest
+pytest -q            # runs every test_*.py file
+```
+
+@@ mod.timeit
+Q: How do I measure how fast a small piece of code is (timeit)?
+aka: timeit, time code snippet, benchmark python, compare speed, performance test
+A: `timeit.timeit(stmt, number=n)` runs code n times and returns the total seconds; `timeit.repeat` gives several rounds (use the minimum). In a terminal: `python -m timeit "sum(range(1000))"`. In Jupyter/IPython: `%timeit`.
+see: py.timing, py.proj.speed-tips
+```py
+import timeit
+setup = "nums = list(range(10_000))"
+t_loop = min(timeit.repeat("t = 0\nfor n in nums: t += n", setup, number=200, repeat=3))
+t_sum = min(timeit.repeat("sum(nums)", setup, number=200, repeat=3))
+print("sum() is faster:", t_sum < t_loop)
+```
+```text
+sum() is faster: True
+```
+
+@@ mod.tempfile
+Q: How do I make temporary files or folders that clean themselves up?
+aka: tempfile, temporary file, temporary directory, NamedTemporaryFile, mkdtemp, temp folder
+A: `tempfile.TemporaryDirectory()` and `TemporaryFile()` delete themselves when the `with` block ends; `NamedTemporaryFile(delete=False)` gives a real path you can pass to other programs (delete it yourself). `tempfile.gettempdir()` is the system temp folder.
+see: mod.unittest.setup
+```py
+import os, tempfile
+with tempfile.TemporaryDirectory() as d:
+    path = os.path.join(d, "work.txt")
+    with open(path, "w") as f:
+        f.write("scratch")
+    print(os.path.exists(path))
+print(os.path.exists(path))
+with tempfile.NamedTemporaryFile("w", suffix=".csv", delete=False) as f:
+    f.write("a,b\n")
+print(f.name.endswith(".csv"), os.path.getsize(f.name))
+os.remove(f.name)
+```
+```text
+True
+False
+True 4
+```

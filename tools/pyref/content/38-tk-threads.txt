@@ -1,0 +1,509 @@
+# tk-thr | Background work | Threads, queues, progress, cancelling, asyncio, subprocesses, keeping the window responsive | tkinter
+
+@@ tk.thr.queue
+Q: How do I safely send results from a thread to the tkinter window (queue pattern)?
+aka: queue thread tkinter, thread update gui, thread safe tkinter, worker thread results, poll queue after, put get_nowait
+A: Only the main thread may touch widgets. The worker puts messages into a `queue.Queue`; the main thread checks the queue every 50–100 ms with `after` and updates the widgets.
+see: tk.thread, tk.err.main-thread
+```py
+import queue, threading, time
+import tkinter as tk
+
+root = tk.Tk()
+q = queue.Queue()
+log = tk.Listbox(root, width=40, height=8); log.pack(padx=10, pady=10)
+
+def worker():                     # runs in the background: NO widget calls here
+    for i in range(1, 6):
+        time.sleep(0.03)          # pretend to work
+        q.put(f"step {i} done")
+    q.put(None)                   # "finished" signal
+
+def poll():
+    try:
+        while True:
+            msg = q.get_nowait()
+            if msg is None:
+                log.insert("end", "all done"); return
+            log.insert("end", msg)
+    except queue.Empty:
+        pass
+    root.after(50, poll)
+
+threading.Thread(target=worker, daemon=True).start()
+poll()
+root.mainloop()
+```
+
+@@ tk.thr.progress
+Q: How do I show a progress bar that moves while a long task runs in a thread?
+aka: progress bar thread, update progressbar from thread, long task progress, percent complete thread
+A: The worker sends progress numbers through a queue; the polling function sets `progress["value"]` and a label. Disable the Start button while it runs.
+see: tk.thr.queue, tk.progressbar
+```py
+import queue, threading, time
+import tkinter as tk
+from tkinter import ttk
+
+root = tk.Tk()
+q = queue.Queue()
+bar = ttk.Progressbar(root, length=280, maximum=100); bar.pack(padx=16, pady=(16, 4))
+text = ttk.Label(root, text="Ready"); text.pack()
+start = ttk.Button(root, text="Start"); start.pack(pady=(4, 16))
+
+def work():
+    for i in range(1, 101):
+        time.sleep(0.002)
+        q.put(i)
+    q.put("done")
+
+def poll():
+    while not q.empty():
+        msg = q.get()
+        if msg == "done":
+            text.config(text="Finished"); start.state(["!disabled"]); return
+        bar["value"] = msg
+        text.config(text=f"{msg}%")
+    root.after(30, poll)
+
+def begin():
+    start.state(["disabled"]); bar["value"] = 0
+    threading.Thread(target=work, daemon=True).start()
+    poll()
+
+start.config(command=begin)
+begin()
+root.mainloop()
+```
+
+@@ tk.thr.cancel
+Q: How do I add a Cancel/Stop button for a running background task?
+aka: cancel thread, stop thread button, interrupt long task, threading event stop, abort task
+A: Python can't kill a thread, so ask it to stop: share a `threading.Event`, the worker checks `stop.is_set()` regularly and returns early; the Cancel button calls `stop.set()`.
+see: tk.thr.progress
+```py
+import queue, threading, time
+import tkinter as tk
+
+root = tk.Tk()
+q, stop = queue.Queue(), threading.Event()
+status = tk.Label(root, text="idle", width=30); status.pack(pady=10)
+
+def work():
+    for i in range(1000):
+        if stop.is_set():
+            q.put("cancelled"); return
+        time.sleep(0.01)
+        q.put(f"working… {i}")
+    q.put("finished")
+
+def poll():
+    msg = None
+    while not q.empty():
+        msg = q.get()
+    if msg:
+        status.config(text=msg)
+    if msg not in ("cancelled", "finished"):
+        root.after(50, poll)
+
+def start():
+    stop.clear()
+    threading.Thread(target=work, daemon=True).start()
+    poll()
+
+tk.Button(root, text="Start", command=start).pack(side="left", padx=20, pady=10)
+tk.Button(root, text="Cancel", command=stop.set).pack(side="right", padx=20, pady=10)
+start()
+root.after(150, stop.set)
+root.mainloop()
+```
+
+@@ tk.thr.result
+Q: How do I run a function in the background and use its return value when it's done?
+aka: thread return value, get result from thread, future result tkinter, concurrent futures tkinter, executor submit
+A: Use `concurrent.futures.ThreadPoolExecutor`: `future = pool.submit(func, args)`. Check `future.done()` with `after`, then `future.result()` (which also re-raises any error from the thread).
+see: tk.thr.queue, mod.cf.executor
+```py
+import time
+from concurrent.futures import ThreadPoolExecutor
+import tkinter as tk
+
+pool = ThreadPoolExecutor(max_workers=2)
+root = tk.Tk()
+out = tk.Label(root, text="…", width=30); out.pack(padx=20, pady=20)
+
+def slow_square(n):
+    time.sleep(0.1)
+    return n * n
+
+def when_done(future, callback):
+    if future.done():
+        callback(future.result())
+    else:
+        root.after(30, when_done, future, callback)
+
+when_done(pool.submit(slow_square, 12), lambda r: out.config(text=f"12² = {r}"))
+root.after(300, lambda: print(out.cget("text")))
+root.mainloop()
+pool.shutdown(wait=False)
+```
+```text
+12² = 144
+```
+
+@@ tk.thr.download
+Q: How do I download a file in the background with a progress bar?
+aka: download progress bar, urllib download thread, requests stream progress, download file gui
+A: In a thread, read the response in chunks and send `(bytes_done, total)` through a queue; the main thread updates a Progressbar. `Content-Length` gives the total size (it can be missing: then use indeterminate mode).
+see: tk.thr.progress, py.requests
+```py norun
+import queue, threading, urllib.request
+import tkinter as tk
+from tkinter import ttk
+
+URL = "https://www.python.org/static/img/python-logo.png"
+root = tk.Tk()
+q = queue.Queue()
+bar = ttk.Progressbar(root, length=300); bar.pack(padx=16, pady=16)
+info = ttk.Label(root); info.pack(pady=(0, 16))
+
+def download(url, path):
+    try:
+        with urllib.request.urlopen(url, timeout=15) as r, open(path, "wb") as f:
+            total = int(r.headers.get("Content-Length") or 0)
+            done = 0
+            while chunk := r.read(16384):
+                f.write(chunk); done += len(chunk)
+                q.put((done, total))
+        q.put("ok")
+    except OSError as e:
+        q.put(e)
+
+def poll():
+    while not q.empty():
+        m = q.get()
+        if m == "ok":
+            info.config(text="Saved!"); return
+        if isinstance(m, Exception):
+            info.config(text=f"Failed: {m}"); return
+        done, total = m
+        if total:
+            bar["value"] = done * 100 / total
+        info.config(text=f"{done // 1024} KB")
+    root.after(50, poll)
+
+threading.Thread(target=download, args=(URL, "logo.png"), daemon=True).start()
+poll()
+root.mainloop()
+```
+
+@@ tk.thr.chunks
+Q: How can I do a long loop without threads and still keep the window responsive?
+aka: chunk work after, split loop after, cooperative multitasking, process list in batches, no thread long loop
+A: Do a small batch of the work, then schedule the next batch with `after(1, ...)`. The window gets a chance to redraw and react between batches. Good for loops over many items where each item is quick.
+see: tk.after-not-sleep, tk.thr.generator
+```py
+import tkinter as tk
+
+root = tk.Tk()
+label = tk.Label(root, width=30); label.pack(padx=20, pady=20)
+N, BATCH = 200_000, 5_000
+total = [0]
+
+def work(start=0):
+    for i in range(start, min(start + BATCH, N)):
+        total[0] += i * i                 # the real work
+    label.config(text=f"{min(start + BATCH, N):,} / {N:,}")
+    if start + BATCH < N:
+        root.after(1, work, start + BATCH)
+    else:
+        label.config(text=f"Done: {total[0]:,}")
+
+work()
+root.after(300, lambda: print(label.cget("text")[:5]))
+root.mainloop()
+```
+
+@@ tk.thr.generator
+Q: How do I write a step-by-step animation or algorithm with a generator (yield) instead of nested after() calls?
+aka: generator animation, yield after, coroutine tkinter, visualise algorithm, sorting visualiser, step through algorithm
+A: Write the algorithm as a generator that `yield`s after each step. A small driver calls `next()` on it every N ms with `after`. Perfect for visualising sorting or path-finding.
+see: py.generators, tk.thr.chunks
+```py
+import random
+import tkinter as tk
+
+root = tk.Tk()
+c = tk.Canvas(root, width=400, height=200, bg="white", highlightthickness=0); c.pack()
+data = random.sample(range(5, 195), 30)
+
+def draw(active=()):
+    c.delete("all")
+    w = 400 / len(data)
+    for i, v in enumerate(data):
+        c.create_rectangle(i * w + 1, 200 - v, (i + 1) * w - 1, 200, fill="#c23b22" if i in active else "#3b6ea8", outline="")
+
+def bubble_sort():
+    n = len(data)
+    for i in range(n):
+        for j in range(n - i - 1):
+            if data[j] > data[j + 1]:
+                data[j], data[j + 1] = data[j + 1], data[j]
+            yield (j, j + 1)            # pause here, showing these two
+
+def run(gen, ms=5):
+    try:
+        draw(next(gen))
+        root.after(ms, run, gen, ms)
+    except StopIteration:
+        draw()
+        print("sorted:", data == sorted(data))
+
+run(bubble_sort(), 0)
+root.mainloop()
+```
+
+@@ tk.thr.asyncio
+Q: How do I use asyncio (async/await) with tkinter?
+aka: asyncio tkinter, async await tkinter, aiohttp tkinter, event loop tkinter, run coroutine gui
+A: Two loops can't both run forever on one thread. Run asyncio in a background thread with its own loop, send coroutines to it with `asyncio.run_coroutine_threadsafe(coro, loop)`, and bring results back through a `queue.Queue` that tkinter polls with `after` (never call widget methods, or even `root.after`, from the asyncio thread).
+see: tk.thr.queue, mod.asyncio.basics
+```py
+import asyncio, queue, threading
+import tkinter as tk
+
+loop = asyncio.new_event_loop()
+threading.Thread(target=loop.run_forever, daemon=True).start()
+results = queue.Queue()
+
+async def fetch(n):                 # pretend network call
+    await asyncio.sleep(0.05 * n)
+    return f"result {n}"
+
+root = tk.Tk()
+lb = tk.Listbox(root, width=30, height=6); lb.pack(padx=10, pady=10)
+
+def start(n):
+    fut = asyncio.run_coroutine_threadsafe(fetch(n), loop)
+    fut.add_done_callback(lambda f: results.put(f.result()))   # runs in the asyncio thread: queue only
+
+def poll():
+    while not results.empty():
+        lb.insert("end", results.get())
+    root.after(30, poll)
+
+for n in (3, 1, 2):
+    start(n)
+poll()
+root.after(300, lambda: print(lb.get(0, "end")))
+root.mainloop()
+loop.call_soon_threadsafe(loop.stop)
+```
+```text
+('result 1', 'result 2', 'result 3')
+```
+
+@@ tk.thr.subprocess-live
+Q: How do I run a command and show its output live, line by line, in my window?
+aka: subprocess live output, stream output to text widget, run script show output, popen readline thread, console in gui
+A: Start it with `subprocess.Popen(..., stdout=PIPE, stderr=STDOUT, text=True)`, read `proc.stdout` line by line in a thread, and push lines into a queue that the GUI polls.
+see: tk.run-command, tk.thr.queue
+```py
+import queue, subprocess, sys, threading
+import tkinter as tk
+
+root = tk.Tk()
+out = tk.Text(root, width=50, height=10, bg="#111", fg="#ddd"); out.pack()
+q = queue.Queue()
+CMD = [sys.executable, "-u", "-c", "import time\nfor i in range(5):\n    print('line', i)\n    time.sleep(0.02)"]
+
+def reader():
+    with subprocess.Popen(CMD, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True) as p:
+        for line in p.stdout:
+            q.put(line)
+    q.put(f"[exit code {p.returncode}]\n")
+
+def poll():
+    while not q.empty():
+        out.insert("end", q.get()); out.see("end")
+    root.after(50, poll)
+
+threading.Thread(target=reader, daemon=True).start()
+poll()
+root.mainloop()
+```
+`-u` makes a Python child print immediately instead of buffering.
+
+@@ tk.thr.timer-thread
+Q: Should I use threading.Timer or after() for a delayed action in tkinter?
+aka: threading timer tkinter, timer vs after, schedule function later thread, delayed call
+A: Use `after`: it runs on the main thread, so it can touch widgets. `threading.Timer` runs the function in another thread, which must not touch widgets (it would need a queue). `after` returns an id you can cancel with `after_cancel`.
+see: tk.after, tk.after-cancel
+```py
+import tkinter as tk
+
+root = tk.Tk()
+l = tk.Label(root, text="wait…", width=20); l.pack(padx=20, pady=20)
+job = root.after(100, lambda: l.config(text="0.1 s later"))   # safe: main thread
+# root.after_cancel(job) would stop it
+root.after(200, lambda: print(l.cget("text")))
+root.mainloop()
+```
+```text
+0.1 s later
+```
+
+@@ tk.thr.debounce
+Q: How do I run a search only after the user stops typing (debounce)?
+aka: debounce, wait until user stops typing, delay search, throttle events, avoid running on every key
+A: On each key, cancel the previously scheduled job and schedule a new one in ~300 ms. Only the last one runs.
+see: tk.after-cancel
+```py
+import tkinter as tk
+
+root = tk.Tk()
+q = tk.StringVar()
+tk.Entry(root, textvariable=q, width=30).pack(padx=20, pady=(20, 6))
+result = tk.Label(root, width=30); result.pack(pady=(0, 20))
+pending = [None]
+
+def search():
+    result.config(text=f"searched for {q.get()!r}")
+
+def on_change(*_):
+    if pending[0]:
+        root.after_cancel(pending[0])
+    pending[0] = root.after(120, search)       # 300 ms feels natural; shorter here for the demo
+
+q.trace_add("write", on_change)
+for i, ch in enumerate("apple"):
+    root.after(i * 20, q.set, "apple"[:i + 1])     # simulate fast typing
+root.after(300, lambda: print(result.cget("text")))
+root.mainloop()
+```
+```text
+searched for 'apple'
+```
+
+@@ tk.thr.busy-cursor
+Q: How do I show a busy (hourglass/watch) cursor while something is working?
+aka: busy cursor, wait cursor, hourglass cursor, watch cursor, loading cursor
+A: `root.config(cursor="watch")` and `root.update_idletasks()` before the work; set `cursor=""` after. For work in a thread, set it when you start and reset it when the result arrives.
+see: tk.cursor
+```py
+import time
+import tkinter as tk
+
+root = tk.Tk()
+def do_work():
+    root.config(cursor="watch"); root.update_idletasks()
+    try:
+        time.sleep(0.1)                    # short blocking job
+    finally:
+        root.config(cursor="")
+tk.Button(root, text="Work", command=do_work).pack(padx=40, pady=30)
+root.mainloop()
+```
+
+@@ tk.thr.multiprocessing
+Q: My calculation is CPU-heavy and threads don't make it faster. How do I use multiprocessing with tkinter?
+aka: multiprocessing tkinter, cpu heavy task gui, gil threads slow, process pool tkinter, use all cores
+A: Use `concurrent.futures.ProcessPoolExecutor` and poll the future with `after`. The worker function must be at the top level of the module, and the start code must be inside `if __name__ == "__main__":` (required on Windows and macOS).
+see: tk.thr.result, mod.mp.pool
+```py
+from concurrent.futures import ProcessPoolExecutor
+import tkinter as tk
+
+def count_primes(n):                       # top level: can be sent to another process
+    return sum(all(k % d for d in range(2, int(k ** 0.5) + 1)) for k in range(2, n))
+
+def main():
+    pool = ProcessPoolExecutor()
+    root = tk.Tk()
+    out = tk.Label(root, text="counting…", width=30); out.pack(padx=20, pady=20)
+    fut = pool.submit(count_primes, 20000)
+
+    def check():
+        if fut.done():
+            out.config(text=f"{fut.result()} primes below 20000")
+            print(out.cget("text"))
+        else:
+            root.after(50, check)
+    check()
+    root.after(3000, root.destroy)
+    root.mainloop()
+    pool.shutdown()
+
+if __name__ == "__main__":
+    main()
+```
+
+@@ tk.thr.periodic-check
+Q: How do I check something every few seconds (a file, a website, an inbox) without freezing?
+aka: periodic check, poll every few seconds, watch file changes, check website regularly, background polling
+A: If the check is quick (like a file's modification time), do it directly in an `after` loop. If it's slow (network), start a thread for each check and collect the answer with the queue pattern.
+see: tk.after, tk.thr.queue
+```py
+import os
+import tkinter as tk
+
+PATH = "notes.txt"
+root = tk.Tk()
+status = tk.Label(root, width=40); status.pack(padx=20, pady=20)
+last = [None]
+
+def check():
+    try:
+        m = os.path.getmtime(PATH)
+    except OSError:
+        m = None
+    if m != last[0]:
+        status.config(text=f"{PATH} changed" if last[0] else f"watching {PATH}")
+        last[0] = m
+    root.after(1000, check)
+
+check()
+root.mainloop()
+```
+
+@@ tk.thr.thread-class
+Q: How do I organise threads in a class-based tkinter app?
+aka: thread in class, self.after thread, worker method class, app class threading queue
+A: Give the app a `self.queue` and a `poll` method started in `__init__`. Workers are methods that only use the queue. Messages can be `(kind, data)` tuples so one queue handles everything.
+see: tk.app-class, tk.thr.queue
+```py
+import queue, threading, time
+import tkinter as tk
+from tkinter import ttk
+
+class App(tk.Tk):
+    def __init__(self):
+        super().__init__()
+        self.q = queue.Queue()
+        self.status = ttk.Label(self, text="ready", width=30); self.status.pack(padx=20, pady=(20, 6))
+        self.bar = ttk.Progressbar(self, length=240); self.bar.pack(padx=20)
+        ttk.Button(self, text="Go", command=self.start).pack(pady=(6, 20))
+        self.after(50, self.poll)
+
+    def start(self):
+        threading.Thread(target=self.work, daemon=True).start()
+
+    def work(self):                       # background thread
+        for i in range(1, 11):
+            time.sleep(0.01)
+            self.q.put(("progress", i * 10))
+        self.q.put(("done", "all finished"))
+
+    def poll(self):
+        while not self.q.empty():
+            kind, data = self.q.get()
+            if kind == "progress":
+                self.bar["value"] = data
+            elif kind == "done":
+                self.status.config(text=data)
+        self.after(50, self.poll)
+
+app = App()
+app.start()
+app.mainloop()
+```

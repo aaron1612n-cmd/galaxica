@@ -1,0 +1,488 @@
+# tk-x | Beyond the basics | Drag and drop files, custom fonts, turtle and pygame inside tkinter, webcam, video, CustomTkinter, translations | tkinter
+
+@@ tk.x.drop-files
+Q: How do I let users drag and drop files from Explorer/Finder onto my window?
+aka: drag and drop files, drop file on window, tkinterdnd2, dnd files, drop zone
+A: Plain tkinter can't receive files from other programs. Install `tkinterdnd2` (`pip install tkinterdnd2`), create the window with `TkinterDnD.Tk()`, register a widget with `drop_target_register(DND_FILES)` and bind `<<Drop>>`. `event.data` holds the paths (use `root.tk.splitlist` to split them; paths with spaces come in `{braces}`).
+see: tk.x.dnd-inside
+```py norun
+import tkinter as tk
+from tkinterdnd2 import TkinterDnD, DND_FILES
+
+root = TkinterDnD.Tk()
+root.title("Drop files here")
+box = tk.Listbox(root, width=60, height=10)
+box.pack(padx=10, pady=10, fill="both", expand=True)
+box.drop_target_register(DND_FILES)
+
+def dropped(event):
+    for path in root.tk.splitlist(event.data):
+        box.insert("end", path)
+
+box.dnd_bind("<<Drop>>", dropped)
+root.mainloop()
+```
+
+@@ tk.x.dnd-inside
+Q: How do I drag and drop items between widgets inside my own app?
+aka: drag between listboxes, drag item to another widget, internal drag and drop, winfo_containing, tkinter.dnd
+A: On press remember the item; on release use `root.winfo_containing(event.x_root, event.y_root)` to find the widget under the mouse, and move the item there. (A floating label that follows the mouse makes it feel real.)
+see: tk.data.listbox-two, tk.drag
+```py
+import tkinter as tk
+
+root = tk.Tk()
+a = tk.Listbox(root, height=6); b = tk.Listbox(root, height=6)
+a.pack(side="left", padx=8, pady=8); b.pack(side="left", padx=8, pady=8)
+for x in ("red", "green", "blue", "yellow"):
+    a.insert("end", x)
+ghost = tk.Label(root, bg="#ffd27a", relief="solid", bd=1)
+drag = {}
+
+def start(e):
+    w = e.widget
+    i = w.nearest(e.y)
+    if i >= 0 and w.size():
+        drag.update(src=w, i=i, text=w.get(i))
+
+def move(e):
+    if drag:
+        ghost.config(text=drag["text"])
+        ghost.place(x=e.x_root - root.winfo_rootx() + 8, y=e.y_root - root.winfo_rooty() + 8)
+
+def drop(e):
+    if not drag:
+        return
+    ghost.place_forget()
+    target = root.winfo_containing(e.x_root, e.y_root)
+    if isinstance(target, tk.Listbox) and target is not drag["src"]:
+        target.insert("end", drag["text"])
+        drag["src"].delete(drag["i"])
+    drag.clear()
+
+for lb in (a, b):
+    lb.bind("<ButtonPress-1>", start); lb.bind("<B1-Motion>", move); lb.bind("<ButtonRelease-1>", drop)
+root.mainloop()
+```
+
+@@ tk.x.custom-font
+Q: How do I use a custom font file (.ttf/.otf) in tkinter?
+aka: custom font file, load ttf, use downloaded font, font not installed, pyglet font, ship font with app
+A: Tk can only use **installed** fonts. Options: install the font on the computer; on Windows load it for your app only with `AddFontResourceExW`; or use the `pyglet` package (`pyglet.font.add_file("MyFont.ttf")`) before creating widgets. Then refer to it by its family name.
+see: tk.font-list
+```py norun
+import sys
+import tkinter as tk
+
+FONT_FILE = "Lobster-Regular.ttf"
+
+if sys.platform == "win32":
+    import ctypes
+    ctypes.windll.gdi32.AddFontResourceExW(FONT_FILE, 0x10, 0)    # 0x10 = private to this app
+else:
+    import pyglet                     # pip install pyglet
+    pyglet.font.add_file(FONT_FILE)
+
+root = tk.Tk()
+tk.Label(root, text="Custom font!", font=("Lobster", 28)).pack(padx=20, pady=20)
+root.mainloop()
+```
+
+@@ tk.x.turtle-embed
+Q: How do I put a turtle drawing inside my tkinter window (with buttons)?
+aka: turtle in tkinter, RawTurtle, turtle canvas, turtle with buttons, embed turtle, TurtleScreen
+A: Use `turtle.RawTurtle` on a `turtle.TurtleScreen` built from your own Canvas, instead of the global `turtle` functions (which make their own window).
+see: mod.turtle.basics
+```py
+import tkinter as tk
+import turtle
+
+root = tk.Tk()
+root.title("Turtle inside tkinter")
+canvas = tk.Canvas(root, width=360, height=300); canvas.pack()
+screen = turtle.TurtleScreen(canvas)
+screen.bgcolor("#f2ede3")
+t = turtle.RawTurtle(screen)
+t.speed(0); t.pencolor("#c23b22")
+screen.tracer(0)                       # draw instantly
+
+def star(size=120):
+    t.clear(); t.penup(); t.goto(-size / 2, 20); t.pendown()
+    for _ in range(5):
+        t.forward(size); t.right(144)
+    screen.update()
+
+def spiral():
+    t.clear(); t.penup(); t.home(); t.pendown()
+    for i in range(80):
+        t.forward(i * 2); t.left(59)
+    screen.update()
+
+bar = tk.Frame(root); bar.pack(pady=6)
+tk.Button(bar, text="Star", command=star).pack(side="left", padx=4)
+tk.Button(bar, text="Spiral", command=spiral).pack(side="left", padx=4)
+star()
+root.mainloop()
+```
+
+@@ tk.x.pygame-embed
+Q: Can I put a pygame game inside a tkinter window?
+aka: pygame in tkinter, embed pygame, SDL_WINDOWID, pygame tkinter frame
+A: On Windows (and some Linux setups) you can tell SDL to draw into a tkinter Frame by setting `SDL_WINDOWID` to the frame's `winfo_id()` before `pygame.display.init()`, then pump pygame from an `after` loop. It doesn't work on macOS. Usually it's simpler to keep them as separate windows, or do the game in tkinter's Canvas.
+see: tk.game-loop
+```py norun
+import os
+import tkinter as tk
+
+root = tk.Tk()
+embed = tk.Frame(root, width=400, height=300); embed.pack()
+tk.Button(root, text="Quit", command=root.destroy).pack()
+root.update()
+os.environ["SDL_WINDOWID"] = str(embed.winfo_id())
+if os.name == "nt":
+    os.environ["SDL_VIDEODRIVER"] = "windib"
+import pygame
+pygame.display.init()
+screen = pygame.display.set_mode((400, 300))
+x = [0]
+
+def frame():
+    screen.fill((20, 20, 20))
+    pygame.draw.circle(screen, (255, 176, 0), (x[0] % 400, 150), 20)
+    pygame.display.flip()
+    x[0] += 4
+    root.after(16, frame)
+
+frame()
+root.mainloop()
+```
+
+@@ tk.x.webcam
+Q: How do I show a webcam (or video file) in a tkinter window?
+aka: webcam tkinter, opencv tkinter, camera feed gui, video player tkinter, play mp4 tkinter, cv2 label
+A: Read frames with OpenCV (`pip install opencv-python pillow`) in an `after` loop: `cap.read()`, convert BGR→RGB, wrap with `ImageTk.PhotoImage`, put it in a Label (keep a reference). For a video file, pass the filename to `VideoCapture` and use its FPS for the delay.
+see: tk.pillow, tk.after
+```py norun
+import cv2
+import tkinter as tk
+from PIL import Image, ImageTk
+
+cap = cv2.VideoCapture(0)              # 0 = first webcam, or "movie.mp4"
+root = tk.Tk()
+view = tk.Label(root); view.pack()
+
+def show_frame():
+    ok, frame = cap.read()
+    if ok:
+        img = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+        view.img = ImageTk.PhotoImage(img)
+        view.config(image=view.img)
+    root.after(30, show_frame)
+
+def snapshot():
+    ok, frame = cap.read()
+    if ok:
+        cv2.imwrite("snapshot.png", frame)
+
+tk.Button(root, text="Snapshot", command=snapshot).pack()
+root.protocol("WM_DELETE_WINDOW", lambda: (cap.release(), root.destroy()))
+show_frame()
+root.mainloop()
+```
+
+@@ tk.x.customtkinter
+Q: What is CustomTkinter and how do I start with it?
+aka: customtkinter, ctk, modern tkinter, rounded buttons library, dark mode widgets, ctkbutton
+A: A separate package (`pip install customtkinter`) with modern-looking, rounded, light/dark widgets that work like tkinter's: `ctk.CTk()`, `ctk.CTkButton`, `ctk.CTkEntry`... You can still mix in plain tkinter widgets (Canvas, Text).
+see: tk.modern-look, tk.other-gui
+```py norun
+import customtkinter as ctk
+
+ctk.set_appearance_mode("dark")          # "light", "dark" or "system"
+ctk.set_default_color_theme("green")
+app = ctk.CTk()
+app.geometry("320x200")
+app.title("CustomTkinter")
+entry = ctk.CTkEntry(app, placeholder_text="Your name")
+entry.pack(pady=(30, 10))
+ctk.CTkButton(app, text="Say hi", corner_radius=20, command=lambda: print("hi", entry.get())).pack()
+switch = ctk.CTkSwitch(app, text="Dark", command=lambda: ctk.set_appearance_mode("dark" if switch.get() else "light"))
+switch.select(); switch.pack(pady=10)
+app.mainloop()
+```
+
+@@ tk.x.translate
+Q: How do I make my tkinter app support several languages?
+aka: translate app, multiple languages, i18n tkinter, localisation, change language at runtime, gettext
+A: Keep all user-visible text in a dict per language and look strings up with a small function `t("key")`. To switch at runtime, store widgets with their key and `config(text=...)` them again. (Python's `gettext` module is the standard tool for bigger apps.)
+see: tk.widget-from-list, mod.gettext
+```py
+import tkinter as tk
+
+TEXT = {
+    "en": {"title": "Hello", "greet": "Good morning!", "lang": "Language"},
+    "es": {"title": "Hola", "greet": "¡Buenos días!", "lang": "Idioma"},
+    "fr": {"title": "Bonjour", "greet": "Bonjour !", "lang": "Langue"},
+}
+lang = "en"
+labels = []                                # (widget, key)
+
+def t(key):
+    return TEXT[lang].get(key, TEXT["en"][key])
+
+def tr(widget, key):
+    widget.config(text=t(key)); labels.append((widget, key)); return widget
+
+def set_lang(code):
+    global lang
+    lang = code
+    root.title(t("title"))
+    for w, key in labels:
+        w.config(text=t(key))
+
+root = tk.Tk()
+tr(tk.Label(root, font=("Arial", 18)), "greet").pack(padx=30, pady=10)
+row = tk.Frame(root); row.pack(pady=(0, 10))
+tr(tk.Label(row), "lang").pack(side="left")
+for code in TEXT:
+    tk.Button(row, text=code, command=lambda c=code: set_lang(c)).pack(side="left")
+set_lang("es")
+print(labels[0][0].cget("text"))
+root.mainloop()
+```
+```text
+¡Buenos días!
+```
+
+@@ tk.x.rtl
+Q: How do I show right-to-left text (Arabic, Hebrew) in tkinter?
+aka: right to left, arabic tkinter, hebrew text, rtl text, arabic letters disconnected
+A: Tk shows the characters but doesn't fully handle right-to-left layout. Right-align with `justify="right"`/`anchor="e"`. On systems where Arabic letters appear unjoined or reversed, reshape them with the `arabic-reshaper` and `python-bidi` packages before displaying.
+see: tk.label-align
+```py norun
+import tkinter as tk
+import arabic_reshaper                    # pip install arabic-reshaper python-bidi
+from bidi.algorithm import get_display
+
+def rtl(text):
+    return get_display(arabic_reshaper.reshape(text))
+
+root = tk.Tk()
+tk.Label(root, text=rtl("مرحبا بالعالم"), font=("Arial", 18), anchor="e", width=20).pack(padx=10, pady=10)
+root.mainloop()
+```
+
+@@ tk.x.jupyter
+Q: Can I use tkinter in Jupyter notebook or Google Colab?
+aka: tkinter jupyter, tkinter colab, tkinter notebook, no display colab, tkinter online
+A: In a local Jupyter, yes: the window opens on your desktop; run `root.mainloop()` in the cell (the cell stays busy until you close it). Google Colab and other online notebooks run on a server with no screen, so tkinter windows can't appear there (you get "no display name" errors). Use a local Python install for GUI work.
+see: tk.err.no-display, tk.err.no-mainloop-idle
+```py
+import tkinter as tk
+
+root = tk.Tk()
+tk.Label(root, text="Close me to free the notebook cell").pack(padx=30, pady=20)
+root.mainloop()
+```
+
+@@ tk.x.cli-and-gui
+Q: How do I make one program that works both from the command line and with a GUI?
+aka: command line and gui, cli gui same program, argparse gui option, headless mode, --nogui
+A: Put the real work in plain functions. Parse arguments with `argparse`; if a flag like `--gui` (or no arguments) is given, build the window that calls the same functions; otherwise print results.
+see: py.command-args, tk.mvc
+```py
+import argparse
+
+def convert(celsius):
+    return celsius * 9 / 5 + 32
+
+def run_gui():
+    import tkinter as tk
+    root = tk.Tk()
+    v = tk.DoubleVar(value=20)
+    out = tk.Label(root, width=12)
+    tk.Scale(root, from_=-30, to=50, variable=v, orient="horizontal",
+             command=lambda _: out.config(text=f"{convert(v.get()):.1f} °F")).pack(padx=20)
+    out.pack(pady=10)
+    root.mainloop()
+
+parser = argparse.ArgumentParser()
+parser.add_argument("celsius", nargs="?", type=float)
+parser.add_argument("--gui", action="store_true")
+args = parser.parse_args(["37"])             # in a real script: parser.parse_args()
+if args.gui or args.celsius is None:
+    run_gui()
+else:
+    print(f"{args.celsius} °C = {convert(args.celsius):.1f} °F")
+```
+```text
+37.0 °C = 98.6 °F
+```
+
+@@ tk.x.accessibility
+Q: How do I make my tkinter app more accessible (keyboard use, bigger text, contrast)?
+aka: accessibility tkinter, screen reader tkinter, keyboard only, high contrast, large fonts, a11y
+A: Tk has very little screen-reader support, so focus on what you control: every action reachable by keyboard (Tab order, Enter/Space, shortcuts shown in menus), a visible focus highlight, text size the user can change (one named font for everything), strong colour contrast, and never colour alone to show meaning.
+see: tk.font-object, tk.ev.focus-traversal
+```py
+import tkinter as tk
+from tkinter import font
+
+root = tk.Tk()
+base = font.nametofont("TkDefaultFont")
+for name in ("TkTextFont", "TkFixedFont", "TkMenuFont"):
+    font.nametofont(name).configure(size=base.cget("size"))
+
+def zoom(d):
+    for name in ("TkDefaultFont", "TkTextFont", "TkFixedFont", "TkMenuFont"):
+        f = font.nametofont(name)
+        f.configure(size=max(8, f.cget("size") + d))
+
+tk.Label(root, text="Ctrl + / Ctrl - change the text size").pack(padx=20, pady=10)
+tk.Entry(root, highlightthickness=3, highlightcolor="#1a57c4").pack(padx=20, pady=4)
+tk.Button(root, text="OK (Enter)", highlightthickness=3).pack(pady=10)
+root.bind("<Control-plus>", lambda e: zoom(2)); root.bind("<Control-equal>", lambda e: zoom(2))
+root.bind("<Control-minus>", lambda e: zoom(-2))
+zoom(2)
+print(font.nametofont("TkDefaultFont").cget("size") > base.cget("size") - 2)
+root.mainloop()
+```
+
+@@ tk.x.print-file
+Q: How do I print a document or text from my tkinter app to a printer?
+aka: print to printer, print text tkinter, printer dialog, send to printer, print pdf python
+A: Tk has no printing. Write the content to a file, then hand it to the operating system: Windows `os.startfile(path, "print")`; macOS/Linux `lp path` (or `lpr`). For nicer output, make a PDF first (e.g. with `reportlab`).
+see: tk.open-file-default-app
+```py norun
+import os, subprocess, sys, tempfile
+
+def print_text(text):
+    path = os.path.join(tempfile.gettempdir(), "print_me.txt")
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(text)
+    if sys.platform == "win32":
+        os.startfile(path, "print")
+    else:
+        subprocess.run(["lp", path], check=True)
+
+print_text("Hello, printer!")
+```
+
+@@ tk.x.qr
+Q: How do I show a QR code in tkinter?
+aka: qr code tkinter, generate qr code, qrcode library, show qr image
+A: Make it with the `qrcode` package (`pip install qrcode[pil]`), which returns a Pillow image; display it with `ImageTk.PhotoImage`.
+see: tk.pillow
+```py norun
+import tkinter as tk
+import qrcode
+from PIL import ImageTk
+
+root = tk.Tk()
+img = qrcode.make("https://www.python.org").resize((220, 220))
+root.qr = ImageTk.PhotoImage(img)
+tk.Label(root, image=root.qr).pack(padx=20, pady=20)
+root.mainloop()
+```
+
+@@ tk.x.pdf-view
+Q: How do I show a PDF inside a tkinter window?
+aka: pdf viewer tkinter, show pdf, display pdf pages, pymupdf tkinter
+A: Render each page to an image with PyMuPDF (`pip install pymupdf`): `page.get_pixmap()` gives PNG bytes that `tk.PhotoImage(data=...)` can show. Add Previous/Next buttons to change pages.
+see: tk.recipe-image-viewer
+```py norun
+import tkinter as tk
+import fitz                         # PyMuPDF
+
+doc = fitz.open("document.pdf")
+root = tk.Tk()
+view = tk.Label(root); view.pack()
+page = [0]
+
+def show():
+    pix = doc[page[0]].get_pixmap(dpi=80)
+    view.img = tk.PhotoImage(data=pix.tobytes("png"))
+    view.config(image=view.img)
+    root.title(f"Page {page[0] + 1} / {len(doc)}")
+
+def go(d):
+    page[0] = max(0, min(len(doc) - 1, page[0] + d)); show()
+
+bar = tk.Frame(root); bar.pack()
+tk.Button(bar, text="◀", command=lambda: go(-1)).pack(side="left")
+tk.Button(bar, text="▶", command=lambda: go(1)).pack(side="left")
+show()
+root.mainloop()
+```
+
+@@ tk.x.mac-app
+Q: How do I package a tkinter app for macOS or Linux (not just Windows .exe)?
+aka: package mac app, py2app, linux executable, pyinstaller mac, briefcase, distribute app mac linux
+A: PyInstaller works on all three systems, but you must build **on** each system for that system (`pyinstaller --windowed --onefile app.py` on a Mac makes a `.app`). Alternatives: `py2app` (macOS), `briefcase` (all platforms, makes installers). Ship image files with `--add-data`.
+see: tk.pyinstaller, tk.resource-path
+```sh
+pip install pyinstaller
+pyinstaller --windowed --name "My App" --icon icon.icns --add-data "images:images" app.py
+# result: dist/My App.app  (on macOS), dist/My App/ (Linux)
+```
+
+@@ tk.x.single-instance
+Q: How do I stop my app from being opened twice at the same time?
+aka: single instance, only one instance, prevent second window app, app already running, lock file
+A: At start, try to grab something only one process can own, like a local network port: if binding fails, another copy is running. Keep the socket open while the app runs.
+see: mod.socket.tcp
+```py
+import socket, sys
+import tkinter as tk
+
+def already_running(port=47200):
+    global _lock
+    _lock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        _lock.bind(("127.0.0.1", port))
+        return False
+    except OSError:
+        return True
+
+if already_running():
+    print("Already open.")
+    sys.exit(0)
+root = tk.Tk()
+tk.Label(root, text="Only one of me").pack(padx=40, pady=30)
+root.mainloop()
+```
+
+@@ tk.x.config-file
+Q: How do I store app settings in an .ini file (with sections and defaults)?
+aka: ini file settings, configparser tkinter, settings file sections, user preferences file, app config
+A: `configparser` reads and writes `.ini` files with sections. Use `getint`, `getboolean`, `fallback=` for defaults, and save on close.
+see: tk.save-settings, mod.configparser
+```py
+import configparser
+import tkinter as tk
+
+CFG = "settings.ini"
+cfg = configparser.ConfigParser()
+cfg.read(CFG)                                   # missing file is fine
+root = tk.Tk()
+dark = tk.BooleanVar(value=cfg.getboolean("look", "dark", fallback=False))
+size = tk.IntVar(value=cfg.getint("look", "font_size", fallback=12))
+tk.Checkbutton(root, text="Dark mode", variable=dark).pack(padx=30, pady=6)
+tk.Spinbox(root, from_=8, to=30, textvariable=size, width=5).pack(pady=6)
+
+def save_and_quit():
+    cfg["look"] = {"dark": str(dark.get()), "font_size": str(size.get())}
+    with open(CFG, "w") as f:
+        cfg.write(f)
+    root.destroy()
+
+root.protocol("WM_DELETE_WINDOW", save_and_quit)
+root.after(200, save_and_quit)
+root.mainloop()
+print(open(CFG).read().strip())
+```
+```text
+[look]
+dark = False
+font_size = 12
+```

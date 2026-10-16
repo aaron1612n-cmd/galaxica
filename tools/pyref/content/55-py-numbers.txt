@@ -1,0 +1,316 @@
+# py-num | Numbers | int and float, binary and hex, bitwise, big numbers, Decimal for money, Fraction, infinity and NaN, comparing floats | python
+
+@@ py.num.int-float
+Q: What's the difference between int and float, and when do I get each?
+aka: int vs float, integer vs decimal, why .0, division gives float, convert float to int, int truncates
+A: `int` = whole numbers of any size; `float` = numbers with a decimal point (about 15–17 significant digits). `/` always gives a float; `//` gives a whole number (floor). `int(3.9)` cuts off to `3`; `round(3.9)` gives `4`.
+see: py.math-ops, py.round
+```py
+print(7 / 2, 7 // 2, 7 % 2)
+print(6 / 3, type(6 / 3).__name__)
+print(int(3.9), int(-3.9), round(3.9))
+print(int("42") + 1, float("3.5") * 2)
+print(2 ** 100)                    # ints never overflow
+```
+```text
+3.5 3 1
+2.0 float
+3 -3 4
+43 7.0
+1267650600228229401496703205376
+```
+
+@@ py.num.bases
+Q: How do I convert numbers to and from binary, hex and octal?
+aka: binary, hexadecimal, octal, bin hex oct, int base 2, convert to binary, base conversion, 0b 0x, format binary with zeros
+A: To a string: `bin(n)`, `hex(n)`, `oct(n)`, or `format(n, "08b")` / `f"{n:x}"` without the prefix. From a string: `int("1010", 2)`, `int("ff", 16)`, or `int("0x1f", 0)` to guess from the prefix.
+see: py.num.bitwise
+```py
+n = 42
+print(bin(n), hex(n), oct(n))
+print(f"{n:08b} {n:x} {n:X} {n:o}")
+print(int("101010", 2), int("ff", 16), int("0o17", 0), int("0x1F", 0))
+print(0b1010 + 0xF)
+```
+```text
+0b101010 0x2a 0o52
+00101010 2a 2A 52
+42 255 15 31
+25
+```
+
+@@ py.num.bitwise
+Q: How do the bitwise operators work (&, |, ^, ~, <<, >>)?
+aka: bitwise operators, bit and or xor, shift left right, bit flags, check bit set, set bit, toggle bit
+A: They work on the binary digits: `&` and, `|` or, `^` xor, `~` not, `<<` shift left (×2 each step), `>>` shift right (÷2). Typical use: flags packed in one number.
+see: py.num.bases
+```py
+READ, WRITE, EXEC = 1, 2, 4            # one bit each
+perms = READ | WRITE                   # combine
+print(perms, bool(perms & WRITE), bool(perms & EXEC))
+perms ^= WRITE                         # toggle off
+print(perms, f"{perms:03b}")
+print(1 << 10, 1000 >> 3, ~5)
+n = 0b1011
+print(bin(n).count("1"), n.bit_length())
+```
+```text
+3 True False
+1 001
+1024 125 -6
+3 4
+```
+
+@@ py.num.decimal
+Q: How do I do exact money calculations (Decimal)?
+aka: decimal money, exact decimal, currency calculation, Decimal module, rounding money, float money wrong
+A: Floats can't store 0.1 exactly, so sums drift. `decimal.Decimal` works in base 10: create it from **strings** (`Decimal("0.10")`), and round with `quantize`. Or store money as whole pennies/cents in ints.
+see: py.float-precision
+```py
+from decimal import Decimal, ROUND_HALF_UP
+
+print(0.1 + 0.2)
+print(Decimal("0.1") + Decimal("0.2"))
+price = Decimal("19.99")
+total = price * 3 * Decimal("1.2")              # add 20% tax
+print(total, total.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP))
+print(Decimal(0.1))                             # made from a float: inexact
+cents = 1999 * 3
+print(f"£{cents // 100}.{cents % 100:02d}")
+```
+```text
+0.30000000000000004
+0.3
+71.964 71.96
+0.1000000000000000055511151231257827021181583404541015625
+£59.97
+```
+
+@@ py.num.fraction
+Q: How do I work with fractions exactly (1/3 + 1/6)?
+aka: fractions module, Fraction, exact fraction, simplify fraction, numerator denominator
+A: `fractions.Fraction(1, 3)` keeps exact numerators and denominators and simplifies automatically. `Fraction("0.75")` and `.limit_denominator()` convert decimals.
+see: py.num.decimal
+```py
+from fractions import Fraction
+
+a = Fraction(1, 3) + Fraction(1, 6)
+print(a, a.numerator, a.denominator, float(a))
+print(Fraction("0.75"), Fraction(6, 8))
+print(Fraction(3.14159).limit_denominator(100))
+```
+```text
+1/2 1 2 0.5
+3/4 3/4
+311/99
+```
+
+@@ py.num.isclose
+Q: How do I compare floats safely (0.1 + 0.2 == 0.3 is False)?
+aka: compare floats, float equality, math isclose, tolerance, almost equal, epsilon
+A: Never use `==` on computed floats. Use `math.isclose(a, b)` (relative tolerance) or check `abs(a - b) < 1e-9`.
+see: py.float-precision
+```py
+import math
+
+a = 0.1 + 0.2
+print(a == 0.3, math.isclose(a, 0.3), abs(a - 0.3) < 1e-9)
+print(math.isclose(1000.0, 1000.1, rel_tol=1e-3))
+```
+```text
+False True True
+True
+```
+
+@@ py.num.inf-nan
+Q: How do I use infinity and NaN in Python?
+aka: infinity, float inf, nan, not a number, math inf, check nan, isnan, largest number, starting minimum
+A: `float("inf")` / `math.inf` is bigger than every number: handy as a starting "best so far". `float("nan")` means "not a number"; it isn't equal to anything, even itself, so test with `math.isnan`.
+see: py.max-loop
+```py
+import math
+
+best = math.inf
+for d in (12.5, 7.2, 9.9):
+    best = min(best, d)
+print(best, math.inf > 10**300, -math.inf < -1e308)
+nan = float("nan")
+print(nan == nan, math.isnan(nan), math.isinf(math.inf))
+```
+```text
+7.2 True True
+False True True
+```
+
+@@ py.num.underscore
+Q: How do I write big numbers readably (1_000_000) and in scientific notation?
+aka: underscore in numbers, thousands separator literal, scientific notation, 1e6, e notation, exponent
+A: Underscores in number literals are ignored: `1_000_000`. `1e6` is a float = 1000000.0, `2.5e-3` = 0.0025. To print with separators use `f"{n:,}"` or `f"{n:_}"`.
+see: py.format-decimals
+```py
+population = 8_100_000_000
+print(population, f"{population:,}", f"{population:_}")
+print(1e6, 2.5e-3, int(1e6), f"{123456789:.2e}")
+```
+```text
+8100000000 8,100,000,000 8_100_000_000
+1000000.0 0.0025 1000000 1.23e+08
+```
+
+@@ py.num.divmod-pow
+Q: What do divmod(), pow() with three arguments, and abs() do?
+aka: divmod, pow mod, modular power, abs absolute value, quotient and remainder together
+A: `divmod(a, b)` returns `(a // b, a % b)`. `pow(b, e, m)` computes `b**e % m` quickly (even huge). `abs(x)` removes the sign.
+see: py.math-ops
+```py
+mins, secs = divmod(250, 60)
+print(mins, secs)
+print(pow(2, 10), pow(3, 200, 1000), pow(5, -1, 7))   # last: modular inverse
+print(abs(-7), abs(-2.5), abs(3 + 4j))
+```
+```text
+4 10
+1024 1 3
+7 2.5 5.0
+```
+
+@@ py.num.negative-mod
+Q: Why does -7 % 3 give 2, and -7 // 2 give -4?
+aka: negative modulo, negative floor division, modulo negative numbers, floor division rounds down
+A: `//` rounds **down** (towards minus infinity), not towards zero, and `%` gives a result with the same sign as the divisor so that `(a // b) * b + a % b == a` holds. For C-style "towards zero", use `int(a / b)` and `math.fmod`.
+see: py.math-ops
+```py
+import math
+
+print(-7 // 2, int(-7 / 2))
+print(-7 % 3, math.fmod(-7, 3))
+print((-7 // 3) * 3 + (-7 % 3))
+print(-1 % 24)                    # handy for wrapping hours: 23
+```
+```text
+-4 -3
+2 -1.0
+-7
+23
+```
+
+@@ py.num.random-ranges
+Q: How do I get random numbers in a range (whole numbers, decimals, normal distribution)?
+aka: random number range, random float between, randint vs randrange, random uniform, gauss, seed random
+A: `randint(a, b)` includes both ends; `randrange(a, b, step)` excludes `b`; `uniform(a, b)` a float; `random()` a float 0–1; `gauss(mean, sd)` bell-curve values. `random.seed(n)` makes results repeatable.
+see: py.random, mod.secrets
+```py
+import random
+
+random.seed(42)
+print(random.randint(1, 6), random.randrange(0, 100, 10))
+print(round(random.uniform(1.5, 2.5), 3), round(random.random(), 3))
+print(round(random.gauss(100, 15)))
+random.seed(42)
+print(random.randint(1, 6))          # same as first: repeatable
+```
+```text
+6 10
+1.525 0.275
+104
+6
+```
+
+@@ py.num.number-words
+Q: How do I check if a string is a valid number (including decimals and negatives)?
+aka: is number, check if float, validate number string, isnumeric negative, isdigit decimal point
+A: `str.isdigit()` fails for `"-3"` and `"2.5"`. The reliable test is to try converting: `float(s)` in `try/except ValueError`.
+see: py.str-checks, py.input-number
+```py
+def is_number(s):
+    try:
+        float(s)
+        return True
+    except ValueError:
+        return False
+
+for s in ("42", "-3", "2.5", "1e3", "abc", "", " 7 "):
+    print(repr(s), s.isdigit(), is_number(s))
+```
+```text
+'42' True True
+'-3' False True
+'2.5' False True
+'1e3' False True
+'abc' False False
+'' False False
+' 7 ' False True
+```
+
+@@ py.num.complex
+Q: How do complex numbers work in Python?
+aka: complex numbers, imaginary number, j suffix, cmath, real imag, sqrt of negative
+A: Write them with `j`: `3 + 4j`. They have `.real`, `.imag`, `abs()` (the length) and work with `+ - * /`. Use `cmath` for functions like `sqrt` of negative numbers.
+see: py.math-module
+```py
+import cmath
+
+z = 3 + 4j
+print(z.real, z.imag, abs(z), z * 1j, z.conjugate())
+print(cmath.sqrt(-9), cmath.phase(1j))
+```
+```text
+3.0 4.0 5.0 (-4+3j) (3-4j)
+3j 1.5707963267948966
+```
+
+@@ py.num.int-limits
+Q: What are the biggest and smallest numbers Python can handle?
+aka: max int, largest float, sys maxsize, float max, overflow, smallest float, float epsilon
+A: `int` has no limit (only memory). Floats go up to about `1.8e308` (`sys.float_info.max`); beyond that is `inf`. `sys.float_info.epsilon` is the gap between 1.0 and the next float. `sys.maxsize` is the largest list index, not the largest int.
+see: py.num.inf-nan
+```py
+import sys
+
+print(sys.float_info.max, sys.float_info.max * 10)
+print(sys.float_info.epsilon)
+print(sys.maxsize == 2**63 - 1, len(str(10**1000)))
+```
+```text
+1.7976931348623157e+308 inf
+2.220446049250313e-16
+True 1001
+```
+
+@@ py.num.percent
+Q: How do I calculate a percentage, percentage change, or show a number as a percent?
+aka: percentage, percent change, percent of total, format percent, increase by percent
+A: Percentage = part / whole * 100. Change = (new - old) / old * 100. Format a fraction as a percent with `f"{x:.1%}"` (it multiplies by 100 for you).
+see: py.format-decimals
+```py
+correct, total = 17, 20
+print(correct / total * 100, f"{correct / total:.0%}")
+old, new = 80, 92
+print(f"{(new - old) / old:+.1%}")
+price = 50
+print(price * 1.2, price * (1 - 0.15))      # +20%, -15%
+```
+```text
+85.0 85%
++15.0%
+60.0 42.5
+```
+
+@@ py.num.statistics
+Q: How do I get the median, mode or standard deviation of numbers?
+aka: median, mode, standard deviation, statistics module, variance, mean, quartiles
+A: The `statistics` module: `mean`, `median`, `mode`, `multimode`, `stdev` (sample), `pstdev` (population), `quantiles`.
+see: py.list-math, mod.statistics
+```py
+import statistics as st
+
+data = [2, 4, 4, 4, 5, 5, 7, 9]
+print(st.mean(data), st.median(data), st.mode(data))
+print(round(st.stdev(data), 3), st.pstdev(data))
+print(st.quantiles(data, n=4))
+```
+```text
+5 4.5 4
+2.138 2.0
+[4.0, 4.5, 6.5]
+```

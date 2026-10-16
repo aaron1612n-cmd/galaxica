@@ -1,0 +1,306 @@
+# py-proj | Style, projects and speed | PEP 8, naming, packages and __init__.py, requirements, environment variables, profiling and making code faster | python
+
+@@ py.proj.pep8
+Q: What is PEP 8 (Python's style guide) in short?
+aka: pep8, python style guide, naming conventions, code style, formatting rules, black formatter, ruff
+A: 4 spaces per indent; lines under ~79–99 characters; `snake_case` for functions and variables, `PascalCase` for classes, `UPPER_CASE` for constants; spaces around `=` and operators (but not for keyword arguments `f(x=1)`); two blank lines between top-level functions; imports at the top. Tools like `black` or `ruff format` format code for you.
+see: py.proj.naming
+```py
+MAX_RETRIES = 3                      # constant
+
+
+class ShoppingCart:                  # class: PascalCase
+    def __init__(self):
+        self.items = []
+
+    def add_item(self, name, price=0.0):      # function: snake_case
+        self.items.append((name, price))
+
+
+def total_price(cart):
+    return sum(price for _, price in cart.items)
+
+
+cart = ShoppingCart()
+cart.add_item("tea", price=2.5)
+print(total_price(cart))
+```
+```text
+2.5
+```
+
+@@ py.proj.naming
+Q: What do underscores in names mean (_x, __x, __x__, _)?
+aka: underscore meaning, single underscore, double underscore, dunder, private variable, throwaway variable underscore, name mangling
+A: `_x` = "internal, please don't use from outside" (a convention). `__x` inside a class = name-mangled to `_Class__x` (to avoid clashes in subclasses). `__x__` = special Python methods (dunders). `_` alone = a value you don't care about (`for _ in range(3)`). `x_` = avoids clashing with a keyword (`class_`).
+see: py.private
+```py
+class Account:
+    def __init__(self):
+        self._log = []              # internal
+        self.__pin = 1234           # mangled
+acc = Account()
+print(hasattr(acc, "__pin"), acc._Account__pin)
+for _ in range(2):
+    print("hi", end=" ")
+print()
+first, _, last = ("Ada", "middle", "Lovelace")
+print(first, last)
+```
+```text
+False 1234
+hi hi
+Ada Lovelace
+```
+
+@@ py.proj.package
+Q: How do I organise code into a package (folders, __init__.py, relative imports)?
+aka: python package, __init__.py, folder of modules, relative import, from . import, project structure, src layout
+A: A folder of `.py` files (optionally with `__init__.py`) is a package: `import mygame.player`. Inside the package, `from . import utils` imports a sibling. Run the program from the folder **above** the package with `python -m mygame.main` so the imports resolve.
+see: py.own-module, py.err.circular-import
+```py
+import os, subprocess, sys
+os.makedirs("mygame", exist_ok=True)
+open("mygame/__init__.py", "w").write("VERSION = '1.0'\n")
+open("mygame/utils.py", "w").write("def clamp(x, lo, hi):\n    return max(lo, min(hi, x))\n")
+open("mygame/main.py", "w").write("from . import utils, VERSION\nprint('v' + VERSION, utils.clamp(15, 0, 10))\n")
+r = subprocess.run([sys.executable, "-m", "mygame.main"], capture_output=True, text=True)
+print(r.stdout.strip())
+```
+```text
+v1.0 10
+```
+
+@@ py.proj.relative-import-error
+Q: ImportError: attempted relative import with no known parent package
+aka: attempted relative import with no known parent package, relative import error, from . import error, run module in package
+err: attempted relative import with no known parent package
+A: You ran a file that uses `from . import x` directly (`python mygame/main.py`). Relative imports only work when the file runs **as part of the package**: run `python -m mygame.main` from the folder above, or switch to absolute imports.
+see: py.proj.package
+```sh
+cd project_folder           # the folder that CONTAINS mygame/
+python -m mygame.main       # not: python mygame/main.py
+```
+
+@@ py.proj.shadow-module
+Q: AttributeError: partially initialized module 'random' has no attribute 'randint' (my file is named random.py)
+aka: partially initialized module has no attribute, file named same as module, random.py, shadowing module, most likely due to a circular import
+err: partially initialized module '*' has no attribute '*'*|module '*' has no attribute '*' (consider renaming '*' since it has the same name as the standard library module*
+A: Your own file is named like a library (`random.py`, `math.py`, `tkinter.py`, `turtle.py`, `json.py`, `email.py`), so `import random` imports **your file**. Rename it (and delete any `__pycache__` folder next to it).
+see: tk.file-named-tkinter, py.err.circular-import
+```py
+import os, subprocess, sys
+os.makedirs("shadow", exist_ok=True)
+open("shadow/random.py", "w").write("import random\nprint(random.randint(1, 6))\n")
+r = subprocess.run([sys.executable, "random.py"], cwd="shadow", capture_output=True, text=True)
+print(r.stderr.strip().splitlines()[-1][:60])
+```
+
+@@ py.proj.requirements
+Q: How do I share which packages my project needs (requirements.txt, pyproject.toml)?
+aka: requirements.txt, pip freeze, install requirements, pyproject.toml dependencies, share project packages
+A: List them in `requirements.txt` (one per line, optionally with versions) and others run `pip install -r requirements.txt`. `pip freeze > requirements.txt` writes everything installed in your venv. Modern projects can list them under `dependencies` in `pyproject.toml`.
+see: py.venv, py.pip
+```sh
+# create the file from your current virtual environment
+pip freeze > requirements.txt
+# requirements.txt
+#   requests>=2.31
+#   pillow==12.3.0
+# install on another computer
+pip install -r requirements.txt
+```
+
+@@ py.proj.env-vars
+Q: How do I read environment variables (like API keys) instead of writing secrets in code?
+aka: environment variables, os.environ, os.getenv, api key in code, secrets, .env file, dotenv
+A: `os.environ.get("NAME", default)` reads one. Set it in the terminal (`export NAME=value` / `set NAME=value` on Windows) or a `.env` file loaded with the `python-dotenv` package. Never commit keys to git.
+see: py.os-sys
+```py
+import os
+os.environ["APP_MODE"] = "test"                        # normally set outside Python
+print(os.environ.get("APP_MODE"), os.getenv("API_KEY", "not set"))
+debug = os.getenv("DEBUG", "0").lower() in ("1", "true", "yes")
+print(debug)
+```
+```text
+test not set
+False
+```
+
+@@ py.proj.profile
+Q: How do I find which part of my program is slow (profiling)?
+aka: profile python, cProfile, find slow code, performance bottleneck, time each function
+A: `python -m cProfile -s cumtime myscript.py` lists functions by time spent. In code, `cProfile.run("main()")`, or time sections with `time.perf_counter()`. Measure before optimising.
+see: py.timing
+```py
+import cProfile, io, pstats
+
+def slow():
+    return sum(i * i for i in range(200_000))
+
+def fast():
+    return 42
+
+def main():
+    slow(); fast()
+
+pr = cProfile.Profile()
+pr.enable(); main(); pr.disable()
+out = io.StringIO()
+pstats.Stats(pr, stream=out).sort_stats("cumulative").print_stats(3)
+print("slow" in out.getvalue())
+```
+```text
+True
+```
+
+@@ py.proj.speed-tips
+Q: How do I make my Python code faster?
+aka: speed up python, faster code, optimise python, performance tips, slow loop python
+A: In order of payoff: pick better data structures (set/dict lookups instead of searching lists), avoid repeated work (cache results, move work out of loops), use built-ins (`sum`, `sorted`, `join`, comprehensions are faster than manual loops), read files once, and for heavy maths use `numpy`. Profile first.
+see: py.proj.profile, py.coll.choose
+```py
+import timeit
+
+words = [f"w{i}" for i in range(5000)]
+def slow_join():
+    s = ""
+    for w in words:
+        s += w + ","
+    return s
+def fast_join():
+    return ",".join(words) + ","
+print(slow_join() == fast_join())
+print(timeit.timeit(fast_join, number=50) < timeit.timeit(slow_join, number=50))
+```
+```text
+True
+True
+```
+
+@@ py.proj.read-stdin
+Q: How do I read input piped into my script (stdin), e.g. for coding challenges?
+aka: read stdin, sys.stdin, read all input, fast input competitive programming, input lines until eof
+A: `sys.stdin.read()` reads everything; `for line in sys.stdin:` reads line by line until the end; `sys.stdin.readline` is faster than `input()` for big inputs.
+see: py.input
+```py
+import subprocess, sys
+child = "import sys\nnums = [int(x) for x in sys.stdin.read().split()]\nprint(sum(nums), max(nums))"
+r = subprocess.run([sys.executable, "-c", child], input="3 9\n4\n", capture_output=True, text=True)
+print(r.stdout.strip())
+```
+```text
+16 9
+```
+
+@@ py.proj.logging-vs-print
+Q: Should I use print or logging for messages in my program?
+aka: logging vs print, debug messages, log levels, turn off debug prints
+A: `print` for the program's real output. `logging` for diagnostics: it has levels (DEBUG, INFO, WARNING, ERROR) you can switch on and off in one place, adds timestamps, and can write to a file.
+see: mod.logging.basics
+```py
+import logging, sys
+logging.basicConfig(level=logging.INFO, stream=sys.stdout, format="%(levelname)s:%(message)s")
+log = logging.getLogger("shop")
+log.debug("hidden at INFO level")
+log.info("cart has %d items", 3)
+log.warning("stock low")
+```
+```text
+INFO:cart has 3 items
+WARNING:stock low
+```
+
+@@ py.proj.versions
+Q: How do I write code that works on several Python versions (or check the version)?
+aka: python version check, sys.version_info, feature check, compatible code, minimum python version
+A: Compare `sys.version_info` (a tuple) with the version you need, or try the new feature and fall back. Tell users the minimum version in your README / `pyproject.toml` (`requires-python = ">=3.10"`).
+see: py.version
+```py
+import sys
+if sys.version_info < (3, 10):
+    sys.exit("Please use Python 3.10 or newer")
+try:
+    from itertools import batched            # 3.12+
+except ImportError:
+    def batched(it, n):
+        it = list(it)
+        return [tuple(it[i:i + n]) for i in range(0, len(it), n)]
+print(list(batched(range(5), 2)))
+```
+```text
+[(0, 1), (2, 3), (4,)]
+```
+
+@@ py.proj.walrus-comprehension
+Q: How do I avoid computing something twice in a comprehension?
+aka: walrus in comprehension, compute once in list comprehension, filter on computed value
+A: Use `:=` in the condition to keep the computed value: `[y for x in xs if (y := f(x)) > 0]`.
+see: py.walrus
+```py
+def score(word):
+    return sum(ord(c) - 96 for c in word)
+
+words = ["cab", "zoo", "a", "hello"]
+print([(w, s) for w in words if (s := score(w)) > 10])
+```
+```text
+[('zoo', 56), ('hello', 52)]
+```
+
+@@ py.proj.big-files
+Q: How do I process a file too big to fit in memory?
+aka: large file, read big file, out of memory file, process line by line, chunked reading
+A: Never `read()` it all: loop over the file object line by line, or read fixed-size chunks with `f.read(1024 * 1024)` for binary data. Write results out as you go.
+see: py.it.pipeline
+```py
+with open("big.txt", "w") as f:
+    for i in range(100_000):
+        f.write(f"{i}\n")
+total = count = 0
+with open("big.txt") as f:
+    for line in f:                       # one line in memory at a time
+        total += int(line); count += 1
+size = 0
+with open("big.txt", "rb") as f:
+    while chunk := f.read(65536):
+        size += len(chunk)
+print(count, total, size)
+```
+```text
+100000 4999950000 588890
+```
+
+@@ py.proj.main-function
+Q: How should I lay out a script (imports, constants, functions, main)?
+aka: script structure, main function, script template, organise python file, entry point
+A: Imports at the top, then constants, then functions/classes, then a `main()` that ties them together, called under `if __name__ == "__main__":`. Short functions with clear names beat one long script.
+see: py.main-guard, py.proj.pep8
+```py
+"""Count words in a text file."""
+import sys
+from collections import Counter
+
+TOP = 3
+
+def load(path):
+    with open(path, encoding="utf-8") as f:
+        return f.read()
+
+def top_words(text, n=TOP):
+    return Counter(text.lower().split()).most_common(n)
+
+def main(argv):
+    path = argv[1] if len(argv) > 1 else "data.txt"
+    for word, count in top_words(load(path)):
+        print(f"{word}: {count}")
+
+if __name__ == "__main__":
+    main(sys.argv)
+```
+```text
+line: 3
+first: 1
+second: 1
+```

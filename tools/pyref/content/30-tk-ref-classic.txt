@@ -1,0 +1,561 @@
+# tk-ref | Widget reference: classic | Every tk widget: all its useful options and methods, each with a full example | tkinter
+
+@@ tk.ref.common-options
+Q: Which options do (almost) all tkinter widgets share?
+aka: common widget options, standard options, widget options list, all options, configure options, what options can i use, keys()
+A: Colours (`bg`, `fg`, `activebackground`, `highlightbackground`), size (`width`, `height`), font (`font`), border (`bd`/`borderwidth`, `relief`), padding inside (`padx`, `pady`), `cursor`, `state`, and `takefocus`. Call `widget.keys()` to list every option a widget accepts.
+see: tk.widget-config-get, tk.relief, tk.cursor
+```py
+import tkinter as tk
+
+root = tk.Tk()
+b = tk.Button(root, text="Look", bg="#ffd27a", fg="#222", activebackground="#ffb000",
+              font=("Arial", 14, "bold"), bd=3, relief="ridge", padx=16, pady=6,
+              cursor="hand2", highlightthickness=2, highlightbackground="#333")
+b.pack(padx=20, pady=20)
+
+print(sorted(b.keys()))           # every option a Button accepts
+print(b.cget("relief"), b["font"])  # two ways to read an option
+root.mainloop()
+```
+Size units: `width`/`height` on Label, Button, Entry, Text, Listbox are in **characters** (text widgets) or **lines**; on Frame, Canvas, Toplevel they are **pixels**. You can also write distances like `"2c"` (cm), `"1i"` (inch) or `"10p"` (points).
+
+@@ tk.ref.label
+Q: What can a Label do? (all options and methods)
+aka: label options, label reference, label image and text, compound, label anchor, label width height, label padding, label textvariable, underline
+A: A Label shows text and/or an image. Key options: `text`, `textvariable`, `image`, `compound` (image position next to text: `"left"`, `"top"`, ...), `font`, `fg`, `bg`, `anchor`, `justify`, `wraplength`, `width`, `height`, `padx`, `pady`, `relief`, `bd`, `underline`. Change any of them later with `config()`.
+see: tk.label, tk.label-change, tk.label-align, tk.label-wrap
+```py
+import tkinter as tk
+
+root = tk.Tk()
+dot = tk.PhotoImage(width=16, height=16)
+dot.put("#c23b22", to=(0, 0, 16, 16))
+
+tk.Label(root, text="Plain").pack(anchor="w", padx=10)
+tk.Label(root, text="Bold, red, padded", font=("Arial", 13, "bold"), fg="#c23b22", padx=10, pady=4).pack(anchor="w")
+tk.Label(root, text="Image on the left", image=dot, compound="left", padx=10).pack(anchor="w")
+tk.Label(root, text="Fixed 20 chars wide, text on the right", width=20, anchor="e", bg="#eee").pack(anchor="w", padx=10)
+tk.Label(root, text="A long sentence that wraps when it reaches 150 pixels wide.", wraplength=150, justify="left").pack(anchor="w", padx=10)
+tk.Label(root, text="Sunken border", relief="sunken", bd=2, padx=6).pack(anchor="w", padx=10, pady=4)
+tk.Label(root, text="Underlined F", underline=11).pack(anchor="w", padx=10)
+
+root.mainloop()
+```
+- `anchor` moves the text inside the label's box (`"n"`, `"ne"`, `"e"`, ... `"center"`).
+- `justify` lines up the lines of multi-line text with each other (`"left"`, `"center"`, `"right"`).
+- `compound="center"` puts the text on top of the image.
+
+@@ tk.ref.button
+Q: What can a Button do? (all options and methods)
+aka: button options, button reference, button invoke, flash, repeatdelay, repeatinterval, overrelief, default active, button methods, hold button repeat
+A: Key options: `text`, `command`, `state` (`"normal"`/`"disabled"`), `image` + `compound`, `width`, `height`, `bg`, `fg`, `activebackground`, `activeforeground`, `disabledforeground`, `relief`, `overrelief` (relief while hovered), `repeatdelay` + `repeatinterval` (auto-repeat while held), `default`. Methods: `invoke()` presses it from code, `flash()` blinks it.
+see: tk.button, tk.button-args, tk.button-state, tk.button-color
+```py
+import tkinter as tk
+
+root = tk.Tk()
+count = tk.IntVar(value=0)
+
+def plus():
+    count.set(count.get() + 1)
+
+tk.Label(root, textvariable=count, font=("Arial", 24)).pack(pady=6)
+# hold this one down: it repeats every 60 ms after 400 ms
+tk.Button(root, text="Hold to count", command=plus, repeatdelay=400, repeatinterval=60).pack(pady=4)
+tk.Button(root, text="Flat until hovered", relief="flat", overrelief="raised", command=plus).pack(pady=4)
+off = tk.Button(root, text="Disabled", state="disabled", disabledforeground="#999")
+off.pack(pady=4)
+go = tk.Button(root, text="Default button", default="active", command=plus)
+go.pack(pady=4)
+
+go.invoke()          # runs plus() as if clicked
+print(count.get())   # 1
+root.mainloop()
+```
+```text
+1
+```
+
+@@ tk.ref.entry
+Q: What can an Entry do? (all options and methods)
+aka: entry options, entry methods, entry reference, entry icursor, selection_range, entry xview, entry justify, entry show, insertbackground, selectbackground
+A: Options: `textvariable`, `width` (characters), `show` (e.g. `"*"`), `justify`, `state` (`"normal"`, `"disabled"`, `"readonly"`), `font`, `fg`, `bg`, `insertbackground` (cursor colour), `selectbackground`, `validate` + `validatecommand`. Methods: `get()`, `insert(index, text)`, `delete(first, last)`, `icursor(index)`, `select_range(a, b)`, `selection_clear()`, `index("insert")`, `xview_moveto(1)`.
+see: tk.entry-get, tk.entry-set, tk.entry-validate, tk.entry-readonly
+```py
+import tkinter as tk
+
+root = tk.Tk()
+e = tk.Entry(root, width=30, font=("Consolas", 13), justify="center",
+             insertbackground="red", selectbackground="#ffd27a", selectforeground="black")
+e.pack(padx=20, pady=20)
+
+e.insert(0, "hello world")      # put text in
+e.insert("end", "!")            # add to the end
+e.delete(0, 5)                  # remove "hello"
+e.insert(0, "HELLO")
+e.select_range(0, "end")        # select everything
+e.icursor("end")                # put the cursor at the end
+e.focus_set()
+
+print(e.get())                  # HELLO world!
+print(e.index("end"))           # length: 12
+root.mainloop()
+```
+```text
+HELLO world!
+12
+```
+Indexes in an Entry are plain numbers counting characters from 0, or the names `"end"`, `"insert"` (cursor), `"anchor"`, `"sel.first"`, `"sel.last"`.
+
+@@ tk.ref.text
+Q: What can a Text widget do? (all options and methods)
+aka: text widget options, text methods list, text reference, text wrap, text spacing, text tabs, text height width, text padx, text widget everything
+A: Options: `width` (chars), `height` (lines), `wrap` (`"none"`, `"char"`, `"word"`), `font`, `fg`, `bg`, `padx`, `pady`, `spacing1/2/3` (space above/inside/below lines), `tabs`, `undo`, `maxundo`, `state`, `insertbackground`, `selectbackground`. Main methods: `get`, `insert`, `delete`, `replace`, `see`, `index`, `search`, `tag_add/tag_config/tag_remove/tag_ranges`, `mark_set`, `edit_undo/edit_redo`, `window_create`, `image_create`, `count`.
+see: tk.text, tk.text-indexes, tk.text-tags, tk.text-search
+```py
+import tkinter as tk
+
+root = tk.Tk()
+t = tk.Text(root, width=40, height=8, wrap="word", font=("Georgia", 12),
+            padx=10, pady=8, spacing1=2, spacing3=6, undo=True, tabs=("2c",))
+t.pack(padx=10, pady=10)
+
+t.insert("1.0", "Title\n", "title")
+t.insert("end", "First paragraph wraps by whole words when it gets too long for the box.\n")
+t.insert("end", "\tIndented with a tab stop at 2 cm.\n")
+t.tag_config("title", font=("Georgia", 16, "bold"), foreground="#c23b22")
+
+t.replace("2.0", "2.5", "FIRST")            # change "First" to "FIRST"
+print(t.get("2.0", "2.end"))               # whole line 2
+print(t.index("end-1c"))                   # position of the last character
+print(t.count("1.0", "end", "lines"))      # how many lines
+t.see("end")                               # scroll to the end
+root.mainloop()
+```
+
+@@ tk.ref.listbox
+Q: What can a Listbox do? (all options and methods)
+aka: listbox options, listbox methods, listbox reference, selectmode, listvariable, activestyle, listbox itemconfig, listbox see, listbox nearest, listbox size
+A: Options: `height` (rows shown), `width`, `selectmode` (`"browse"`, `"single"`, `"multiple"`, `"extended"`), `listvariable`, `activestyle` (`"dotbox"`, `"underline"`, `"none"`), `exportselection`, colours. Methods: `insert`, `delete`, `get`, `size`, `curselection`, `selection_set/clear`, `see`, `activate`, `nearest(y)`, `itemconfig(i, bg=...)`.
+see: tk.listbox, tk.listbox-select, tk.listbox-multi, tk.listbox-delete
+```py
+import tkinter as tk
+
+root = tk.Tk()
+fruits = tk.StringVar(value=["apple", "banana", "cherry", "date"])   # listvariable
+lb = tk.Listbox(root, listvariable=fruits, height=6, selectmode="extended",
+                activestyle="none", exportselection=False, selectbackground="#c23b22")
+lb.pack(padx=20, pady=10)
+
+lb.insert("end", "elderberry", "fig")
+lb.itemconfig(0, bg="#fff3d6")
+lb.selection_set(1, 2)          # select banana and cherry
+lb.see("end")
+
+print(lb.size())                              # 6
+print([lb.get(i) for i in lb.curselection()]) # ['banana', 'cherry']
+print(lb.get(0, "end"))                       # all items as a tuple
+root.mainloop()
+```
+`exportselection=False` stops the selection vanishing when you click in another widget (a very common surprise).
+
+@@ tk.ref.canvas
+Q: What can a Canvas do? (all options and methods)
+aka: canvas options, canvas methods, canvas reference, create methods, canvas item types, canvas coords itemconfig, canvas bbox, find_withtag
+A: Options: `width`, `height`, `bg`, `highlightthickness=0` (removes the focus border), `scrollregion`, `cursor`. Item creators: `create_line`, `create_rectangle`, `create_oval`, `create_polygon`, `create_arc`, `create_text`, `create_image`, `create_window`. Item methods: `coords`, `move`, `moveto`, `itemconfig`, `itemcget`, `delete`, `lift`/`tag_raise`, `lower`, `bbox`, `find_withtag`, `find_overlapping`, `find_closest`, `tag_bind`, `type`, `gettags`, `addtag_withtag`, `dtag`.
+see: tk.canvas, tk.canvas-move, tk.canvas-tags, tk.cv.items-all
+```py
+import tkinter as tk
+
+root = tk.Tk()
+c = tk.Canvas(root, width=300, height=180, bg="white", highlightthickness=0)
+c.pack()
+
+box = c.create_rectangle(20, 20, 100, 80, fill="#ffd27a", outline="", tags=("shape", "box"))
+ball = c.create_oval(140, 30, 190, 80, fill="#c23b22", tags="shape")
+c.create_text(150, 140, text="canvas", font=("Arial", 18))
+
+c.move(ball, 20, 0)                       # nudge right
+c.itemconfig(box, fill="#9bd")            # recolour
+print(c.coords(ball))                     # [160.0, 30.0, 210.0, 80.0]
+print(c.bbox("shape"))                    # box around all "shape" items
+print(c.find_withtag("shape"))            # their ids
+print(c.type(box), c.gettags(box))        # rectangle ('shape', 'box')
+root.mainloop()
+```
+
+@@ tk.ref.checkbutton
+Q: What can a Checkbutton do? (all options and methods)
+aka: checkbutton options, checkbutton methods, onvalue offvalue, indicatoron, selectcolor, checkbutton select deselect toggle, tristate
+A: Options: `text`, `variable`, `onvalue`/`offvalue` (what the variable holds when ticked/unticked), `command`, `indicatoron` (0 = looks like a toggle button), `selectcolor` (box colour), `state`. Methods: `select()`, `deselect()`, `toggle()`, `invoke()`.
+see: tk.checkbutton, tk.checkbutton-many, tk.checkbutton-switch
+```py
+import tkinter as tk
+
+root = tk.Tk()
+size = tk.StringVar(value="small")
+cb = tk.Checkbutton(root, text="Large", variable=size, onvalue="large", offvalue="small",
+                    command=lambda: print("now", size.get()))
+cb.pack(anchor="w", padx=20, pady=4)
+
+bold = tk.IntVar()
+tk.Checkbutton(root, text="Bold (button style)", variable=bold, indicatoron=False,
+               selectcolor="#ffd27a", width=18, pady=4).pack(padx=20, pady=4)
+
+cb.toggle()            # ticks it (doesn't run command)
+print(size.get())      # large
+cb.invoke()            # clicks it: unticks and runs command
+root.mainloop()
+```
+```text
+large
+now small
+```
+
+@@ tk.ref.radiobutton
+Q: What can a Radiobutton do? (all options and methods)
+aka: radiobutton options, radiobutton methods, radiobutton indicatoron, radio value, radio select, radiobutton tristatevalue, none selected
+A: Options: `text`, `variable` (shared by the whole group), `value` (what this one puts in the variable), `command`, `indicatoron`, `selectcolor`, `state`. Methods: `select()`, `deselect()`, `invoke()`. Set the variable to a value no button has to show none selected.
+see: tk.radiobutton
+```py
+import tkinter as tk
+
+root = tk.Tk()
+speed = tk.StringVar(value="")          # nothing selected yet
+for name in ("slow", "medium", "fast"):
+    tk.Radiobutton(root, text=name.title(), variable=speed, value=name, indicatoron=False,
+                   width=10, pady=4, selectcolor="#ffd27a",
+                   command=lambda: print("chose", speed.get())).pack(side="left", padx=2, pady=10)
+
+speed.set("medium")                      # selects the middle one
+print(speed.get())
+root.mainloop()
+```
+
+@@ tk.ref.scale
+Q: What can a Scale (slider) do? (all options and methods)
+aka: scale options, slider options, resolution, tickinterval, showvalue, sliderlength, digits, scale get set, slider step, slider decimal
+A: Options: `from_`, `to`, `orient` (`"horizontal"`/`"vertical"`), `resolution` (step, e.g. `0.1`), `tickinterval` (numbered ticks), `length` (pixels), `label`, `showvalue`, `digits`, `sliderlength`, `variable`, `command` (gets the value as a **string**). Methods: `get()`, `set(v)`.
+see: tk.scale
+```py
+import tkinter as tk
+
+root = tk.Tk()
+def moved(value):              # value arrives as a string
+    print("now", float(value))
+
+s = tk.Scale(root, from_=0, to=2, resolution=0.25, tickinterval=0.5, orient="horizontal",
+             length=280, label="Volume", sliderlength=20, command=moved)
+s.pack(padx=10, pady=10)
+s.set(1.5)
+print(s.get())
+root.mainloop()
+```
+
+@@ tk.ref.spinbox
+Q: What can a Spinbox do? (all options and methods)
+aka: spinbox options, spinbox values, spinbox increment, spinbox wrap, spinbox format, spinbox readonly, spinbox command
+A: Options: `from_`, `to`, `increment`, or `values` (a list of strings), `wrap` (go round from max to min), `format` (e.g. `"%.2f"`), `textvariable`, `state` (`"readonly"` stops typing), `command`, `width`. Methods: `get()`, plus the same `insert`/`delete` as Entry.
+see: tk.spinbox
+```py
+import tkinter as tk
+
+root = tk.Tk()
+price = tk.Spinbox(root, from_=0, to=10, increment=0.25, format="%.2f", width=8)
+price.pack(padx=20, pady=5)
+
+day = tk.Spinbox(root, values=("Mon", "Tue", "Wed", "Thu", "Fri"), wrap=True, state="readonly", width=8,
+                 command=lambda: print("day:", day.get()))
+day.pack(padx=20, pady=5)
+
+price.delete(0, "end"); price.insert(0, "2.50")
+print(price.get(), day.get())
+root.mainloop()
+```
+
+@@ tk.ref.frame
+Q: What can a Frame and LabelFrame do? (all options)
+aka: frame options, labelframe options, labelframe labelanchor, frame border, frame padding, labelwidget, group box
+A: Frame options: `width`, `height` (pixels, only used if the frame is empty or `pack_propagate(False)`), `bg`, `bd`, `relief`, `padx`, `pady`, `highlightthickness`, `highlightbackground`. LabelFrame adds `text`, `labelanchor` (`"nw"`, `"n"`, ...), `font`, and `labelwidget` (any widget as the title).
+see: tk.frame, tk.frame-size
+```py
+import tkinter as tk
+
+root = tk.Tk()
+box = tk.LabelFrame(root, text="Account", padx=10, pady=8, font=("Arial", 11, "bold"))
+box.pack(fill="x", padx=10, pady=6)
+tk.Label(box, text="Name").grid(row=0, column=0, sticky="w")
+tk.Entry(box).grid(row=0, column=1)
+
+custom = tk.LabelFrame(root, labelwidget=tk.Checkbutton(root, text="Advanced"), labelanchor="n", padx=10, pady=8)
+custom.pack(fill="x", padx=10, pady=6)
+tk.Label(custom, text="options go here").pack()
+
+card = tk.Frame(root, bg="white", bd=1, relief="solid", padx=12, pady=12)
+card.pack(fill="x", padx=10, pady=6)
+tk.Label(card, text="A card", bg="white").pack(anchor="w")
+root.mainloop()
+```
+
+@@ tk.ref.toplevel
+Q: What can a Toplevel window do? (all options and methods)
+aka: toplevel options, toplevel methods, second window options, transient, grab_set, toplevel class, wm methods
+A: A `Toplevel` is a window with the same window methods as `Tk`: `title`, `geometry`, `resizable`, `minsize`, `attributes`, `iconphoto`, `protocol`, `withdraw`/`deiconify`, `lift`, `focus_set`. Extra useful ones: `transient(root)` (stays on top of root, no taskbar entry), `grab_set()` (blocks other windows), `wait_window()` (pauses code until closed).
+see: tk.toplevel, tk.modal, tk.win.transient
+```py
+import tkinter as tk
+
+root = tk.Tk()
+root.title("Main")
+
+def open_settings():
+    win = tk.Toplevel(root, padx=16, pady=12)
+    win.title("Settings")
+    win.geometry("+%d+%d" % (root.winfo_rootx() + 40, root.winfo_rooty() + 40))
+    win.resizable(False, False)
+    win.transient(root)          # sits on top of root
+    tk.Label(win, text="Settings go here").pack()
+    tk.Button(win, text="Close", command=win.destroy).pack(pady=(8, 0))
+    win.wait_visibility()
+    win.grab_set()               # root can't be clicked until this closes
+
+tk.Button(root, text="Settings…", command=open_settings).pack(padx=40, pady=30)
+root.after(100, open_settings)
+root.mainloop()
+```
+
+@@ tk.ref.menu
+Q: What options and methods does a Menu have?
+aka: menu options, menu methods, add_command options, entryconfig, menu index, menu delete, tearoff, postcommand, menu font colours
+A: `Menu(parent, tearoff=0)`. Add items with `add_command`, `add_checkbutton`, `add_radiobutton`, `add_cascade`, `add_separator`. Item options: `label`, `command`, `accelerator`, `underline`, `state`, `image`, `compound`, `variable`, `value`, `foreground`, `background`. Change items later with `entryconfig(index, ...)`, remove with `delete(index)`, count with `index("end")`. `postcommand=` runs just before the menu opens (to refresh it).
+see: tk.menubar, tk.menu-disable, tk.menu-check
+```py
+import tkinter as tk
+
+root = tk.Tk()
+bar = tk.Menu(root)
+recent = ["a.txt", "b.txt"]
+
+def refresh():                         # runs every time File opens
+    filem.delete(2, "end")
+    for name in recent:
+        filem.add_command(label=name, command=lambda n=name: print("open", n))
+
+filem = tk.Menu(bar, tearoff=0, postcommand=refresh)
+filem.add_command(label="New", accelerator="Ctrl+N", underline=0, command=lambda: print("new"))
+filem.add_separator()
+bar.add_cascade(label="File", menu=filem, underline=0)
+root.config(menu=bar)
+
+refresh()
+filem.entryconfig("New", state="disabled")
+print(filem.index("end"), filem.entrycget(0, "label"))
+root.mainloop()
+```
+
+@@ tk.ref.menubutton
+Q: What is a Menubutton and how is it different from OptionMenu?
+aka: menubutton, dropdown button with menu, button that opens a menu, split button, menubutton direction
+A: A `Menubutton` is a button that opens a `Menu` you build yourself: you can put commands, checkboxes and sub-menus in it. `OptionMenu` is a ready-made Menubutton that only picks one value.
+see: tk.optionmenu, tk.ref.menu
+```py
+import tkinter as tk
+
+root = tk.Tk()
+mb = tk.Menubutton(root, text="Options ▾", relief="raised", direction="below", padx=10, pady=4)
+m = tk.Menu(mb, tearoff=0)
+mb["menu"] = m
+
+wrap = tk.BooleanVar(value=True)
+m.add_checkbutton(label="Word wrap", variable=wrap)
+m.add_command(label="Reset", command=lambda: print("reset"))
+mb.pack(padx=40, pady=30)
+root.mainloop()
+```
+
+@@ tk.ref.scrollbar
+Q: What options and methods does a Scrollbar have?
+aka: scrollbar options, scrollbar orient, scrollbar width, yscrollcommand xscrollcommand, scrollbar set get, scrollbar command
+A: Options: `orient`, `command` (usually `widget.yview` or `widget.xview`), `width`, colours like `troughcolor`. The scrolled widget calls the scrollbar's `set(first, last)` through its `yscrollcommand=`. `get()` returns the visible fraction.
+see: tk.scrollbar, tk.text-scroll, tk.listbox-scroll
+```py
+import tkinter as tk
+
+root = tk.Tk()
+lb = tk.Listbox(root, height=6)
+ys = tk.Scrollbar(root, orient="vertical", command=lb.yview, width=14)
+lb.config(yscrollcommand=ys.set)
+lb.grid(row=0, column=0, sticky="nsew")
+ys.grid(row=0, column=1, sticky="ns")
+for i in range(50):
+    lb.insert("end", f"Row {i}")
+lb.yview_moveto(0.5)        # jump half way
+root.update_idletasks()
+print(ys.get())             # e.g. (0.5, 0.62)
+root.mainloop()
+```
+
+@@ tk.ref.panedwindow
+Q: What options does PanedWindow have (sash, minsize, adding panes)?
+aka: panedwindow options, sash width, sashrelief, paneconfig, minsize pane, add pane, showhandle, resizable split
+A: `tk.PanedWindow(orient=..., sashwidth=, sashrelief=, showhandle=)`. Add panes with `add(widget, minsize=, width=, stretch="always")`; change later with `paneconfig`. Move the divider from code with `sash_place(0, x, y)`.
+see: tk.paned
+```py
+import tkinter as tk
+
+root = tk.Tk()
+root.geometry("400x200")
+pw = tk.PanedWindow(root, orient="horizontal", sashwidth=6, sashrelief="raised", showhandle=False)
+pw.pack(fill="both", expand=True)
+
+left = tk.Listbox(pw)
+right = tk.Text(pw)
+pw.add(left, minsize=80, width=120)
+pw.add(right, minsize=120, stretch="always")
+for x in ("one", "two", "three"):
+    left.insert("end", x)
+root.update_idletasks()
+pw.sash_place(0, 150, 0)
+root.mainloop()
+```
+
+@@ tk.ref.message
+Q: When should I use Message instead of Label?
+aka: message widget options, aspect, message width, auto wrap label
+A: `Message` wraps text automatically to keep a shape: `aspect=` is width/height ×100 (default 150), or set `width=` in pixels. A Label with `wraplength=` does the same job and is more common today.
+see: tk.message-widget, tk.label-wrap
+```py
+import tkinter as tk
+
+root = tk.Tk()
+text = "This text is wrapped automatically to keep a pleasing shape, without you picking a width."
+tk.Message(root, text=text, aspect=300, bg="#fff3d6").pack(padx=10, pady=6)
+tk.Message(root, text=text, width=160, bg="#e6f0ff").pack(padx=10, pady=6)
+root.mainloop()
+```
+
+@@ tk.ref.photoimage
+Q: What can a PhotoImage do? (all methods)
+aka: photoimage methods, photoimage put get, photoimage copy zoom subsample, photoimage write, photoimage blank, photoimage width height, image formats
+A: `tk.PhotoImage(file=...)` loads PNG/GIF (and PPM). Methods: `width()`, `height()`, `get(x, y)` (pixel colour), `put(colour, to=(x1, y1, x2, y2))`, `copy()`, `zoom(n)`, `subsample(n)`, `write(filename, format="png")`, `blank()`, `transparency_get/set`. Keep a reference to it or it disappears.
+see: tk.photoimage, tk.img-pixels, tk.img-zoom, tk.err.image-gone
+```py
+import tkinter as tk
+
+root = tk.Tk()
+img = tk.PhotoImage(width=40, height=20)
+img.put("#ffd27a", to=(0, 0, 40, 20))
+img.put("#c23b22", to=(0, 0, 20, 20))
+
+big = img.zoom(4)                      # 160 x 80
+small = big.subsample(2)               # 80 x 40
+tk.Label(root, image=big).pack(padx=10, pady=4)
+tk.Label(root, image=small).pack(padx=10, pady=4)
+
+print(img.width(), img.height(), img.get(5, 5))   # 40 20 (194, 59, 34)
+img.write("tiles.png", format="png")
+root.mainloop()
+```
+
+@@ tk.ref.widget-methods
+Q: Which methods do all widgets have (winfo, after, focus, bind, destroy...)?
+aka: universal widget methods, misc methods, winfo methods, widget methods list, winfo_children, winfo_exists, nametowidget, focus_get, event_generate
+A: Every widget (and `Tk`) shares: `config/cget/keys`, `bind/unbind/event_generate`, `after/after_cancel`, `focus_set/focus_get`, `destroy`, `winfo_*` (size, position, children, exists, class), `lift/lower`, `update_idletasks`, `grid_*/pack_*/place_*`, `nametowidget`, `clipboard_*`.
+see: tk.win.winfo, tk.widget-config-get
+```py
+import tkinter as tk
+
+root = tk.Tk()
+f = tk.Frame(root, padx=10, pady=10)
+f.pack()
+b = tk.Button(f, text="Hi", name="hello")
+b.pack()
+root.update_idletasks()
+
+print(f.winfo_children())                 # [<tkinter.Button object .!frame.hello>]
+print(b.winfo_class(), b.winfo_width(), b.winfo_height())
+print(b.winfo_parent(), b.winfo_toplevel() is root)
+print(str(b), root.nametowidget(str(b)) is b)
+print(b.winfo_exists())                   # 1 while it exists
+b.destroy()
+print(f.winfo_children())                 # []
+root.mainloop()
+```
+
+@@ tk.ref.option-names
+Q: Some examples use `bg`, others `background`. Are short and long option names the same?
+aka: bg background fg foreground, bd borderwidth, option aliases, short option names, abbreviations
+A: Yes. `bg`=`background`, `fg`=`foreground`, `bd`=`borderwidth`. You can use either; ttk widgets don't accept these colour options at all (use `ttk.Style`).
+see: tk.ttk-vs-tk, tk.err.unknown-option
+```py
+import tkinter as tk
+
+root = tk.Tk()
+l = tk.Label(root, text="same thing", bg="yellow", borderwidth=3, relief="ridge")
+l.pack(padx=20, pady=20)
+print(l.cget("background"), l.cget("bd"))   # yellow 3
+root.mainloop()
+```
+
+@@ tk.ref.state
+Q: What values can `state` take, and how do I check if a widget is disabled?
+aka: state normal disabled readonly active, check disabled, widget enabled, toggle state, ttk state instate
+A: Classic widgets: `"normal"`, `"disabled"`, `"active"` (buttons) and `"readonly"` (Entry, Spinbox, ttk.Combobox). Read with `cget("state")` (compare `str(...)`). ttk widgets use `w.state(["disabled"])` / `w.state(["!disabled"])` and `w.instate(["disabled"])`.
+see: tk.button-state
+```py
+import tkinter as tk
+from tkinter import ttk
+
+root = tk.Tk()
+b = tk.Button(root, text="Classic")
+t = ttk.Button(root, text="Themed")
+b.pack(pady=5); t.pack(pady=5)
+
+def toggle():
+    new = "normal" if str(b.cget("state")) == "disabled" else "disabled"
+    b.config(state=new)
+    t.state(["disabled"] if new == "disabled" else ["!disabled"])
+    print(b.cget("state"), t.instate(["disabled"]))
+
+tk.Button(root, text="Toggle", command=toggle).pack(pady=5)
+toggle(); toggle()
+root.mainloop()
+```
+```text
+disabled True
+normal False
+```
+
+@@ tk.ref.name-option
+Q: How do I give a widget a name so I can find it later?
+aka: widget name option, name=, find widget by name, nametowidget, children dict, widget id string
+A: Pass `name="something"` (lowercase, no dots) when creating it; the widget's path becomes `.parent.something` and it appears in `parent.children["something"]`.
+see: tk.ref.widget-methods
+```py
+import tkinter as tk
+
+root = tk.Tk()
+form = tk.Frame(root, name="form")
+form.pack(padx=10, pady=10)
+tk.Entry(form, name="email").pack()
+
+print(root.children["form"].children["email"])     # .form.email
+e = root.nametowidget(".form.email")
+e.insert(0, "a@b.c")
+print(e.get())
+root.mainloop()
+```
+
+@@ tk.ref.bitmap
+Q: What are the built-in bitmaps (info, warning, question, error)?
+aka: bitmap option, built in icons, error icon, warning icon, question icon, hourglass, label bitmap
+A: Labels and Buttons accept `bitmap=` with built-in names: `"error"`, `"gray75"`, `"gray50"`, `"gray25"`, `"gray12"`, `"hourglass"`, `"info"`, `"questhead"`, `"question"`, `"warning"`. Small and old-looking, but handy without any image files.
+```py
+import tkinter as tk
+
+root = tk.Tk()
+for name in ("error", "info", "question", "warning", "hourglass", "questhead"):
+    tk.Label(root, bitmap=name, text=name, compound="left", padx=6).pack(anchor="w", padx=10)
+root.mainloop()
+```

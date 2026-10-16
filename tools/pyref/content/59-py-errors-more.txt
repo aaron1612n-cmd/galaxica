@@ -1,0 +1,842 @@
+# py-errors2 | More error messages | Another 40 common Python errors: what each means and how to fix it | python
+
+@@ py.err2.no-attr-split
+Q: AttributeError: 'list' object has no attribute 'split' (or 'str' has no 'append', 'dict' has no 'append')
+aka: list has no attribute split, str has no attribute append, dict has no attribute append, int has no attribute, wrong type method
+err: 'list' object has no attribute '*'|'str' object has no attribute '*'|'dict' object has no attribute '*'|'int' object has no attribute '*'|'tuple' object has no attribute '*'|'float' object has no attribute '*'
+A: You called a method that belongs to a **different type**. Each type has its own methods: strings have `split`, lists have `append`, dicts have no `append` (use `d[key] = value`). Print `type(x)` to see what you actually have; often a function returned a list when you expected a string (or the reverse).
+see: py.fmt.methods-all, py.bi.dir-vars
+```py raises
+lines = ["a b", "c d"]
+lines.split()
+```
+```py
+lines = ["a b", "c d"]
+print(type(lines).__name__)
+words = [w for line in lines for w in line.split()]     # split each string
+d = {}
+d["key"] = "value"                                       # dicts: assign, don't append
+print(words, d)
+```
+```text
+list
+['a', 'b', 'c', 'd'] {'key': 'value'}
+```
+
+@@ py.err2.list-indices-str
+Q: TypeError: list indices must be integers or slices, not str
+aka: list indices must be integers, not str, list index string, indexing list with string, list indices float, json list index
+err: list indices must be integers or slices, not *
+A: You used `[...]` with a string (or float) on a **list**. Either you meant a dict (`data["name"]` where `data` is really a list of dicts: loop over it or pick `data[0]["name"]`), or the index came from `input()` and needs `int(...)`.
+see: py.nested-dict, py.convert
+```py raises
+people = [{"name": "Ada"}, {"name": "Sam"}]
+print(people["name"])
+```
+```py
+people = [{"name": "Ada"}, {"name": "Sam"}]
+print(people[0]["name"])
+print([p["name"] for p in people])
+i = "1"
+print(people[int(i)]["name"])
+```
+```text
+Ada
+['Ada', 'Sam']
+Sam
+```
+
+@@ py.err2.string-indices
+Q: TypeError: string indices must be integers, not 'str'
+aka: string indices must be integers, indexing string with string, json string not dict, loop over dict gives keys
+err: string indices must be integers*
+A: You used `text["key"]` on a **string**. Usually: you loaded JSON but still have the raw string (call `json.loads`), or you looped over a dict and got its keys (strings) instead of the values.
+see: py.json, py.dict-loop
+```py raises
+import json
+raw = '{"name": "Ada"}'
+print(raw["name"])
+```
+```py
+import json
+raw = '{"name": "Ada"}'
+data = json.loads(raw)                  # string -> dict
+print(data["name"])
+for key, value in {"a": {"n": 1}}.items():
+    print(key, value["n"])
+```
+```text
+Ada
+a 1
+```
+
+@@ py.err2.no-len
+Q: TypeError: object of type 'int' has no len()
+aka: object of type int has no len, len of number, length of integer, number of digits, len of float, NoneType has no len
+err: object of type '*' has no len()
+A: `len()` works on collections and strings, not numbers (or `None`). For digits of a number use `len(str(n))`; if it's `None`, a function didn't return what you expected.
+see: py.digits
+```py raises
+n = 12345
+print(len(n))
+```
+```py
+n = 12345
+print(len(str(n)), len(str(abs(-42))))
+```
+```text
+5 2
+```
+
+@@ py.err2.math-domain
+Q: ValueError: math domain error
+aka: math domain error, sqrt negative, log of zero, log negative, acos out of range
+err: math domain error
+A: A maths function got a value it can't handle: `sqrt` of a negative, `log` of 0 or a negative, `acos`/`asin` outside -1..1 (often a tiny float rounding error like `1.0000000002`). Check the input, clamp it, or use `cmath` for complex results.
+see: py.num.complex
+```py raises
+import math
+math.sqrt(-4)
+```
+```py
+import cmath, math
+x = 1.0000000002
+print(math.acos(max(-1.0, min(1.0, x))))     # clamp rounding errors
+print(cmath.sqrt(-4))
+```
+```text
+0.0
+2j
+```
+
+@@ py.err2.overflow
+Q: OverflowError: math range error (or int too large to convert to float)
+aka: overflowerror, math range error, result too large, int too large to convert to float, numerical result out of range
+err: math range error|int too large to convert to float|(34, 'Numerical result out of range')
+A: The result is bigger than a float can hold (about 1.8e308). Use integers (no limit) where possible, work with logarithms, or `decimal.Decimal` for huge values.
+see: py.num.int-limits
+```py raises
+import math
+math.exp(1000)
+```
+```py
+import math
+from decimal import Decimal
+print(f"{Decimal(1000).exp():.5E}")
+print(1000 * math.log10(math.e))        # how many digits instead
+print(2 ** 2000 > 10 ** 600)              # ints are fine
+```
+```text
+1.97007E+434
+434.29448190325184
+True
+```
+
+@@ py.err2.module-not-callable
+Q: TypeError: 'module' object is not callable
+aka: module object is not callable, random() not callable, datetime module not callable, import module call, tqdm not callable
+err: 'module' object is not callable*
+A: You imported a **module** and called it like a function. Call the function inside it: `random.random()`, `datetime.datetime.now()`, or import the function directly: `from random import random`.
+see: py.import
+```py raises
+import random
+random()
+```
+```py
+import random, datetime
+from random import randint
+print(type(random.random()).__name__, randint(1, 1), type(datetime.datetime.now()).__name__)
+```
+```text
+float 1 datetime
+```
+
+@@ py.err2.none-callable
+Q: TypeError: 'NoneType' object is not callable
+aka: nonetype object is not callable, none not callable, method returns none called, overwritten function
+err: 'NoneType' object is not callable
+A: Something you tried to call is `None`. Usually a variable or attribute that should hold a function got set to the **result** of calling it (`command=f()`), or a name was reassigned to `None`.
+see: tk.err.command-runs-early, py.err.not-callable
+```py raises
+def greet():
+    print("hi")
+handler = greet()       # calls it now; handler is None
+handler()
+```
+```py
+def greet():
+    print("hi")
+handler = greet         # the function itself
+handler()
+```
+```text
+hi
+```
+
+@@ py.err2.join-int
+Q: TypeError: sequence item 0: expected str instance, int found
+aka: join int error, join list of numbers, expected str instance int found, join non string
+err: sequence item *: expected str instance, * found
+A: `"".join(...)` only joins strings. Convert first: `", ".join(map(str, numbers))` or `", ".join(str(n) for n in numbers)`.
+see: py.join
+```py raises
+print(", ".join([1, 2, 3]))
+```
+```py
+nums = [1, 2, 3]
+print(", ".join(map(str, nums)), "-".join(f"{n:02d}" for n in nums))
+```
+```text
+1, 2, 3 01-02-03
+```
+
+@@ py.err2.not-enough-unpack
+Q: ValueError: not enough values to unpack (expected 3, got 2)
+aka: not enough values to unpack, unpack error, too few values, split unpack error, for loop unpack
+err: not enough values to unpack (expected *, got *)
+A: The left side has more names than the right side has items. Common with `a, b = line.split(",")` when a line has fewer parts. Check the length, use `*rest`, or `partition`.
+see: py.err.too-many-values, py.unpack-star
+```py raises
+name, age, city = "Ada,36".split(",")
+```
+```py
+line = "Ada,36"
+parts = line.split(",")
+name, age, *rest = parts
+city = rest[0] if rest else "unknown"
+print(name, age, city)
+key, _, value = "colour".partition("=")
+print(repr(key), repr(value))
+```
+```text
+Ada 36 unknown
+'colour' ''
+```
+
+@@ py.err2.float-as-int
+Q: TypeError: 'float' object cannot be interpreted as an integer
+aka: float cannot be interpreted as integer, range float, range with decimal, list multiply float index
+err: 'float' object cannot be interpreted as an integer
+A: Something needs a whole number (`range`, list repetition, `chr`, indexes) but got a float, often from `/` division. Use `//` or `int(...)`.
+see: py.bi.range
+```py raises
+n = 10 / 2
+for i in range(n):
+    pass
+```
+```py
+n = 10 // 2
+print(list(range(n)), list(range(int(7.9))))
+```
+```text
+[0, 1, 2, 3, 4] [0, 1, 2, 3, 4, 5, 6]
+```
+
+@@ py.err2.dict-keys-subscript
+Q: TypeError: 'dict_keys' object is not subscriptable (or 'dict_values', 'set', 'map', 'zip')
+aka: dict_keys not subscriptable, dict_values not subscriptable, set not subscriptable, map object not subscriptable, zip object not subscriptable, first key of dict
+err: 'dict_keys' object is not subscriptable|'dict_values' object is not subscriptable|'set' object is not subscriptable|'map' object is not subscriptable|'zip' object is not subscriptable|'generator' object is not subscriptable|'filter' object is not subscriptable
+A: These are views/iterators, not lists, so `[0]` doesn't work. Convert with `list(...)`, or take the first item with `next(iter(...))`.
+see: py.it.iter-next
+```py raises
+d = {"a": 1, "b": 2}
+d.keys()[0]
+```
+```py
+d = {"a": 1, "b": 2}
+print(list(d)[0], next(iter(d.values())), list(map(str.upper, "ab"))[1])
+```
+```text
+a 1 B
+```
+
+@@ py.err2.format-none
+Q: TypeError: unsupported format string passed to NoneType.__format__
+aka: unsupported format string passed to NoneType, f-string format none, :.2f none, format None
+err: unsupported format string passed to *.__format__
+A: You used a number format like `{x:.2f}` but `x` is `None` (or a string). Find out why it's None (a function without `return`?) or convert strings with `float(x)` first.
+see: py.return-vs-print
+```py raises
+def price():
+    total = 4.5          # forgot to return
+print(f"{price():.2f}")
+```
+```py
+def price():
+    return 4.5
+print(f"{price():.2f}", f"{float('3.14159'):.2f}")
+```
+```text
+4.50 3.14
+```
+
+@@ py.err2.re-none-group
+Q: AttributeError: 'NoneType' object has no attribute 'group' (regex)
+aka: nonetype has no attribute group, re match none, regex no match, re.search returns none
+err: 'NoneType' object has no attribute 'group'|'NoneType' object has no attribute 'groups'
+A: `re.match`/`re.search` return `None` when nothing matches. Check before using `.group()`. Remember `re.match` only matches at the **start**; `re.search` looks anywhere.
+see: py.regex
+```py raises
+import re
+re.match(r"\d+", "order 66").group()
+```
+```py
+import re
+m = re.search(r"\d+", "order 66")
+print(m.group() if m else "no number")
+if (m := re.match(r"\d+", "order 66")) is None:
+    print("match() only looks at the start")
+```
+```text
+66
+match() only looks at the start
+```
+
+@@ py.err2.multiply-float
+Q: TypeError: can't multiply sequence by non-int of type 'float'
+aka: can't multiply sequence by non-int, multiply string by float, input times number, price times quantity string
+err: can't multiply sequence by non-int of type '*'
+A: You multiplied a **string or list** by a non-whole number, usually a number that's still text from `input()`. Convert it first: `float(price) * qty`.
+see: py.convert, py.input-number
+```py raises
+price = "2.50"
+print(price * 1.2)
+```
+```py
+price = "2.50"
+print(float(price) * 1.2, "ab" * 3)
+```
+```text
+3.0 ababab
+```
+
+@@ py.err2.bool-callable
+Q: TypeError: 'bool' object is not callable (or 'list'/'str' object is not callable)
+aka: bool object is not callable, list object is not callable, str is not callable, overwrote builtin, shadowing builtin, named variable list
+err: 'bool' object is not callable|'list' object is not callable|'dict' object is not callable|'str' object is not callable|'tuple' object is not callable
+A: Brackets `()` after a value that isn't a function. Usually you named a variable `list`, `str`, `input`, `max`... and then tried to use the built-in, or wrote `x(1)` instead of `x[1]`.
+see: py.err.not-callable
+```py raises
+list = [1, 2]
+numbers = list("123")
+```
+```py
+items = [1, 2]                 # don't call variables list/str/max/input
+print(list("123"), items[1])   # [ ] for indexing, ( ) for calling
+```
+```text
+['1', '2', '3'] 2
+```
+
+@@ py.err2.json-decode
+Q: json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+aka: jsondecodeerror, expecting value line 1 column 1, expecting property name enclosed in double quotes, json load error, empty json file, invalid json
+err: Expecting value: line * column * (char *)|Expecting property name enclosed in double quotes*|Extra data: line *|Unterminated string starting at*|Expecting ',' delimiter*
+A: The text isn't valid JSON. "Expecting value ... char 0" = it's **empty** (empty file, or a web response that's HTML/error, not JSON). "property name enclosed in double quotes" = single quotes or a trailing comma (JSON needs `"double"` quotes). Print the text to see it, and catch `json.JSONDecodeError`.
+see: py.json
+```py raises
+import json
+json.loads("{'name': 'Ada'}")
+```
+```py
+import json
+
+def load_or_default(text, default):
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError as e:
+        print(f"bad JSON at line {e.lineno} col {e.colno}: {e.msg}")
+        return default
+
+print(load_or_default('{"name": "Ada"}', {}))
+print(load_or_default("", {}))
+print(load_or_default('{"a": 1,}', {}))
+```
+```text
+{'name': 'Ada'}
+bad JSON at line 1 col 1: Expecting value
+{}
+bad JSON at line 1 col 9: Expecting property name enclosed in double quotes
+{}
+```
+
+@@ py.err2.closed-file
+Q: ValueError: I/O operation on closed file.
+aka: io operation on closed file, file closed, write after with, read closed file, csv writer closed file
+err: I/O operation on closed file*
+A: You used a file after its `with` block ended (the file closes there). Indent the code that reads/writes so it's **inside** the `with`.
+see: py.ctx.with
+```py raises
+with open("out.txt", "w") as f:
+    pass
+f.write("too late")
+```
+```py
+with open("out.txt", "w") as f:
+    f.write("inside the with block\n")
+print(open("out.txt").read().strip())
+```
+```text
+inside the with block
+```
+
+@@ py.err2.write-int
+Q: TypeError: write() argument must be str, not int
+aka: write argument must be str, write number to file, write int to file, write list to file
+err: write() argument must be str, not *
+A: `file.write` only takes strings (or bytes in `"wb"` mode). Convert: `f.write(str(n))` or an f-string; for a list, `f.write("\n".join(map(str, items)))`. `print(..., file=f)` converts for you.
+see: py.file-write
+```py
+scores = [90, 72, 85]
+with open("scores.txt", "w") as f:
+    f.write(str(len(scores)) + "\n")
+    f.write("\n".join(map(str, scores)) + "\n")
+    print("done", 3.5, file=f)
+print(open("scores.txt").read().split())
+```
+```text
+['3', '90', '72', '85', 'done', '3.5']
+```
+
+@@ py.err2.dict-changed-size
+Q: RuntimeError: dictionary changed size during iteration
+aka: dictionary changed size during iteration, set changed size during iteration, delete key while looping, modify dict in for loop
+err: dictionary changed size during iteration|Set changed size during iteration
+A: You added or removed keys while looping over the same dict. Loop over a copy of the keys (`for k in list(d):`) or build a new dict with a comprehension.
+see: py.it.loop-dict-change
+```py raises
+d = {"a": 0, "b": 1}
+for k in d:
+    if d[k] == 0:
+        del d[k]
+```
+```py
+d = {"a": 0, "b": 1, "c": 0}
+for k in list(d):
+    if d[k] == 0:
+        del d[k]
+print(d, {k: v for k, v in {"x": 0, "y": 2}.items() if v})
+```
+```text
+{'b': 1} {'y': 2}
+```
+
+@@ py.err2.stopiteration
+Q: StopIteration (when calling next())
+aka: stopiteration error, next on empty iterator, generator exhausted, next() error
+err: StopIteration
+A: `next()` was called on an iterator with nothing left. Give a default: `next(it, None)`, or check first. Inside a generator, use `return` to end it (raising StopIteration there becomes a RuntimeError).
+see: py.it.iter-next
+```py raises
+it = iter([])
+next(it)
+```
+```py
+it = iter([])
+print(next(it, "empty"))
+first_even = next((n for n in [1, 3, 5] if n % 2 == 0), None)
+print(first_even)
+```
+```text
+empty
+None
+```
+
+@@ py.err2.unsupported-operand
+Q: TypeError: unsupported operand type(s) for +: 'NoneType' and 'int' (or 'str' and 'str' for -)
+aka: unsupported operand types, nonetype and int, str and int minus, operand type error, can't add none
+err: unsupported operand type(s) for *: '*' and '*'
+A: That operator doesn't work for those two types. `None` on one side means something returned nothing (missing `return`, or a method like `list.sort()` that returns None). Strings only support `+` and `*`; convert text to numbers first.
+see: py.return-vs-print, py.err.str-int-concat
+```py raises
+nums = [3, 1, 2]
+total = nums.sort() + 1
+```
+```py
+nums = [3, 1, 2]
+nums.sort()                     # sorts in place, returns None
+print(nums, sorted([3, 1, 2])[0] + 1, int("9") - int("4"))
+```
+```text
+[1, 2, 3] 2 5
+```
+
+@@ py.err2.not-supported-between
+Q: TypeError: '<' not supported between instances of 'str' and 'int'
+aka: not supported between instances, compare string and int, sort mixed types, max of mixed list, < str int
+err: '*' not supported between instances of '*' and '*'
+A: Python won't compare text with numbers (`"10" < 5`), so sorting or `max` on a mixed list fails, as does comparing your own objects without `__lt__`. Convert to one type (`int(x)`), or sort with `key=`.
+see: py.oop.ordering, py.it.reversed-sorted
+```py raises
+print(sorted([3, "10", 2]))
+```
+```py
+mixed = [3, "10", 2]
+print(sorted(mixed, key=int), sorted(mixed, key=str))
+```
+```text
+[2, 3, '10'] ['10', 2, 3]
+```
+
+@@ py.err2.is-a-directory
+Q: IsADirectoryError: [Errno 21] Is a directory (or PermissionError on Windows when opening a folder)
+aka: is a directory, open folder error, isadirectoryerror, errno 21, open directory instead of file
+err: [Errno 21] Is a directory: *|[Errno 13] Permission denied: * (folder)
+A: You passed a **folder** path to `open()`. Join the file name onto it: `os.path.join(folder, "file.txt")`, or loop over the folder's files. (On Windows this often shows as `PermissionError`.)
+see: py.pathlib, py.listdir
+```py
+import os
+folder = "."
+path = os.path.join(folder, "data.txt")
+print(os.path.isdir(folder), os.path.isfile(path))
+with open(path) as f:
+    print(f.readline().strip())
+```
+```text
+True True
+first line
+```
+
+@@ py.err2.file-exists
+Q: FileExistsError: [Errno 17] File exists
+aka: file exists error, mkdir exists, folder already exists, errno 17, makedirs exist_ok, open x mode exists
+err: [Errno 17] File exists: *|[WinError 183] Cannot create a file when that file already exists*
+A: You created a folder (or used mode `"x"`) and it already exists. Use `os.makedirs(path, exist_ok=True)` / `Path(path).mkdir(parents=True, exist_ok=True)`.
+see: py.file-exists
+```py
+import os
+from pathlib import Path
+os.makedirs("out/images", exist_ok=True)
+Path("out/images").mkdir(parents=True, exist_ok=True)     # no error the second time
+print(os.path.isdir("out/images"))
+```
+```text
+True
+```
+
+@@ py.err2.unexpected-keyword
+Q: TypeError: f() got an unexpected keyword argument 'x'
+aka: unexpected keyword argument, got an unexpected keyword, wrong argument name, keyword argument typo, init unexpected keyword
+err: * got an unexpected keyword argument '*'
+A: The function has no parameter with that name: a typo, a parameter from a different version of a library, or (in classes) a misspelled `__init__` (`__int__`, `_init_`) so the default `object.__init__` is used.
+see: py.default-args, py.fn.attributes
+```py raises
+class Dog:
+    def _init_(self, name):         # one underscore: not the constructor!
+        self.name = name
+Dog(name="Rex")
+```
+```py
+class Dog:
+    def __init__(self, name):       # two underscores each side
+        self.name = name
+print(Dog(name="Rex").name)
+```
+```text
+Rex
+```
+
+@@ py.err2.missing-init-arg
+Q: TypeError: __init__() missing 1 required positional argument
+aka: init missing required positional argument, missing argument class, create object without argument, missing self
+err: *__init__() missing * required positional argument*|* missing * required positional argument*
+A: Creating the object needs an argument you didn't pass: `Player()` when `__init__(self, name)` expects a name. Pass it, or give the parameter a default.
+see: py.class-basics
+```py raises
+class Player:
+    def __init__(self, name):
+        self.name = name
+Player()
+```
+```py
+class Player:
+    def __init__(self, name="Player 1"):
+        self.name = name
+print(Player().name, Player("Ada").name)
+```
+```text
+Player 1 Ada
+```
+
+@@ py.err2.self-missing
+Q: TypeError: m() takes 0 positional arguments but 1 was given (in a class)
+aka: takes 0 positional arguments but 1 was given class, forgot self, method missing self, self parameter
+err: * takes 0 positional arguments but 1 was given|* takes * positional argument* but * were given
+A: Methods receive the object automatically as their first argument, so every method needs `self` first: `def move(self):`. (Or mark it `@staticmethod` if it really doesn't use the object.)
+see: py.class-basics
+```py raises
+class Robot:
+    def beep():
+        print("beep")
+Robot().beep()
+```
+```py
+class Robot:
+    def beep(self):
+        print("beep")
+Robot().beep()
+```
+```text
+beep
+```
+
+@@ py.err2.tuple-assign
+Q: TypeError: 'tuple' object does not support item assignment
+aka: tuple does not support item assignment, change tuple, modify tuple, tuple immutable
+err: 'tuple' object does not support item assignment|'str' object does not support item assignment|'frozenset' object has no attribute 'add'
+A: Tuples can't be changed after they're made. Use a list if you need to change it, or build a new tuple.
+see: py.tuple
+```py raises
+point = (1, 2)
+point[0] = 5
+```
+```py
+point = (1, 2)
+point = (5, point[1])            # new tuple
+coords = list((1, 2)); coords[0] = 5
+print(point, coords)
+```
+```text
+(5, 2) [5, 2]
+```
+
+@@ py.err2.max-empty
+Q: ValueError: max() iterable argument is empty (or min() arg is an empty sequence)
+aka: max empty, min empty sequence, max of empty list, max() arg is an empty sequence
+err: max() iterable argument is empty|min() iterable argument is empty|max() arg is an empty sequence|min() arg is an empty sequence
+A: The list is empty. Give a default: `max(items, default=0)`, or check `if items:` first.
+see: py.bi.max-min
+```py raises
+max([])
+```
+```py
+scores = []
+print(max(scores, default=None), max(scores) if scores else "no scores")
+```
+```text
+None no scores
+```
+
+@@ py.err2.not-in-list
+Q: ValueError: list.remove(x): x not in list (or 5 is not in list / substring not found)
+aka: x not in list, not in list, list remove error, list index value error, substring not found, str index not found
+err: list.remove(x): x not in list|* is not in list|substring not found
+A: `remove()` and `index()` raise when the value isn't there. Check with `in` first, or use `str.find` (returns -1) for strings.
+see: py.list-find, py.find
+```py raises
+[1, 2].remove(5)
+```
+```py
+items = [1, 2]
+if 5 in items:
+    items.remove(5)
+print(items, "abc".find("z"), items.index(2) if 2 in items else -1)
+```
+```text
+[1, 2] -1 1
+```
+
+@@ py.err2.pop-empty
+Q: IndexError: pop from empty list (or KeyError: 'popitem(): dictionary is empty')
+aka: pop from empty list, pop empty, stack empty, popitem empty dictionary, deque pop empty
+err: pop from empty list|'popitem(): dictionary is empty'|pop from an empty deque
+A: There was nothing left to take. Check `if items:` before popping, or catch the error.
+see: py.list-remove
+```py raises
+stack = []
+stack.pop()
+```
+```py
+stack = [1]
+while stack:
+    print("took", stack.pop())
+print("empty now:", stack)
+```
+```text
+took 1
+empty now: []
+```
+
+@@ py.err2.unicode-encode
+Q: UnicodeEncodeError: 'charmap' (or 'ascii') codec can't encode character
+aka: unicodeencodeerror, charmap codec can't encode character, print emoji error windows, ascii codec can't encode, encode error writing file
+err: '*' codec can't encode character*
+A: Text with characters the target encoding can't represent (emoji, accents) was written to a file or console using an old encoding. Open files with `encoding="utf-8"`; on old Windows consoles run `set PYTHONUTF8=1` (or `chcp 65001`), or `sys.stdout.reconfigure(encoding="utf-8")`.
+see: py.encoding, py.fmt.bytes
+```py raises
+"café ☕".encode("ascii")
+```
+```py
+with open("out.txt", "w", encoding="utf-8") as f:
+    f.write("café ☕\n")
+print(open("out.txt", encoding="utf-8").read().strip())
+print("café ☕".encode("ascii", errors="replace"))
+```
+```text
+café ☕
+b'caf? ?'
+```
+
+@@ py.err2.int-max-digits
+Q: ValueError: Exceeds the limit (4300 digits) for integer string conversion
+aka: exceeds the limit 4300 digits, int string conversion limit, print huge integer, set_int_max_str_digits
+err: Exceeds the limit (*) for integer string conversion*
+A: Since Python 3.11, turning a giant int (over 4300 digits) into a string (or back) is limited for safety. Raise the limit with `sys.set_int_max_str_digits(0)` (0 = no limit) if you trust the data.
+see: py.num.int-limits
+```py
+import sys
+sys.set_int_max_str_digits(0)
+big = 7 ** 10000
+print(len(str(big)))
+```
+```text
+8451
+```
+
+@@ py.err2.print-parens
+Q: SyntaxError: Missing parentheses in call to 'print'. Did you mean print(...)?
+aka: missing parentheses in call to print, print without brackets, python 2 code, print statement
+err: Missing parentheses in call to 'print'*
+A: That code is written for Python 2. In Python 3, `print` is a function: `print("hi")`. Old tutorials and code also use `raw_input` (now `input`) and `/` for whole-number division (now `//`).
+see: py.print
+```py bad
+print "hello"
+```
+```py
+print("hello")
+```
+```text
+hello
+```
+
+@@ py.err2.never-closed
+Q: SyntaxError: '(' was never closed (or '[' / '{')
+aka: was never closed, unclosed bracket, missing closing parenthesis, unexpected EOF while parsing, bracket not closed
+err: '(' was never closed|'[' was never closed|'{' was never closed|unexpected EOF while parsing
+A: A bracket opened on (or before) the line shown has no matching closing bracket. Count them; editors highlight pairs. The real mistake is often on an **earlier** line than the one reported.
+see: py.err.syntax
+```py bad
+total = (price * qty
+print(total)
+```
+```py
+price, qty = 2, 3
+total = (price * qty)
+print(total)
+```
+```text
+6
+```
+
+@@ py.err2.expected-colon
+Q: SyntaxError: expected ':'
+aka: expected colon, missing colon, if without colon, def without colon, for loop colon
+err: expected ':'
+A: Lines starting `if`, `elif`, `else`, `for`, `while`, `def`, `class`, `try`, `except`, `with`, `match`, `case` must end with `:`.
+see: py.if
+```py bad
+if score > 50
+    print("pass")
+```
+```py
+score = 70
+if score > 50:
+    print("pass")
+```
+```text
+pass
+```
+
+@@ py.err2.unterminated-string
+Q: SyntaxError: unterminated string literal (detected at line 1)
+aka: unterminated string literal, EOL while scanning string literal, missing quote, string not closed, apostrophe in string
+err: unterminated string literal*|EOL while scanning string literal|unterminated triple-quoted string literal*
+A: A quote isn't closed, often because the text contains the same quote: `'it's'`. Use the other kind of quotes (`"it's"`), escape it (`'it\'s'`), or use triple quotes for multi-line text. A Windows path ending in `\` (`"C:\folder\"`) causes it too.
+see: py.multiline-str
+```py bad
+msg = 'it's here'
+```
+```py
+msg = "it's here"
+path = r"C:\folder" + "\\"
+print(msg, path)
+```
+```text
+it's here C:\folder\
+```
+
+@@ py.err2.assign-call
+Q: SyntaxError: cannot assign to function call here. Maybe you meant '==' instead of '='?
+aka: cannot assign to function call, cannot assign to literal, cannot assign to expression, = instead of ==
+err: cannot assign to *|cannot assign to function call*
+A: The left side of `=` must be a name (or item/attribute). Either you meant to **compare** (`==`, e.g. in an `if`), or wrote the assignment backwards (`5 = x`).
+see: py.comparisons, py.variables
+```py bad
+if len(name) = 0:
+    print("empty")
+```
+```py
+name = ""
+if len(name) == 0:
+    print("empty")
+```
+```text
+empty
+```
+
+@@ py.err2.tab-error
+Q: TabError: inconsistent use of tabs and spaces in indentation
+aka: taberror, inconsistent tabs spaces, mixed tabs and spaces, indentation tabs, convert tabs to spaces
+err: inconsistent use of tabs and spaces in indentation
+A: Some lines are indented with tabs and others with spaces. Make the whole file use spaces (4 per level): most editors have "Convert indentation to spaces"; IDLE has Format → Untabify Region.
+see: py.indentation, py.err.indentation
+```py
+source = "def f():\n\tif True:\n        return 1\n"      # line 2 uses a tab
+for n, line in enumerate(source.splitlines(), 1):
+    indent = line[:len(line) - len(line.lstrip())]
+    if "\t" in indent:
+        print(f"line {n} is indented with a tab")
+fixed = source.replace("\t", "    ")                    # tabs -> 4 spaces
+exec(fixed)
+print(f())
+```
+```text
+line 2 is indented with a tab
+1
+```
+
+@@ py.err2.forgot-comma
+Q: SyntaxError: invalid syntax. Perhaps you forgot a comma?
+aka: perhaps you forgot a comma, invalid syntax list, missing comma list, missing comma function arguments
+err: invalid syntax. Perhaps you forgot a comma?
+A: Two values sit next to each other without a comma, inside brackets: `[1 2]`, `print("a" b)`, or a missing `+` between strings and variables.
+see: py.err.syntax
+```py bad
+nums = [1 2 3]
+print("Total:" total)
+```
+```py
+nums = [1, 2, 3]
+total = sum(nums)
+print("Total:", total)
+```
+```text
+Total: 6
+```
+
+@@ py.err2.fstring-errors
+Q: SyntaxError: f-string: ... (expecting '}', missing conversion character, single '}' is not allowed)
+aka: f-string syntax error, f-string expecting }, single } not allowed, f-string nested quotes, backslash in f-string
+err: f-string: *|f-string expression part cannot include a backslash|f-string: single '}' is not allowed|f-string: expecting '}'
+A: Something inside `{...}` isn't valid: an unmatched brace (write `{{`/`}}` for literal braces), a `!` not followed by `r`/`s`/`a`, or (before Python 3.12) using the same quote type or a backslash inside the braces.
+see: py.fmt.nested, py.fmt.debug
+```py
+items = {"name": "Ada"}
+print(f"{{literal}} {items['name']} {len(items)!r}")
+nl = "\n"
+print(f"lines: {nl.join(['a', 'b'])!r}")
+```
+```text
+{literal} Ada 1
+lines: 'a\nb'
+```

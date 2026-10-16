@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Build public/python/data.js from tools/pyref/content/*.txt.
 
-Every ```py block is compiled, and run unless marked otherwise:
+Every ```py block is compiled, and run unless marked otherwise. A ```text block
+right after a run block must match what the example really prints.
   ```py            run it; must exit 0 with no stderr
   ```py norun      compile only (needs network, blocks forever, etc.)
   ```py bad        a deliberately broken example; not checked
@@ -12,7 +13,7 @@ dialogs return a dummy answer, so a window that opens without errors passes.
 
 Usage: python3 build.py [--py /path/to/python-with-tk] [--norun] [--only ID]
 """
-import html, json, os, re, subprocess, sys, tempfile, keyword, io, tokenize, concurrent.futures as cf
+import html, json, os, re, subprocess, sys, tempfile, keyword, io, tokenize, unicodedata, concurrent.futures as cf
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
@@ -41,6 +42,15 @@ try:
         root.after(int(os.environ.get('TK_MS', '350')), root.destroy)
         _ml(self, n)
     tkinter.Misc.mainloop = mainloop
+    def _module_mainloop(n=0):               # turtle.done() calls tkinter.mainloop()
+        if tkinter._default_root is not None:
+            mainloop(tkinter._default_root, n)
+    tkinter.mainloop = _module_mainloop
+    try:
+        import turtle                        # turtle.done() runs Tcl's loop directly
+        turtle.TurtleScreenBase.mainloop = lambda self: _module_mainloop()
+    except ImportError:
+        pass
     for name in dir(messagebox):
         if name.startswith(('show', 'ask')):
             setattr(messagebox, name, lambda *a, **k: True)
@@ -63,6 +73,7 @@ runpy.run_path(sys.argv[0], run_name='__main__')
 
 # ---------------------------------------------------------------- highlighting
 BROKEN = set()
+MISMATCH = []
 BUILTINS = set('print input len range int str float list dict set tuple bool open type isinstance enumerate zip sorted reversed sum min max abs round map filter any all super object id hash iter next repr format chr ord divmod pow help dir vars getattr setattr hasattr exit quit'.split())
 
 def hl_py(src):
@@ -141,6 +152,7 @@ def render(body, ids):
     lines = body.split('\n')
     i = 0
     para, lst = [], None
+    last_was_py = False
     def flush():
         nonlocal para, lst
         if para:
@@ -166,17 +178,21 @@ def render(body, ids):
             src = '\n'.join(code)
             label = {'bad': 'wrong', 'raises': 'error'}.get(mode, '')
             if lang == 'py':
-                blocks.append((mode, src))
+                blocks.append([mode, src, None])
                 inner = hl_py(src)
             else:
                 inner = html.escape(src)
+                if lang == 'text' and blocks and last_was_py and blocks[-1][2] is None:
+                    blocks[-1][2] = src
             cls = 'code' + (' bad' if mode == 'bad' else '') + (' out' if lang == 'text' else '') + (' sh' if lang == 'sh' else '')
             tag = {'text': 'output', 'sh': 'terminal'}.get(lang, label)
             out.append('<figure class="%s"%s><pre>%s</pre></figure>' % (cls, (' data-tag="%s"' % tag) if tag else '', inner))
+            last_was_py = lang == 'py'
             i = j + 1
             continue
         if not ln.strip():
             flush(); i += 1; continue
+        last_was_py = False
         if ln.startswith('> '):
             flush()
             q = [ln[2:]]
@@ -214,6 +230,10 @@ def parse():
     files = sorted(f for f in os.listdir(os.path.join(HERE, 'content')) if f.endswith('.txt'))
     for fn in files:
         text = open(os.path.join(HERE, 'content', fn), encoding='utf-8').read()
+        for n, ln in enumerate(text.split('\n'), 1):
+            bad = [c for c in ln if unicodedata.category(c) in ('Cf', 'Mn', 'Cc') and c != '\t']
+            if bad:   # invisible characters: write them as \u escapes instead
+                raise SystemExit('%s:%d: invisible character U+%04X' % (fn, n, ord(bad[0])))
         cur = None
         chunks, buf, fence = [], [], False
         for ln in text.split('\n'):
@@ -253,7 +273,7 @@ def plain(s):
     s = re.sub(r'<[^>]+>', ' ', s)
     return html.unescape(re.sub(r'\s+', ' ', s)).strip()
 
-def run_block(py, mode, src, idx, eid):
+def run_block(py, mode, src, expect, idx, eid):
     if mode in ('bad', 'norun'):
         if mode == 'norun':
             try:
@@ -279,7 +299,7 @@ def run_block(py, mode, src, idx, eid):
         Image.new('RGB', (64, 48), (40, 80, 200)).save(os.path.join(d, 'photo.jpg'))
         Image.new('RGB', (64, 48), (40, 200, 80)).save(os.path.join(d, 'icon.png'))
         cmd = [py, r, f]
-        if 'tkinter' in src:
+        if 'tkinter' in src or 'turtle' in src:
             cmd = ['xvfb-run', '-a'] + cmd
         try:
             p = subprocess.run(cmd, cwd=d, capture_output=True, text=True, timeout=20)
@@ -292,6 +312,10 @@ def run_block(py, mode, src, idx, eid):
             return None
         if p.returncode != 0 or err:
             return '%s block %d: exit %d\n%s' % (eid, idx, p.returncode, err[-800:])
+        if expect is not None and mode == 'run':
+            norm = lambda t: '\n'.join(l.rstrip() for l in t.strip('\n').split('\n'))
+            if norm(p.stdout) != norm(expect):
+                MISMATCH.append('%s block %d: output differs\n--- shown\n%s\n--- real\n%s' % (eid, idx, norm(expect), norm(p.stdout)[:600]))
     return None
 
 def main():
@@ -311,16 +335,17 @@ def main():
                 BROKEN.add(x)
         out.append({'id': e['id'], 's': e['s'], 'q': e['Q'].replace('`', ''), 'qh': inline(e['Q'], {}), 'a': inline(e['A'], ids), 'aka': e['aka'], 'err': e['err'],
                     'h': body_html, 'see': see, 't': plain(body_html)[:1600]})
-        for n, (mode, src) in enumerate(blocks):
+        for n, (mode, src, expect) in enumerate(blocks):
             if only and e['id'] != only and not e['id'].startswith(only):
                 continue
-            jobs.append((mode, src, n, e['id']))
+            jobs.append((mode, src, expect, n, e['id']))
     fails = []
     if '--norun' not in args:
         with cf.ThreadPoolExecutor(max_workers=os.cpu_count() or 4) as ex:
             for res in ex.map(lambda j: run_block(py, *j), jobs):
                 if res:
                     fails.append(res)
+    fails += MISMATCH
     if BROKEN:
         fails.append('broken links: ' + ', '.join(sorted(BROKEN)))
     for f in fails:

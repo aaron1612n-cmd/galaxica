@@ -1,0 +1,96 @@
+# mod-text | string, textwrap, gettext, unicodedata, locale | String constants, wrapping, translations, Unicode character info, local number formats | modules
+
+@@ mod.string-constants
+Q: What's in the string module (ascii_letters, digits, punctuation...)?
+aka: string module, string constants, ascii_letters, ascii_lowercase, digits, punctuation, whitespace, printable, capwords
+A: Ready-made character sets: `ascii_lowercase`, `ascii_uppercase`, `ascii_letters`, `digits`, `hexdigits`, `octdigits`, `punctuation`, `whitespace`, `printable`. Also `string.capwords(text)` and `string.Template`.
+see: py.fmt.template, mod.secrets
+```py
+import string
+print(string.ascii_lowercase, string.digits, string.punctuation)
+print(string.capwords("hello   wORLD  again"))
+print(all(c in string.hexdigits for c in "c23b22"))
+```
+```text
+abcdefghijklmnopqrstuvwxyz 0123456789 !"#$%&'()*+,-./:;<=>?@[\]^_`{|}~
+Hello World Again
+True
+```
+
+@@ mod.textwrap
+Q: What can textwrap do (wrap, fill, shorten, indent, dedent)?
+aka: textwrap module, wrap paragraphs, TextWrapper, hanging indent, wrap width, dedent multiline string
+A: `wrap(text, width)` → list of lines; `fill` → one string; `shorten` → cut with `[...]`; `indent`/`dedent`; `TextWrapper(initial_indent=, subsequent_indent=)` for hanging indents (like bullet points).
+see: py.fmt.wrap
+```py
+import textwrap
+text = "Python's textwrap module wraps long paragraphs neatly for terminals and emails."
+w = textwrap.TextWrapper(width=32, initial_indent="• ", subsequent_indent="  ")
+print(w.fill(text))
+print(textwrap.wrap(text, 40)[1])
+```
+```text
+• Python's textwrap module wraps
+  long paragraphs neatly for
+  terminals and emails.
+paragraphs neatly for terminals and
+```
+
+@@ mod.gettext
+Q: How do I translate my program's messages (gettext)?
+aka: gettext, translations, i18n python, _() function, po mo files, localise program
+A: Wrap user-facing strings in `_("...")`. `gettext.translation("app", localedir, languages=["es"])` loads compiled `.mo` files made from `.po` translation files (tools like Poedit or `pybabel`); `fallback=True` keeps English if a translation is missing.
+see: tk.x.translate
+```py
+import gettext
+t = gettext.translation("myapp", localedir="locales", languages=["es"], fallback=True)
+_ = t.gettext
+print(_("Hello, world!"))                 # Spanish if locales/es/LC_MESSAGES/myapp.mo exists
+n = 3
+print(t.ngettext("{} file", "{} files", n).format(n))
+```
+```text
+Hello, world!
+3 files
+```
+
+@@ mod.unicodedata
+Q: How do I get information about a Unicode character (name, category, emoji)?
+aka: unicodedata, character name, unicode category, lookup character by name, \N{} escape, emoji name
+A: `unicodedata.name("é")`, `unicodedata.lookup("SNOWMAN")`, `unicodedata.category(c)` (`Lu` uppercase letter, `Nd` digit, `Po` punctuation...). In strings, `"\N{SNOWMAN}"` inserts a character by its name.
+see: py.fmt.accents
+```py
+import unicodedata
+for ch in "A7é☃":
+    print(ch, unicodedata.name(ch), unicodedata.category(ch))
+print(unicodedata.lookup("BLACK HEART SUIT"), "\N{HOT BEVERAGE}", unicodedata.numeric("½"))
+```
+```text
+A LATIN CAPITAL LETTER A Lu
+7 DIGIT SEVEN Nd
+é LATIN SMALL LETTER E WITH ACUTE Ll
+☃ SNOWMAN So
+♥ ☕ 0.5
+```
+
+@@ mod.locale
+Q: How do I format numbers and dates the local way (1.234,56 in Germany)?
+aka: locale, local number format, decimal comma, thousands separator locale, locale currency, setlocale
+A: `locale.setlocale(locale.LC_ALL, "")` uses the computer's settings; then `locale.format_string("%.2f", x, grouping=True)` and `locale.currency(x)`. Available locale names differ per computer, so wrap `setlocale` in `try`. For apps, the `babel` package is more reliable.
+see: py.format-decimals
+```py
+import locale
+for name in ("de_DE.UTF-8", "C.UTF-8", "C"):
+    try:
+        locale.setlocale(locale.LC_ALL, name)
+        break
+    except locale.Error:
+        continue
+print(locale.format_string("%.2f", 1234567.891, grouping=True) != "")
+locale.setlocale(locale.LC_ALL, "C")
+print(f"{1234567.891:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))   # manual German style
+```
+```text
+True
+1.234.567,89
+```

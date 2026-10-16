@@ -1,0 +1,418 @@
+# py-kw | Keywords and match | Every Python keyword with an example, plus pattern matching (match/case) in depth | python
+
+@@ py.kw.list
+Q: What are Python's keywords (reserved words I can't use as names)?
+aka: keywords list, reserved words, keyword module, can't use as variable name, soft keywords
+A: 35 keywords: `False None True and as assert async await break class continue def del elif else except finally for from global if import in is lambda nonlocal not or pass raise return try while with yield`. Soft keywords (only special in certain places): `match case _ type`. Using one as a variable name is a `SyntaxError`.
+see: py.kw.del
+```py
+import keyword
+print(len(keyword.kwlist), keyword.kwlist[:6])
+print(keyword.softkwlist)
+print(keyword.iskeyword("class"), keyword.iskeyword("print"))
+```
+```text
+35 ['False', 'None', 'True', 'and', 'as', 'assert']
+['_', 'case', 'match', 'type']
+True False
+```
+
+@@ py.kw.del
+Q: What does del do?
+aka: del keyword, delete variable, delete list item, delete dict key, del slice
+A: `del` removes a **name** or an **item**: `del x` (the variable is gone), `del items[0]`, `del items[1:3]`, `del d["key"]`, `del obj.attr`. The object itself is freed when nothing refers to it any more.
+see: py.list-remove, py.dict-remove
+```py
+items = ["a", "b", "c", "d", "e"]
+del items[0]
+del items[1:3]
+print(items)
+d = {"x": 1, "y": 2}
+del d["x"]
+print(d)
+x = 5
+del x
+print("x" in dir())
+```
+```text
+['b', 'e']
+{'y': 2}
+False
+```
+
+@@ py.kw.in-not-in
+Q: What do `in` and `not in` do?
+aka: in keyword, not in, membership test, check if in list, check substring, key in dict
+A: Membership: `x in list`, `"sub" in string` (substring), `key in dict` (checks **keys**), `x in set` (very fast). `not in` is the opposite. `for x in ...` is a different use: looping.
+see: py.list-find, py.find
+```py
+print(3 in [1, 2, 3], "ell" in "hello", "a" in {"a": 1}, 1 in {"a": 1})
+print("z" not in "hello", 5 in range(0, 10, 5))
+```
+```text
+True True True False
+True True
+```
+
+@@ py.kw.as
+Q: What does `as` do?
+aka: as keyword, import as, with as, except as, alias
+A: It gives something a name: `import numpy as np` (shorter name), `with open(f) as fh` (the opened file), `except ValueError as e` (the error object), and in `match` patterns (`case [x, *rest] as whole`).
+see: py.import, py.ctx.with
+```py
+import datetime as dt
+with open("data.txt") as f:
+    first = f.readline().strip()
+try:
+    int("x")
+except ValueError as err:
+    message = str(err)
+print(dt.date(2026, 1, 1).year, first, message)
+```
+```text
+2026 first line invalid literal for int() with base 10: 'x'
+```
+
+@@ py.kw.pass-ellipsis
+Q: What's the difference between pass and ... (Ellipsis)?
+aka: pass keyword, ellipsis, three dots, placeholder, empty function body, todo placeholder
+A: Both work as an "empty" body so code is valid: `pass` means "do nothing"; `...` is a value (Ellipsis) often used as a placeholder in stubs and type hints. Neither does anything when run.
+see: py.break-continue
+```py
+def todo():
+    pass
+
+class Plugin:
+    def run(self): ...
+
+print(todo(), Plugin().run(), ... is Ellipsis)
+```
+```text
+None None True
+```
+
+@@ py.kw.lambda
+Q: What can and can't a lambda contain?
+aka: lambda limits, lambda multiple lines, lambda if else, lambda statement, lambda assignment
+A: A lambda is one **expression**: it can use `if ... else`, calls and comprehensions, but no statements (no `=`, `for` loops as statements, `return`, `try`). If you need more, write a `def`.
+see: py.lambda
+```py
+grade = lambda m: "pass" if m >= 50 else "fail"
+evens = lambda xs: [x for x in xs if x % 2 == 0]
+print(grade(72), evens(range(7)))
+print(sorted(["bb", "a", "ccc"], key=lambda s: (-len(s), s)))
+```
+```text
+pass [0, 2, 4, 6]
+['ccc', 'bb', 'a']
+```
+
+@@ py.kw.global-nonlocal
+Q: What's the difference between global and nonlocal?
+aka: global vs nonlocal, change variable outside function, global keyword, nonlocal keyword
+A: `global x` refers to the module-level `x`; `nonlocal x` refers to `x` in the enclosing **function**. Both are only needed to **assign**; reading works without them.
+see: py.global, py.fn.nonlocal
+```py
+count = 0
+def outer():
+    total = 0
+    def inner():
+        global count
+        nonlocal total
+        count += 1
+        total += 10
+    inner(); inner()
+    return total
+print(outer(), count)
+```
+```text
+20 2
+```
+
+@@ py.kw.is-none
+Q: Why should I write `is None` instead of `== None`?
+aka: is None vs == None, check none, is not None, compare to None
+A: `None` is a single object, so `is` checks it exactly and quickly. `==` can be fooled by classes that define their own equality. Same for `True`/`False` when you really mean the object; usually just write `if flag:`.
+see: py.is-vs-eq, py.none
+```py
+class Weird:
+    def __eq__(self, other): return True
+w = Weird()
+print(w == None, w is None)
+result = None
+if result is None:
+    print("no result yet")
+```
+```text
+True False
+no result yet
+```
+
+@@ py.kw.yield-return
+Q: What's the difference between return and yield?
+aka: return vs yield, yield keyword, generator function, return in generator
+A: `return` ends the function and gives back one value. `yield` turns the function into a **generator**: it hands out a value and pauses, carrying on from there next time. A `return` inside a generator just ends it.
+see: py.generators
+```py
+def first_three_return(xs):
+    return xs[:3]
+
+def first_three_yield(xs):
+    for x in xs[:3]:
+        yield x
+
+print(first_three_return([5, 6, 7, 8]))
+g = first_three_yield([5, 6, 7, 8])
+print(g.__class__.__name__, list(g))
+```
+```text
+[5, 6, 7]
+generator [5, 6, 7]
+```
+
+@@ py.kw.async-await
+Q: What do async and await mean?
+aka: async await, async def, coroutine, await keyword, asynchronous python
+A: `async def` makes a coroutine function; `await` pauses it until another coroutine (like a network call or `asyncio.sleep`) is done, letting other tasks run meanwhile. Start the whole thing with `asyncio.run(main())`.
+see: mod.asyncio.basics
+```py
+import asyncio
+
+async def cook(dish, seconds):
+    await asyncio.sleep(seconds)
+    return f"{dish} ready"
+
+async def main():
+    results = await asyncio.gather(cook("rice", 0.03), cook("soup", 0.01))
+    print(results)
+
+asyncio.run(main())
+```
+```text
+['rice ready', 'soup ready']
+```
+
+@@ py.kw.chained-comparison
+Q: Can I write 0 < x < 10 in Python?
+aka: chained comparison, between two numbers, range check, a < b < c, check value between
+A: Yes. `a < b < c` means `a < b and b < c` (with `b` evaluated once). Works with any comparison: `0 <= x < len(items)`, `a == b == c`.
+see: py.comparisons
+```py
+x = 7
+print(0 < x < 10, 1 <= x <= 5, 3 == 3.0 == True + 2)
+age = 15
+print("teen" if 13 <= age <= 19 else "not a teen")
+```
+```text
+True False True
+teen
+```
+
+@@ py.kw.and-or-values
+Q: What do `and` and `or` actually return (x or default)?
+aka: or default value, and or return value, short circuit, or operator returns, value or default
+A: They return one of the operands, not just True/False: `a or b` gives `a` if it's truthy, otherwise `b`; `a and b` gives `a` if it's falsy, otherwise `b`. They stop early (short-circuit), so `x and x.method()` is safe when `x` might be None.
+see: py.and-or, py.truthy
+```py
+name = ""
+print(name or "Anonymous")
+print(0 or None or "last", "a" and "b", "" and "b")
+user = None
+print(user and user.upper())         # no error: stops at None
+```
+```text
+Anonymous
+last b
+None
+```
+
+@@ py.match.literals
+Q: How does match/case work with plain values (like switch)?
+aka: match case, switch case python, match statement, case literal, case or pattern, case wildcard
+A: `match value:` then `case` lines are tried top to bottom. `case 1 | 2:` matches either; `case _:` matches anything (the default). Python 3.10+.
+see: py.match
+```py
+def http_status(code):
+    match code:
+        case 200 | 201:
+            return "OK"
+        case 404:
+            return "Not found"
+        case 500 | 502 | 503:
+            return "Server error"
+        case _:
+            return "Something else"
+
+print([http_status(c) for c in (200, 404, 503, 418)])
+```
+```text
+['OK', 'Not found', 'Server error', 'Something else']
+```
+
+@@ py.match.sequence
+Q: How do I match lists or tuples by shape (case [x, y], case [first, *rest])?
+aka: match list pattern, match tuple, sequence pattern, star pattern, destructuring match, command parser match, match case list, match list
+A: A list pattern matches sequences of that length and binds the parts to names; `*rest` collects the remainder. Great for parsing commands split into words.
+see: py.match.literals
+```py
+def run(command):
+    match command.split():
+        case ["go", direction]:
+            return f"going {direction}"
+        case ["take", item, "from", place]:
+            return f"taking {item} from {place}"
+        case ["drop", *items] if items:
+            return f"dropping {', '.join(items)}"
+        case ["quit" | "exit"]:
+            return "bye"
+        case []:
+            return "say something"
+        case _:
+            return f"unknown: {command}"
+
+for c in ("go north", "take key from table", "drop sword shield", "exit", "", "dance"):
+    print(run(c))
+```
+```text
+going north
+taking key from table
+dropping sword, shield
+bye
+say something
+unknown: dance
+```
+
+@@ py.match.mapping
+Q: How do I match dictionaries (like JSON messages) with match/case?
+aka: match dict pattern, mapping pattern, match json, match keys, case dict
+A: `case {"type": "move", "x": x}` matches any dict that has those keys (extra keys are fine) and binds the values. Combine with literal values to dispatch on a "type" field.
+see: py.match.sequence, py.json
+```py
+def handle(msg):
+    match msg:
+        case {"type": "chat", "text": str(text), "from": who}:
+            return f"{who}: {text}"
+        case {"type": "move", "x": int(x), "y": int(y)}:
+            return f"move to {x},{y}"
+        case {"type": t}:
+            return f"unknown type {t}"
+        case _:
+            return "not a message"
+
+print(handle({"type": "chat", "text": "hi", "from": "Sam", "id": 7}))
+print(handle({"type": "move", "x": 3, "y": 4}))
+print(handle({"type": "ping"}), "|", handle(42))
+```
+```text
+Sam: hi
+move to 3,4
+unknown type ping | not a message
+```
+
+@@ py.match.class
+Q: How do I match objects by class and attributes (case Point(x=0))?
+aka: match class pattern, case Point, match dataclass, match isinstance, class pattern positional
+A: `case Point(x=0, y=y)` checks `isinstance(value, Point)` and the attributes. Dataclasses also support positional patterns: `case Point(0, y)`. `case int() | float():` checks just the type.
+see: py.dataclass
+```py
+from dataclasses import dataclass
+
+@dataclass
+class Point:
+    x: float
+    y: float
+
+def where(p):
+    match p:
+        case Point(0, 0):
+            return "origin"
+        case Point(x=0, y=y):
+            return f"on the y axis at {y}"
+        case Point(x, 0):
+            return f"on the x axis at {x}"
+        case Point(x, y) if x == y:
+            return "on the diagonal"
+        case Point():
+            return "somewhere else"
+        case int() | float():
+            return "a number, not a point"
+
+for p in (Point(0, 0), Point(0, 5), Point(3, 0), Point(2, 2), Point(1, 9), 4.5):
+    print(where(p))
+```
+```text
+origin
+on the y axis at 5
+on the x axis at 3
+on the diagonal
+somewhere else
+a number, not a point
+```
+
+@@ py.match.capture-gotcha
+Q: Why does my `case` with a variable name match everything?
+aka: match capture pattern bug, case variable always matches, match constant, irrefutable pattern, name capture
+A: A bare name in a `case` is a **capture**: it matches anything and assigns to that name. To compare with a constant, use a dotted name (`case Color.RED`, `case settings.LIMIT`) or a guard (`case x if x == limit`).
+see: py.oop.enum
+```py
+from enum import Enum
+
+class Color(Enum):
+    RED = 1
+    GREEN = 2
+
+def name_of(c):
+    match c:
+        case Color.RED:           # dotted: compared, not captured
+            return "red"
+        case Color.GREEN:
+            return "green"
+        case other:               # bare name: captures anything
+            return f"unknown {other}"
+
+print(name_of(Color.GREEN), name_of(7))
+```
+```text
+green unknown 7
+```
+
+@@ py.kw.assert-vs-raise
+Q: When should I use assert and when raise?
+aka: assert vs raise, assert in production, assert disabled, assertion error, validate input
+A: `assert` is for **your own** sanity checks and tests ("this can't happen"); it's skipped completely when Python runs with `-O`. Check user input and other things that can really go wrong with `if ...: raise ValueError(...)`.
+see: py.assert, py.raise
+```py
+def average(nums):
+    if not nums:
+        raise ValueError("need at least one number")   # real error handling
+    result = sum(nums) / len(nums)
+    assert min(nums) <= result <= max(nums)           # developer check
+    return result
+
+print(average([2, 4]))
+try:
+    average([])
+except ValueError as e:
+    print(e)
+```
+```text
+3.0
+need at least one number
+```
+
+@@ py.kw.type-statement
+Q: What is the `type` statement (type X = ...)?
+aka: type keyword, type alias statement, type soft keyword
+A: Python 3.12 added `type Name = ...` for type aliases. `type` is a soft keyword: `type(x)` as a function still works everywhere.
+see: py.typing.alias
+```py
+type Grid = list[list[int]]
+
+def size(g: Grid) -> int:
+    return len(g) * len(g[0])
+
+print(size([[1, 2], [3, 4]]), type(3).__name__)
+```
+```text
+4 int
+```

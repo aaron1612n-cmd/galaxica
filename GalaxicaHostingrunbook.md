@@ -29,10 +29,16 @@ galaxica, squeeze, pinprick, hairline, gravity-garden (challenges + #w= share li
 - DONE 2026-10-16: 414 answers / 26 sections (T1-T17 tkinter: windows, labels+buttons, text input, choices, layout, events, variables, timers+threads, menus+dialogs, canvas, images, style, tables/tabs/progress, app structure, tk errors, 11 complete apps, extras; P1-P9 python: basics, strings, lists, dicts, files, 31 error messages, classes, modules, common tasks). 430 examples all pass. Hub top bar links to it ('Python answers'). Search checked with ~70 real queries + pasted tracebacks (scratchpad searchq.mjs). Live: https://play.galaxica.workers.dev/python/
 - To add answers: new `@@` entry in a content file (aka = phrases people would type; err = message patterns), rebuild, commit, deploy. Ideas: more recipes, pygame/turtle sections, user 'not found' log.
 
+## Python Answer Book expansion (chat "Galaxica 5", 2026-10-16) - DONE + DEPLOYED
+Branch `claude/nice-lovelace-x5im31`, draft PR aaron1612n-cmd/galaxica#4 (stacked on #3). 1371 answers / 79 sections / 1447 examples, 0 failures. Files: tk 00 (from zero: import *, root, mainloop...), 01-17 old, 30-46 (refs, depth, games, apps, methods A-Z, options A-Z, how-tos); py 19 (from zero, symbols, glossary), 20-28 old, 50-66 (depth, builtins, str/list/dict methods A-Z, exercises, tasks); modules 70-86 (group `modules`, rail M1..).
+User feedback 2026-10-16: "doesn't even explain what from tkinter import * is, I NEED MORE" -> wants beginner fundamentals explained, not just how-tos. Keep adding depth.
+Build: `python3 tools/pyref/build.py [--only idprefix]` (~90 s full). FAILS if a ```text block after a run block differs from real output, on invisible chars (Write tool turns \uXXXX into real chars: fix with python), on broken [[links]]/see:. Fake tk events need focus_force()+update(). TK_MS=3000 runs tk examples longer. Runner auto-closes turtle.
+Env: `uv venv --managed-python -p 3.12 /home/user/pyenv` + pillow matplotlib numpy pandas openpyxl beautifulsoup4 flask requests (system python has no tk).
+Search check: scratchpad search.js / q.js. Tune by adding phrases to `aka:`. Set outputs of strings are hash-order dependent: sort them (verify with PYTHONHASHSEED=1..3).
+
 ## NEXT
-1. 2026-10-16: Python Answer Book shipped (above). Ask user what to add or which answers were missing.
-2. Game ideas still open (dig- and hedge-like, user favourites Deepdig + Hedgerow).
-3. Later: leaderboards, real-phone playtest, balance (Cauldron hard, Deepdig economy). Keep runbook under cap.
+1. Ask user which Answer Book answers are missing (ideas: lazy-load bodies if data.js grows past 2.4 MB, struct/io, email parsing, pygame section).
+2. Game ideas (Deepdig/Hedgerow-like). 3. Leaderboards, phone playtest, balance.
 
 ## Test kit (scratchpad, ephemeral)
 http-server public -p 8080; bot.mjs (AUTO stats), waitshot.mjs, tutshot.mjs, thumb.mjs + crop.py, audit.mjs (overflow/oval/clip/pad checks + screenshots), addgame.py (games.json).

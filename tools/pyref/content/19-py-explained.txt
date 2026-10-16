@@ -1,0 +1,472 @@
+# py-zero | Python explained from zero | What imports, dots, brackets, colons, self, __init__, objects and every symbol mean, with a glossary | python
+
+@@ py.z.import
+Q: What does `import` actually do (and what is a module)?
+aka: what is import, what does import do, what is a module, import explained, how import works, module meaning
+A: A **module** is a Python file full of ready-made code (functions, classes, values). `import math` finds `math`, runs it **once**, and gives you a name `math` you use with a dot: `math.sqrt(9)`. Python's own modules come with Python (the "standard library"); others you install with pip; and any `.py` file you write is a module too.
+see: py.z.import-forms, py.import, py.own-module
+```py
+import math                 # load the math module, name it "math"
+print(math.sqrt(16))        # use something inside it with a dot
+print(type(math).__name__, math.__name__)
+import math                 # importing again does nothing new: it's already loaded
+import sys
+print("math" in sys.modules)
+```
+```text
+4.0
+module math
+True
+```
+
+@@ py.z.import-forms
+Q: What's the difference between `import x`, `import x as y`, `from x import y`, `from x import *` and `from x import y as z`?
+aka: import forms, import as, from import, from import star, import vs from, import styles python, what does as mean in import
+A: They decide **which names** you get. `import x` → the name `x` (use `x.thing`). `import x as y` → the same module named `y`. `from x import thing` → just the name `thing`. `from x import thing as t` → `thing` named `t`. `from x import *` → every public name of `x` directly (convenient, but you can't see where names came from, and they can overwrite yours).
+see: py.z.import, py.z.import-star, tk.z.import-compare
+```py
+import random                          # random.randint(...)
+import random as rnd                   # rnd.randint(...)
+from random import randint             # randint(...)
+from random import randint as roll     # roll(...)
+print(rnd is random, roll is randint is random.randint)
+
+from random import *                   # gives randint, choice, shuffle... AND a function named random
+print(type(random).__name__)           # the name "random" no longer means the module!
+```
+```text
+True True
+builtin_function_or_method
+```
+That last line is the classic star-import surprise: the module `random` contains a function also called `random`, and `import *` silently replaced your module name with it.
+
+@@ py.z.import-star
+Q: What does `from module import *` do in general (and what is __all__)?
+aka: from import star python, import star meaning, wildcard import, __all__, what names does import star bring
+A: It copies all of the module's **public** names into your file: the names listed in its `__all__` if it has one, otherwise every name that doesn't start with `_`. Later imports or assignments with the same name silently replace earlier ones, which is why it's discouraged outside quick experiments.
+see: py.z.import-forms, tk.z.import-star, tk.z.star-clash
+```py
+open("shapes.py", "w").write('__all__ = ["area"]\n\ndef area(w, h):\n    return w * h\n\ndef secret():\n    return "hidden"\n\n_private = 1\n')
+from shapes import *
+print(area(3, 4))
+print("secret" in dir(), "_private" in dir())     # not exported by *
+from math import *
+pi = 3                                             # oops: replaces math's pi
+print(pi)
+```
+```text
+12
+False False
+3
+```
+
+@@ py.z.dot
+Q: What does the dot `.` mean in Python (math.sqrt, name.upper(), self.score)?
+aka: dot notation, what does the dot mean, period in python, attribute access, object.method, module.function
+A: The dot means "**the thing inside**": `math.sqrt` = the `sqrt` inside the `math` module; `name.upper()` = the `upper` method belonging to the string `name`; `self.score` = the `score` stored on the object `self`; `tk.Button` = the `Button` class inside tkinter. If it's followed by `()`, you're calling it.
+see: py.z.brackets, py.z.object
+```py
+import math
+name = "ada"
+print(math.pi)                 # a value inside a module
+print(name.upper())            # a method of a string, called with ()
+print(name.upper)              # the method itself, not called
+class Player:
+    def __init__(self):
+        self.score = 10        # store a value inside the object
+p = Player()
+print(p.score)
+```
+
+@@ py.z.brackets
+Q: What's the difference between (), [] and {} in Python?
+aka: brackets meaning, parentheses square brackets curly braces, round brackets, square brackets, curly brackets, when to use which bracket
+A: **Round** `()`: calling a function `f(x)`, grouping maths `(a + b) * c`, tuples `(1, 2)`. **Square** `[]`: making a list `[1, 2]`, and getting items/slices `items[0]`, `d["key"]`, `s[1:3]`. **Curly** `{}`: making a dict `{"a": 1}` or a set `{1, 2}`, and in f-strings `f"{name}"`.
+see: py.z.dot, py.list-basics, py.dict-basics
+```py
+def double(x):
+    return x * 2
+nums = [10, 20, 30]                 # [] makes a list
+ages = {"Ada": 36}                  # {} makes a dict
+point = (3, 4)                      # () makes a tuple
+print(double(5), (2 + 3) * 4)       # () calls a function / groups maths
+print(nums[0], nums[1:], ages["Ada"], point[1])   # [] gets items
+print(f"{nums[-1]} is last")        # {} inside an f-string
+```
+```text
+10 20
+10 [20, 30] 36 4
+30 is last
+```
+
+@@ py.z.symbols
+Q: What does each symbol mean in Python (= == : # * ** // % -> @ _ \ ! etc.)?
+aka: python symbols, operators list, what does this symbol mean, symbol cheat sheet, punctuation python, special characters python
+A: `=` stores a value; `==` compares; `!=` not equal; `:` starts an indented block (and is used in slices and dicts); `#` comment; `*` multiply / unpack / "all"; `**` power / unpack dict; `/` divide; `//` whole-number divide; `%` remainder (and old formatting); `+=` add to; `->` return type hint; `@` decorator (or matrix multiply); `_` "don't care" name; `\` escape in strings / line continuation; `.` attribute; `,` separates items; `;` puts two statements on one line; `...` Ellipsis placeholder; `:=` assign inside an expression.
+see: py.z.brackets, py.math-ops
+```py
+x = 7                 # = store
+print(x == 7, x != 3)            # == compare, != not equal
+print(7 / 2, 7 // 2, 7 % 2, 2 ** 3)   # divide, whole divide, remainder, power
+x += 1; print(x)                 # += add to; ; two statements on one line
+first, *rest = [1, 2, 3]         # * collects the rest
+print(first, rest, [*rest, 4])   # * also spreads a list
+for _ in range(2):               # _ means "I don't need this value"
+    pass
+print("a\tb", "line one\\n stays")   # \t is a tab, \\ is a real backslash
+if (n := len(rest)) > 1:         # := assigns and uses in one go
+    print(n)
+```
+```text
+True True
+3.5 3 1 8
+8
+1 [2, 3] [2, 3, 4]
+a	b line one\n stays
+2
+```
+
+@@ py.z.equals
+Q: What's the difference between = and ==?
+aka: = vs ==, single equals double equals, assignment vs comparison, equals sign python
+A: `=` **stores** a value in a variable (assignment). `==` **asks** whether two values are equal and gives `True` or `False`. Using `=` inside an `if` is a SyntaxError in Python.
+see: py.comparisons, py.err2.assign-call
+```py
+score = 10            # store 10 in score
+print(score == 10)    # is score equal to 10?
+print(score == 11)
+```
+```text
+True
+False
+```
+
+@@ py.z.colon-indent
+Q: Why do some lines end with a colon `:` and the next lines go in?
+aka: colon meaning python, why colon, indentation block, code block python, indent after colon
+A: A colon says "a **block** of code follows". The block is the lines indented under it (4 spaces is standard); it ends when the indentation goes back. Lines that start blocks: `if`, `elif`, `else`, `for`, `while`, `def`, `class`, `try`, `except`, `finally`, `with`, `match`, `case`.
+see: py.indentation, py.err2.expected-colon
+```py
+for n in range(3):          # colon: a block follows
+    if n == 1:              # a block inside a block
+        print("one!")
+    print("n is", n)        # still inside the for loop
+print("done")               # back at the left: after the loop
+```
+```text
+n is 0
+one!
+n is 1
+n is 2
+done
+```
+
+@@ py.z.call
+Q: What does it mean to "call" a function, and what are arguments and parameters?
+aka: call a function, arguments vs parameters, what is an argument, what is a parameter, function call explained, passing values
+A: A function is a named recipe. **Calling** it (`greet("Ada")`) runs the recipe. The names in the `def` line are **parameters** (`name`); the values you pass in the call are **arguments** (`"Ada"`). Arguments can be given by position or by name (`greet(name="Ada")`).
+see: py.function, py.default-args
+```py
+def greet(name, punctuation="!"):     # name and punctuation are parameters
+    return "Hello, " + name + punctuation
+
+print(greet("Ada"))                   # "Ada" is an argument (by position)
+print(greet(punctuation="?", name="Sam"))   # arguments by name, any order
+print(greet)                          # without () it's not called: just the function
+```
+
+@@ py.z.return
+Q: What does `return` do (and what's the difference from print)?
+aka: what is return, return meaning, function result, return vs print, function gives back value
+A: `return value` ends the function and **hands the value back** to whoever called it, so it can be stored or used (`total = add(2, 3)`). `print` only shows text on the screen; the caller gets nothing (`None`). A function with no `return` returns `None`.
+see: py.return-vs-print
+```py
+def add(a, b):
+    return a + b          # hand the result back
+
+def show_add(a, b):
+    print(a + b)          # only displays it
+
+total = add(2, 3) * 10    # the returned value can be used
+nothing = show_add(2, 3)  # prints 5, but returns None
+print(total, nothing)
+```
+```text
+5
+50 None
+```
+
+@@ py.z.object
+Q: What is an object, a class and an instance?
+aka: what is an object, what is a class, what is an instance, class vs object, objects explained, everything is an object
+A: A **class** is a blueprint (like "Dog"); an **object** (or **instance**) is one thing made from it (like "my dog Rex"). Each object holds its own data (**attributes**, e.g. `rex.name`) and can do things (**methods**, e.g. `rex.bark()`). In Python *everything* is an object: `5` is an `int` object, `"hi"` a `str` object, a tkinter Button a `Button` object.
+see: py.class-basics, py.z.self
+```py
+class Dog:                              # the blueprint
+    def __init__(self, name):
+        self.name = name                # attribute
+    def bark(self):                     # method
+        return f"{self.name}: woof"
+
+rex = Dog("Rex")                        # an instance (object)
+fido = Dog("Fido")                      # another one, with its own data
+print(rex.bark(), fido.bark())
+print(type(5).__name__, type("hi").__name__, isinstance(rex, Dog))
+print("hi".upper())                     # strings are objects with methods too
+```
+```text
+Rex: woof Fido: woof
+int str True
+HI
+```
+
+@@ py.z.self
+Q: What is `self`?
+aka: what does self mean, what is self, self meaning, self in python, why self, self parameter, self in class
+A: `self` is the **object the method was called on**. When you write `rex.bark()`, Python runs `Dog.bark(rex)`: `rex` arrives as `self`. That's how a method reaches that particular object's data (`self.name`). It's just a naming convention, but always use `self`.
+see: py.z.object, py.z.init, py.err2.self-missing
+```py
+class Counter:
+    def __init__(self):
+        self.count = 0
+    def add(self, n=1):
+        self.count += n          # self = whichever counter add() was called on
+
+a, b = Counter(), Counter()
+a.add(); a.add(5); b.add()
+print(a.count, b.count)
+Counter.add(b, 10)               # exactly what b.add(10) does
+print(b.count)
+```
+```text
+6 1
+11
+```
+
+@@ py.z.init
+Q: What is `__init__` (and why the double underscores)?
+aka: what is __init__, init method, constructor python, def __init__(self), double underscore, dunder init
+A: `__init__` is the method Python runs **automatically** when you create an object (`Dog("Rex")`), to set up its starting data. Names with two underscores on each side (**dunder** names) are special: Python calls them itself at certain moments (`__init__` on creation, `__str__` when printing, `__len__` for `len()`...).
+see: py.z.self, py.dunder
+```py
+class Book:
+    def __init__(self, title, pages):
+        print("making a book...")
+        self.title = title
+        self.pages = pages
+    def __str__(self):                 # used by print()
+        return f"'{self.title}' ({self.pages} pages)"
+    def __len__(self):                 # used by len()
+        return self.pages
+
+b = Book("Dune", 412)                  # __init__ runs now
+print(b, len(b))
+```
+```text
+making a book...
+'Dune' (412 pages) 412
+```
+
+@@ py.z.name-main
+Q: What does `if __name__ == "__main__":` mean (explained simply)?
+aka: if __name__ == '__main__', what is __name__, name main explained, main guard simple
+A: Every file has a built-in variable `__name__`. When you **run** the file directly, it's `"__main__"`; when another file **imports** it, it's the module's name. So code under that `if` runs only when the file is the program being run, not when it's imported for its functions.
+see: py.main-guard
+```py
+import subprocess, sys
+open("tool.py", "w").write('def helper():\n    return 42\nprint("tool.py __name__ is", __name__)\nif __name__ == "__main__":\n    print("running tool.py directly")\n')
+print(subprocess.run([sys.executable, "tool.py"], capture_output=True, text=True).stdout.strip())
+print("--- now importing it ---")
+import tool
+print(tool.helper())
+```
+```text
+tool.py __name__ is __main__
+running tool.py directly
+--- now importing it ---
+tool.py __name__ is tool
+42
+```
+
+@@ py.z.method-function
+Q: What's the difference between a function and a method?
+aka: method vs function, what is a method, function vs method python, len vs .upper
+A: A **function** stands alone: `len(x)`, `print(x)`, `sorted(x)`. A **method** belongs to an object and is called through it with a dot: `x.upper()`, `items.append(3)`. Methods automatically receive that object (as `self`).
+see: py.z.self, py.z.dot
+```py
+name = "ada"
+print(len(name))          # function: name goes in the brackets
+print(name.upper())       # method: called on name
+items = [3, 1]
+items.append(2)           # method that changes the list
+print(sorted(items), items)
+```
+```text
+3
+ADA
+[1, 2, 3] [3, 1, 2]
+```
+
+@@ py.z.mutable
+Q: What do mutable and immutable mean?
+aka: mutable immutable, can change object, immutable string, list mutable, tuple immutable, why string can't change
+A: **Mutable** objects can be changed in place: lists, dicts, sets, most of your own objects. **Immutable** ones can't: numbers, strings, tuples, frozensets. "Changing" an immutable value really makes a new one. This matters when two variables point to the same mutable object: a change through one shows up in the other.
+see: py.copy-list, py.err.index-str-assign
+```py
+a = [1, 2]
+b = a                 # b and a are the SAME list
+b.append(3)
+print(a)              # changed too
+s = "hi"
+t = s.upper()         # strings can't change: upper() makes a new string
+print(s, t)
+```
+```text
+[1, 2, 3]
+hi HI
+```
+
+@@ py.z.iterable
+Q: What does "iterable" mean?
+aka: what is iterable, iterable meaning, can loop over, not iterable error meaning
+A: Anything you can loop over with `for`: lists, tuples, strings (characters), dicts (keys), sets, ranges, files (lines), generators. Functions like `sum`, `sorted`, `list`, `zip`, `enumerate` accept any iterable.
+see: py.it.iter-next, py.err.not-iterable
+```py
+for thing in ("abc", [1, 2], {"k": 1}, range(2)):
+    print(list(thing))
+print(sum(range(5)), sorted("cab"), list(zip("ab", (1, 2))))
+```
+```text
+['a', 'b', 'c']
+[1, 2]
+['k']
+[0, 1]
+10 ['a', 'b', 'c'] [('a', 1), ('b', 2)]
+```
+
+@@ py.z.expression
+Q: What's the difference between an expression and a statement?
+aka: expression vs statement, what is an expression, statement meaning, value vs instruction
+A: An **expression** is something that has a value (`2 + 3`, `name.upper()`, `x > 5`, `f(1)`). A **statement** is an instruction (`x = 5`, `if ...:`, `for ...:`, `import math`, `return x`). Expressions can go inside statements; `lambda` bodies and f-string braces must be expressions.
+see: py.kw.lambda
+```py
+x = 2 + 3                 # statement containing the expression 2 + 3
+print(x * 2 > 5)          # print(...) is itself an expression (it returns None)
+values = [x, x * 2, len("abc")]
+print(values)
+```
+```text
+True
+[5, 10, 3]
+```
+
+@@ py.z.prompt
+Q: What do `>>>` and `...` mean in examples and in the Python shell?
+aka: >>> meaning, python prompt, three arrows python, repl, interactive shell, ... in shell
+A: `>>>` is the **interactive shell** (REPL) prompt: Python waits for you to type a line, runs it and shows the result straight away. `...` means it's waiting for more lines of a block. Don't type the `>>>` itself when copying code into a `.py` file.
+see: py.copy-paste-run, py.idle-tips
+```text
+>>> 2 + 3
+5
+>>> for i in range(2):
+...     print(i)
+...
+0
+1
+```
+```py
+print(2 + 3)
+for i in range(2):
+    print(i)
+```
+```text
+5
+0
+1
+```
+
+@@ py.z.read-signature
+Q: How do I read a function's description in the docs, like `sorted(iterable, /, *, key=None, reverse=False)`?
+aka: read documentation, function signature, square brackets in docs, slash star in docs, optional parameters docs, how to read python docs
+A: Names are the parameters; `name=value` = optional with that default; `/` = everything before must be passed by position; `*` = everything after must be passed by name; `*args` = any number of extra positional arguments; `**kwargs` = any number of named ones; `[x]` in older docs = optional.
+see: py.fn.keyword-only, py.args-kwargs
+```py
+words = ["pear", "Fig", "apple"]
+print(sorted(words, key=str.lower, reverse=True))   # key and reverse by name (after *)
+try:
+    sorted(words, str.lower)                          # passing key by position isn't allowed
+except TypeError as e:
+    print(e)
+```
+```text
+['pear', 'Fig', 'apple']
+sorted expected 1 argument, got 2
+```
+
+@@ py.z.walkthrough
+Q: Explain a small Python program line by line
+aka: explain python code, python line by line, beginner program explained, what does each line do python
+A: Below, every line has a comment saying what it does. Read it top to bottom: Python runs it in that order, except function bodies, which run when called.
+see: py.z.call, py.z.return
+```py
+import random                                   # bring in the random module
+
+def roll_dice(count):                           # define a function with one parameter
+    rolls = []                                  # an empty list to collect results
+    for _ in range(count):                      # repeat `count` times
+        rolls.append(random.randint(1, 6))      # add a random number 1–6 to the list
+    return rolls                                # hand the list back to the caller
+
+random.seed(3)                                  # make the "random" results repeatable
+results = roll_dice(5)                          # call the function; store what it returns
+total = sum(results)                            # add up the list
+print(f"Rolled {results}, total {total}")       # show the results with an f-string
+if total > 15:                                  # a decision
+    print("Lucky!")
+else:
+    print("Try again")
+```
+```text
+Rolled [2, 5, 5, 2, 3], total 17
+Lucky!
+```
+
+@@ py.z.glossary
+Q: Python glossary: what do all these words mean (variable, function, argument, object, method, module, iterable...)?
+aka: python glossary, python terms, python vocabulary, python words meaning, programming terms definitions, beginner terms
+A: The words you'll meet everywhere, in plain English.
+see: py.z.object, py.z.call, py.z.import
+- **variable**: a name that refers to a value (`score = 10`).
+- **value / object**: a piece of data (`10`, `"hi"`, a list, a window).
+- **type / class**: the kind of object (`int`, `str`, `list`, your `class Dog`).
+- **instance**: one object of a class.
+- **attribute**: a value stored on an object (`p.name`).
+- **method**: a function that belongs to an object (`s.upper()`).
+- **function**: a reusable named block of code (`def f(...)`).
+- **parameter / argument**: the name in the `def` / the value passed in the call.
+- **return value**: what a function hands back.
+- **module / package / library**: a `.py` file / a folder of modules / a collection you install.
+- **import**: loading a module so you can use it.
+- **expression / statement**: something with a value / an instruction.
+- **block**: indented lines after a `:`.
+- **loop / iteration**: repeating code; one pass is an iteration.
+- **iterable / iterator**: something you can loop over / the thing that hands out items.
+- **index**: an item's position (from 0); **slice**: a range of positions.
+- **mutable / immutable**: can / can't be changed in place.
+- **exception**: an error object; **traceback**: the error report.
+- **scope**: where a name can be seen (local, global).
+- **truthy / falsy**: counts as True / False in an `if`.
+- **None**: "no value".
+- **syntax**: the grammar rules of the language.
+- **interpreter / REPL**: the program that runs Python / the interactive `>>>` shell.
+- **virtual environment**: a private folder of installed packages for one project.
+- **dunder**: a `__double_underscore__` special name.
+```py
+import keyword
+score = 10                       # variable -> value (an int object)
+word = "hi"
+print(type(score).__name__, type(word).__name__, word.upper(), len(keyword.kwlist))
+```
+```text
+int str HI 35
+```

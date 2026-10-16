@@ -1,0 +1,216 @@
+# mod-net | urllib, http.server, socket, email, webbrowser | Downloading, calling APIs, serving files, sockets, sending email, opening links | modules
+
+@@ mod.urllib.get
+Q: How do I download a web page or JSON without installing anything (urllib)?
+aka: urllib request, urlopen, download without requests, http get standard library, read json from url, user agent
+A: `urllib.request.urlopen(url, timeout=10)` returns a response: `.read()` gives bytes (decode them), `json.load(response)` parses JSON. Some sites need a `User-Agent` header via a `Request`. `requests` is friendlier if you can install it.
+see: py.requests, mod.urllib.params
+```py norun
+import json
+import urllib.request
+
+req = urllib.request.Request("https://api.github.com/repos/python/cpython", headers={"User-Agent": "my-script"})
+with urllib.request.urlopen(req, timeout=10) as r:
+    data = json.load(r)
+print(data["full_name"], data["stargazers_count"])
+
+with urllib.request.urlopen("https://www.python.org", timeout=10) as r:
+    html = r.read().decode("utf-8")
+print(len(html), r.status)
+```
+
+@@ mod.urllib.params
+Q: How do I build a URL with query parameters, or split a URL into parts?
+aka: urlencode, query string, url parameters, urlparse, quote url, url encode spaces, parse_qs
+A: `urllib.parse.urlencode({"q": "a b", "page": 2})` builds `q=a+b&page=2`; `quote("a b/c")` escapes one part; `urlparse(url)` splits a URL; `parse_qs(query)` reads parameters back.
+see: mod.urllib.get
+```py
+from urllib.parse import parse_qs, quote, urlencode, urljoin, urlparse
+url = "https://example.com/search?" + urlencode({"q": "python tkinter", "page": 2})
+print(url)
+u = urlparse(url)
+print(u.scheme, u.netloc, u.path, parse_qs(u.query))
+print(quote("my file (1).txt"), urljoin("https://a.com/docs/x.html", "../img/logo.png"))
+```
+```text
+https://example.com/search?q=python+tkinter&page=2
+https example.com /search {'q': ['python tkinter'], 'page': ['2']}
+my%20file%20%281%29.txt https://a.com/img/logo.png
+```
+
+@@ mod.urllib.post
+Q: How do I send data to a web API (POST JSON) and handle HTTP errors?
+aka: post request, send json api, urllib post, http error handling, HTTPError, 404 error python, requests post
+A: Pass `data=` bytes (and a `Content-Type` header) to `Request`. Errors raise `urllib.error.HTTPError` (has `.code`) or `URLError` (no connection). With `requests`: `requests.post(url, json=data, timeout=10)` and `r.raise_for_status()`.
+see: py.requests
+```py norun
+import json, urllib.request, urllib.error
+
+body = json.dumps({"title": "hello", "userId": 1}).encode("utf-8")
+req = urllib.request.Request("https://jsonplaceholder.typicode.com/posts", data=body,
+                             headers={"Content-Type": "application/json"}, method="POST")
+try:
+    with urllib.request.urlopen(req, timeout=10) as r:
+        print(r.status, json.load(r))
+except urllib.error.HTTPError as e:
+    print("server said", e.code, e.reason)
+except urllib.error.URLError as e:
+    print("could not connect:", e.reason)
+```
+
+@@ mod.http.server
+Q: How do I serve files or a tiny web page from Python (http.server)?
+aka: http server, simple web server, serve folder, python -m http.server, local web server, BaseHTTPRequestHandler
+A: In a terminal: `python -m http.server 8000` serves the current folder at http://localhost:8000. For a tiny app, subclass `BaseHTTPRequestHandler` and write `do_GET`. (For real sites, use Flask or FastAPI.)
+see: mod.urllib.get
+```py
+import json, threading, urllib.request
+from http.server import BaseHTTPRequestHandler, HTTPServer
+
+class Hello(BaseHTTPRequestHandler):
+    def do_GET(self):
+        body = json.dumps({"path": self.path, "msg": "hi"}).encode()
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json")
+        self.end_headers()
+        self.wfile.write(body)
+    def log_message(self, *args):        # keep the console quiet
+        pass
+
+server = HTTPServer(("127.0.0.1", 0), Hello)          # port 0 = any free port
+threading.Thread(target=server.serve_forever, daemon=True).start()
+port = server.server_address[1]
+with urllib.request.urlopen(f"http://127.0.0.1:{port}/status") as r:
+    print(json.load(r))
+server.shutdown()
+```
+```text
+{'path': '/status', 'msg': 'hi'}
+```
+
+@@ mod.socket.tcp
+Q: How do sockets work (a simple TCP server and client)?
+aka: socket, tcp server, tcp client, socket send recv, network programming, client server python, port
+A: A server `bind`s to a port, `listen`s and `accept`s connections; a client `connect`s; both `sendall` bytes and `recv` bytes. `socket.create_server` / `create_connection` are the short versions. Messages are bytes: encode/decode text.
+see: tk.app.chat-socket
+```py
+import socket, threading
+
+server = socket.create_server(("127.0.0.1", 0))
+port = server.getsockname()[1]
+
+def serve_one():
+    conn, addr = server.accept()
+    with conn:
+        data = conn.recv(1024)
+        conn.sendall(b"echo: " + data.upper())
+
+threading.Thread(target=serve_one, daemon=True).start()
+with socket.create_connection(("127.0.0.1", port), timeout=5) as c:
+    c.sendall("hello server".encode())
+    print(c.recv(1024).decode())
+server.close()
+```
+```text
+echo: HELLO SERVER
+```
+
+@@ mod.socket.udp-info
+Q: How do I find my computer's IP address or hostname, or check if a port is open?
+aka: my ip address, local ip, hostname, gethostbyname, check port open, connect_ex, dns lookup
+A: `socket.gethostname()` = computer name; `socket.gethostbyname("python.org")` = DNS lookup; the local network IP is easiest found by "connecting" a UDP socket and reading `getsockname()`. `sock.connect_ex((host, port)) == 0` means the port is open.
+see: mod.socket.tcp
+```py
+import socket
+print(len(socket.gethostname()) > 0)
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s.settimeout(0.5)
+srv = socket.create_server(("127.0.0.1", 0)); port = srv.getsockname()[1]
+print("open" if s.connect_ex(("127.0.0.1", port)) == 0 else "closed")
+s.close(); srv.close()
+```
+```text
+True
+open
+```
+
+@@ mod.email-send
+Q: How do I send an email from Python (smtplib, attachments)?
+aka: send email python, smtplib, gmail smtp, email attachment, EmailMessage, app password
+A: Build an `email.message.EmailMessage` (`msg["To"]`, `msg.set_content`, `add_attachment`), then send it with `smtplib.SMTP_SSL(host, 465)` and `login`. Gmail and Outlook need an **app password**, not your normal one. Never put the password in your code: read it from an environment variable.
+see: py.proj.env-vars
+```py
+from email.message import EmailMessage
+msg = EmailMessage()
+msg["From"], msg["To"], msg["Subject"] = "me@example.com", "you@example.com", "Report"
+msg.set_content("Hi,\nthe report is attached.\n")
+msg.add_attachment(b"name,score\nAda,90\n", maintype="text", subtype="csv", filename="report.csv")
+print(msg["Subject"], [p.get_filename() for p in msg.iter_attachments()])
+```
+```text
+Report ['report.csv']
+```
+```py norun
+import os, smtplib
+with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=20) as s:
+    s.login("me@gmail.com", os.environ["GMAIL_APP_PASSWORD"])
+    s.send_message(msg)
+```
+
+@@ mod.webbrowser
+Q: How do I open a web page in the user's browser from Python?
+aka: webbrowser, open url in browser, open website python, open local html file
+A: `webbrowser.open(url)` (or `open_new_tab`). For a local file, pass a `file://` URL from `Path(...).resolve().as_uri()`.
+see: tk.open-link
+```py norun
+import webbrowser
+from pathlib import Path
+webbrowser.open("https://docs.python.org/3/")
+webbrowser.open_new_tab(Path("report.html").resolve().as_uri())
+```
+
+@@ mod.html-parse
+Q: How do I get data out of a web page's HTML (scraping)?
+aka: web scraping, parse html, html parser, beautifulsoup, find links in page, extract table html
+A: The standard library has `html.parser.HTMLParser` (shown: collect all links). Most people use `BeautifulSoup` (`pip install beautifulsoup4`), which makes finding tags much easier. Respect sites' terms and robots.txt.
+see: mod.urllib.get, mod.re.greedy
+```py
+from html.parser import HTMLParser
+
+class Links(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.links = []
+    def handle_starttag(self, tag, attrs):
+        if tag == "a":
+            self.links.append(dict(attrs).get("href"))
+
+p = Links()
+p.feed('<p>See <a href="/docs">docs</a> and <a href="https://pypi.org">PyPI</a>.</p>')
+print(p.links)
+```
+```text
+['/docs', 'https://pypi.org']
+```
+```py norun
+from bs4 import BeautifulSoup          # pip install beautifulsoup4
+soup = BeautifulSoup(html_text, "html.parser")
+titles = [h.get_text(strip=True) for h in soup.select("h2.title")]
+rows = [[td.get_text() for td in tr.find_all("td")] for tr in soup.find("table").find_all("tr")]
+```
+
+@@ mod.html-escape
+Q: How do I escape text for HTML (or turn &amp; back into &)?
+aka: html escape, html unescape, escape special characters html, &lt; &gt;, prevent html injection
+A: `html.escape(text)` turns `<`, `>`, `&`, quotes into entities so text is shown, not run; `html.unescape` reverses it.
+see: mod.html-parse
+```py
+import html
+user = '<script>alert("hi")</script> & more'
+print(html.escape(user))
+print(html.unescape("Fish &amp; chips &lt;3 &eacute;"))
+```
+```text
+&lt;script&gt;alert(&quot;hi&quot;)&lt;/script&gt; &amp; more
+Fish & chips <3 é
+```

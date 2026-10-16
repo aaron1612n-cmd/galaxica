@@ -1,0 +1,718 @@
+# tk-text | Text widget in depth | Tags, marks, line numbers, syntax colours, logs, autocomplete, embedded widgets | tkinter
+
+@@ tk.tx.tag-options
+Q: What can a Text tag change (all tag_config options)?
+aka: tag_config options, tag options list, text tag font, tag background, tag underline, overstrike, tag justify, lmargin, spacing, tag elide, tag offset superscript
+A: `tag_config(name, ...)`: `foreground`, `background`, `font`, `underline`, `overstrike`, `justify`, `lmargin1` (first line indent), `lmargin2` (other lines), `rmargin`, `spacing1/2/3`, `offset` (raise/lower, for superscripts), `relief` + `borderwidth`, `elide` (hide text), `wrap`, `selectbackground`.
+see: tk.text-tags
+```py
+import tkinter as tk
+
+root = tk.Tk()
+t = tk.Text(root, width=46, height=12, font=("Georgia", 12), wrap="word", padx=8, pady=8)
+t.pack()
+t.tag_config("h1", font=("Georgia", 18, "bold"), spacing3=6)
+t.tag_config("hl", background="#fff3a8")
+t.tag_config("u", underline=True)
+t.tag_config("strike", overstrike=True, foreground="#888")
+t.tag_config("sup", offset=6, font=("Georgia", 8))
+t.tag_config("quote", lmargin1=24, lmargin2=24, foreground="#555", font=("Georgia", 12, "italic"))
+t.tag_config("center", justify="center")
+t.tag_config("box", relief="ridge", borderwidth=2, background="#eef")
+t.tag_config("hidden", elide=True)
+
+t.insert("end", "Heading\n", "h1")
+t.insert("end", "Highlighted", "hl"); t.insert("end", ", "); t.insert("end", "underlined", "u")
+t.insert("end", ", "); t.insert("end", "crossed out", "strike"); t.insert("end", ", E = mc"); t.insert("end", "2", "sup")
+t.insert("end", "\nAn indented quotation that wraps onto a second line with the same margin.\n", "quote")
+t.insert("end", "centred line\n", "center")
+t.insert("end", " boxed ", "box")
+t.insert("end", "you can't see this", "hidden")
+root.mainloop()
+```
+
+@@ tk.tx.tag-methods
+Q: How do I find, remove or change tagged text (tag_ranges, tag_remove, tag_names, tag_nextrange)?
+aka: tag_ranges, tag_remove, tag_delete, tag_names, tag_nextrange, tag_prevrange, get tagged text, which tags at cursor, tag priority tag_raise
+A: `tag_ranges(tag)` = list of start/end pairs; `tag_names(index)` = tags at a position; `tag_nextrange(tag, start)` = next run; `tag_remove(tag, a, b)` un-tags; `tag_delete(tag)` removes the tag entirely; `tag_raise(tag)` gives it priority when two tags set the same option.
+see: tk.text-tags
+```py
+import tkinter as tk
+
+root = tk.Tk()
+t = tk.Text(root, height=4); t.pack()
+t.insert("1.0", "one TWO three FOUR five")
+t.tag_config("caps", foreground="red")
+t.tag_add("caps", "1.4", "1.7")
+t.tag_add("caps", "1.14", "1.18")
+
+r = t.tag_ranges("caps")
+print([t.get(r[i], r[i + 1]) for i in range(0, len(r), 2)])   # ['TWO', 'FOUR']
+print(t.tag_names("1.5"))                                     # ('caps',)
+print(t.tag_nextrange("caps", "1.8"))                         # where FOUR is
+t.tag_remove("caps", "1.0", "1.10")                           # TWO no longer red
+print(len(t.tag_ranges("caps")) // 2)                         # 1
+root.mainloop()
+```
+
+@@ tk.tx.bold-selection
+Q: How do I make selected text bold/italic/coloured (like a word processor button)?
+aka: bold button text editor, toggle bold selection, rich text editor, format selected text, sel.first sel.last
+A: The selection is `"sel.first"` to `"sel.last"`. Check if the start already has the tag (`tag_names("sel.first")`), then `tag_add` or `tag_remove`. Guard with `if t.tag_ranges("sel")` because there may be no selection.
+see: tk.tx.tag-options
+```py
+import tkinter as tk
+from tkinter import font
+
+root = tk.Tk()
+base = font.Font(family="Georgia", size=12)
+t = tk.Text(root, width=40, height=6, font=base, undo=True); t.pack()
+t.tag_config("bold", font=font.Font(family="Georgia", size=12, weight="bold"))
+t.tag_config("italic", font=font.Font(family="Georgia", size=12, slant="italic"))
+t.tag_config("red", foreground="#c23b22")
+
+def toggle(tag):
+    if not t.tag_ranges("sel"):
+        return
+    if tag in t.tag_names("sel.first"):
+        t.tag_remove(tag, "sel.first", "sel.last")
+    else:
+        t.tag_add(tag, "sel.first", "sel.last")
+
+bar = tk.Frame(root); bar.pack(fill="x")
+for tag, label in (("bold", "B"), ("italic", "I"), ("red", "Red")):
+    tk.Button(bar, text=label, width=4, command=lambda g=tag: toggle(g)).pack(side="left")
+for key, tag in (("<Control-b>", "bold"), ("<Control-i>", "italic")):
+    t.bind(key, lambda e, g=tag: (toggle(g), "break")[1])
+
+t.insert("1.0", "Select some words and press B or Ctrl+B.")
+t.tag_add("sel", "1.0", "1.6"); toggle("bold")
+root.mainloop()
+```
+
+@@ tk.tx.marks
+Q: What are marks in a Text widget (insert, current, my own)?
+aka: text marks, mark_set, mark_names, mark_gravity, insert mark, current mark, bookmark text position
+A: A mark is a named position that moves as text is added/removed before it. Built-in: `"insert"` (the cursor) and `"current"` (character under the mouse). Make your own with `mark_set("name", index)`; `mark_gravity("name", "left")` keeps it before text typed at it.
+see: tk.text-indexes, tk.text-cursor
+```py
+import tkinter as tk
+
+root = tk.Tk()
+t = tk.Text(root, height=4); t.pack()
+t.insert("1.0", "Hello world")
+t.mark_set("bookmark", "1.6")           # before "world"
+t.insert("1.0", ">>> ")                 # text added before it
+print(t.index("bookmark"))              # 1.10 - it moved with the text
+t.mark_set("insert", "bookmark")        # put the cursor there
+print(t.index("insert"))
+print(t.mark_names())
+root.mainloop()
+```
+
+@@ tk.tx.line-numbers
+Q: How do I show line numbers next to a Text widget?
+aka: line numbers, text editor line numbers, gutter, line number column, code editor tkinter
+A: Put a narrow Canvas left of the Text and redraw the numbers when the text scrolls or changes: for each visible line, `dlineinfo(index)` gives its y position.
+see: tk.recipe-notepad, tk.tx.syntax
+```py
+import tkinter as tk
+
+root = tk.Tk()
+root.geometry("420x260")
+nums = tk.Canvas(root, width=36, bg="#eee", highlightthickness=0)
+t = tk.Text(root, wrap="none", font=("Consolas", 12), undo=True)
+sb = tk.Scrollbar(root, command=t.yview)
+nums.pack(side="left", fill="y"); sb.pack(side="right", fill="y"); t.pack(side="left", fill="both", expand=True)
+
+def redraw(*args):
+    nums.delete("all")
+    i = t.index("@0,0")                      # first visible line
+    while True:
+        d = t.dlineinfo(i)
+        if d is None:
+            break
+        nums.create_text(32, d[1], anchor="ne", text=i.split(".")[0], font=("Consolas", 12), fill="#888")
+        i = t.index(f"{i}+1line")
+
+def on_scroll(*args):
+    sb.set(*args)
+    redraw()
+
+t.config(yscrollcommand=on_scroll)
+t.bind("<<Modified>>", lambda e: (redraw(), t.edit_modified(False)))
+t.bind("<Configure>", redraw)
+t.insert("1.0", "\n".join(f"print({n})" for n in range(1, 41)))
+root.mainloop()
+```
+
+@@ tk.tx.syntax
+Q: How do I colour Python keywords as the user types (syntax highlighting)?
+aka: syntax highlighting, code editor colours, highlight keywords, keyword colour text widget, idlelib colorizer
+A: On each key release, remove your tags, then use `search(..., regexp=True)` or Python's `re` on the text to tag keywords, strings and comments. (Python ships IDLE's own highlighter: `idlelib.colorizer`, used in the second example.)
+see: tk.text-search, tk.tx.line-numbers
+```py
+import keyword, re
+import tkinter as tk
+
+root = tk.Tk()
+t = tk.Text(root, width=50, height=10, font=("Consolas", 12), undo=True); t.pack()
+t.tag_config("kw", foreground="#8a2be2")
+t.tag_config("str", foreground="#2e7d4f")
+t.tag_config("com", foreground="#999")
+t.tag_config("num", foreground="#c23b22")
+RULES = [("kw", r"\b(" + "|".join(keyword.kwlist) + r")\b"), ("num", r"\b\d+(\.\d+)?\b"),
+         ("str", r"(\".*?\"|'.*?')"), ("com", r"#.*")]
+
+def highlight(event=None):
+    text = t.get("1.0", "end-1c")
+    for tag, _ in RULES:
+        t.tag_remove(tag, "1.0", "end")
+    for tag, pattern in RULES:
+        for m in re.finditer(pattern, text):
+            t.tag_add(tag, f"1.0+{m.start()}c", f"1.0+{m.end()}c")
+
+t.bind("<KeyRelease>", highlight)
+t.insert("1.0", 'def greet(name):\n    # say hi\n    for i in range(3):\n        print("hi", name, i)\n')
+highlight()
+root.mainloop()
+```
+```py
+import tkinter as tk
+from idlelib.colorizer import ColorDelegator
+from idlelib.percolator import Percolator
+
+root = tk.Tk()
+t = tk.Text(root, width=50, height=8, font=("Consolas", 12)); t.pack()
+Percolator(t).insertfilter(ColorDelegator())      # IDLE's own Python colouring
+t.insert("1.0", "import math\nfor x in range(3):\n    print(math.sqrt(x))  # roots\n")
+root.mainloop()
+```
+
+@@ tk.tx.log-console
+Q: How do I make a log/console box that adds lines and scrolls to the bottom (and limits its size)?
+aka: log window, console output text, append text autoscroll, scroll to bottom text, keep last 100 lines, output panel
+A: Insert at `"end"`, call `see("end")`, and delete old lines when `int(index("end-1c").split(".")[0])` gets too big. Make it read-only by switching `state` to `"normal"` just while you insert.
+see: tk.text-readonly, tk.tx.redirect-print
+```py
+import time
+import tkinter as tk
+
+MAX_LINES = 50
+root = tk.Tk()
+log = tk.Text(root, width=50, height=10, state="disabled", bg="#111", fg="#9f9", font=("Consolas", 10))
+log.pack(fill="both", expand=True)
+log.tag_config("err", foreground="#f66")
+
+def write(msg, tag=None):
+    log.config(state="normal")
+    log.insert("end", time.strftime("%H:%M:%S ") + msg + "\n", tag)
+    lines = int(log.index("end-1c").split(".")[0])
+    if lines > MAX_LINES:
+        log.delete("1.0", f"{lines - MAX_LINES}.0")
+    log.see("end")
+    log.config(state="disabled")
+
+n = [0]
+def tick():
+    n[0] += 1
+    write(f"tick {n[0]}", "err" if n[0] % 7 == 0 else None)
+    root.after(20, tick)
+tick()
+root.mainloop()
+```
+
+@@ tk.tx.redirect-print
+Q: How do I show print() output (and errors) inside my tkinter window?
+aka: redirect stdout to text widget, print to tkinter, sys.stdout text widget, capture print gui, show errors in window
+A: Replace `sys.stdout` with an object whose `write(s)` inserts into the Text. Remember to restore `sys.__stdout__` when the window closes. For output from threads, push into a `queue` instead (see the threads answers).
+see: tk.tx.log-console, tk.thr.queue
+```py
+import sys
+import tkinter as tk
+
+class TextOut:
+    def __init__(self, widget, tag=None):
+        self.w, self.tag = widget, tag
+    def write(self, s):
+        self.w.insert("end", s, self.tag)
+        self.w.see("end")
+    def flush(self):
+        pass
+
+root = tk.Tk()
+out = tk.Text(root, width=50, height=10); out.pack()
+out.tag_config("err", foreground="red")
+sys.stdout = TextOut(out)
+sys.stderr = TextOut(out, "err")
+
+def on_close():
+    sys.stdout, sys.stderr = sys.__stdout__, sys.__stderr__
+    root.destroy()
+root.protocol("WM_DELETE_WINDOW", on_close)
+
+print("Hello from print()")
+print("Numbers:", [n * n for n in range(5)])
+tk.Button(root, text="Print", command=lambda: print("clicked")).pack()
+root.after(300, on_close)
+root.mainloop()
+```
+
+@@ tk.tx.modified
+Q: How do I know if the text was changed (for "unsaved changes" or a * in the title)?
+aka: text modified, edit_modified, <<Modified>>, unsaved changes star title, dirty flag text, text changed event
+A: The Text keeps a modified flag: `edit_modified()` reads it, `edit_modified(False)` resets it (after saving). The `<<Modified>>` event fires when the flag turns on, so reset it inside the handler if you want every change.
+see: tk.recipe-notepad, tk.win.disable-close
+```py
+import tkinter as tk
+
+root = tk.Tk()
+t = tk.Text(root, width=40, height=6); t.pack()
+
+def update_title(event=None):
+    root.title(("*" if t.edit_modified() else "") + "notes.txt")
+
+def save():
+    with open("notes.txt", "w") as f:
+        f.write(t.get("1.0", "end-1c"))
+    t.edit_modified(False)
+    update_title()
+
+t.bind("<<Modified>>", update_title)
+tk.Button(root, text="Save", command=save).pack()
+t.insert("1.0", "changed!")          # sets the flag
+root.mainloop()
+```
+
+@@ tk.tx.word-count
+Q: How do I show a live word and character count for a Text widget?
+aka: word counter, character count live, count words text widget, characters typed, status bar count
+A: Bind `<KeyRelease>` (or `<<Modified>>`) and count `len(text.split())` and `len(text)` of `get("1.0", "end-1c")`.
+see: py.count-words
+```py
+import tkinter as tk
+
+root = tk.Tk()
+t = tk.Text(root, width=40, height=6, wrap="word"); t.pack()
+status = tk.Label(root, anchor="w"); status.pack(fill="x")
+
+def count(event=None):
+    text = t.get("1.0", "end-1c")
+    status.config(text=f"{len(text.split())} words · {len(text)} characters · line {t.index('insert').split('.')[0]}")
+
+t.bind("<KeyRelease>", count)
+t.bind("<ButtonRelease>", count)
+t.insert("1.0", "Four score and seven years ago")
+count()
+print(status.cget("text"))
+root.mainloop()
+```
+
+@@ tk.tx.embed
+Q: How do I put a button, image or other widget inside a Text widget?
+aka: window_create, image_create, widget inside text, button in text, image in text widget, emoji image in text, inline image
+A: `t.window_create(index, window=widget)` embeds any widget at that position; `t.image_create(index, image=img)` embeds a picture. They move with the text like a character.
+see: tk.ref.text
+```py
+import tkinter as tk
+
+root = tk.Tk()
+t = tk.Text(root, width=40, height=6, font=("Arial", 12)); t.pack()
+star = tk.PhotoImage(width=14, height=14); star.put("#ffb000", to=(0, 0, 14, 14))
+
+t.insert("end", "Click ")
+t.window_create("end", window=tk.Button(t, text="here", command=lambda: print("clicked"), padx=4, pady=0))
+t.insert("end", " or tick ")
+t.window_create("end", window=tk.Checkbutton(t))
+t.insert("end", "\nRated ")
+for _ in range(3):
+    t.image_create("end", image=star, padx=1)
+t.config(state="disabled")
+root.img = star
+root.mainloop()
+```
+
+@@ tk.tx.links
+Q: How do I make clickable links in a Text widget?
+aka: hyperlink in text, clickable text, link text widget, open url text, tag_bind click, hand cursor link
+A: Tag the link text, style it (blue, underline), change the cursor on `<Enter>`/`<Leave>` and `tag_bind(tag, "<Button-1>", ...)`. Give each link its own tag name so you know which one was clicked.
+see: tk.open-link, tk.tx.tag-methods
+```py
+import webbrowser
+import tkinter as tk
+
+root = tk.Tk()
+t = tk.Text(root, width=44, height=4, font=("Arial", 12), wrap="word", cursor="arrow"); t.pack()
+t.tag_config("link", foreground="#1a57c4", underline=True)
+t.tag_bind("link", "<Enter>", lambda e: t.config(cursor="hand2"))
+t.tag_bind("link", "<Leave>", lambda e: t.config(cursor="arrow"))
+urls = {}
+
+def add_link(text, url):
+    tag = f"link{len(urls)}"
+    urls[tag] = url
+    t.insert("end", text, ("link", tag))
+    t.tag_bind(tag, "<Button-1>", lambda e: print("open", url))   # webbrowser.open(url)
+
+t.insert("end", "Read the ")
+add_link("Python docs", "https://docs.python.org")
+t.insert("end", " or the ")
+add_link("tkinter page", "https://docs.python.org/3/library/tkinter.html")
+t.insert("end", ".")
+t.config(state="disabled")
+root.mainloop()
+```
+
+@@ tk.tx.autocomplete
+Q: How do I add autocomplete suggestions while typing in a Text or Entry?
+aka: autocomplete text, word suggestions, intellisense tkinter, suggestion popup, complete word tab
+A: On each key release, find the word before the cursor, look up matches, and show them in a small Listbox placed under the cursor (`bbox("insert")` gives its pixel position). Tab/Enter inserts the choice.
+see: ttk.combobox-autocomplete, tk.form.autocomplete
+```py
+import re
+import tkinter as tk
+
+WORDS = sorted(["print", "property", "pass", "range", "return", "raise", "import", "input", "isinstance", "len", "list", "lambda"])
+root = tk.Tk()
+t = tk.Text(root, width=40, height=8, font=("Consolas", 12)); t.pack()
+box = tk.Listbox(t, height=4, font=("Consolas", 11))
+
+def current_word():
+    line = t.get("insert linestart", "insert")
+    m = re.search(r"\w+$", line)
+    return m.group() if m else ""
+
+def suggest(event):
+    if event.keysym in ("Tab", "Return", "Escape", "Up", "Down"):
+        return
+    w = current_word()
+    hits = [x for x in WORDS if w and x.startswith(w) and x != w]
+    if not hits:
+        box.place_forget(); return
+    box.delete(0, "end")
+    for h in hits:
+        box.insert("end", h)
+    box.selection_set(0)
+    x, y, _, h = t.bbox("insert")
+    box.place(x=x, y=y + h)
+
+def accept(event):
+    if not box.winfo_ismapped():
+        return
+    choice = box.get(box.curselection()[0])
+    t.insert("insert", choice[len(current_word()):])
+    box.place_forget()
+    return "break"
+
+t.bind("<KeyRelease>", suggest)
+t.bind("<Tab>", accept)
+t.bind("<Escape>", lambda e: box.place_forget())
+root.mainloop()
+```
+
+@@ tk.tx.find-replace
+Q: How do I make a Find and Replace dialog for a Text widget?
+aka: find and replace, replace all text widget, search replace dialog, find next, case insensitive search text
+A: Use `t.search(word, start, stopindex="end", nocase=..., count=var)` in a loop: it returns the index of the next match (or `""`). `count` tells you the match length (important with regex). Replace with `t.delete` + `t.insert`, then continue after the new text.
+see: tk.text-search
+```py
+import tkinter as tk
+
+def replace_all(t, old, new, nocase=False):
+    count = tk.IntVar()
+    pos, n = "1.0", 0
+    while True:
+        pos = t.search(old, pos, stopindex="end", nocase=nocase, count=count)
+        if not pos:
+            return n
+        end = f"{pos}+{count.get()}c"
+        t.delete(pos, end)
+        t.insert(pos, new)
+        pos = f"{pos}+{len(new)}c"
+        n += 1
+
+root = tk.Tk()
+t = tk.Text(root, width=40, height=4); t.pack()
+t.insert("1.0", "Cat, cat and CAT sat on the mat.")
+print(replace_all(t, "cat", "dog", nocase=True), "replaced")
+print(t.get("1.0", "end-1c"))
+root.mainloop()
+```
+```text
+3 replaced
+dog, dog and dog sat on the mat.
+```
+
+@@ tk.tx.regex-search
+Q: How do I search a Text widget with a regular expression?
+aka: text search regexp, regex in text widget, search pattern text, tcl regex
+A: `t.search(pattern, start, stopindex="end", regexp=True, count=var)`. Tk uses Tcl regular expressions, which are close to Python's for simple patterns (`\d+`, `[A-Z]\w*`). For complex ones, run Python's `re` on `get("1.0", "end-1c")` and convert offsets with `f"1.0+{m.start()}c"`.
+see: tk.tx.find-replace, tk.tx.syntax
+```py
+import tkinter as tk
+
+root = tk.Tk()
+t = tk.Text(root, width=40, height=3); t.pack()
+t.insert("1.0", "Order 15 costs 230 and order 7 costs 12")
+t.tag_config("n", background="#ffd27a")
+count = tk.IntVar()
+pos = "1.0"
+while True:
+    pos = t.search(r"\d+", pos, stopindex="end", regexp=True, count=count)
+    if not pos:
+        break
+    t.tag_add("n", pos, f"{pos}+{count.get()}c")
+    pos = f"{pos}+{count.get()}c"
+print(t.tag_ranges("n")[:4])
+root.mainloop()
+```
+
+@@ tk.tx.goto-line
+Q: How do I jump to a line, select a line, or get the line the cursor is on?
+aka: go to line, select line, current line text, highlight current line, line under cursor
+A: Line N starts at `f"{N}.0"` and ends at `f"{N}.end"`. The cursor's line is `t.index("insert").split(".")[0]`; its text is `t.get("insert linestart", "insert lineend")`.
+see: tk.text-indexes
+```py
+import tkinter as tk
+
+root = tk.Tk()
+t = tk.Text(root, width=30, height=6); t.pack()
+t.insert("1.0", "\n".join(f"line {i}" for i in range(1, 21)))
+t.tag_config("cur", background="#fff3d6")
+
+def goto(n):
+    t.mark_set("insert", f"{n}.0")
+    t.see("insert")
+    t.tag_remove("cur", "1.0", "end")
+    t.tag_add("cur", "insert linestart", "insert lineend+1c")
+    print("line", t.index("insert").split(".")[0], "=", t.get("insert linestart", "insert lineend"))
+
+goto(15)
+root.mainloop()
+```
+
+@@ tk.tx.tab-indent
+Q: How do I make Tab insert 4 spaces, and Shift+Tab un-indent (like a code editor)?
+aka: tab inserts spaces, indent selection, dedent shift tab, auto indent new line, text tab width
+A: Bind `<Tab>` to insert spaces and return `"break"`. For auto-indent on Enter, copy the leading spaces of the current line. Set the visible tab width with `tabs=` (measured with the font).
+see: tk.return-break
+```py
+import re
+import tkinter as tk
+from tkinter import font
+
+root = tk.Tk()
+f = font.Font(family="Consolas", size=12)
+t = tk.Text(root, width=40, height=8, font=f, tabs=(f.measure("    "),)); t.pack()
+
+def tab(e):
+    t.insert("insert", "    ")
+    return "break"
+
+def shift_tab(e):
+    line_start = t.index("insert linestart")
+    if t.get(line_start, f"{line_start}+4c") == "    ":
+        t.delete(line_start, f"{line_start}+4c")
+    return "break"
+
+def newline(e):
+    line = t.get("insert linestart", "insert")
+    indent = re.match(r"\s*", line).group()
+    if line.rstrip().endswith(":"):
+        indent += "    "
+    t.insert("insert", "\n" + indent)
+    t.see("insert")
+    return "break"
+
+t.bind("<Tab>", tab)
+t.bind("<Shift-Tab>", shift_tab)
+t.bind("<ISO_Left_Tab>", shift_tab)      # Shift+Tab on Linux
+t.bind("<Return>", newline)
+root.mainloop()
+```
+
+@@ tk.tx.read-only-selectable
+Q: How do I make text read-only but still let people select and copy it?
+aka: readonly text selectable, copy from disabled text, disabled text no select, label selectable text, selectable label
+A: `state="disabled"` blocks typing but on some systems also blocks selecting. Instead keep it `"normal"` and block keys: bind `<Key>` to return `"break"` except for copy shortcuts. For one line, a read-only `Entry` styled like a label works well.
+see: tk.text-readonly, tk.entry-readonly
+```py
+import tkinter as tk
+
+root = tk.Tk()
+t = tk.Text(root, width=40, height=3, wrap="word"); t.pack(padx=10, pady=6)
+t.insert("1.0", "You can select and copy this, but not change it.")
+
+def block(e):
+    if (e.state & 4) and e.keysym.lower() in ("c", "a"):    # Ctrl+C, Ctrl+A allowed
+        return
+    if e.keysym in ("Left", "Right", "Up", "Down", "Home", "End"):
+        return
+    return "break"
+t.bind("<Key>", block)
+
+v = tk.StringVar(value="Selectable label text")
+tk.Entry(root, textvariable=v, state="readonly", relief="flat", readonlybackground=root.cget("bg"), width=30).pack(padx=10, pady=6)
+root.mainloop()
+```
+
+@@ tk.tx.html-like
+Q: Can a Text widget show formatted text like HTML or Markdown?
+aka: html in tkinter, markdown viewer tkinter, rich text display, formatted text view, tkhtmlview
+A: Not built in. For simple formatting, parse a few markers yourself and insert with tags (example below handles `# headings`, `**bold**` and `- bullets`). For real HTML use the `tkhtmlview` or `tkinterweb` packages.
+see: tk.tx.tag-options
+```py
+import re
+import tkinter as tk
+
+MD = """# Shopping
+Buy **fresh** bread and milk.
+- apples
+- **cheese**
+"""
+root = tk.Tk()
+t = tk.Text(root, width=40, height=8, font=("Georgia", 12), wrap="word", padx=8); t.pack()
+t.tag_config("h1", font=("Georgia", 18, "bold"))
+t.tag_config("b", font=("Georgia", 12, "bold"))
+t.tag_config("li", lmargin1=10, lmargin2=24)
+
+for line in MD.splitlines():
+    if line.startswith("# "):
+        t.insert("end", line[2:] + "\n", "h1"); continue
+    tags = ()
+    if line.startswith("- "):
+        line, tags = "•  " + line[2:], ("li",)
+    for i, part in enumerate(re.split(r"\*\*(.+?)\*\*", line)):
+        t.insert("end", part, tags + (("b",) if i % 2 else ()))
+    t.insert("end", "\n")
+t.config(state="disabled")
+root.mainloop()
+```
+
+@@ tk.tx.dump
+Q: How do I save a Text widget's text together with its formatting (tags), and load it back?
+aka: save formatted text, save tags, text dump, rich text save load, save bold text, preserve formatting
+A: `t.dump("1.0", "end", text=True, tag=True)` lists text pieces and where tags start/end. Save that as JSON; to load, insert the text and re-apply tags. (Or just save `tag_ranges` per tag next to the plain text, shown below.)
+see: tk.tx.tag-methods, py.json
+```py
+import json
+import tkinter as tk
+
+root = tk.Tk()
+t = tk.Text(root, height=4); t.pack()
+t.tag_config("bold", font=("Arial", 11, "bold")); t.tag_config("red", foreground="red")
+t.insert("1.0", "plain ", (), "bold", "bold", " and ", (), "red", "red")
+
+def save():
+    data = {"text": t.get("1.0", "end-1c"),
+            "tags": {tag: [str(i) for i in t.tag_ranges(tag)] for tag in ("bold", "red")}}
+    return json.dumps(data)
+
+def load(s):
+    data = json.loads(s)
+    t.delete("1.0", "end")
+    t.insert("1.0", data["text"])
+    for tag, idx in data["tags"].items():
+        for a, b in zip(idx[::2], idx[1::2]):
+            t.tag_add(tag, a, b)
+
+saved = save()
+print(saved)
+load(saved)
+print(t.tag_ranges("red"))
+root.mainloop()
+```
+
+@@ tk.tx.max-length
+Q: How do I limit how many characters can be typed into a Text widget?
+aka: text max length, limit text widget characters, text widget character limit, maxlength textarea
+A: Text has no `validate`. Bind `<Key>`: if the text is already at the limit and the key would add a character (has `event.char`, not backspace, nothing selected), return `"break"`. Also trim after paste with `<<Paste>>`.
+see: tk.entry-validate
+```py
+import tkinter as tk
+
+LIMIT = 40
+root = tk.Tk()
+t = tk.Text(root, width=40, height=3, wrap="word"); t.pack()
+left = tk.Label(root); left.pack()
+
+def length():
+    return len(t.get("1.0", "end-1c"))
+
+def on_key(e):
+    if e.char and e.char.isprintable() and length() >= LIMIT and not t.tag_ranges("sel"):
+        return "break"
+
+def trim(e=None):
+    if length() > LIMIT:
+        t.delete(f"1.0+{LIMIT}c", "end")
+    left.config(text=f"{LIMIT - length()} left")
+
+t.bind("<Key>", on_key)
+t.bind("<KeyRelease>", trim)
+t.bind("<<Paste>>", lambda e: root.after(1, trim))
+trim()
+root.mainloop()
+```
+
+@@ tk.tx.chat
+Q: How do I make a chat-style window (messages left and right, input at the bottom)?
+aka: chat ui, messenger window, chat bubbles, chat app layout, chatbot gui
+A: A read-only Text with two tags: one with `justify="right"` + right colours for your messages, one left-aligned for replies; an Entry + Send button below, Enter sends.
+see: tk.tx.log-console, tk.tx.tag-options
+```py
+import tkinter as tk
+
+root = tk.Tk()
+root.title("Chat")
+chat = tk.Text(root, width=44, height=12, state="disabled", wrap="word", font=("Arial", 11), padx=8, pady=8, bg="#f4f1ea")
+chat.pack(fill="both", expand=True)
+chat.tag_config("me", justify="right", foreground="white", background="#c23b22", rmargin=6, lmargin1=80, lmargin2=80, spacing3=8)
+chat.tag_config("bot", justify="left", background="white", lmargin1=6, lmargin2=6, rmargin=80, spacing3=8)
+
+row = tk.Frame(root); row.pack(fill="x")
+msg = tk.Entry(row, font=("Arial", 12)); msg.pack(side="left", fill="x", expand=True, padx=4, pady=4)
+
+def add(text, who):
+    chat.config(state="normal")
+    chat.insert("end", " " + text + " \n", who)
+    chat.config(state="disabled")
+    chat.see("end")
+
+def send(event=None):
+    text = msg.get().strip()
+    if text:
+        add(text, "me")
+        msg.delete(0, "end")
+        root.after(400, add, f"You said {len(text)} characters.", "bot")
+
+tk.Button(row, text="Send", command=send).pack(side="right", padx=4)
+msg.bind("<Return>", send)
+add("Hi! Type something.", "bot")
+root.mainloop()
+```
+
+@@ tk.tx.peer
+Q: How do I show the same text in two places (split view of one document)?
+aka: peer text widget, split view same document, two views same text, text peer_create
+A: Tk can make a **peer**: a second Text that shares the same content. Python has no wrapper, so call Tk directly and wrap the result.
+see: tk.paned
+```py
+import tkinter as tk
+
+root = tk.Tk()
+pw = tk.PanedWindow(root, orient="vertical", sashwidth=5); pw.pack(fill="both", expand=True)
+top = tk.Text(pw, height=5); pw.add(top)
+
+class PeerText(tk.Text):
+    def __init__(self, master, peer_of, **kw):
+        tk.Widget.__init__(self, master, "text", {}, {})       # make the Python object
+        self.tk.call("destroy", self._w)                       # drop the plain widget...
+        self.tk.call(peer_of._w, "peer", "create", self._w, *self._options(kw))   # ...replace with a peer
+
+bottom = PeerText(pw, top, height=5)
+pw.add(bottom)
+top.insert("1.0", "Type in either box:\nboth show the same text.")
+print(bottom.get("1.0", "1.end"))
+root.mainloop()
+```

@@ -1,0 +1,699 @@
+# py-builtins | Built-in functions A–Z | Every function you can use without importing anything, each with an example | python
+
+@@ py.bi.overview
+Q: Which functions are built into Python (no import needed)?
+aka: built in functions list, builtins, functions without import, all python functions, dir(builtins)
+A: About 70: `abs aiter all anext any ascii bin bool breakpoint bytearray bytes callable chr classmethod compile complex delattr dict dir divmod enumerate eval exec filter float format frozenset getattr globals hasattr hash help hex id input int isinstance issubclass iter len list locals map max memoryview min next object oct open ord pow print property range repr reversed round set setattr slice sorted staticmethod str sum super tuple type vars zip`. Each has an answer in this section.
+```py
+import builtins
+names = [n for n in dir(builtins) if n[0].islower() and not n.startswith("_") and callable(getattr(builtins, n))]
+print(len(names), names[:6])
+```
+
+@@ py.bi.abs
+Q: abs(): absolute value
+aka: abs, absolute value, distance from zero, remove minus sign, magnitude
+A: `abs(x)` returns `x` without its sign; for complex numbers, the length.
+see: py.num.divmod-pow
+```py
+print(abs(-7), abs(3.5), abs(-0.0), abs(3 + 4j))
+print(abs(10 - 25))               # how far apart two numbers are
+```
+```text
+7 3.5 0.0 5.0
+15
+```
+
+@@ py.bi.all-any
+Q: all() and any(): check every / at least one item
+aka: all function, any function, all true, any true, check list condition, all empty list
+A: `all(it)` is True if every item is truthy (and for an empty list); `any(it)` is True if at least one is (False for empty). Pass a generator to check a condition.
+see: py.list-any-all
+```py
+marks = [72, 85, 90]
+print(all(m >= 50 for m in marks), any(m == 100 for m in marks))
+print(all([]), any([]), any(["", 0, "x"]))
+```
+```text
+True False
+True False True
+```
+
+@@ py.bi.ascii-repr
+Q: repr() and ascii(): the developer view of a value
+aka: repr function, ascii function, show quotes, representation, debug string
+A: `repr(x)` gives the "code-like" text for a value (strings in quotes, escapes visible); `ascii(x)` is the same but escapes every non-ASCII character. `str(x)` is the friendly version.
+see: py.fmt.repr-escape, py.str-method
+```py
+s = "naïve\n"
+print(str(s).strip(), repr(s), ascii(s))
+print(repr(3.0), repr([1, "a"]), repr(None))
+```
+```text
+naïve 'naïve\n' 'na\xefve\n'
+3.0 [1, 'a'] None
+```
+
+@@ py.bi.bin-hex-oct
+Q: bin(), hex(), oct(): number to base-2/16/8 text
+aka: bin function, hex function, oct function, to binary string, to hexadecimal string
+A: Each returns a string with a prefix (`0b`, `0x`, `0o`). Use `int(text, base)` to go back.
+see: py.num.bases
+```py
+print(bin(10), hex(255), oct(8))
+print(int(bin(10), 2), int("ff", 16))
+```
+```text
+0b1010 0xff 0o10
+10 255
+```
+
+@@ py.bi.bool
+Q: bool(): turn any value into True or False
+aka: bool function, convert to boolean, truthy falsy, bool of string, bool of empty list
+A: `bool(x)` is False for `0`, `0.0`, `""`, `[]`, `{}`, `set()`, `None`, `False`; True for almost everything else. Note `bool("False")` is True (it's a non-empty string).
+see: py.truthy
+```py
+print([bool(x) for x in (0, 1, "", "0", [], [0], None, "False")])
+answer = "no"
+print(answer.lower() in ("y", "yes", "true", "1"))       # parse yes/no text yourself
+```
+```text
+[False, True, False, True, False, True, False, True]
+False
+```
+
+@@ py.bi.breakpoint
+Q: breakpoint(): stop and inspect the program (debugger)
+aka: breakpoint, pdb, debugger, pause program, step through code, inspect variables
+A: `breakpoint()` pauses at that line and opens the debugger (`pdb`) in the terminal. Type `p name` to print a variable, `n` next line, `s` step into, `c` continue, `q` quit. Editors like VS Code and Thonny have friendlier debuggers.
+see: py.debug-print
+```py norun
+def average(nums):
+    total = sum(nums)
+    breakpoint()            # (Pdb) p total   (Pdb) n   (Pdb) c
+    return total / len(nums)
+
+average([3, 4, 5])
+```
+
+@@ py.bi.bytes-bytearray
+Q: bytes() and bytearray(): raw byte data
+aka: bytes function, bytearray, mutable bytes, bytes from list, byte string
+A: `bytes(...)` is an unchangeable sequence of numbers 0–255; `bytearray(...)` is a changeable one. Create from a list of ints, a size (zeros), or a string plus encoding.
+see: py.fmt.bytes
+```py
+b = bytes([72, 105])
+ba = bytearray(b"cat")
+ba[0] = ord("b")
+print(b, ba, bytes(3), bytes("é", "utf-8"), ba.decode())
+```
+```text
+b'Hi' bytearray(b'bat') b'\x00\x00\x00' b'\xc3\xa9' bat
+```
+
+@@ py.bi.callable
+Q: callable(): can this be called like a function?
+aka: callable function, is function, check if function, can call
+A: True for functions, methods, classes and objects with `__call__`.
+see: py.fn.first-class
+```py
+class Greeter:
+    def __call__(self): return "hi"
+print(callable(print), callable(len), callable(42), callable(Greeter), callable(Greeter()))
+```
+```text
+True True False True True
+```
+
+@@ py.bi.chr-ord
+Q: chr() and ord(): characters and their code numbers
+aka: chr, ord, character code, unicode number, ascii value, letter to number
+A: `ord("A")` gives the Unicode number (65); `chr(65)` gives the character back.
+see: py.str-chars
+```py
+print(ord("A"), ord("a"), ord("€"), chr(97), chr(9731))
+print("".join(chr(ord(c) + 1) for c in "HAL"))       # shift each letter
+```
+```text
+65 97 8364 a ☃
+IBM
+```
+
+@@ py.bi.classmethod-staticmethod
+Q: classmethod() and staticmethod(): methods that don't need an object
+aka: classmethod builtin, staticmethod builtin, decorator classmethod
+A: Usually used as decorators `@classmethod` (gets the class as `cls`) and `@staticmethod` (gets nothing extra). See the classes section for full examples.
+see: py.static-classmethod, py.oop.factory
+```py
+class Temp:
+    @staticmethod
+    def c_to_f(c): return c * 9 / 5 + 32
+    @classmethod
+    def describe(cls): return f"I am {cls.__name__}"
+print(Temp.c_to_f(100), Temp.describe())
+```
+```text
+212.0 I am Temp
+```
+
+@@ py.bi.compile-eval-exec
+Q: eval(), exec() and compile(): run code from a string (and why to be careful)
+aka: eval, exec, compile, run string as code, evaluate expression string, calculator eval, eval dangerous
+A: `eval("2 + 3")` evaluates an **expression** and returns the value; `exec(code)` runs **statements**; `compile` prepares code for either. **Never** eval text from users: it can run any command. For maths input, parse it yourself or use `ast.literal_eval` for literal values.
+see: mod.ast.literal-eval
+```py
+import ast
+print(eval("2 + 3 * 4"))
+scope = {}
+exec("x = 10\ny = x * 2", scope)
+print(scope["y"])
+print(ast.literal_eval("[1, 2, {'a': 3}]"))      # safe: only literals allowed
+try:
+    ast.literal_eval("__import__('os')")
+except ValueError as e:
+    print("refused:", type(e).__name__)
+```
+```text
+14
+20
+[1, 2, {'a': 3}]
+refused: ValueError
+```
+
+@@ py.bi.complex
+Q: complex(): make a complex number
+aka: complex function, imaginary, complex from string
+A: `complex(real, imag)` or `complex("1+2j")`.
+see: py.num.complex
+```py
+print(complex(3, 4), complex("1+2j") * 2, complex(5))
+```
+```text
+(3+4j) (2+4j) (5+0j)
+```
+
+@@ py.bi.dict
+Q: dict(): make a dictionary in different ways
+aka: dict function, dict from list of pairs, dict from keyword arguments, dict zip, dict fromkeys
+A: `dict(a=1, b=2)`, `dict([("a", 1), ("b", 2)])`, `dict(zip(keys, values))`, `dict.fromkeys(keys, default)`, or copy another dict with `dict(d)`.
+see: py.dict-basics
+```py
+print(dict(a=1, b=2))
+print(dict(zip(["x", "y"], [10, 20])))
+print(dict.fromkeys(["red", "green"], 0))
+print(dict([("k", "v")]))
+```
+```text
+{'a': 1, 'b': 2}
+{'x': 10, 'y': 20}
+{'red': 0, 'green': 0}
+{'k': 'v'}
+```
+
+@@ py.bi.dir-vars
+Q: dir() and vars(): list what an object has
+aka: dir function, vars function, list methods of object, list attributes, __dict__, what can i do with this object
+A: `dir(x)` lists all attribute and method names (filter out the `__dunder__` ones); `vars(obj)` returns an object's own attributes as a dict. Great for exploring in the shell.
+see: py.oop.getattr
+```py
+print([m for m in dir("") if not m.startswith("_")][:8])
+class P:
+    def __init__(self): self.name, self.age = "Ada", 36
+print(vars(P()))
+```
+```text
+['capitalize', 'casefold', 'center', 'count', 'encode', 'endswith', 'expandtabs', 'find']
+{'name': 'Ada', 'age': 36}
+```
+
+@@ py.bi.divmod
+Q: divmod(): quotient and remainder in one go
+aka: divmod function, quotient remainder, minutes seconds divmod
+A: `divmod(a, b)` returns `(a // b, a % b)`.
+see: py.time-ago
+```py
+print(divmod(17, 5), divmod(-17, 5))
+h, rest = divmod(4000, 3600)
+m, s = divmod(rest, 60)
+print(f"{h}h {m}m {s}s")
+```
+```text
+(3, 2) (-4, 3)
+1h 6m 40s
+```
+
+@@ py.bi.enumerate
+Q: enumerate(): loop with a counter
+aka: enumerate function, index and value, counter loop
+A: `enumerate(items, start=0)` yields `(index, item)` pairs.
+see: py.enumerate, py.it.enumerate-start
+```py
+print(list(enumerate("abc")), list(enumerate("abc", start=1)))
+```
+```text
+[(0, 'a'), (1, 'b'), (2, 'c')] [(1, 'a'), (2, 'b'), (3, 'c')]
+```
+
+@@ py.bi.filter-map
+Q: filter() and map(): apply a function to every item / keep matching items
+aka: map function, filter function, map with lambda, filter none, map multiple lists
+A: `map(f, items)` gives `f(item)` for each; with two lists, `f(a, b)` pairwise. `filter(f, items)` keeps items where `f(item)` is truthy; `filter(None, items)` drops falsy ones. Both are lazy: wrap in `list()` to see them.
+see: py.map-filter
+```py
+print(list(map(int, ["1", "2", "3"])))
+print(list(map(pow, [2, 3], [5, 2])))
+print(list(filter(str.isdigit, ["1", "a", "22"])), list(filter(None, [0, 1, "", "x"])))
+```
+```text
+[1, 2, 3]
+[32, 9]
+['1', '22'] [1, 'x']
+```
+
+@@ py.bi.float
+Q: float(): make a decimal number
+aka: float function, convert to float, string to float, float inf nan
+A: `float("3.14")`, `float(2)`, `float("1e3")`, `float("inf")`. Raises `ValueError` for text that isn't a number (strip commas first: `"1,234"`).
+see: py.convert, py.num.number-words
+```py
+print(float("3.14"), float(2), float("1e3"), float(" 7 "), float("-inf"))
+print(float("1,234".replace(",", "")))
+```
+```text
+3.14 2.0 1000.0 7.0 -inf
+1234.0
+```
+
+@@ py.bi.format
+Q: format(): format one value with a spec
+aka: format function, format number, format builtin
+A: `format(value, spec)` does what `f"{value:spec}"` does, as a function call.
+see: py.fmt.spec
+```py
+print(format(3.14159, ".2f"), format(255, "08b"), format(0.5, ".0%"), format("hi", "^6") + "|")
+```
+```text
+3.14 11111111 50%   hi  |
+```
+
+@@ py.bi.frozenset-set
+Q: set() and frozenset(): collections of unique items
+aka: set function, frozenset, immutable set, empty set, set from list, set as dict key
+A: `set(items)` removes duplicates (unordered). `set()` is the empty set (`{}` is an empty **dict**). `frozenset` can't change, so it can be a dict key or live in another set.
+see: py.set
+```py
+print(set([3, 1, 3, 2]), set("hello") >= {"h", "e"}, type({}).__name__)
+pairs = {frozenset({"a", "b"}): "friends"}
+print(pairs[frozenset({"b", "a"})])
+```
+```text
+{1, 2, 3} True dict
+friends
+```
+
+@@ py.bi.globals-locals
+Q: globals() and locals(): the current variables as a dict
+aka: globals function, locals function, list variables, variable names dict
+A: `globals()` is the module's variables; `locals()` the current function's. Useful for debugging; don't use them to create variables (use a dict instead).
+see: py.fn.scope
+```py
+x = 1
+def f():
+    y = 2
+    return sorted(locals())
+print(f(), "x" in globals())
+```
+```text
+['y'] True
+```
+
+@@ py.bi.hash-id
+Q: hash() and id(): an object's hash and identity
+aka: hash function, id function, object identity, memory address, unhashable
+A: `id(x)` is a number unique to that object while it lives (`a is b` compares ids). `hash(x)` is used by sets and dicts; only unchanging (immutable) values have one.
+see: py.is-vs-eq, py.err.unhashable
+```py
+a = [1]; b = a; c = [1]
+print(id(a) == id(b), id(a) == id(c), a == c)
+print(hash("hi") == hash("hi"), hash((1, 2)) == hash((1, 2)))
+try:
+    hash([1, 2])
+except TypeError as e:
+    print(e)
+```
+```text
+True False True
+True True
+unhashable type: 'list'
+```
+
+@@ py.bi.help
+Q: help(): read the documentation inside Python
+aka: help function, documentation in shell, help on module, pydoc, how to use function
+A: `help(len)`, `help(str.split)`, `help("modules")`, or `help()` for an interactive help prompt (quit with `q`). In the terminal, `python -m pydoc name` does the same.
+see: py.fn.docstring
+```py
+import pydoc
+text = pydoc.render_doc(str.split, renderer=pydoc.plaintext)
+print(text.splitlines()[2].strip())
+```
+```text
+split(self, /, sep=None, maxsplit=-1) unbound builtins.str method
+```
+
+@@ py.bi.input-print
+Q: input() and print(): all their options
+aka: print options, print sep end file flush, input prompt, print to file, print without newline
+A: `print(*values, sep=" ", end="\n", file=sys.stdout, flush=False)`. `input(prompt)` shows the prompt and returns what was typed (always a **string**).
+see: py.print, py.input
+```py
+import sys
+print("a", "b", "c", sep="-", end="!\n")
+print("to stderr", file=sys.stdout)
+with open("out.txt", "w") as f:
+    print("saved line", file=f)
+print(open("out.txt").read().strip())
+```
+```text
+a-b-c!
+to stderr
+saved line
+```
+
+@@ py.bi.int
+Q: int(): make a whole number (from text, floats or other bases)
+aka: int function, string to int, float to int, int base, int truncate, int of decimal string
+A: `int("42")`, `int(3.99)` (cuts to 3), `int("ff", 16)`. `int("3.5")` fails: go through `float` first.
+see: py.convert, py.err.valueerror-int
+```py
+print(int("42"), int(" -7 "), int(3.99), int(-3.99), int("ff", 16), int("1_000"))
+print(int(float("3.5")), round(float("3.5")))
+```
+```text
+42 -7 3 -3 255 1000
+3 4
+```
+
+@@ py.bi.isinstance-issubclass
+Q: isinstance() and issubclass(): check types
+aka: isinstance function, issubclass function, check type, type check multiple
+A: `isinstance(x, (int, float))` checks an object; `issubclass(Dog, Animal)` checks classes.
+see: py.oop.type-check
+```py
+print(isinstance(3, int), isinstance("3", (int, float)), issubclass(bool, int))
+```
+```text
+True False True
+```
+
+@@ py.bi.iter-next
+Q: iter() and next(): step through items by hand
+aka: iter function, next function, next default, iter with sentinel
+A: `iter(x)` gets an iterator; `next(it, default)` takes the next item. `iter(func, sentinel)` calls `func` until it returns `sentinel`.
+see: py.it.iter-next
+```py
+it = iter([10, 20])
+print(next(it), next(it), next(it, "done"))
+import random
+random.seed(1)
+rolls = list(iter(lambda: random.randint(1, 6), 6))     # roll until a 6
+print(rolls)
+```
+```text
+10 20 done
+[2, 5, 1, 3, 1, 4, 4, 4]
+```
+
+@@ py.bi.len
+Q: len(): how many items
+aka: len function, length of list, length of string, number of keys, size of
+A: Works on strings (characters), lists, tuples, dicts (keys), sets, ranges, and any object with `__len__`.
+see: py.list-basics
+```py
+print(len("héllo"), len([1, [2, 3]]), len({"a": 1, "b": 2}), len(range(0, 100, 5)), len(set("banana")))
+```
+```text
+5 2 2 20 3
+```
+
+@@ py.bi.list-tuple
+Q: list() and tuple(): make a list or tuple from anything iterable
+aka: list function, tuple function, convert to list, string to list of characters, range to list
+A: `list("abc")` → `['a','b','c']`, `list(range(3))`, `list(d)` (keys), `tuple(lst)`. `list()` makes a new (shallow) copy.
+see: py.tuple, py.copy-list
+```py
+print(list("abc"), list(range(3)), list({"x": 1, "y": 2}), tuple([1, 2]))
+print(list(map(str.upper, "hi")), sorted(set("cab")))
+```
+```text
+['a', 'b', 'c'] [0, 1, 2] ['x', 'y'] (1, 2)
+['H', 'I'] ['a', 'b', 'c']
+```
+
+@@ py.bi.max-min
+Q: max() and min(): largest and smallest (with key and default)
+aka: max function, min function, max with key, max of dict, max empty list default, max by length
+A: `max(items)`, `max(a, b, c)`, `max(items, key=len)`, `max(items, default=None)` (no error when empty). For a dict, `max(d, key=d.get)` gives the key with the biggest value.
+see: py.list-math, py.max-loop
+```py
+words = ["fig", "banana", "kiwi"]
+print(max(words), max(words, key=len), min(3, 1, 2), max([], default=0))
+scores = {"Ada": 91, "Sam": 78}
+print(max(scores, key=scores.get), min(scores.values()))
+```
+```text
+kiwi banana 1 0
+Ada 78
+```
+
+@@ py.bi.memoryview
+Q: memoryview(): look at bytes without copying them
+aka: memoryview, zero copy bytes, buffer protocol, slice bytes without copy
+A: An advanced tool: a view into a `bytes`/`bytearray` that can be sliced and changed without copying large data. Rarely needed in everyday code.
+see: py.bi.bytes-bytearray
+```py
+data = bytearray(b"hello world")
+view = memoryview(data)[6:]
+view[0] = ord("W")
+print(data, view.tobytes())
+```
+```text
+bytearray(b'hello World') b'World'
+```
+
+@@ py.bi.object-type
+Q: object() and type(): the base class, and asking an object's type
+aka: type function, object function, type of variable, create class with type, sentinel object
+A: `type(x)` returns x's class (`type(x).__name__` for its name). Every class inherits from `object`; `object()` makes a unique blank value, handy as a "nothing passed" marker.
+see: py.types
+```py
+print(type(3), type("s").__name__, type([]) is list)
+MISSING = object()
+def get(d, key, default=MISSING):
+    if key in d:
+        return d[key]
+    if default is MISSING:
+        raise KeyError(key)
+    return default
+print(get({}, "a", None))
+```
+```text
+<class 'int'> str True
+None
+```
+
+@@ py.bi.open
+Q: open(): all its options (mode, encoding, newline, errors)
+aka: open function options, open encoding, open newline, open errors ignore, open binary, buffering
+A: `open(path, mode="r", encoding=None, newline=None, errors=None)`. Always pass `encoding="utf-8"` for text. `newline=""` for the csv module. `errors="replace"` survives badly encoded files. Modes: `r w a x` + `b` (binary) + `+` (read and write).
+see: py.file-modes, py.encoding
+```py
+with open("u.txt", "w", encoding="utf-8") as f:
+    f.write("héllo\n")
+with open("u.txt", encoding="ascii", errors="replace") as f:
+    print(f.read().strip())
+with open("u.txt", "rb") as f:
+    print(f.read())
+```
+```text
+h��llo
+b'h\xc3\xa9llo\n'
+```
+
+@@ py.bi.pow-round
+Q: pow() and round(): powers and rounding
+aka: pow function, round function, round to decimal places, round negative digits, bankers rounding
+A: `pow(2, 10)` = `2 ** 10`; `pow(b, e, m)` = modular power. `round(x)` to whole number (halves go to the even number), `round(x, 2)` to 2 decimals, `round(1234, -2)` to hundreds.
+see: py.round
+```py
+print(pow(2, 10), pow(2, 10, 1000))
+print(round(2.5), round(3.5), round(3.14159, 2), round(1234, -2))
+```
+```text
+1024 24
+2 4 3.14 1200
+```
+
+@@ py.bi.property-super
+Q: property() and super(): computed attributes and calling the parent class
+aka: property function, super function, super init
+A: Normally used as `@property` and `super().__init__(...)`; see the classes sections for details.
+see: py.property, py.inheritance
+```py
+class A:
+    def __init__(self): self.x = 1
+class B(A):
+    def __init__(self):
+        super().__init__()
+        self.y = 2
+    @property
+    def total(self): return self.x + self.y
+print(B().total)
+```
+```text
+3
+```
+
+@@ py.bi.range
+Q: range(): all the ways to use it (start, stop, step, backwards)
+aka: range function, range step, range backwards, range negative step, range inclusive, range float
+A: `range(stop)`, `range(start, stop)`, `range(start, stop, step)`: `stop` is **not** included. Count down with a negative step. It only does whole numbers; for decimals multiply or use a comprehension.
+see: py.for
+```py
+print(list(range(5)), list(range(2, 6)), list(range(0, 20, 5)))
+print(list(range(10, 0, -3)), list(range(1, 11))[-1])
+print([i / 10 for i in range(0, 6)])       # 0.0 to 0.5
+print(range(0, 100, 7)[3], 49 in range(0, 100, 7))
+```
+```text
+[0, 1, 2, 3, 4] [2, 3, 4, 5] [0, 5, 10, 15]
+[10, 7, 4, 1] 10
+[0.0, 0.1, 0.2, 0.3, 0.4, 0.5]
+21 True
+```
+
+@@ py.bi.reversed-sorted
+Q: reversed() and sorted(): backwards and in order
+aka: reversed function, sorted function, sorted reverse, sorted key
+A: `sorted(x, key=..., reverse=...)` returns a new list; `reversed(seq)` returns an iterator from the end.
+see: py.it.reversed-sorted
+```py
+print(sorted([3, 1, 2]), sorted("Banana", key=str.lower), list(reversed("abc")))
+```
+```text
+[1, 2, 3] ['a', 'a', 'a', 'B', 'n', 'n'] ['c', 'b', 'a']
+```
+
+@@ py.bi.slice
+Q: slice(): save a slice in a variable
+aka: slice object, slice function, named slice, reusable slice
+A: `slice(start, stop, step)` is what `[a:b:c]` builds. Naming it makes fixed-width data clearer.
+see: py.str-basics
+```py
+line = "2026-03-09 ERROR disk full"
+DATE, LEVEL = slice(0, 10), slice(11, 16)
+print(line[DATE], line[LEVEL], [0, 1, 2, 3, 4, 5][slice(None, None, 2)])
+```
+```text
+2026-03-09 ERROR [0, 2, 4]
+```
+
+@@ py.bi.str
+Q: str(): turn anything into text
+aka: str function, convert to string, number to string, int to str
+A: `str(42)`, `str(3.0)`, `str([1, 2])`. Calls the object's `__str__`. For bytes, use `.decode()` instead of `str()`.
+see: py.convert
+```py
+print(str(42) + "!", str(3.0), str([1, 2]), str(None), str(b"hi"), b"hi".decode())
+```
+```text
+42! 3.0 [1, 2] None b'hi' hi
+```
+
+@@ py.bi.sum
+Q: sum(): add up numbers (with a start value)
+aka: sum function, sum of list, sum start, sum floats exactly, sum of column
+A: `sum(numbers, start=0)`. Since Python 3.12, `sum` of floats is carefully rounded (older versions gave `0.9999999999999999` for ten 0.1s; `math.fsum` is exact on every version). Don't use `sum` to join strings: use `"".join(...)`.
+see: py.list-math
+```py
+import math
+print(sum([1, 2, 3]), sum([1, 2], start=10), sum(x * x for x in range(4)))
+print(sum([0.1] * 10), math.fsum([0.1] * 10))
+rows = [("apple", 3), ("pear", 5)]
+print(sum(qty for _, qty in rows))
+```
+```text
+6 13 14
+1.0 1.0
+8
+```
+
+@@ py.bi.zip
+Q: zip(): pair up items from several lists
+aka: zip function, zip lists, zip strict, unzip
+A: `zip(a, b)` yields tuples `(a[0], b[0]), ...` and stops at the shortest; `strict=True` errors on different lengths.
+see: py.zip, py.it.zip-strict
+```py
+print(list(zip("abc", [1, 2, 3])), dict(zip(["x", "y"], [9, 8])))
+```
+```text
+[('a', 1), ('b', 2), ('c', 3)] {'x': 9, 'y': 8}
+```
+
+@@ py.bi.aiter-anext
+Q: aiter() and anext(): async versions of iter and next
+aka: aiter, anext, async iterator, async for, async generator next
+A: The same idea as `iter`/`next` for async iterators, used inside `async` code.
+see: mod.asyncio.basics
+```py
+import asyncio
+
+async def ticks(n):
+    for i in range(n):
+        await asyncio.sleep(0)
+        yield i
+
+async def main():
+    it = aiter(ticks(3))
+    print(await anext(it), await anext(it), await anext(it), await anext(it, "end"))
+
+asyncio.run(main())
+```
+```text
+0 1 2 end
+```
+
+@@ py.bi.getattr-family
+Q: getattr(), setattr(), hasattr(), delattr(): attributes by name
+aka: getattr function, setattr function, hasattr, delattr
+A: Read, write, check and delete attributes whose names are strings.
+see: py.oop.getattr
+```py
+class C: pass
+c = C()
+setattr(c, "colour", "red")
+print(getattr(c, "colour"), hasattr(c, "size"), getattr(c, "size", 0))
+delattr(c, "colour")
+print(hasattr(c, "colour"))
+```
+```text
+red False 0
+False
+```
+
+@@ py.bi.exit-quit
+Q: exit(), quit(), copyright(), credits(), license(): the shell helpers
+aka: exit function, quit function, credits, license, copyright
+A: These are meant for the interactive shell. In programs, use `sys.exit()` to stop (it works everywhere, including frozen apps).
+see: py.exit
+```py
+import sys
+try:
+    sys.exit("bye")
+except SystemExit as e:
+    print("would exit with:", e)
+```
+```text
+would exit with: bye
+```
