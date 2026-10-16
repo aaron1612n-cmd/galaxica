@@ -29,10 +29,14 @@ galaxica, squeeze, pinprick, hairline, gravity-garden (challenges + #w= share li
 - DONE 2026-10-16: 414 answers / 26 sections (T1-T17 tkinter: windows, labels+buttons, text input, choices, layout, events, variables, timers+threads, menus+dialogs, canvas, images, style, tables/tabs/progress, app structure, tk errors, 11 complete apps, extras; P1-P9 python: basics, strings, lists, dicts, files, 31 error messages, classes, modules, common tasks). 430 examples all pass. Hub top bar links to it ('Python answers'). Search checked with ~70 real queries + pasted tracebacks (scratchpad searchq.mjs). Live: https://play.galaxica.workers.dev/python/
 - To add answers: new `@@` entry in a content file (aka = phrases people would type; err = message patterns), rebuild, commit, deploy. Ideas: more recipes, pygame/turtle sections, user 'not found' log.
 
+## NOW (chat "Galaxica 5", 2026-10-16, branch `claude/nice-lovelace-x5im31` = keen-johnson-dabr2d + new work)
+User: "expand tkinter until no more questions can be asked, many examples per subject, replicate for other modules and Python itself".
+Plan: 3rd group `modules` (rail M1..; app.js GROUPS/GNAME/GNO/GCLS) for stdlib; new tkinter sections T18+ (widget reference, Text, Canvas, ttk, windows, forms, data/tables, games, apps, threads); new Python sections P10+ (functions, comprehensions, iterators, decorators, OOP, typing, match, builtins + keywords reference, numbers, exceptions). Content files: tk 30-49, py 50-69, modules 70-99. Build, commit, push, deploy after each batch.
+Env: `uv venv --managed-python -p 3.12 /home/user/pyenv` + pillow (system python has no tk).
+
 ## NEXT
-1. 2026-10-16: Python Answer Book shipped (above). Ask user what to add or which answers were missing.
-2. Game ideas still open (dig- and hedge-like, user favourites Deepdig + Hedgerow).
-3. Later: leaderboards, real-phone playtest, balance (Cauldron hard, Deepdig economy). Keep runbook under cap.
+1. Finish the expansion above; then ask user which answers were missing.
+2. Game ideas (Deepdig/Hedgerow-like). 3. Leaderboards, phone playtest, balance.
 
 ## Test kit (scratchpad, ephemeral)
 http-server public -p 8080; bot.mjs (AUTO stats), waitshot.mjs, tutshot.mjs, thumb.mjs + crop.py, audit.mjs (overflow/oval/clip/pad checks + screenshots), addgame.py (games.json).

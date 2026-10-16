@@ -5,11 +5,12 @@
   var $ = function (s, r) { return (r || document).querySelector(s); };
   var main = $('#main'), rail = $('#rail'), q = $('#q');
   var SEC = {}, BY = {}, ORDER = {};
-  var groups = { tkinter: [], python: [] };
+  var GROUPS = ['tkinter', 'python', 'modules'], GNAME = { tkinter: 'tkinter', python: 'Python', modules: 'Modules' }, GNO = { tkinter: 'T', python: 'P', modules: 'M' }, GCLS = { tkinter: 'tk', python: 'py', modules: 'md' };
+  var groups = { tkinter: [], python: [], modules: [] };
   D.sections.forEach(function (s, i) {
     SEC[s.id] = s; s.items = [];
     (groups[s.group] || (groups[s.group] = [])).push(s);
-    s.no = (s.group === 'tkinter' ? 'T' : 'P') + groups[s.group].length;
+    s.no = (GNO[s.group] || 'X') + groups[s.group].length;
   });
   D.entries.forEach(function (e, i) { BY[e.id] = e; e.i = i; SEC[e.s].items.push(e); });
   D.sections.forEach(function (s) { s.items.forEach(function (e, k) { ORDER[e.id] = k; }); });
@@ -179,8 +180,9 @@
   // ------------------------------------------------------------ rail
   function buildRail(cur, curEntry) {
     var h = '';
-    ['tkinter', 'python'].forEach(function (g) {
-      h += '<h4>' + (g === 'tkinter' ? 'tkinter' : 'Python') + '</h4>';
+    GROUPS.forEach(function (g) {
+      if (!groups[g].length) return;
+      h += '<h4>' + GNAME[g] + '</h4>';
       groups[g].forEach(function (s) {
         var on = s.id === cur;
         h += '<a href="#/s/' + s.id + '" class="' + (on ? 'on' : '') + '"><span class="no">' + s.no + '</span><span>' + esc(s.title) + '</span><span class="ct">' + s.items.length + '</span></a>';
@@ -214,10 +216,10 @@
     }
     var seen = (store('pyrefSeen') || []).filter(function (id) { return BY[id]; }).slice(0, 6);
     if (seen.length) h += '<section class="recent"><h2 class="lab">Opened recently</h2><ol>' + seen.map(function (id) { return '<li><a href="#/a/' + id + '">' + esc(BY[id].q) + '</a></li>'; }).join('') + '</ol></section>';
-    ['tkinter', 'python'].forEach(function (g) {
+    GROUPS.forEach(function (g) {
       if (!groups[g] || !groups[g].length) return;
       var n = groups[g].reduce(function (a, s) { return a + s.items.length; }, 0);
-      h += '<section class="group ' + (g === 'python' ? 'py' : 'tk') + '"><h2><span>' + (g === 'tkinter' ? 'tkinter' : 'Python') + '</span>' + n + ' answers</h2><div class="secs">';
+      h += '<section class="group ' + GCLS[g] + '"><h2><span>' + GNAME[g] + '</span>' + n + ' answers</h2><div class="secs">';
       groups[g].forEach(function (s) {
         var show = g === 'tkinter' ? 5 : 4;
         h += '<div class="sec"><h3><span class="no">' + s.no + '</span><a href="#/s/' + s.id + '">' + esc(s.title) + '</a></h3><p>' + esc(s.blurb) + '</p><ul>' +
@@ -232,7 +234,7 @@
   function section(id) {
     var s = SEC[id]; if (!s) return home();
     document.title = s.title + ' · Python Answer Book';
-    main.innerHTML = '<p class="crumb"><a href="#/">Index</a><span>' + s.no + ' · ' + (s.group === 'tkinter' ? 'tkinter' : 'Python') + '</span></p><h1>' + esc(s.title) + '</h1><ol class="qlist">' +
+    main.innerHTML = '<p class="crumb"><a href="#/">Index</a><span>' + s.no + ' · ' + GNAME[s.group] + '</span></p><h1>' + esc(s.title) + '</h1><ol class="qlist">' +
       s.items.map(function (e) { return '<li><a href="#/a/' + e.id + '"><span class="qq">' + e.qh + '</span><span class="qa">' + esc(e.aPlain) + '</span></a></li>'; }).join('') + '</ol>';
     buildRail(id);
   }
