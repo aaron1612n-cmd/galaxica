@@ -13,7 +13,7 @@ dialogs return a dummy answer, so a window that opens without errors passes.
 
 Usage: python3 build.py [--py /path/to/python-with-tk] [--norun] [--only ID]
 """
-import html, json, os, re, subprocess, sys, tempfile, keyword, io, tokenize, concurrent.futures as cf
+import html, json, os, re, subprocess, sys, tempfile, keyword, io, tokenize, unicodedata, concurrent.futures as cf
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
@@ -221,6 +221,10 @@ def parse():
     files = sorted(f for f in os.listdir(os.path.join(HERE, 'content')) if f.endswith('.txt'))
     for fn in files:
         text = open(os.path.join(HERE, 'content', fn), encoding='utf-8').read()
+        for n, ln in enumerate(text.split('\n'), 1):
+            bad = [c for c in ln if unicodedata.category(c) in ('Cf', 'Mn', 'Cc') and c != '\t']
+            if bad:   # invisible characters: write them as \u escapes instead
+                raise SystemExit('%s:%d: invisible character U+%04X' % (fn, n, ord(bad[0])))
         cur = None
         chunks, buf, fence = [], [], False
         for ln in text.split('\n'):
