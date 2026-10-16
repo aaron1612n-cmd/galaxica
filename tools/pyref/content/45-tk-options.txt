@@ -1,0 +1,629 @@
+# tk-opt | Every widget option A–Z | What each option does: activebackground, anchor, bd, bg, command, compound, cursor, font, height, highlightthickness, justify, padx, relief, state, takefocus, width, wraplength and the rest | tkinter
+
+@@ tk.o.active
+Q: What do activebackground, activeforeground and activerelief do?
+aka: activebackground, activeforeground, activerelief, active colour, colour when hovered, button pressed colour, hover colour option
+A: The colours (and relief) used while the mouse is over the widget or it's being pressed: buttons, checkbuttons, radiobuttons, menus, scales, scrollbars. (On macOS, native buttons ignore them.)
+see: tk.hover, tk.button-color
+```py
+import tkinter as tk
+root = tk.Tk()
+b = tk.Button(root, text="Hover me", bg="#eeeeee", activebackground="#ffb000", activeforeground="white")
+b.pack(padx=40, pady=20)
+print(b["activebackground"], b["activeforeground"])
+root.mainloop()
+```
+```text
+#ffb000 white
+```
+
+@@ tk.o.anchor
+Q: What does the anchor option do (n, ne, e, se, s, sw, w, nw, center)?
+aka: anchor option, anchor w, anchor center, anchor ne, compass anchor, text position in label, anchor pack
+A: `anchor` is a compass point saying where something sits inside its space: on a Label/Button it places the **text** inside the widget's box (`"w"` = left middle, `"ne"` = top right); in `pack(anchor=...)` and `place(anchor=...)` it places the **widget** itself.
+see: tk.label-align, tk.geo.place-options
+```py
+import tkinter as tk
+root = tk.Tk()
+POSITIONS = {"nw": (0, 0), "n": (0, 1), "ne": (0, 2),
+             "w": (1, 0), "center": (1, 1), "e": (1, 2),
+             "sw": (2, 0), "s": (2, 1), "se": (2, 2)}
+for a, (row, col) in POSITIONS.items():
+    tk.Label(root, text=a, anchor=a, width=12, height=2, bg="#eee", relief="ridge").grid(row=row, column=col, padx=2, pady=2)
+root.mainloop()
+```
+
+@@ tk.o.border
+Q: What do bd, borderwidth and relief do?
+aka: bd, borderwidth, relief, border width, flat raised sunken groove ridge solid, 3d border, border option
+A: `bd`/`borderwidth` = border thickness in pixels; `relief` = its style: `"flat"`, `"raised"`, `"sunken"`, `"groove"`, `"ridge"`, `"solid"`. A border only shows if `bd` > 0.
+see: tk.relief, tk.border-color
+```py
+import tkinter as tk
+root = tk.Tk()
+for r in ("flat", "raised", "sunken", "groove", "ridge", "solid"):
+    tk.Label(root, text=r, relief=r, bd=3, width=10, pady=4).pack(side="left", padx=4, pady=10)
+root.mainloop()
+```
+
+@@ tk.o.colours
+Q: What do bg, background, fg and foreground do (and which widgets have them)?
+aka: bg option, fg option, background option, foreground option, text colour option, widget colour
+A: `bg`/`background` = fill colour; `fg`/`foreground` = text (or drawing) colour. Almost every classic widget has `bg`; widgets with text have `fg`. ttk widgets use styles instead.
+see: tk.z.colors-fonts, tk.err2.ttk-option
+```py
+import tkinter as tk
+root = tk.Tk(); root.configure(bg="#1b1a17")
+tk.Label(root, text="light on dark", bg="#1b1a17", fg="#f2ede3", font=("Georgia", 14)).pack(padx=30, pady=20)
+root.mainloop()
+```
+
+@@ tk.o.bitmap-image-compound
+Q: What do image, bitmap and compound do?
+aka: image option, bitmap option, compound option, image and text together, compound left top center, icon and text button
+A: `image=` shows a PhotoImage; `bitmap=` a built-in or `.xbm` bitmap; `compound=` says how image and text combine: `"none"` (image only), `"left"`, `"right"`, `"top"`, `"bottom"`, `"center"` (text on top of image).
+see: tk.button-image, tk.ref.bitmap
+```py
+import tkinter as tk
+root = tk.Tk()
+img = tk.PhotoImage(width=16, height=16); img.put("#c23b22", to=(0, 0, 16, 16))
+for c in ("left", "top", "right", "center"):
+    tk.Button(root, text=c, image=img, compound=c, padx=6).pack(side="left", padx=4, pady=10)
+root.img = img
+root.mainloop()
+```
+
+@@ tk.o.command
+Q: What does the command option do, and which widgets have it?
+aka: command option widgets, command scale, command checkbutton, command spinbox, command scrollbar, which widgets have command
+A: The function called when the widget is used: Button (click), Checkbutton/Radiobutton (toggle), Scale (moved; gets the value as a string), Spinbox (arrow clicked), Scrollbar (scrolled; usually `widget.yview`), Menu items, OptionMenu, ttk.Combobox has no command (bind `<<ComboboxSelected>>`).
+see: tk.z.callback
+```py
+import tkinter as tk
+root = tk.Tk()
+tk.Checkbutton(root, text="check", command=lambda: print("toggled")).pack()
+tk.Scale(root, from_=0, to=10, orient="horizontal", command=lambda v: print("scale", v)).pack()
+root.mainloop()
+```
+
+@@ tk.o.cursor
+Q: What does the cursor option do, and what cursor names are there?
+aka: cursor option, mouse pointer, hand2, watch, crosshair, cursor names list, change pointer
+A: The mouse pointer shape over the widget. Common names: `"arrow"`, `"hand2"` (pointing hand), `"xterm"` (text I-beam), `"watch"` (busy), `"crosshair"`, `"fleur"` (move), `"sb_h_double_arrow"`, `"sb_v_double_arrow"`, `"plus"`, `"question_arrow"`, `"pirate"`, `"spraycan"`, `"no"` (Windows/macOS).
+see: tk.cursor
+```py
+import tkinter as tk
+root = tk.Tk()
+for c in ("arrow", "hand2", "xterm", "watch", "crosshair", "fleur", "sb_h_double_arrow", "plus"):
+    tk.Label(root, text=c, cursor=c, relief="ridge", width=18).pack()
+root.mainloop()
+```
+
+@@ tk.o.default
+Q: What does default="active" on a Button do?
+aka: default option button, default button, active default, dialog default button
+A: It draws the button as the **default** one (an extra outline on some systems), the one Enter would press in a dialog. You still have to bind `<Return>` yourself.
+see: tk.button-enter
+```py
+import tkinter as tk
+root = tk.Tk()
+ok = tk.Button(root, text="OK", default="active", command=lambda: print("ok")); ok.pack(side="left", padx=10, pady=10)
+tk.Button(root, text="Cancel").pack(side="left")
+root.bind("<Return>", lambda e: ok.invoke())
+root.mainloop()
+```
+
+@@ tk.o.disabled
+Q: What do disabledforeground, disabledbackground and readonlybackground do?
+aka: disabledforeground, disabledbackground, readonlybackground, greyed out colour, disabled entry colour
+A: Colours used when `state="disabled"` (text colour `disabledforeground`; for Entry/Spinbox the field `disabledbackground`) and when an Entry is `"readonly"` (`readonlybackground`).
+see: tk.button-state, tk.entry-readonly
+```py
+import tkinter as tk
+root = tk.Tk()
+e = tk.Entry(root, disabledbackground="#ddd", disabledforeground="#888", readonlybackground="#fff3d6")
+e.insert(0, "read only"); e.config(state="readonly"); e.pack(padx=20, pady=5)
+tk.Button(root, text="Disabled", state="disabled", disabledforeground="#c23b22").pack(pady=5)
+root.mainloop()
+```
+
+@@ tk.o.exportselection
+Q: What does exportselection do (and why does my Listbox lose its selection)?
+aka: exportselection, listbox selection lost, entry selection clipboard, selection disappears click other widget
+A: With `exportselection=True` (the default) selecting text/items makes it the system selection, so selecting in another widget **clears** this one. Set `exportselection=False` on Listboxes (and Entries) that should keep their selection.
+see: tk.ref.listbox
+```py
+import tkinter as tk
+root = tk.Tk()
+a = tk.Listbox(root, exportselection=False, height=3); a.pack(side="left", padx=5, pady=5)
+b = tk.Listbox(root, exportselection=False, height=3); b.pack(side="left", padx=5)
+for lb in (a, b):
+    for x in "xyz":
+        lb.insert("end", x)
+a.selection_set(0); b.selection_set(1)
+print(a.curselection(), b.curselection())          # both keep their selection
+root.mainloop()
+```
+```text
+(0,) (1,)
+```
+
+@@ tk.o.font
+Q: What does the font option accept?
+aka: font option, font tuple, font string, font object option, font size bold
+A: A tuple `("Family", size, "bold", "italic", "underline", "overstrike")`, a string `"Family 12 bold"`, a named font (`"TkDefaultFont"`, `"TkFixedFont"`), or a `tkinter.font.Font` object (change the object and every widget using it updates).
+see: tk.z.colors-fonts, tk.font-object
+```py
+import tkinter as tk
+from tkinter import font
+root = tk.Tk()
+f = font.Font(family="Arial", size=12)
+tk.Label(root, text="shared font", font=f).pack()
+tk.Label(root, text="also shared", font=f).pack()
+tk.Label(root, text="fixed width", font="TkFixedFont").pack()
+f.configure(size=18)                 # both labels grow
+print(f.actual("size"))
+root.mainloop()
+```
+```text
+18
+```
+
+@@ tk.o.width-height
+Q: What do width and height mean (characters or pixels)?
+aka: width option, height option, width in characters, size of button, label width pixels, why width is not pixels
+A: For widgets showing **text** (Label, Button, Entry, Listbox, Text, Checkbutton...), `width` is in **characters** and `height` in **lines**. For Frame, Canvas, Toplevel, Scale `length`... they're **pixels**. A Label/Button with an image uses pixels too.
+see: tk.button-size
+```py
+import tkinter as tk
+root = tk.Tk()
+a = tk.Button(root, text="10 chars wide", width=10)
+c = tk.Canvas(root, width=100, height=20, bg="#ffd27a")
+a.pack(); c.pack()
+root.update()
+print(a["width"], a.winfo_width() > 10, c.winfo_width())
+root.mainloop()
+```
+
+@@ tk.o.highlight
+Q: What do highlightthickness, highlightbackground and highlightcolor do?
+aka: highlightthickness, highlightbackground, highlightcolor, focus border, remove canvas border, coloured border focus, focus ring
+A: The **focus ring** drawn around a widget: `highlightthickness` = its width (set `0` to remove the grey line around Canvas/Entry), `highlightcolor` = colour when the widget has focus, `highlightbackground` = colour when it doesn't. Also the easiest way to draw a coloured border.
+see: tk.border-color, tk.form.focus-highlight
+```py
+import tkinter as tk
+root = tk.Tk()
+tk.Canvas(root, width=150, height=40, bg="white", highlightthickness=0).pack(pady=4)
+e = tk.Entry(root, highlightthickness=3, highlightbackground="#ddd", highlightcolor="#c23b22"); e.pack(pady=4)
+e.focus_set()
+root.mainloop()
+```
+
+@@ tk.o.insert
+Q: What do insertbackground, insertwidth, insertontime and insertofftime do (the text cursor)?
+aka: insertbackground, cursor colour entry, insertwidth, blinking cursor, insertofftime, insertontime, caret colour, stop cursor blinking
+A: They style the text cursor (caret) in Entry/Text/Spinbox: `insertbackground` = colour (set it light on dark backgrounds!), `insertwidth` = thickness, `insertontime`/`insertofftime` = blink timing in ms (`insertofftime=0` stops blinking).
+see: tk.dark-mode
+```py
+import tkinter as tk
+root = tk.Tk()
+t = tk.Text(root, width=30, height=3, bg="#1b1a17", fg="white", insertbackground="#ffb000", insertwidth=3, insertofftime=0)
+t.pack(padx=10, pady=10); t.focus_set()
+root.mainloop()
+```
+
+@@ tk.o.justify-wrap
+Q: What do justify and wraplength do?
+aka: justify option, wraplength option, multi line label, wrap text label width pixels, justify left center right
+A: `wraplength` (pixels) wraps a Label's/Button's text onto new lines when it gets that wide; `justify` (`"left"`, `"center"`, `"right"`) lines up those lines with each other. `anchor` then places the whole block.
+see: tk.label-wrap, tk.label-align
+```py
+import tkinter as tk
+root = tk.Tk()
+text = "A fairly long sentence that needs to wrap over several lines."
+for j in ("left", "center", "right"):
+    tk.Label(root, text=text, wraplength=150, justify=j, relief="ridge").pack(side="left", padx=4, pady=10)
+root.mainloop()
+```
+
+@@ tk.o.padding
+Q: What do padx and pady do as widget options (versus in pack/grid)?
+aka: padx pady option, internal padding, padding inside widget, padx in button vs pack, ipadx vs padx
+A: As a **widget option** (`tk.Button(..., padx=20)`) it adds space **inside** the widget around its text (makes it bigger). In **pack/grid** (`.pack(padx=20)`) it adds space **outside** around the widget. `ipadx/ipady` in pack/grid is like the widget option.
+see: tk.padding
+```py
+import tkinter as tk
+root = tk.Tk()
+tk.Button(root, text="padx option = bigger button", padx=30, pady=10).pack()
+tk.Button(root, text="pack padx = space around").pack(padx=30, pady=10)
+root.mainloop()
+```
+
+@@ tk.o.repeat
+Q: What do repeatdelay and repeatinterval do?
+aka: repeatdelay, repeatinterval, auto repeat button, hold button repeat, scrollbar repeat speed
+A: For Button, Scale, Scrollbar and Spinbox: when held down, wait `repeatdelay` ms, then repeat the action every `repeatinterval` ms. On a Button, `0` (the default) means no repeating.
+see: tk.ref.button
+```py
+import tkinter as tk
+root = tk.Tk()
+n = tk.IntVar()
+tk.Label(root, textvariable=n, font=("Arial", 20)).pack()
+tk.Button(root, text="hold me", repeatdelay=300, repeatinterval=50, command=lambda: n.set(n.get() + 1)).pack(padx=40, pady=10)
+root.mainloop()
+```
+
+@@ tk.o.select
+Q: What do selectbackground, selectforeground, selectborderwidth, selectcolor and selectmode do?
+aka: selectbackground, selectforeground, selection colour, selectcolor checkbox, selectmode listbox, highlight selected text colour
+A: `selectbackground`/`selectforeground` = colours of selected text/items (Entry, Text, Listbox, Canvas text); `selectborderwidth` = border around selection; `selectcolor` = the box/dot colour of Checkbutton/Radiobutton (and menu indicators); `selectmode` = Listbox selection style (`browse`, `single`, `multiple`, `extended`).
+see: tk.listbox-multi, tk.ref.checkbutton
+```py
+import tkinter as tk
+root = tk.Tk()
+lb = tk.Listbox(root, selectmode="multiple", selectbackground="#c23b22", selectforeground="white", height=4)
+for x in ("one", "two", "three", "four"):
+    lb.insert("end", x)
+lb.selection_set(0); lb.selection_set(2); lb.pack(side="left", padx=10, pady=10)
+tk.Checkbutton(root, text="box colour", selectcolor="#ffd27a").pack(side="left")
+print(lb.curselection())
+root.mainloop()
+```
+```text
+(0, 2)
+```
+
+@@ tk.o.state
+Q: What values does the state option take on each widget?
+aka: state option values, normal disabled active readonly hidden, state per widget
+A: Most widgets: `"normal"` or `"disabled"`. Buttons also `"active"`. Entry/Spinbox (and ttk.Combobox): `"readonly"`. Canvas **items** and the whole Canvas: `"normal"`, `"disabled"`, `"hidden"`. Menu items: via `entryconfig(state=...)`. ttk widgets use `w.state([...])`.
+see: tk.ref.state
+```py
+import tkinter as tk
+root = tk.Tk()
+c = tk.Canvas(root, width=60, height=40); c.pack()
+dot = c.create_oval(10, 10, 30, 30, fill="red", state="hidden")
+c.itemconfig(dot, state="normal")
+e = tk.Entry(root, state="readonly"); e.pack()
+print(c.itemcget(dot, "state"), e["state"])
+root.mainloop()
+```
+```text
+normal readonly
+```
+
+@@ tk.o.takefocus
+Q: What does takefocus do?
+aka: takefocus, skip tab, focusable, no focus widget, tab order skip, takefocus 0 1
+A: Whether Tab can move to this widget: `True`/`1` = yes, `False`/`0` = skip it, `""` (default) = let Tk decide (yes if it can be typed into or clicked). Clicking may still focus it.
+see: tk.form.tab-order
+```py
+import tkinter as tk
+root = tk.Tk()
+a = tk.Entry(root); b = tk.Button(root, text="skipped", takefocus=False); c = tk.Entry(root)
+for w in (a, b, c):
+    w.pack()
+root.update()
+print(a.tk_focusNext() is c)
+root.mainloop()
+```
+```text
+True
+```
+
+@@ tk.o.text-vars
+Q: What do text, textvariable, variable, value, onvalue and offvalue do?
+aka: text option, textvariable option, variable option, value option radiobutton, onvalue offvalue checkbutton
+A: `text` = fixed text; `textvariable` = a StringVar whose value is shown and kept in sync (Label, Button, Entry, Spinbox...); `variable` = the variable a Checkbutton/Radiobutton/Scale/Listbox(`listvariable`) controls; `value` = what a Radiobutton puts in it; `onvalue`/`offvalue` = what a Checkbutton puts in it.
+see: tk.stringvar, tk.ref.checkbutton
+```py
+import tkinter as tk
+root = tk.Tk()
+msg = tk.StringVar(value="hello")
+size = tk.StringVar(value="M")
+tk.Label(root, textvariable=msg).pack()
+for s in "SML":
+    tk.Radiobutton(root, text=s, value=s, variable=size).pack(side="left")
+msg.set("changed via variable"); size.set("L")
+print(msg.get(), size.get())
+root.mainloop()
+```
+```text
+changed via variable L
+```
+
+@@ tk.o.underline
+Q: What does the underline option do (keyboard shortcut letters)?
+aka: underline option, underline letter, alt shortcut underline, mnemonic, menu underline
+A: `underline=n` underlines the character at index `n` of the text, showing a keyboard shortcut (Alt+letter in menus). For buttons it only **shows** the line; bind the key yourself.
+see: tk.menubar
+```py
+import tkinter as tk
+root = tk.Tk()
+b = tk.Button(root, text="Save", underline=0, command=lambda: print("saved"))
+b.pack(padx=40, pady=20)
+root.bind("<Alt-s>", lambda e: b.invoke())
+root.mainloop()
+```
+
+@@ tk.o.scrollcommands
+Q: What do xscrollcommand, yscrollcommand, xscrollincrement and yscrollincrement do?
+aka: xscrollcommand, yscrollcommand, scrollincrement, scroll speed canvas, connect scrollbar option
+A: `yscrollcommand=scrollbar.set` makes the widget tell the scrollbar how far it's scrolled (and the scrollbar's `command=widget.yview` scrolls it back). On a Canvas, `xscrollincrement`/`yscrollincrement` set how many pixels one scroll "unit" moves.
+see: tk.scrollbar, tk.ref.scrollbar
+```py
+import tkinter as tk
+root = tk.Tk()
+c = tk.Canvas(root, height=100, scrollregion=(0, 0, 400, 1000), yscrollincrement=20, highlightthickness=0)
+s = tk.Scrollbar(root, command=c.yview)
+c.config(yscrollcommand=s.set)
+c.pack(side="left"); s.pack(side="right", fill="y")
+c.yview_scroll(3, "units")
+print(c.canvasy(0))                    # 3 units x 20 px
+root.mainloop()
+```
+```text
+60.0
+```
+
+@@ tk.o.placeholder
+Q: Does Entry have a built-in placeholder option?
+aka: placeholder option, placeholderforeground, entry hint text tk 9, built in placeholder
+A: In **Tk 9** (Python 3.13+ installers, or any Python with Tk 9) yes: `placeholder="hint"` and `placeholderforeground=` on Entry/Spinbox (and ttk.Entry). It disappears when there's text. With Tk 8.6, fake it (see the placeholder answer).
+see: tk.entry-placeholder, tk.tk-version
+```py
+import tkinter as tk
+root = tk.Tk()
+if tk.TkVersion >= 9.0:
+    e = tk.Entry(root, placeholder="Search…", placeholderforeground="#999", width=24)
+else:
+    e = tk.Entry(root, width=24)
+e.pack(padx=20, pady=20)
+print(e.get() == "")              # the placeholder is not real text
+root.mainloop()
+```
+```text
+True
+```
+
+@@ tk.o.indicatoron
+Q: What does indicatoron do (and offrelief, overrelief)?
+aka: indicatoron, checkbutton without box, radio as button, offrelief, overrelief, toggle button look
+A: `indicatoron=False` hides the tick box/dot so Checkbuttons/Radiobuttons look like buttons that stay pressed when on (and Menubuttons lose their arrow). `offrelief` = relief when off; `overrelief` = relief while hovered (Buttons too).
+see: tk.checkbutton-switch, tk.ref.radiobutton
+```py
+import tkinter as tk
+root = tk.Tk()
+v = tk.StringVar(value="B")
+for x in "ABC":
+    tk.Radiobutton(root, text=x, value=x, variable=v, indicatoron=False, width=5, offrelief="flat", overrelief="raised").pack(side="left", padx=2, pady=10)
+root.mainloop()
+```
+
+@@ tk.o.orient-length
+Q: What do orient, length, from_, to, resolution and tickinterval do (Scale, Scrollbar, PanedWindow)?
+aka: orient option, length option, from_ to, why from_ underscore, resolution option, tickinterval option
+A: `orient` = `"horizontal"` or `"vertical"`; `length` = size in pixels along that direction; `from_`/`to` = the range (the underscore is because `from` is a Python keyword); `resolution` = step; `tickinterval` = numbers along the scale.
+see: tk.ref.scale
+```py
+import tkinter as tk
+root = tk.Tk()
+s = tk.Scale(root, orient="horizontal", length=250, from_=-1, to=1, resolution=0.5, tickinterval=0.5)
+s.pack(padx=10, pady=10)
+s.set(0.5)
+print(s.get())
+root.mainloop()
+```
+```text
+0.5
+```
+
+@@ tk.o.text-widget
+Q: What are the Text-only options (wrap, undo, maxundo, autoseparators, spacing1/2/3, tabs, blockcursor, startline, endline, inactiveselectbackground, tabstyle)?
+aka: text options list, autoseparators, maxundo, blockcursor, inactiveselectbackground, startline endline, tabstyle, spacing2
+A: `wrap` (`none`/`char`/`word`); `undo`, `maxundo` (limit), `autoseparators` (group edits into undo steps automatically); `spacing1/2/3` (above / between wrapped lines / below); `tabs`, `tabstyle` (`tabular` or `wordprocessor`); `blockcursor` (block-shaped cursor); `inactiveselectbackground` (selection colour when unfocused); `startline`/`endline` (show only part of the text, for peers).
+see: tk.ref.text, tk.tx.tab-indent
+```py
+import tkinter as tk
+root = tk.Tk()
+t = tk.Text(root, width=30, height=4, wrap="word", undo=True, maxundo=50, autoseparators=True,
+            spacing1=4, spacing3=4, blockcursor=True, inactiveselectbackground="#ddd")
+t.pack(padx=10, pady=10)
+t.insert("1.0", "type here; Ctrl+Z undoes")
+print(t["maxundo"], t["blockcursor"])
+root.mainloop()
+```
+```text
+50 1
+```
+
+@@ tk.o.canvas-options
+Q: What are the Canvas-only options (scrollregion, closeenough, confine, xscrollincrement)?
+aka: canvas options, scrollregion option, closeenough, confine canvas, canvas confine
+A: `scrollregion=(x1, y1, x2, y2)` = the area you can scroll over; `confine=True` (default) stops scrolling outside it; `closeenough` = how many pixels away the mouse can be and still count as "over" an item (helps clicking thin lines).
+see: tk.canvas-scroll
+```py
+import tkinter as tk
+root = tk.Tk()
+c = tk.Canvas(root, width=200, height=100, bg="white", scrollregion=(0, 0, 400, 300), closeenough=4.0)
+c.pack()
+line = c.create_line(10, 50, 190, 50)
+c.tag_bind(line, "<Enter>", lambda e: c.itemconfig(line, fill="red"))
+print(c["scrollregion"], c["closeenough"])
+root.mainloop()
+```
+```text
+0 0 400 300 4.0
+```
+
+@@ tk.o.menu-options
+Q: What are the Menu options (tearoff, tearoffcommand, postcommand, title, type, activeborderwidth)?
+aka: tearoff option, tearoff=0, dashed line menu, postcommand, menu title, menu type, tearoffcommand
+A: `tearoff=0` removes the dashed line at the top (which lets users "tear" the menu into its own window); `postcommand` runs just before the menu opens; `title` = title of a torn-off menu; `type` = `"normal"`, `"menubar"`, `"tearoff"`; `activeborderwidth` = border of the highlighted item.
+see: tk.ref.menu, tk.menubar
+```py
+import tkinter as tk
+root = tk.Tk()
+bar = tk.Menu(root)
+m = tk.Menu(bar, tearoff=0, postcommand=lambda: print("menu opening"))
+m.add_command(label="Hello")
+bar.add_cascade(label="File", menu=m)
+root.config(menu=bar)
+print(m["tearoff"], m.index("end"))
+root.mainloop()
+```
+```text
+0 0
+```
+
+@@ tk.o.panedwindow-options
+Q: What are the PanedWindow options (sashwidth, sashrelief, sashpad, handlesize, showhandle, opaqueresize, proxybackground)?
+aka: sashwidth, sashrelief, sashpad, showhandle, handlesize, handlepad, opaqueresize, proxy options paned
+A: `sashwidth`/`sashrelief`/`sashpad`/`sashcursor` style the draggable divider; `showhandle`, `handlesize`, `handlepad` add a little square grip; `opaqueresize=False` shows a "proxy" line while dragging (styled with `proxybackground`, `proxyrelief`, `proxyborderwidth`) and resizes on release.
+see: tk.ref.panedwindow
+```py
+import tkinter as tk
+root = tk.Tk()
+pw = tk.PanedWindow(root, sashwidth=8, sashrelief="raised", showhandle=True, handlesize=10, opaqueresize=False, proxybackground="#c23b22")
+pw.pack(fill="both", expand=True)
+pw.add(tk.Label(pw, text="left", bg="#ffd27a", width=15)); pw.add(tk.Label(pw, text="right", bg="#9bd", width=15))
+print(pw["sashwidth"], pw["opaqueresize"])
+root.mainloop()
+```
+```text
+8 0
+```
+
+@@ tk.o.window-options
+Q: What are the Frame/Toplevel-only options (class, container, colormap, visual, use, screen, menu, backgroundimage, tile)?
+aka: class option toplevel, container option, use option, screen option, backgroundimage frame, tile option tk 9, menu option toplevel
+A: Rare ones: `class_` (a custom class name for the option database), `container`/`use` (embed another app's window inside a frame), `screen` (open on another X display), `colormap`/`visual` (old colour hardware), `menu` (Toplevel's menubar), and in Tk 9 `backgroundimage` + `tile` (a background image for a Frame/Toplevel, tiled or not).
+see: tk.bg-image
+```py
+import tkinter as tk
+root = tk.Tk()
+img = tk.PhotoImage(width=20, height=20)
+img.put("#ffd27a", to=(0, 0, 10, 10)); img.put("#9bd", to=(10, 10, 20, 20))
+f = tk.Frame(root, width=200, height=100, class_="Panel")
+if tk.TkVersion >= 9.0:
+    f.config(backgroundimage=img, tile=True)
+f.pack(padx=10, pady=10)
+root.img = img
+print(f.winfo_class())
+root.mainloop()
+```
+```text
+Panel
+```
+
+@@ tk.o.listbox-options
+Q: What are the Listbox-only options (activestyle, listvariable, selectmode, setgrid)?
+aka: activestyle, listvariable, setgrid, listbox options list, dotbox underline none
+A: `activestyle` = how the keyboard-active item is marked (`"dotbox"`, `"underline"`, `"none"`); `listvariable` = a variable holding the items (set it to a list/tuple); `selectmode`; `setgrid` = resize the window in whole rows.
+see: tk.ref.listbox
+```py
+import tkinter as tk
+root = tk.Tk()
+items = tk.Variable(value=("red", "green", "blue"))
+lb = tk.Listbox(root, listvariable=items, activestyle="none", height=3); lb.pack(padx=20, pady=10)
+items.set(("one", "two"))
+print(lb.get(0, "end"))
+root.mainloop()
+```
+```text
+('one', 'two')
+```
+
+@@ tk.o.spinbox-options
+Q: What are the Spinbox-only options (buttonbackground, buttoncursor, buttondownrelief, buttonuprelief, format, increment, values, wrap)?
+aka: spinbox button colour, buttonbackground, buttondownrelief, spinbox format option, spinbox values option
+A: `values` or `from_`/`to`/`increment` set the choices; `format` (e.g. `"%05.1f"`) formats numbers; `wrap` loops around; `buttonbackground`, `buttoncursor`, `buttonuprelief`, `buttondownrelief` style the arrows.
+see: tk.ref.spinbox
+```py
+import tkinter as tk
+root = tk.Tk()
+s = tk.Spinbox(root, from_=0, to=5, increment=0.5, format="%04.1f", wrap=True, buttonbackground="#ffd27a", width=6)
+s.pack(padx=30, pady=20)
+print(s.get())
+root.mainloop()
+```
+```text
+00.0
+```
+
+@@ tk.o.scale-options
+Q: What are the Scale-only options (bigincrement, digits, label, showvalue, sliderlength, sliderrelief, troughcolor)?
+aka: bigincrement, digits scale, scale label, showvalue, sliderlength, sliderrelief, troughcolor
+A: `label` = title; `showvalue=False` hides the number; `digits` = significant digits shown; `bigincrement` = jump with Ctrl+arrow; `sliderlength`/`sliderrelief` = the knob; `troughcolor` = the groove (Scrollbar has it too).
+see: tk.ref.scale
+```py
+import tkinter as tk
+root = tk.Tk()
+s = tk.Scale(root, label="Speed", from_=0, to=100, orient="horizontal", length=220, sliderlength=15,
+             sliderrelief="flat", troughcolor="#ffd27a", bigincrement=10, showvalue=True)
+s.pack(padx=10, pady=10)
+print(s["label"], s["bigincrement"])
+root.mainloop()
+```
+```text
+Speed 10.0
+```
+
+@@ tk.o.checkbutton-images
+Q: What are selectimage, tristateimage and tristatevalue (Checkbutton/Radiobutton)?
+aka: selectimage, tristateimage, tristatevalue, custom checkbox image, image when checked, third state checkbox
+A: `selectimage` = image shown when ticked (with `image=` for unticked) for fully custom checkboxes; `tristatevalue` = a variable value that shows a third "half" state, drawn with `tristateimage`.
+see: tk.checkbutton
+```py
+import tkinter as tk
+root = tk.Tk()
+off = tk.PhotoImage(width=16, height=16); off.put("#ccc", to=(0, 0, 16, 16))
+on = tk.PhotoImage(width=16, height=16); on.put("#2e7d4f", to=(0, 0, 16, 16))
+v = tk.BooleanVar()
+c = tk.Checkbutton(root, image=off, selectimage=on, indicatoron=False, variable=v, bd=0)
+c.pack(padx=40, pady=20)
+c.select()
+print(v.get())
+root.imgs = (on, off)
+root.mainloop()
+```
+```text
+True
+```
+
+@@ tk.o.validate-options
+Q: What are validate, validatecommand (vcmd) and invalidcommand (invcmd)?
+aka: validate option, vcmd, invcmd, invalidcommand, validation options entry
+A: `validate` = when to check (`"key"`, `"focusout"`, `"all"`...); `validatecommand`/`vcmd` = a registered function returning True to accept; `invalidcommand`/`invcmd` = called when it returns False (e.g. to beep or show a message).
+see: tk.form.validate-codes
+```py
+import tkinter as tk
+root = tk.Tk()
+rejected = []
+vcmd = (root.register(lambda p: p.isdigit() or p == ""), "%P")
+invcmd = (root.register(lambda s: rejected.append(s)), "%S")
+e = tk.Entry(root, validate="key", vcmd=vcmd, invcmd=invcmd); e.pack(padx=20, pady=20)
+e.insert(0, "12"); e.insert("end", "x")
+print(e.get(), rejected)
+root.mainloop()
+```
+```text
+12 ['x']
+```
+
+@@ tk.o.message-labelframe
+Q: What are the Message/LabelFrame/Menubutton options (aspect, labelanchor, labelwidget, direction, menu)?
+aka: aspect option, labelanchor, labelwidget, direction menubutton, menu option menubutton
+A: Message `aspect` = width/height ratio ×100; LabelFrame `labelanchor` (where the title sits, e.g. `"n"`) and `labelwidget` (any widget as the title); Menubutton `direction` (`"below"`, `"above"`, `"left"`, `"right"`, `"flush"`) and `menu` (its Menu).
+see: tk.ref.frame, tk.ref.menubutton, tk.ref.message
+```py
+import tkinter as tk
+root = tk.Tk()
+lf = tk.LabelFrame(root, text="Centred title", labelanchor="n", padx=10, pady=5); lf.pack(padx=10, pady=10)
+tk.Message(lf, text="A message keeps a nice shape automatically.", aspect=400).pack()
+print(lf["labelanchor"])
+root.mainloop()
+```
+```text
+n
+```
