@@ -1,0 +1,361 @@
+# tk-canvas | Canvas and drawing | Shapes, text, moving things, collisions, drawing apps | tkinter
+
+@@ tk.canvas
+Q: How do I draw shapes (lines, rectangles, circles)?
+aka: canvas, draw shapes, draw circle, draw rectangle, draw line, create_oval, create_rectangle, create_line, graphics tkinter
+A: Make a `tk.Canvas` and use `create_line`, `create_rectangle`, `create_oval`, `create_polygon`, `create_arc`, `create_text`. Coordinates are pixels from the top-left corner (y goes **down**).
+see: tk.canvas-circle, tk.canvas-move, tk.canvas-text
+```py
+import tkinter as tk
+
+root = tk.Tk()
+c = tk.Canvas(root, width=320, height=220, bg="white")
+c.pack()
+c.create_line(10, 10, 310, 10, width=3, fill="black")
+c.create_rectangle(20, 30, 120, 100, fill="#fc6", outline="black", width=2)
+c.create_oval(150, 30, 220, 100, fill="#c23b22", outline="")          # circle: equal width & height
+c.create_polygon(250, 100, 280, 30, 310, 100, fill="#2c6a52")
+c.create_arc(20, 120, 120, 210, start=0, extent=270, fill="#3f5a7a")
+c.create_text(220, 165, text="Hello canvas", font=("Arial", 16))
+root.mainloop()
+```
+Every `create_...` returns an **id** number; keep it to move, change or delete that shape later.
+
+@@ tk.canvas-circle
+Q: How do I draw a circle from a centre and radius?
+aka: circle center radius, draw circle at point, create_circle
+A: `create_oval` takes a bounding box, so convert: `(x - r, y - r, x + r, y + r)`.
+```py
+import tkinter as tk
+
+def circle(canvas, x, y, r, **kw):
+    return canvas.create_oval(x - r, y - r, x + r, y + r, **kw)
+
+root = tk.Tk()
+c = tk.Canvas(root, width=200, height=200, bg="white")
+c.pack()
+for r in range(90, 0, -15):
+    circle(c, 100, 100, r, outline="#c23b22", width=2)
+root.mainloop()
+```
+
+@@ tk.canvas-move
+Q: How do I move, change or delete a shape on the Canvas?
+aka: move shape, canvas move, coords, itemconfig, delete shape, canvas delete all, change color of shape
+A: `c.move(id, dx, dy)` moves by an amount; `c.coords(id, x1, y1, x2, y2)` sets a new position; `c.itemconfig(id, fill="red")` changes options; `c.delete(id)` removes it (`c.delete("all")` clears everything).
+see: tk.game-loop, tk.canvas-tags
+```py
+import tkinter as tk
+
+root = tk.Tk()
+c = tk.Canvas(root, width=300, height=120, bg="white")
+c.pack()
+box = c.create_rectangle(10, 40, 50, 80, fill="#fc6")
+
+tk.Button(root, text="Move right", command=lambda: c.move(box, 20, 0)).pack(side="left", padx=4, pady=6)
+tk.Button(root, text="Red", command=lambda: c.itemconfig(box, fill="red")).pack(side="left", padx=4)
+tk.Button(root, text="Reset", command=lambda: c.coords(box, 10, 40, 50, 80)).pack(side="left", padx=4)
+tk.Button(root, text="Delete", command=lambda: c.delete(box)).pack(side="left", padx=4)
+root.mainloop()
+```
+`c.coords(id)` with no numbers returns the current position as a list.
+
+@@ tk.canvas-text
+Q: How do I put text on a Canvas and change it?
+aka: canvas text, create_text, update canvas text, score on canvas, text anchor canvas
+A: `t = c.create_text(x, y, text="...", anchor="nw")`, change with `c.itemconfig(t, text="new")`. `anchor` says which point of the text sits at (x, y).
+```py
+import tkinter as tk
+
+root = tk.Tk()
+c = tk.Canvas(root, width=260, height=100, bg="#111")
+c.pack()
+score = 0
+label = c.create_text(10, 10, text="Score: 0", anchor="nw", fill="white", font=("Courier", 16))
+
+def point():
+    global score
+    score += 10
+    c.itemconfig(label, text=f"Score: {score}")
+
+tk.Button(root, text="+10", command=point).pack(pady=6)
+root.mainloop()
+```
+
+@@ tk.canvas-click
+Q: How do I tell which shape was clicked on a Canvas?
+aka: click on shape, canvas item click, tag_bind, find_closest, find_overlapping, clicked item
+A: Either bind on the item itself with `c.tag_bind(id, "<Button-1>", f)`, or on the canvas and use `c.find_closest(event.x, event.y)` / `c.find_overlapping(...)`.
+see: tk.canvas-tags
+```py
+import tkinter as tk
+import random
+
+root = tk.Tk()
+c = tk.Canvas(root, width=300, height=200, bg="white")
+c.pack()
+for _ in range(8):
+    x, y = random.randint(20, 280), random.randint(20, 180)
+    c.create_oval(x - 15, y - 15, x + 15, y + 15, fill="#fc6", tags="dot")
+
+def clicked(event):
+    hit = c.find_overlapping(event.x, event.y, event.x, event.y)
+    for item in hit:
+        if "dot" in c.gettags(item):
+            c.itemconfig(item, fill="#c23b22")
+
+c.bind("<Button-1>", clicked)
+root.mainloop()
+```
+`find_closest` always returns *something* (the nearest item), even if you clicked empty space; `find_overlapping` only returns items under the point.
+
+@@ tk.canvas-tags
+Q: What are canvas tags and how do I use them?
+aka: canvas tags, group shapes, move many shapes, tag_bind, delete by tag, addtag
+A: A tag is a name you give to one or many items (`tags="enemy"`). Most canvas methods accept a tag instead of an id, so `c.move("enemy", 5, 0)` moves all of them.
+```py
+import tkinter as tk
+
+root = tk.Tk()
+c = tk.Canvas(root, width=320, height=120, bg="black")
+c.pack()
+for i in range(5):
+    c.create_rectangle(20 + i * 50, 20, 50 + i * 50, 40, fill="#c23b22", tags="enemy")
+c.create_rectangle(150, 90, 170, 105, fill="#fc6", tags="player")
+
+def step():
+    c.move("enemy", 0, 2)
+    if c.coords(c.find_withtag("enemy")[0])[3] < 90:
+        root.after(30, step)
+
+c.tag_bind("enemy", "<Button-1>", lambda e: c.delete("current"))   # "current" = item under mouse
+step()
+root.mainloop()
+```
+
+@@ tk.canvas-drag
+Q: How do I drag shapes around on a Canvas?
+aka: drag canvas item, move shape with mouse, drag and drop canvas
+A: On press, find the item under the mouse; on motion, `move` it by the mouse's change in position.
+see: tk.drag
+```py
+import tkinter as tk
+
+root = tk.Tk()
+c = tk.Canvas(root, width=320, height=220, bg="white")
+c.pack()
+c.create_rectangle(20, 20, 80, 70, fill="#fc6", tags="drag")
+c.create_oval(120, 60, 180, 120, fill="#c23b22", tags="drag")
+drag = {"item": None, "x": 0, "y": 0}
+
+def press(e):
+    items = c.find_overlapping(e.x, e.y, e.x, e.y)
+    drag["item"] = items[-1] if items else None
+    drag["x"], drag["y"] = e.x, e.y
+
+def motion(e):
+    if drag["item"]:
+        c.move(drag["item"], e.x - drag["x"], e.y - drag["y"])
+        c.tag_raise(drag["item"])
+        drag["x"], drag["y"] = e.x, e.y
+
+c.tag_bind("drag", "<ButtonPress-1>", press)
+c.tag_bind("drag", "<B1-Motion>", motion)
+root.mainloop()
+```
+
+@@ tk.collision
+Q: How do I check if two shapes touch (collision detection)?
+aka: collision, hit detection, overlap, bbox, find_overlapping collision, game collision
+A: Compare their bounding boxes from `c.bbox(id)` or `c.coords(id)`: two rectangles overlap if each one starts before the other ends, on both axes.
+see: tk.game-loop
+```py
+import tkinter as tk
+
+def overlap(a, b):
+    ax1, ay1, ax2, ay2 = a
+    bx1, by1, bx2, by2 = b
+    return ax1 < bx2 and bx1 < ax2 and ay1 < by2 and by1 < ay2
+
+root = tk.Tk()
+c = tk.Canvas(root, width=300, height=100, bg="white")
+c.pack()
+player = c.create_rectangle(10, 40, 30, 60, fill="#3f5a7a")
+wall = c.create_rectangle(200, 20, 220, 80, fill="#c23b22")
+
+def step():
+    c.move(player, 3, 0)
+    if overlap(c.coords(player), c.coords(wall)):
+        c.itemconfig(player, fill="orange")
+        return
+    root.after(20, step)
+
+step()
+root.mainloop()
+```
+For circles compare the distance between centres with the sum of the radii.
+
+@@ tk.canvas-paint
+Q: How do I make a simple drawing (paint) program?
+aka: paint app, draw with mouse, freehand drawing, sketch pad, drawing app
+A: On `<B1-Motion>` draw a line from the last mouse point to the new one.
+see: tk.canvas-save
+```py
+import tkinter as tk
+
+root = tk.Tk()
+root.title("Sketch")
+c = tk.Canvas(root, width=400, height=300, bg="white", cursor="pencil")
+c.pack(fill="both", expand=True)
+last = {"x": None, "y": None}
+colour = tk.StringVar(value="black")
+
+def down(e):
+    last["x"], last["y"] = e.x, e.y
+
+def drag(e):
+    c.create_line(last["x"], last["y"], e.x, e.y, fill=colour.get(), width=4, capstyle="round", smooth=True)
+    last["x"], last["y"] = e.x, e.y
+
+c.bind("<Button-1>", down)
+c.bind("<B1-Motion>", drag)
+bar = tk.Frame(root); bar.pack(fill="x")
+for col in ("black", "red", "blue", "green"):
+    tk.Radiobutton(bar, text=col, value=col, variable=colour).pack(side="left")
+tk.Button(bar, text="Clear", command=lambda: c.delete("all")).pack(side="right")
+root.mainloop()
+```
+
+@@ tk.canvas-save
+Q: How do I save what's on a Canvas as an image?
+aka: save canvas, export canvas png, canvas to image, postscript, screenshot canvas
+A: Built in: `c.postscript(file="out.eps")` (vector EPS). For PNG, either draw the same shapes onto a Pillow image as you go, or grab the screen area with `PIL.ImageGrab`.
+```py
+import tkinter as tk
+
+root = tk.Tk()
+c = tk.Canvas(root, width=200, height=120, bg="white")
+c.pack()
+c.create_oval(40, 20, 160, 100, fill="#fc6")
+root.update()
+c.postscript(file="drawing.eps", colormode="color")
+print("saved drawing.eps")
+root.mainloop()
+```
+With Pillow installed: `ImageGrab.grab(bbox=(x, y, x + w, y + h))` where `x = c.winfo_rootx()` etc. (works on Windows/macOS; on Linux needs X11).
+
+@@ tk.canvas-image
+Q: How do I show an image on a Canvas?
+aka: canvas image, create_image, background image canvas, sprite, picture on canvas
+A: `c.create_image(x, y, image=photo, anchor="nw")`. Keep a reference to the `PhotoImage` or it disappears.
+see: tk.photoimage, tk.err.image-gone, tk.bg-image
+```py
+import tkinter as tk
+
+root = tk.Tk()
+c = tk.Canvas(root, width=200, height=150, bg="white")
+c.pack()
+sprite = tk.PhotoImage(file="photo.png")
+item = c.create_image(20, 20, image=sprite, anchor="nw")
+c.sprite = sprite                   # keep it alive
+tk.Button(root, text="Move", command=lambda: c.move(item, 10, 5)).pack()
+root.mainloop()
+```
+
+@@ tk.canvas-scroll
+Q: How do I make a Canvas bigger than the window and scroll it?
+aka: scroll canvas, scrollregion, large canvas, canvas scrollbar, pan canvas
+A: Set `scrollregion=(0, 0, W, H)` to the full size and connect scrollbars with `xview`/`yview`. Use `c.canvasx(event.x)` to turn a click into canvas coordinates.
+see: tk.scrollbar
+```py
+import tkinter as tk
+
+root = tk.Tk()
+c = tk.Canvas(root, width=300, height=200, bg="white", scrollregion=(0, 0, 1000, 1000))
+ys = tk.Scrollbar(root, command=c.yview)
+xs = tk.Scrollbar(root, orient="horizontal", command=c.xview)
+c.config(yscrollcommand=ys.set, xscrollcommand=xs.set)
+c.grid(row=0, column=0); ys.grid(row=0, column=1, sticky="ns"); xs.grid(row=1, column=0, sticky="ew")
+for i in range(0, 1000, 100):
+    c.create_text(i + 50, i + 50, text=str(i))
+c.bind("<Button-1>", lambda e: print(c.canvasx(e.x), c.canvasy(e.y)))
+root.mainloop()
+```
+
+@@ tk.canvas-grid
+Q: How do I draw a grid (board) on a Canvas and know which cell was clicked?
+aka: grid on canvas, board game, chess board, cells, tile map, which square clicked
+A: Draw rectangles in two loops, size `CELL`. On click, the cell is `event.x // CELL, event.y // CELL`.
+```py
+import tkinter as tk
+
+CELL, N = 40, 8
+root = tk.Tk()
+c = tk.Canvas(root, width=CELL * N, height=CELL * N)
+c.pack()
+cells = {}
+for row in range(N):
+    for col in range(N):
+        colour = "#e9e2d4" if (row + col) % 2 == 0 else "#6b655a"
+        cells[row, col] = c.create_rectangle(col * CELL, row * CELL, (col + 1) * CELL, (row + 1) * CELL, fill=colour, outline="")
+
+def click(e):
+    col, row = e.x // CELL, e.y // CELL
+    if (row, col) in cells:
+        c.itemconfig(cells[row, col], fill="#c23b22")
+
+c.bind("<Button-1>", click)
+root.mainloop()
+```
+
+@@ tk.canvas-layers
+Q: How do I put one shape in front of or behind another?
+aka: z order, bring to front, send to back, tag_raise, tag_lower, layer order
+A: Later items are drawn on top. Change it with `c.tag_raise(id)` (to front) or `c.tag_lower(id)` (to back).
+```py
+import tkinter as tk
+
+root = tk.Tk()
+c = tk.Canvas(root, width=200, height=150, bg="white")
+c.pack()
+a = c.create_rectangle(30, 30, 120, 110, fill="#fc6")
+b = c.create_rectangle(70, 50, 170, 130, fill="#3f5a7a")
+tk.Button(root, text="Yellow to front", command=lambda: c.tag_raise(a)).pack(side="left")
+tk.Button(root, text="Yellow to back", command=lambda: c.tag_lower(a)).pack(side="left")
+root.mainloop()
+```
+
+@@ tk.canvas-chart
+Q: How do I draw a simple bar chart?
+aka: bar chart, graph, chart tkinter, plot data, matplotlib tkinter
+A: Scale each value to the canvas height and draw rectangles. For real charts embed matplotlib with `FigureCanvasTkAgg`.
+```py
+import tkinter as tk
+
+data = {"Mon": 4, "Tue": 7, "Wed": 3, "Thu": 9, "Fri": 6}
+W, H, PAD = 320, 200, 24
+root = tk.Tk()
+c = tk.Canvas(root, width=W, height=H, bg="white")
+c.pack()
+top = max(data.values())
+bw = (W - 2 * PAD) / len(data)
+for i, (day, v) in enumerate(data.items()):
+    x = PAD + i * bw
+    h = (H - 2 * PAD) * v / top
+    c.create_rectangle(x + 6, H - PAD - h, x + bw - 6, H - PAD, fill="#c23b22", outline="")
+    c.create_text(x + bw / 2, H - PAD + 10, text=day)
+    c.create_text(x + bw / 2, H - PAD - h - 8, text=str(v))
+root.mainloop()
+```
+Matplotlib version (needs `pip install matplotlib`):
+```py norun
+import tkinter as tk
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+
+root = tk.Tk()
+fig = Figure(figsize=(4, 3))
+fig.add_subplot().plot([1, 2, 3, 4], [1, 4, 9, 16])
+FigureCanvasTkAgg(fig, master=root).get_tk_widget().pack(fill="both", expand=True)
+root.mainloop()
+```

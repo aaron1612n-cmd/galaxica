@@ -1,0 +1,209 @@
+# tk-errors | tkinter errors | What tkinter error messages mean and how to fix them | tkinter
+
+@@ tk.err.pyimage
+Q: TclError: image "pyimage1" doesn't exist
+aka: pyimage doesn't exist, pyimage1, pyimage2, image doesn't exist toplevel, image in second window
+err: image "pyimage*" doesn't exist
+A: You have **two** `tk.Tk()` windows. An image belongs to the Tk it was made in. Make the second window a `tk.Toplevel` instead, or pass `master=` when creating the image.
+see: tk.toplevel
+```py bad
+root = tk.Tk()
+win = tk.Tk()                          # second Tk: wrong
+img = tk.PhotoImage(file="photo.png")  # belongs to root (the first Tk)
+tk.Label(win, image=img).pack()        # TclError: image "pyimage1" doesn't exist
+```
+```py
+import tkinter as tk
+
+root = tk.Tk()
+win = tk.Toplevel(root)
+img = tk.PhotoImage(file="photo.png")
+tk.Label(win, image=img).pack()
+root.mainloop()
+```
+It also happens in IDLE or Jupyter after re-running a script without closing the previous window.
+
+@@ tk.err.unknown-option
+Q: TclError: unknown option "-something"
+aka: unknown option, bad option, -bg unknown option ttk, -font unknown option, -command unknown option
+err: unknown option "-*"
+A: That widget doesn't have that option. Usually: using `bg`/`fg`/`font` on a **ttk** widget (use a Style), a typo (`txt=` instead of `text=`), or an option meant for `pack`/`grid` passed to the widget (or the other way round).
+see: tk.ttk-style
+```py bad
+ttk.Button(root, text="Hi", bg="red")       # ttk: no -bg
+tk.Label(root, text="Hi", padding=10)       # tk.Label has padx/pady, not padding
+tk.Button(root, text="Hi").pack(sticky="w") # sticky is a grid option
+```
+```py
+import tkinter as tk
+
+root = tk.Tk()
+lab = tk.Label(root, text="Hi")
+print(sorted(lab.keys()))     # every option a widget accepts
+root.destroy()
+```
+
+@@ tk.err.invalid-command
+Q: TclError: invalid command name ".!button" (or "12345callback")
+aka: invalid command name, can't invoke command, application has been destroyed, error after closing window, after callback after destroy
+err: invalid command name*|can't invoke "*" command: application has been destroyed|application has been destroyed
+A: Your code used a widget (or an `after` loop kept running) **after the window was destroyed**. Cancel `after` jobs before closing, and don't touch widgets after `destroy()`.
+see: tk.after-cancel, tk.close-protocol
+```py
+import tkinter as tk
+
+root = tk.Tk()
+lab = tk.Label(root, text="0")
+lab.pack(padx=40, pady=20)
+job = None
+
+def tick(n=0):
+    global job
+    lab.config(text=str(n))
+    job = root.after(100, tick, n + 1)
+
+def close():
+    if job:
+        root.after_cancel(job)
+    root.destroy()
+
+root.protocol("WM_DELETE_WINDOW", close)
+tick()
+root.mainloop()
+```
+Messages like this printed when you close the window, with no other problem, are harmless but this is how to silence them.
+
+@@ tk.err.bad-window-path
+Q: TclError: bad window path name ".!frame.!label"
+aka: bad window path name, widget destroyed error, window path
+err: bad window path name
+A: You're calling a method on a widget that has already been destroyed (often after clearing a frame or switching pages). Check with `widget.winfo_exists()` or stop keeping old references.
+```py
+import tkinter as tk
+
+root = tk.Tk()
+lab = tk.Label(root, text="temp")
+lab.pack()
+lab.destroy()
+if lab.winfo_exists():
+    lab.config(text="safe")
+else:
+    print("label is gone")
+root.destroy()
+```
+
+@@ tk.err.no-display
+Q: TclError: no display name and no $DISPLAY environment variable
+aka: no display name, couldn't connect to display, tkinter on server, tkinter ssh, tkinter replit, tkinter codespaces, headless
+err: no display name and no $DISPLAY|couldn't connect to display
+A: The computer running the code has no screen (a server, SSH session, online IDE, WSL without a GUI). Run it on a desktop, enable a GUI (WSLg, X forwarding with `ssh -X`), or use a virtual display like `xvfb-run` for testing.
+```sh
+xvfb-run python3 my_app.py     # Linux: runs with an invisible screen
+ssh -X user@host                # forward windows over SSH
+```
+
+@@ tk.err.wrong-args
+Q: TypeError: __init__() got multiple values for argument / takes from 1 to 2 positional arguments
+aka: got multiple values for argument master, positional arguments widget, Label() takes, widget arguments wrong
+err: got multiple values for argument|takes from 1 to 2 positional arguments but*were given
+A: Options must be passed by **name**. `tk.Label(root, "Hello")` passes `"Hello"` as the second positional argument. Write `tk.Label(root, text="Hello")`.
+```py bad
+tk.Label(root, "Hello")
+tk.Button(root, "OK", ok)
+```
+```py
+import tkinter as tk
+
+root = tk.Tk()
+tk.Label(root, text="Hello").pack()
+tk.Button(root, text="OK", command=root.destroy).pack()
+root.mainloop()
+```
+
+@@ tk.err.str-not-callable-tk
+Q: TypeError: 'str' object is not callable (in tkinter)
+aka: str object is not callable tkinter, label not callable, title not callable, overwrote function
+err: 'str' object is not callable|'Label' object is not callable|'Button' object is not callable
+A: You gave a variable the same name as a function or method, e.g. `root.title = "My app"` (now `title` is a string), or `label = ...` shadowing a function called `label`. Use `root.title("My app")` and different names.
+see: py.err.not-callable
+```py bad
+root.title = "My app"
+root.title("Other")        # TypeError: 'str' object is not callable
+```
+```py
+import tkinter as tk
+
+root = tk.Tk()
+root.title("My app")
+root.mainloop()
+```
+
+@@ tk.err.no-mainloop-idle
+Q: My tkinter program behaves differently in IDLE / Thonny / VS Code / Jupyter
+aka: tkinter idle, tkinter jupyter, window doesnt close idle, idle freezes tkinter, works in idle not when double clicked
+A: IDLE itself is a tkinter app, so `root.quit()` may not close windows and leftover windows stay around between runs. Always end with `root.mainloop()`, close with `root.destroy()`, and if things act strangely, restart the shell (Shell > Restart Shell) or run from a terminal.
+see: tk.quit-vs-destroy, tk.err.pyimage
+```sh
+python my_app.py      # Windows (or: py my_app.py)
+python3 my_app.py     # macOS / Linux
+```
+
+@@ tk.err.color
+Q: TclError: unknown color name "..."
+aka: unknown color name, invalid color, bad colour, colour not found
+err: unknown color name
+A: The name isn't a Tk colour, or a hex code is malformed. Hex needs `#` and 3, 6 or 12 hex digits: `"#f80"`, `"#ff8800"`.
+see: tk.colors
+```py
+import tkinter as tk
+
+root = tk.Tk()
+for c in ("light green", "#ff8800", "#f80"):
+    tk.Label(root, text=c, bg=c).pack(fill="x")
+try:
+    tk.Label(root, bg="ff8800")        # missing #
+except tk.TclError as e:
+    print(e)
+root.mainloop()
+```
+
+@@ tk.err.recursion-after
+Q: RecursionError: maximum recursion depth exceeded (in a tkinter loop)
+aka: recursion error tkinter, loop function calls itself, game loop recursion
+err: maximum recursion depth exceeded
+A: A function calls **itself directly** to loop (`def loop(): ...; loop()`). Schedule the next call with `root.after(ms, loop)` instead: that isn't recursion, so it can run forever.
+see: tk.after, py.err.recursion
+```py bad
+def loop():
+    move()
+    loop()               # RecursionError after ~1000 calls (and the window freezes)
+```
+```py
+import tkinter as tk
+
+root = tk.Tk()
+n = tk.IntVar()
+tk.Label(root, textvariable=n).pack(padx=40, pady=20)
+
+def loop():
+    n.set(n.get() + 1)
+    root.after(10, loop)
+
+loop()
+root.mainloop()
+```
+
+@@ tk.err.grid-columnspan-str
+Q: TclError: expected integer but got "..." (in grid, after or a widget option)
+aka: expected integer but got, bad screen distance, expected floating point, grid row string
+err: expected integer but got|bad screen distance
+A: An option that needs a number got text, e.g. `grid(row="1")` from an Entry, or `width="20px"`. Convert with `int()` and give plain numbers (pixels or characters).
+```py
+import tkinter as tk
+
+root = tk.Tk()
+row_text = "2"
+tk.Label(root, text="here").grid(row=int(row_text), column=0)
+tk.Frame(root, width=100, height=20, bg="#fc6").grid(row=3, column=0)
+root.mainloop()
+```

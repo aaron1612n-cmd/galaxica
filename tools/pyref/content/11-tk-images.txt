@@ -1,0 +1,238 @@
+# tk-images | Images | PNG, JPG, resizing, backgrounds, why images vanish | tkinter
+
+@@ tk.photoimage
+Q: How do I show an image (PNG or GIF) in tkinter?
+aka: show image, display picture, PhotoImage, image in label, load png, add image to window
+A: `img = tk.PhotoImage(file="photo.png")`, then `tk.Label(root, image=img)`. PhotoImage reads PNG, GIF and PPM; for JPG use [[tk.pillow|Pillow]].
+see: tk.err.image-gone, tk.pillow, tk.img-path
+```py
+import tkinter as tk
+
+root = tk.Tk()
+img = tk.PhotoImage(file="photo.png")
+tk.Label(root, image=img).pack(padx=10, pady=10)
+root.mainloop()
+```
+The image stays visible only while the `img` variable exists. See [[tk.err.image-gone]].
+
+@@ tk.err.image-gone
+Q: My image doesn't show (blank space) when I create it inside a function or class. Why?
+aka: image not showing, image disappears, blank image, photoimage garbage collected, image in function not displayed, keep reference image
+A: Python deletes the `PhotoImage` when the function ends because nothing refers to it any more, and Tk then shows nothing. Keep a reference: `label.image = img`, or `self.img = img`.
+see: tk.photoimage, tk.var-gc
+```py bad
+def show():
+    img = tk.PhotoImage(file="photo.png")
+    tk.Label(root, image=img).pack()      # blank: img is deleted after show()
+```
+```py
+import tkinter as tk
+
+root = tk.Tk()
+
+def show():
+    img = tk.PhotoImage(file="photo.png")
+    lab = tk.Label(root, image=img)
+    lab.image = img           # keep a reference on the label
+    lab.pack(padx=10, pady=10)
+
+show()
+root.mainloop()
+```
+
+@@ tk.pillow
+Q: How do I show a JPG (or resize an image)?
+aka: jpg tkinter, jpeg, resize image, pillow, PIL ImageTk, scale image, thumbnail, couldn't recognize data in image file
+A: Install Pillow (`pip install pillow`), open with `Image.open`, resize, then wrap with `ImageTk.PhotoImage`.
+see: tk.err.couldnt-recognize, tk.err.image-gone
+```py
+import tkinter as tk
+from PIL import Image, ImageTk
+
+root = tk.Tk()
+pic = Image.open("photo.jpg")
+pic = pic.resize((200, 150))              # exact size (may stretch)
+# pic.thumbnail((200, 200))               # or: fit inside 200x200, keep shape
+photo = ImageTk.PhotoImage(pic)
+lab = tk.Label(root, image=photo)
+lab.image = photo
+lab.pack(padx=10, pady=10)
+root.mainloop()
+```
+```sh
+pip install pillow
+```
+You install `pillow` but import `PIL`. `pip install PIL` does not work.
+
+@@ tk.err.couldnt-recognize
+Q: TclError: couldn't recognize data in image file
+aka: couldn't recognize data in image file, cannot open jpg, image file error, photoimage jpg error
+err: couldn't recognize data in image file
+A: `tk.PhotoImage` can't read that format (usually JPG/JPEG, or a file that was renamed to `.png` but isn't really one). Load it through Pillow instead.
+see: tk.pillow
+```py
+import tkinter as tk
+from PIL import Image, ImageTk
+
+root = tk.Tk()
+photo = ImageTk.PhotoImage(Image.open("photo.jpg"))
+lab = tk.Label(root, image=photo)
+lab.image = photo
+lab.pack()
+root.mainloop()
+```
+
+@@ tk.img-path
+Q: TclError: couldn't open "image.png": no such file or directory
+aka: couldn't open image, no such file or directory image, image path, file not found image, image works in vscode not idle
+err: couldn't open*no such file or directory
+A: The path is relative to the **current working directory**, which isn't always your script's folder. Build the path from the script's location.
+see: py.err.filenotfound, py.script-dir
+```py
+import tkinter as tk
+from pathlib import Path
+
+HERE = Path(__file__).parent              # folder this .py file is in
+root = tk.Tk()
+img = tk.PhotoImage(file=HERE / "photo.png")
+tk.Label(root, image=img).pack()
+root.mainloop()
+```
+
+@@ tk.bg-image
+Q: How do I set a background image for the window?
+aka: background image, wallpaper, image behind widgets, bg image tkinter
+A: Put the image in a Label with `place(x=0, y=0, relwidth=1, relheight=1)` and create it first, so other widgets sit on top. Or draw it on a Canvas and add widgets with `create_window`.
+```py
+import tkinter as tk
+from PIL import Image, ImageTk
+
+root = tk.Tk()
+root.geometry("300x200")
+bg = ImageTk.PhotoImage(Image.open("photo.jpg").resize((300, 200)))
+back = tk.Label(root, image=bg)
+back.image = bg
+back.place(x=0, y=0, relwidth=1, relheight=1)
+tk.Button(root, text="On top of the image").pack(pady=80)
+root.mainloop()
+```
+Widgets can't be truly see-through: a Label on top of the image will still have its own background colour. Use canvas text (`create_text`) for text that sits directly on the picture.
+
+@@ tk.img-resize-window
+Q: How do I make an image resize with the window?
+aka: scale image to window, responsive image, fit image to window, image resize on configure
+A: Keep the original Pillow image, and on `<Configure>` make a resized copy and set it on the label.
+```py
+import tkinter as tk
+from PIL import Image, ImageTk
+
+root = tk.Tk()
+root.geometry("300x220")
+original = Image.open("photo.jpg")
+lab = tk.Label(root, bg="black")
+lab.pack(fill="both", expand=True)
+
+def fit(e):
+    if e.width < 2 or e.height < 2:
+        return
+    copy = original.copy()
+    copy.thumbnail((e.width, e.height))
+    lab.photo = ImageTk.PhotoImage(copy)
+    lab.config(image=lab.photo)
+
+lab.bind("<Configure>", fit)
+root.mainloop()
+```
+
+@@ tk.img-change
+Q: How do I change the image shown in a Label (e.g. a slideshow)?
+aka: change image, swap image, slideshow, next image button, update picture
+A: `label.config(image=new_img)` and keep a reference (`label.image = new_img`).
+```py
+import tkinter as tk
+from PIL import Image
+
+root = tk.Tk()
+# make three coloured test images in memory
+imgs = []
+for col in ("#c23b22", "#2c6a52", "#3f5a7a"):
+    Image.new("RGB", (160, 100), col).save("tmp.png")
+    imgs.append(tk.PhotoImage(file="tmp.png"))
+i = 0
+lab = tk.Label(root, image=imgs[0])
+lab.pack(padx=10, pady=10)
+
+def next_image():
+    global i
+    i = (i + 1) % len(imgs)
+    lab.config(image=imgs[i])
+
+tk.Button(root, text="Next", command=next_image).pack(pady=(0, 10))
+root.mainloop()
+```
+Here the list `imgs` keeps all images alive.
+
+@@ tk.gif
+Q: How do I show an animated GIF?
+aka: animated gif, gif animation, gif frames, play gif
+A: PhotoImage loads one frame at a time: `PhotoImage(file="a.gif", format="gif -index N")`. Load the frames and cycle them with `after`.
+```py
+import tkinter as tk
+from PIL import Image
+
+# build a small animated gif to show
+frames = [Image.new("RGB", (80, 80), (40 * i, 80, 200 - 30 * i)) for i in range(6)]
+frames[0].save("spin.gif", save_all=True, append_images=frames[1:], duration=100, loop=0)
+
+root = tk.Tk()
+gif_frames = []
+while True:
+    try:
+        gif_frames.append(tk.PhotoImage(file="spin.gif", format=f"gif -index {len(gif_frames)}"))
+    except tk.TclError:
+        break
+lab = tk.Label(root)
+lab.pack(padx=20, pady=20)
+
+def play(n=0):
+    lab.config(image=gif_frames[n])
+    root.after(100, play, (n + 1) % len(gif_frames))
+
+play()
+root.mainloop()
+```
+
+@@ tk.img-pixels
+Q: How do I read or set individual pixels, or make an image from scratch?
+aka: pixel color, put pixel, get pixel, generate image, PhotoImage put, draw pixels
+A: `PhotoImage(width=w, height=h)` makes a blank image; `img.put("#ff0000", (x, y))` sets a pixel; `img.get(x, y)` reads one. For anything big, use Pillow, which is far faster.
+```py
+import tkinter as tk
+
+root = tk.Tk()
+W, H = 120, 80
+img = tk.PhotoImage(width=W, height=H)
+for y in range(H):
+    row = "{" + " ".join(f"#{x * 2:02x}{y * 3:02x}80" for x in range(W)) + "}"
+    img.put(row, to=(0, y))
+tk.Label(root, image=img).pack(padx=10, pady=10)
+print(img.get(10, 10))
+root.mainloop()
+```
+
+@@ tk.img-zoom
+Q: How do I make a PhotoImage bigger or smaller without Pillow?
+aka: zoom, subsample, scale photoimage, shrink image, enlarge pixel art
+A: `img.zoom(2)` doubles it, `img.subsample(2)` halves it (whole numbers only). Good for pixel art.
+```py
+import tkinter as tk
+
+root = tk.Tk()
+img = tk.PhotoImage(file="icon.png")
+big = img.zoom(2)
+small = img.subsample(2)
+for im in (small, img, big):
+    tk.Label(root, image=im).pack(side="left", padx=6, pady=6)
+root.imgs = (img, big, small)
+root.mainloop()
+```

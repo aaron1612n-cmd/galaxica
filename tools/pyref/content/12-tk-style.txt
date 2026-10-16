@@ -1,0 +1,256 @@
+# tk-style | Look and style | Colours, fonts, ttk themes, dark mode, making it look modern | tkinter
+
+@@ tk.colors
+Q: What colours can I use and how do I write them?
+aka: colour names, color names, hex color, rgb color tkinter, list of colors, color codes
+A: Named colours (`"red"`, `"light blue"`, `"SlateGray3"`...) or hex `"#rrggbb"` like `"#ff8800"`. Convert RGB numbers with `f"#{r:02x}{g:02x}{b:02x}"`.
+see: tk.bg-color
+```py
+import tkinter as tk
+
+def rgb(r, g, b):
+    return f"#{r:02x}{g:02x}{b:02x}"
+
+root = tk.Tk()
+for col in ("red", "light blue", "SlateGray3", "#ff8800", rgb(40, 120, 90)):
+    tk.Label(root, text=col, bg=col, width=20).pack(pady=2, padx=10)
+print(root.winfo_rgb("orange"))     # (65535, 42405, 0): 16-bit numbers
+root.mainloop()
+```
+A wrong name gives `TclError: unknown color name "...."`. Spaces and capitals in names don't matter (`"LightBlue"` = `"light blue"`).
+
+@@ tk.font-object
+Q: How do I make one font and reuse it (or change it everywhere at once)?
+aka: font object, tkinter.font, Font class, change font size everywhere, default font, named font
+A: `from tkinter import font`, make `f = font.Font(family="Helvetica", size=14)`, pass `font=f` to widgets. Changing `f.configure(size=20)` updates all of them.
+see: tk.label-font, tk.default-font
+```py
+import tkinter as tk
+from tkinter import font
+
+root = tk.Tk()
+f = font.Font(family="Helvetica", size=14)
+for t in ("one", "two", "three"):
+    tk.Label(root, text=t, font=f).pack()
+
+tk.Button(root, text="Bigger", command=lambda: f.configure(size=f.cget("size") + 2)).pack(pady=8)
+print(f.measure("Hello"), "pixels wide")   # handy for layout
+root.mainloop()
+```
+
+@@ tk.default-font
+Q: How do I change the default font for the whole app?
+aka: default font, global font, change all fonts, TkDefaultFont, option_add font
+A: Change the named font `TkDefaultFont` (and `TkTextFont` for Entry/Text). Or use `root.option_add("*Font", ...)` **before** creating widgets.
+```py
+import tkinter as tk
+from tkinter import font
+
+root = tk.Tk()
+font.nametofont("TkDefaultFont").configure(family="Helvetica", size=13)
+font.nametofont("TkTextFont").configure(size=13)
+tk.Label(root, text="Label uses the default font").pack(padx=20, pady=5)
+tk.Entry(root).pack(padx=20, pady=5)
+tk.Button(root, text="Button too").pack(pady=5)
+root.mainloop()
+```
+
+@@ tk.font-list
+Q: How do I see which fonts are available?
+aka: list fonts, font families, installed fonts, available fonts
+A: `tkinter.font.families()` (after creating `Tk()`).
+see: tk.fontchooser
+```py
+import tkinter as tk
+from tkinter import font
+
+root = tk.Tk()
+names = sorted(set(font.families()))
+print(len(names), "fonts, e.g.", names[:5])
+root.destroy()
+```
+Fonts that work almost everywhere: `"Helvetica"`, `"Times"`, `"Courier"` (Tk maps these to similar system fonts). Using a custom `.ttf` file isn't built in; install the font on the computer first (or use the `pyglet` package to load it on Windows).
+
+@@ tk.ttk-vs-tk
+Q: What's the difference between tk and ttk widgets?
+aka: ttk, themed widgets, tk vs ttk, ttk.Button, native look, modern widgets
+A: `ttk` widgets use the system's native look and are styled with `ttk.Style`; they don't accept `bg`, `fg`, `font` directly. `tk` widgets look older but take colour options directly. ttk also adds Combobox, Treeview, Notebook, Progressbar.
+see: tk.ttk-style, tk.ttk-theme
+```py
+import tkinter as tk
+from tkinter import ttk
+
+root = tk.Tk()
+tk.Button(root, text="tk.Button", bg="#fc6").pack(padx=30, pady=6)
+ttk.Button(root, text="ttk.Button").pack(pady=6)
+tk.Entry(root).pack(pady=6)
+ttk.Entry(root).pack(pady=6)
+root.mainloop()
+```
+`ttk.Button(root, bg="red")` raises `TclError: unknown option "-bg"`. Use a style instead (next answer).
+
+@@ tk.ttk-style
+Q: How do I change colours and fonts of ttk widgets (ttk.Style)?
+aka: ttk style, style configure, ttk button color, ttk background, custom style, TButton, style map hover
+A: Create `style = ttk.Style()`, configure a style name like `"Big.TButton"` (`Name.` + widget class), then use `style="Big.TButton"`. `style.map` sets colours for states like hover and pressed.
+see: tk.ttk-theme, tk.ttk-vs-tk
+```py
+import tkinter as tk
+from tkinter import ttk
+
+root = tk.Tk()
+style = ttk.Style()
+style.theme_use("clam")                    # the default Windows/Mac themes ignore most colours
+style.configure("Go.TButton", font=("Helvetica", 13, "bold"), foreground="white", background="#2e7d32", padding=10)
+style.map("Go.TButton", background=[("pressed", "#1b5e20"), ("active", "#388e3c")])
+style.configure("TLabel", font=("Helvetica", 12))            # every ttk.Label
+
+ttk.Label(root, text="Ready?").pack(padx=30, pady=8)
+ttk.Button(root, text="Go", style="Go.TButton").pack(padx=30, pady=(0, 16))
+root.mainloop()
+```
+Class names: `TButton`, `TLabel`, `TEntry`, `TFrame`, `TCheckbutton`, `TCombobox`, `Treeview`, `TNotebook`, `Horizontal.TProgressbar`. Find a widget's with `widget.winfo_class()`.
+
+@@ tk.ttk-theme
+Q: How do I change the ttk theme?
+aka: ttk theme, theme_use, clam alt default classic, vista theme, aqua, themes list, sun valley theme
+A: `ttk.Style().theme_names()` lists them; `theme_use("clam")` switches. Built-in: `clam`, `alt`, `default`, `classic`, plus `vista`/`xpnative` on Windows and `aqua` on macOS.
+see: tk.modern-look
+```py
+import tkinter as tk
+from tkinter import ttk
+
+root = tk.Tk()
+style = ttk.Style()
+print(style.theme_names(), "current:", style.theme_use())
+box = ttk.Combobox(root, values=style.theme_names(), state="readonly")
+box.set(style.theme_use())
+box.pack(padx=20, pady=10)
+box.bind("<<ComboboxSelected>>", lambda e: style.theme_use(box.get()))
+ttk.Button(root, text="Button").pack(pady=4)
+ttk.Checkbutton(root, text="Check").pack(pady=4)
+ttk.Progressbar(root, value=60, length=180).pack(pady=(4, 10))
+root.mainloop()
+```
+
+@@ tk.modern-look
+Q: How do I make my tkinter app look modern?
+aka: modern ui, nicer gui, tkinter looks old, ugly tkinter, customtkinter, sv-ttk, sun valley, ttkbootstrap, beautiful tkinter
+A: Use ttk widgets everywhere, generous padding, one font, and a small colour palette. For a ready-made modern look, the third-party packages `sv-ttk` (Windows 11 style), `ttkbootstrap`, or `customtkinter` restyle everything.
+see: tk.ttk-style, tk.dark-mode
+```py
+import tkinter as tk
+from tkinter import ttk
+
+root = tk.Tk()
+root.title("Settings")
+style = ttk.Style()
+style.theme_use("clam")
+BG, INK, ACCENT = "#f4f1ea", "#1b1a17", "#c23b22"
+root.configure(bg=BG)
+style.configure(".", background=BG, foreground=INK, font=("Helvetica", 11))
+style.configure("TEntry", fieldbackground="white", padding=6)
+style.configure("Accent.TButton", background=ACCENT, foreground="white", padding=(14, 8), borderwidth=0)
+style.map("Accent.TButton", background=[("active", "#9e2f1b")])
+
+frm = ttk.Frame(root, padding=24)
+frm.pack(fill="both", expand=True)
+ttk.Label(frm, text="Profile", font=("Helvetica", 16, "bold")).grid(row=0, column=0, columnspan=2, sticky="w", pady=(0, 12))
+for r, name in enumerate(("Name", "Email"), start=1):
+    ttk.Label(frm, text=name).grid(row=r, column=0, sticky="w", pady=6, padx=(0, 12))
+    ttk.Entry(frm, width=28).grid(row=r, column=1, pady=6)
+ttk.Button(frm, text="Save", style="Accent.TButton").grid(row=3, column=1, sticky="e", pady=(12, 0))
+root.mainloop()
+```
+```sh
+pip install sv-ttk          # then: import sv_ttk; sv_ttk.set_theme("dark")
+pip install customtkinter   # its own CTk widgets with rounded corners
+```
+
+@@ tk.dark-mode
+Q: How do I make a dark mode (and switch between light and dark)?
+aka: dark theme, dark mode, night mode, toggle theme, black background
+A: Keep your colours in a dict, and write one function that applies a palette to every widget (walk `winfo_children()` recursively). For ttk, reconfigure the style.
+see: tk.ttk-style
+```py
+import tkinter as tk
+
+THEMES = {
+    "light": {"bg": "#f4f1ea", "fg": "#1b1a17", "field": "white"},
+    "dark":  {"bg": "#1d1c1a", "fg": "#ece6d8", "field": "#2d2b28"},
+}
+
+def apply(widget, t):
+    cls = widget.winfo_class()
+    if cls in ("Entry", "Text", "Listbox"):
+        widget.config(bg=t["field"], fg=t["fg"], insertbackground=t["fg"])
+    elif cls in ("Label", "Button", "Checkbutton", "Radiobutton", "Frame", "Tk"):
+        widget.config(bg=t["bg"])
+        if cls != "Frame" and cls != "Tk":
+            widget.config(fg=t["fg"])
+    for child in widget.winfo_children():
+        apply(child, t)
+
+root = tk.Tk()
+tk.Label(root, text="Name").pack(padx=20, pady=(10, 0))
+tk.Entry(root).pack(padx=20, pady=6)
+mode = tk.StringVar(value="light")
+tk.Checkbutton(root, text="Dark", onvalue="dark", offvalue="light", variable=mode,
+               command=lambda: apply(root, THEMES[mode.get()])).pack(pady=(0, 10))
+apply(root, THEMES["light"])
+root.mainloop()
+```
+On macOS, `tk.Button` colours can't be changed (see [[tk.button-color]]).
+
+@@ tk.border-color
+Q: How do I give a widget a coloured border?
+aka: border colour, highlightbackground, highlightcolor, outline widget, colored border entry
+A: Use `highlightthickness` + `highlightbackground` (and `highlightcolor` when focused), or wrap the widget in a Frame with a background colour and padding.
+```py
+import tkinter as tk
+
+root = tk.Tk()
+tk.Entry(root, highlightthickness=2, highlightbackground="#bbb", highlightcolor="#c23b22", relief="flat").pack(padx=20, pady=10)
+wrap = tk.Frame(root, bg="#c23b22", padx=2, pady=2)
+wrap.pack(padx=20, pady=10)
+tk.Label(wrap, text="framed label", padx=10, pady=6).pack()
+root.mainloop()
+```
+
+@@ tk.rounded
+Q: Can I make rounded buttons or rounded corners?
+aka: rounded corners, round button, border radius tkinter, rounded rectangle canvas
+A: Standard tk/ttk widgets have square corners. Options: draw a rounded shape on a Canvas and bind clicks to it, use an image of a rounded button, or use `customtkinter` (which has `corner_radius`).
+```py
+import tkinter as tk
+
+def round_rect(c, x1, y1, x2, y2, r, **kw):
+    pts = [x1 + r, y1, x2 - r, y1, x2, y1, x2, y1 + r, x2, y2 - r, x2, y2,
+           x2 - r, y2, x1 + r, y2, x1, y2, x1, y2 - r, x1, y1 + r, x1, y1]
+    return c.create_polygon(pts, smooth=True, **kw)
+
+root = tk.Tk()
+c = tk.Canvas(root, width=200, height=80, highlightthickness=0)
+c.pack(padx=10, pady=10)
+round_rect(c, 10, 10, 190, 70, 20, fill="#c23b22", tags="btn")
+c.create_text(100, 40, text="Rounded", fill="white", font=("Helvetica", 14, "bold"), tags="btn")
+c.tag_bind("btn", "<Button-1>", lambda e: print("clicked"))
+c.config(cursor="hand2")
+root.mainloop()
+```
+
+@@ tk.option-add
+Q: How do I set default options (like colours) for every widget of a type?
+aka: option_add, default bg for all buttons, global style tk widgets, option database
+A: `root.option_add("*Button.background", "#fc6")` before creating widgets. `"*Font"` sets the font for everything.
+```py
+import tkinter as tk
+
+root = tk.Tk()
+root.option_add("*Font", ("Helvetica", 12))
+root.option_add("*Button.background", "#ffcc66")
+root.option_add("*Label.foreground", "#c23b22")
+tk.Label(root, text="red label").pack(padx=30, pady=4)
+tk.Button(root, text="yellow button").pack(pady=4)
+root.mainloop()
+```
