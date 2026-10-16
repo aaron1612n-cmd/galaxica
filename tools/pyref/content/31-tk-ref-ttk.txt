@@ -1,0 +1,805 @@
+# tk-ref-ttk | Widget reference: ttk | Every themed (ttk) widget: options, methods, states and styles, with full examples | tkinter
+
+@@ ttk.overview
+Q: Which ttk widgets are there, and which classic widgets have no ttk version?
+aka: ttk widgets list, all ttk widgets, themed widgets, tkinter.ttk, which ttk
+A: ttk has Button, Checkbutton, Radiobutton, Entry, Combobox, Spinbox, Scale, Scrollbar, Label, Frame, LabelFrame, Labelframe, Menubutton, OptionMenu, Notebook, Panedwindow, Progressbar, Separator, Sizegrip, Treeview and LabeledScale. There's **no** ttk Text, Canvas, Listbox, Menu, Message or Toplevel: use the classic ones (they mix fine).
+see: tk.ttk-vs-tk, tk.ttk-style
+```py
+import tkinter as tk
+from tkinter import ttk
+
+root = tk.Tk()
+root.title("ttk sampler")
+f = ttk.Frame(root, padding=12)
+f.pack(fill="both", expand=True)
+
+ttk.Label(f, text="Label").grid(row=0, column=0, sticky="w")
+ttk.Entry(f).grid(row=0, column=1, pady=2)
+ttk.Combobox(f, values=["a", "b"]).grid(row=1, column=1, pady=2)
+ttk.Spinbox(f, from_=0, to=9).grid(row=2, column=1, pady=2)
+ttk.Checkbutton(f, text="Check").grid(row=3, column=0, sticky="w")
+ttk.Radiobutton(f, text="Radio", value=1).grid(row=3, column=1, sticky="w")
+ttk.Scale(f, from_=0, to=100).grid(row=4, column=0, columnspan=2, sticky="ew", pady=4)
+ttk.Progressbar(f, value=60).grid(row=5, column=0, columnspan=2, sticky="ew")
+ttk.Separator(f).grid(row=6, column=0, columnspan=2, sticky="ew", pady=8)
+ttk.Button(f, text="Button").grid(row=7, column=1, sticky="e")
+ttk.Sizegrip(root).pack(side="right")
+root.mainloop()
+```
+
+@@ ttk.button
+Q: What options does ttk.Button have (and how do I colour it)?
+aka: ttk button options, ttk button style, ttk button padding, ttk button width, ttk button image, default button, ttk button color
+A: Options: `text`, `command`, `image` + `compound`, `width` (characters; negative = minimum), `padding`, `style`, `default`, `takefocus`, `underline`, `textvariable`. Colours and fonts are not options: make a style such as `"Big.TButton"`.
+see: ttk.style-basics, tk.ttk-style
+```py
+import tkinter as tk
+from tkinter import ttk
+
+root = tk.Tk()
+s = ttk.Style()
+s.theme_use("clam")
+s.configure("Big.TButton", font=("Arial", 14, "bold"), padding=(16, 8), foreground="white", background="#c23b22")
+s.map("Big.TButton", background=[("pressed", "#7a1f10"), ("active", "#e0553a")])
+
+ttk.Button(root, text="Normal").pack(padx=20, pady=6)
+ttk.Button(root, text="Big and red", style="Big.TButton", command=lambda: print("clicked")).pack(padx=20, pady=6)
+ttk.Button(root, text="At least 20 wide", width=-20).pack(padx=20, pady=6)
+root.mainloop()
+```
+
+@@ ttk.entry
+Q: What options does ttk.Entry have (and how do I change its colours)?
+aka: ttk entry options, ttk entry fieldbackground, ttk entry font, ttk entry readonly, ttk entry validate, ttk entry show
+A: Like `tk.Entry`: `textvariable`, `width`, `show`, `justify`, `font` (font **is** allowed here), `state`, `validate`, `validatecommand`, `style`. Background colour is the style option `fieldbackground` and only works on themes like `"clam"` or `"alt"`.
+see: ttk.style-basics, tk.entry-validate
+```py
+import tkinter as tk
+from tkinter import ttk
+
+root = tk.Tk()
+s = ttk.Style()
+s.theme_use("clam")
+s.configure("Warn.TEntry", fieldbackground="#fff3d6", foreground="#7a1f10", padding=6)
+
+e1 = ttk.Entry(root, width=24, font=("Arial", 12))
+e2 = ttk.Entry(root, width=24, style="Warn.TEntry", show="•")
+e1.pack(padx=20, pady=6); e2.pack(padx=20, pady=6)
+e1.insert(0, "normal")
+e2.insert(0, "secret")
+e1.state(["readonly"])
+print(e1.instate(["readonly"]), e2.get())
+root.mainloop()
+```
+
+@@ ttk.combobox-ref
+Q: What options and methods does ttk.Combobox have?
+aka: combobox options, combobox values, combobox current, combobox readonly, combobox height, combobox postcommand, combobox font, combobox justify
+A: Options: `values`, `textvariable`, `state` (`"readonly"` = choose only, no typing), `height` (rows in the drop-down), `width`, `font`, `justify`, `postcommand` (runs before it opens). Methods: `get()`, `set(text)`, `current()` (index of the choice, or -1), `current(i)` (select by index). Event: `<<ComboboxSelected>>`.
+see: tk.combobox, tk.combobox-event, tk.combobox-update
+```py
+import tkinter as tk
+from tkinter import ttk
+
+root = tk.Tk()
+cb = ttk.Combobox(root, values=[f"Item {i}" for i in range(30)], state="readonly", height=8, width=14,
+                  font=("Arial", 12), justify="center")
+cb.pack(padx=30, pady=20)
+cb.current(3)
+cb.bind("<<ComboboxSelected>>", lambda e: print("picked", cb.get(), "at", cb.current()))
+print(cb.get(), cb.current())
+root.mainloop()
+```
+```text
+Item 3 3
+```
+The drop-down list colours/font come from the option database: `root.option_add("*TCombobox*Listbox.font", ("Arial", 12))`.
+
+@@ ttk.combobox-autocomplete
+Q: How do I make a Combobox that filters its list as I type (autocomplete)?
+aka: autocomplete combobox, searchable combobox, filter combobox, type ahead, suggest as you type
+A: Keep the full list, and on every `<KeyRelease>` set `values` to the items that contain what's typed.
+see: ttk.combobox-ref, tk.form.autocomplete
+```py
+import tkinter as tk
+from tkinter import ttk
+
+ALL = ["Amsterdam", "Athens", "Berlin", "Bern", "Brussels", "Budapest", "Dublin", "Lisbon", "London", "Madrid", "Paris", "Prague", "Rome", "Vienna"]
+root = tk.Tk()
+cb = ttk.Combobox(root, values=ALL, width=20)
+cb.pack(padx=30, pady=30)
+
+def filter_list(event):
+    if event.keysym in ("Up", "Down", "Return"):
+        return
+    typed = cb.get().lower()
+    cb["values"] = [c for c in ALL if typed in c.lower()] or ALL
+
+cb.bind("<KeyRelease>", filter_list)
+root.mainloop()
+```
+
+@@ ttk.spinbox-ref
+Q: What options does ttk.Spinbox have?
+aka: ttk spinbox, ttk spinbox values increment, ttk spinbox format, spinbox wrap ttk
+A: The same as `tk.Spinbox` (`from_`, `to`, `increment`, `values`, `wrap`, `format`, `command`, `textvariable`, `state`), plus `style`. Event `<<Increment>>`/`<<Decrement>>` fire on the arrows.
+see: tk.ref.spinbox
+```py
+import tkinter as tk
+from tkinter import ttk
+
+root = tk.Tk()
+v = tk.IntVar(value=5)
+sp = ttk.Spinbox(root, from_=0, to=10, textvariable=v, wrap=True, width=6, command=lambda: print(v.get()))
+sp.pack(padx=30, pady=20)
+sp.bind("<<Increment>>", lambda e: print("up"))
+root.mainloop()
+```
+
+@@ ttk.check-radio
+Q: What options do ttk.Checkbutton and ttk.Radiobutton have?
+aka: ttk checkbutton, ttk radiobutton, toolbutton style, ttk check style, alternate state, ttk radio as button
+A: Same as classic (`text`, `variable`, `onvalue`/`offvalue` or `value`, `command`, `image`, `compound`), plus `style`. `style="Toolbutton"` makes them look like toggle buttons. A Checkbutton starts in the half-ticked `"alternate"` state until its variable has a value.
+see: tk.checkbutton, tk.radiobutton
+```py
+import tkinter as tk
+from tkinter import ttk
+
+root = tk.Tk()
+f = ttk.Frame(root, padding=10); f.pack()
+align = tk.StringVar(value="left")
+for v in ("left", "center", "right"):
+    ttk.Radiobutton(f, text=v.title(), value=v, variable=align, style="Toolbutton").pack(side="left")
+
+agree = tk.BooleanVar(value=False)
+c = ttk.Checkbutton(root, text="I agree", variable=agree)
+c.pack(pady=8)
+print(c.instate(["selected"]))
+agree.set(True)
+print(c.instate(["selected"]))
+root.mainloop()
+```
+```text
+False
+True
+```
+
+@@ ttk.scale-ref
+Q: What options does ttk.Scale have, and why does it give long decimals?
+aka: ttk scale decimals, ttk scale resolution, ttk scale no tick, ttk scale integer, ttk slider whole numbers
+A: Options: `from_`, `to`, `orient`, `length`, `variable`, `command`, `value`. It has **no** `resolution`, `label` or ticks, so values like `42.731` come out. Round in your command, or use an `IntVar` and `round()`, or use `tk.Scale`/`ttk.LabeledScale`.
+see: tk.ref.scale
+```py
+import tkinter as tk
+from tkinter import ttk
+
+root = tk.Tk()
+shown = tk.StringVar(value="50")
+def moved(value):
+    shown.set(str(round(float(value))))     # whole numbers only
+
+s = ttk.Scale(root, from_=0, to=100, length=250, value=50, command=moved)
+s.pack(padx=20, pady=(20, 4))
+ttk.Label(root, textvariable=shown, font=("Arial", 16)).pack(pady=(0, 20))
+
+ls = ttk.LabeledScale(root, from_=0, to=10)   # shows its value above the slider
+ls.pack(fill="x", padx=20, pady=(0, 20))
+root.mainloop()
+```
+
+@@ ttk.progressbar-ref
+Q: What options and methods does ttk.Progressbar have?
+aka: progressbar options, determinate indeterminate, progressbar start stop step, progressbar maximum, progressbar color, progress bar thickness
+A: Options: `mode` (`"determinate"` = shows how far; `"indeterminate"` = bouncing busy bar), `maximum` (default 100), `value`, `variable`, `length`, `orient`, `style`. Methods: `step(n)`, `start(ms)`, `stop()`. Colour/thickness via a style like `"green.Horizontal.TProgressbar"` (`background`, `thickness`).
+see: tk.progressbar
+```py
+import tkinter as tk
+from tkinter import ttk
+
+root = tk.Tk()
+s = ttk.Style(); s.theme_use("clam")
+s.configure("Red.Horizontal.TProgressbar", background="#c23b22", troughcolor="#eee", thickness=14)
+
+p = ttk.Progressbar(root, length=260, maximum=10, style="Red.Horizontal.TProgressbar")
+p.pack(padx=20, pady=10)
+busy = ttk.Progressbar(root, length=260, mode="indeterminate")
+busy.pack(padx=20, pady=10)
+busy.start(15)
+
+def tick():
+    if p["value"] < 10:
+        p.step(1)
+        root.after(100, tick)
+tick()
+root.mainloop()
+```
+
+@@ ttk.notebook-ref
+Q: What can a Notebook (tabs) do? (all options and methods)
+aka: notebook methods, select tab, current tab, hide tab, disable tab, tab text change, notebook tab changed event, insert tab, forget tab, enable traversal
+A: Methods: `add(frame, text=, image=, compound=, padding=, underline=)`, `insert(pos, frame, ...)`, `forget(tab)`, `hide(tab)`, `select(tab)`, `select()` (current tab id), `index("current")`, `index("end")` (count), `tab(tab, option=...)` to change a tab's text/state, `tabs()`, `enable_traversal()` (Ctrl+Tab). Event: `<<NotebookTabChanged>>`.
+see: tk.notebook
+```py
+import tkinter as tk
+from tkinter import ttk
+
+root = tk.Tk()
+nb = ttk.Notebook(root, padding=4)
+nb.pack(fill="both", expand=True)
+pages = {}
+for name in ("Home", "Search", "Settings"):
+    f = ttk.Frame(nb, padding=12)
+    ttk.Label(f, text=f"This is {name}").pack()
+    nb.add(f, text=name)
+    pages[name] = f
+
+nb.tab(pages["Settings"], state="disabled")        # greyed out
+nb.tab(pages["Search"], text="Find")               # rename
+nb.select(pages["Search"])
+nb.enable_traversal()
+nb.bind("<<NotebookTabChanged>>", lambda e: print("now on", nb.tab(nb.select(), "text")))
+print(nb.index("current"), nb.index("end"))        # 1 3
+root.mainloop()
+```
+
+@@ ttk.notebook-close
+Q: How do I add a close (×) button to Notebook tabs, or add tabs with a + button?
+aka: closable tabs, close tab button, add tab button, browser tabs, remove tab, notebook close
+A: The simplest reliable way: a "Close tab" button or middle-click / right-click binding that calls `nb.forget(nb.select())`. To detect which tab was clicked, use `nb.index(f"@{event.x},{event.y}")`.
+see: ttk.notebook-ref
+```py
+import tkinter as tk
+from tkinter import ttk
+
+root = tk.Tk()
+root.geometry("360x200")
+bar = ttk.Frame(root); bar.pack(fill="x")
+nb = ttk.Notebook(root); nb.pack(fill="both", expand=True)
+n = [0]
+
+def new_tab():
+    n[0] += 1
+    f = ttk.Frame(nb, padding=10)
+    tk.Text(f, height=4).pack(fill="both", expand=True)
+    nb.add(f, text=f"Doc {n[0]}")
+    nb.select(f)
+
+def close_current():
+    if nb.tabs():
+        nb.forget(nb.select())
+
+def middle_click(event):
+    try:
+        i = nb.index(f"@{event.x},{event.y}")     # tab under the mouse
+    except tk.TclError:
+        return
+    nb.forget(i)
+
+ttk.Button(bar, text="+", width=3, command=new_tab).pack(side="left")
+ttk.Button(bar, text="× Close tab", command=close_current).pack(side="left")
+nb.bind("<Button-2>", middle_click)
+new_tab(); new_tab()
+root.mainloop()
+```
+
+@@ ttk.treeview-ref
+Q: What can a Treeview do? (all options and methods)
+aka: treeview methods, treeview options, show headings, selectmode, displaycolumns, treeview item, treeview set, treeview focus, treeview see, treeview get_children, identify_row, heading command, column width anchor stretch
+A: Options: `columns`, `show` (`"headings"` hides the tree column, `"tree"`, or both), `height` (rows), `selectmode` (`"browse"`, `"extended"`, `"none"`), `displaycolumns`. Methods: `heading(col, text=, command=, anchor=)`, `column(col, width=, minwidth=, anchor=, stretch=)`, `insert(parent, index, iid=, text=, values=, tags=, open=)`, `item(iid, ...)`, `set(iid, col, value)`, `delete`, `get_children(parent)`, `selection()`, `selection_set`, `focus()`, `see`, `move`, `parent`, `index`, `exists`, `identify_row(y)`, `identify_column(x)`, `tag_configure`, `tag_bind`.
+see: tk.treeview, tk.treeview-select, tk.treeview-edit, tk.treeview-sort
+```py
+import tkinter as tk
+from tkinter import ttk
+
+root = tk.Tk()
+tv = ttk.Treeview(root, columns=("name", "score"), show="headings", height=5, selectmode="extended")
+tv.heading("name", text="Name", anchor="w")
+tv.heading("score", text="Score")
+tv.column("name", width=140, anchor="w")
+tv.column("score", width=70, anchor="e", stretch=False)
+tv.pack(padx=10, pady=10)
+
+for i, (n, s) in enumerate([("Ada", 90), ("Sam", 72), ("Kai", 85)]):
+    tv.insert("", "end", iid=f"p{i}", values=(n, s), tags=("high",) if s >= 85 else ())
+tv.tag_configure("high", background="#fff3d6")
+
+tv.set("p1", "score", 75)                  # change one cell
+tv.selection_set("p0", "p2")
+print(tv.get_children())                   # ('p0', 'p1', 'p2')
+print(tv.item("p1", "values"))             # ('Sam', '75')
+print(tv.selection(), tv.index("p2"))
+root.mainloop()
+```
+
+@@ ttk.treeview-checkbox
+Q: How do I put checkboxes in a Treeview?
+aka: treeview checkbox, checklist table, tick rows treeview, checkable treeview
+A: Treeview has no checkboxes, but you can show `☐`/`☑` in the first column and toggle it on click with `identify_row` and `identify_column`.
+see: ttk.treeview-ref
+```py
+import tkinter as tk
+from tkinter import ttk
+
+root = tk.Tk()
+tv = ttk.Treeview(root, columns=("done", "task"), show="headings", height=5)
+tv.heading("done", text="✓"); tv.column("done", width=36, anchor="center")
+tv.heading("task", text="Task"); tv.column("task", width=200)
+tv.pack(padx=10, pady=10)
+for t in ("Buy milk", "Write essay", "Call Sam"):
+    tv.insert("", "end", values=("☐", t))
+
+def click(event):
+    row, col = tv.identify_row(event.y), tv.identify_column(event.x)
+    if row and col == "#1":
+        mark = tv.set(row, "done")
+        tv.set(row, "done", "☑" if mark == "☐" else "☐")
+
+tv.bind("<Button-1>", click)
+def checked():
+    return [tv.set(r, "task") for r in tv.get_children() if tv.set(r, "done") == "☑"]
+ttk.Button(root, text="Show ticked", command=lambda: print(checked())).pack(pady=(0, 10))
+root.mainloop()
+```
+
+@@ ttk.treeview-scroll
+Q: How do I add scrollbars (both directions) to a Treeview?
+aka: treeview scrollbar, treeview horizontal scroll, treeview xscrollcommand, wide table scroll
+A: Same as any scrolled widget: `yscrollcommand=ys.set` / `ys.config(command=tv.yview)`, and for sideways give columns fixed widths with `stretch=False` plus an x scrollbar.
+see: tk.scrollbar
+```py
+import tkinter as tk
+from tkinter import ttk
+
+root = tk.Tk()
+root.geometry("380x220")
+cols = [f"c{i}" for i in range(10)]
+tv = ttk.Treeview(root, columns=cols, show="headings")
+ys = ttk.Scrollbar(root, orient="vertical", command=tv.yview)
+xs = ttk.Scrollbar(root, orient="horizontal", command=tv.xview)
+tv.configure(yscrollcommand=ys.set, xscrollcommand=xs.set)
+for c in cols:
+    tv.heading(c, text=c.upper()); tv.column(c, width=80, stretch=False)
+for r in range(100):
+    tv.insert("", "end", values=[r * 10 + i for i in range(10)])
+
+tv.grid(row=0, column=0, sticky="nsew")
+ys.grid(row=0, column=1, sticky="ns")
+xs.grid(row=1, column=0, sticky="ew")
+root.rowconfigure(0, weight=1); root.columnconfigure(0, weight=1)
+root.mainloop()
+```
+
+@@ ttk.treeview-search
+Q: How do I search or filter rows in a Treeview?
+aka: filter treeview, search table, treeview find row, live search table, hide rows treeview, detach reattach
+A: Keep the data in a Python list; on each keypress delete all rows and re-insert the ones that match. (For big tables, `detach`/`move` rows instead.)
+see: ttk.treeview-ref, tk.data.filter-table
+```py
+import tkinter as tk
+from tkinter import ttk
+
+PEOPLE = [("Ada", "Maths"), ("Alan", "Computing"), ("Grace", "Navy"), ("Kai", "Art"), ("Sam", "Music"), ("Mae", "Space")]
+root = tk.Tk()
+q = tk.StringVar()
+ttk.Entry(root, textvariable=q).pack(fill="x", padx=10, pady=(10, 4))
+tv = ttk.Treeview(root, columns=("name", "field"), show="headings", height=6)
+tv.heading("name", text="Name"); tv.heading("field", text="Field")
+tv.pack(padx=10, pady=(0, 10))
+
+def show(*_):
+    tv.delete(*tv.get_children())
+    text = q.get().lower()
+    for row in PEOPLE:
+        if text in " ".join(row).lower():
+            tv.insert("", "end", values=row)
+
+q.trace_add("write", show)
+show()
+q.set("a")
+print(len(tv.get_children()))
+root.mainloop()
+```
+
+@@ ttk.treeview-dblclick
+Q: How do I open a row when it's double-clicked (or Enter pressed) in a Treeview?
+aka: treeview double click, treeview row click event, treeview open item, treeview enter key, treeviewselect event
+A: Bind `<Double-1>` and `<Return>`, then read `tv.focus()` (the row under the cursor/keyboard). `<<TreeviewSelect>>` fires whenever the selection changes.
+see: tk.treeview-select
+```py
+import tkinter as tk
+from tkinter import ttk
+
+root = tk.Tk()
+tv = ttk.Treeview(root, columns=("size",), height=4)
+tv.heading("#0", text="File"); tv.heading("size", text="Size")
+for name, size in [("notes.txt", "2 KB"), ("photo.png", "1.2 MB"), ("song.mp3", "4 MB")]:
+    tv.insert("", "end", text=name, values=(size,))
+tv.pack(padx=10, pady=10)
+
+def open_row(event=None):
+    row = tv.focus()
+    if row:
+        print("open", tv.item(row, "text"))
+
+tv.bind("<Double-1>", open_row)
+tv.bind("<Return>", open_row)
+tv.bind("<<TreeviewSelect>>", lambda e: print("selected", tv.selection()))
+root.mainloop()
+```
+
+@@ ttk.treeview-images
+Q: How do I show icons in Treeview rows?
+aka: treeview icon, treeview image, folder icon treeview, file icons
+A: Pass `image=` to `insert` (shows in the tree column `#0`, so keep `show="tree headings"`). Keep the images in a list or dict so they're not garbage-collected.
+see: tk.err.image-gone
+```py
+import tkinter as tk
+from tkinter import ttk
+
+root = tk.Tk()
+icons = {}
+for name, colour in (("folder", "#e8b84a"), ("file", "#8aa1b8")):
+    img = tk.PhotoImage(width=14, height=12)
+    img.put(colour, to=(0, 0, 14, 12))
+    icons[name] = img
+
+tv = ttk.Treeview(root, height=5)
+docs = tv.insert("", "end", text=" Documents", image=icons["folder"], open=True)
+tv.insert(docs, "end", text=" essay.txt", image=icons["file"])
+tv.insert(docs, "end", text=" plan.txt", image=icons["file"])
+tv.pack(padx=10, pady=10)
+root.mainloop()
+```
+
+@@ ttk.treeview-lazy
+Q: How do I load child rows only when a folder is opened (lazy tree, file browser)?
+aka: lazy loading treeview, file explorer treeview, treeviewopen event, folder tree browser, directory tree
+A: Insert a dummy child so the ▸ arrow shows, then on `<<TreeviewOpen>>` replace it with the real children.
+see: tk.treeview-tree, ttk.treeview-images
+```py
+import os
+import tkinter as tk
+from tkinter import ttk
+
+root = tk.Tk()
+root.geometry("380x260")
+tv = ttk.Treeview(root)
+tv.heading("#0", text=os.getcwd(), anchor="w")
+tv.pack(fill="both", expand=True)
+paths = {}
+
+def add(parent, path):
+    for name in sorted(os.listdir(path)):
+        full = os.path.join(path, name)
+        iid = tv.insert(parent, "end", text=name)
+        paths[iid] = full
+        if os.path.isdir(full):
+            tv.insert(iid, "end", text="…")        # placeholder child
+
+def opened(event):
+    iid = tv.focus()
+    kids = tv.get_children(iid)
+    if len(kids) == 1 and tv.item(kids[0], "text") == "…":
+        tv.delete(kids[0])
+        add(iid, paths[iid])
+
+tv.bind("<<TreeviewOpen>>", opened)
+add("", os.getcwd())
+root.mainloop()
+```
+
+@@ ttk.panedwindow
+Q: How do I use ttk.Panedwindow (and set the sash position)?
+aka: ttk panedwindow, ttk paned weight, sashpos, ttk split pane
+A: `ttk.Panedwindow(orient=...)`, `add(widget, weight=n)` (weight = how extra space is shared). Move a divider with `sashpos(0, pixels)` after the window has a size.
+see: tk.paned, tk.ref.panedwindow
+```py
+import tkinter as tk
+from tkinter import ttk
+
+root = tk.Tk()
+root.geometry("420x220")
+pw = ttk.Panedwindow(root, orient="horizontal")
+pw.pack(fill="both", expand=True)
+pw.add(ttk.Treeview(pw), weight=1)
+pw.add(tk.Text(pw), weight=3)
+root.update_idletasks()
+pw.sashpos(0, 140)
+print(pw.sashpos(0))
+root.mainloop()
+```
+
+@@ ttk.separator-sizegrip
+Q: How do I use ttk.Separator and ttk.Sizegrip?
+aka: separator vertical, horizontal line ttk, sizegrip corner, resize grip
+A: `ttk.Separator(orient="horizontal")` is a thin line: give it `fill="x"` (pack) or `sticky="ew"` (grid). `ttk.Sizegrip` is the dotted resize corner: put it bottom-right.
+see: tk.separator, tk.sizegrip-status
+```py
+import tkinter as tk
+from tkinter import ttk
+
+root = tk.Tk()
+root.geometry("300x160")
+ttk.Label(root, text="Above").pack(pady=4)
+ttk.Separator(root, orient="horizontal").pack(fill="x", padx=10, pady=4)
+row = ttk.Frame(root); row.pack()
+ttk.Label(row, text="Left").pack(side="left", padx=8)
+ttk.Separator(row, orient="vertical").pack(side="left", fill="y", pady=2)
+ttk.Label(row, text="Right").pack(side="left", padx=8)
+ttk.Sizegrip(root).pack(side="bottom", anchor="se")
+root.mainloop()
+```
+
+@@ ttk.menubutton-optionmenu
+Q: How do I use ttk.OptionMenu and ttk.Menubutton?
+aka: ttk optionmenu, ttk menubutton, optionmenu default value, optionmenu first item disappears, set_menu
+A: `ttk.OptionMenu(parent, var, default, *choices, command=...)`: note the extra **default** argument (the classic one doesn't have it; forgetting it makes your first choice vanish). Change the list later with `set_menu(default, *choices)`.
+see: tk.optionmenu
+```py
+import tkinter as tk
+from tkinter import ttk
+
+root = tk.Tk()
+size = tk.StringVar()
+om = ttk.OptionMenu(root, size, "Medium", "Small", "Medium", "Large", command=lambda v: print("size", v))
+om.pack(padx=30, pady=10)
+om.set_menu("Large", "Large", "XL", "XXL")     # replace the choices
+print(size.get())
+root.mainloop()
+```
+```text
+Large
+```
+
+@@ ttk.states
+Q: What are ttk states (disabled, pressed, focus, readonly...) and how do I use them?
+aka: ttk state method, instate, ttk state list, !disabled, ttk widget state flags, alternate, invalid state
+A: ttk widgets have flags: `active`, `disabled`, `focus`, `pressed`, `selected`, `background`, `readonly`, `alternate`, `invalid`, `hover`. Set with `w.state(["disabled"])`, clear with `w.state(["!disabled"])`, test with `w.instate(["disabled"])`. Styles can change look by state with `style.map`.
+see: ttk.style-map
+```py
+import tkinter as tk
+from tkinter import ttk
+
+root = tk.Tk()
+e = ttk.Entry(root); e.pack(padx=20, pady=10)
+e.state(["invalid"])
+print(e.state())                     # ('invalid',)
+print(e.instate(["invalid"]), e.instate(["!disabled"]))
+e.state(["!invalid", "readonly"])
+print(e.state())
+root.mainloop()
+```
+
+@@ ttk.style-basics
+Q: How do ttk style names work (TButton, Big.TButton, Vertical.TScrollbar)?
+aka: style names, ttk class names, custom style name, TButton TLabel TEntry, style inheritance, winfo_class ttk
+A: Each ttk widget has a style class (`TButton`, `TLabel`, `TEntry`, `TCombobox`, `TCheckbutton`, `TRadiobutton`, `TFrame`, `TLabelframe`, `TNotebook`, `Treeview`, `Horizontal.TProgressbar`, `Vertical.TScrollbar`, ...). `configure("TButton", ...)` changes **all** buttons; `configure("Big.TButton", ...)` makes a new style that inherits from TButton, used with `style="Big.TButton"`.
+see: tk.ttk-style, ttk.style-map, ttk.style-lookup
+```py
+import tkinter as tk
+from tkinter import ttk
+
+root = tk.Tk()
+s = ttk.Style()
+s.configure("TLabel", font=("Arial", 12))                       # every ttk Label
+s.configure("Title.TLabel", font=("Arial", 18, "bold"), foreground="#c23b22")
+s.configure("Card.TFrame", background="white", relief="solid", borderwidth=1)
+s.configure("Card.TLabel", background="white")
+
+ttk.Label(root, text="Heading", style="Title.TLabel").pack(padx=20, pady=(16, 4), anchor="w")
+card = ttk.Frame(root, style="Card.TFrame", padding=12)
+card.pack(padx=20, pady=(0, 16), fill="x")
+ttk.Label(card, text="Inside a white card", style="Card.TLabel").pack(anchor="w")
+print(ttk.Button(root).winfo_class())     # TButton
+root.mainloop()
+```
+
+@@ ttk.style-map
+Q: How do I change a ttk widget's look on hover, press, or when disabled (style.map)?
+aka: style map, hover color ttk, pressed color ttk, active state style, disabled color ttk, map background foreground
+A: `style.map("Name.TButton", background=[("pressed", c1), ("active", c2), ("disabled", c3)])`: the first state in the list that matches wins, so put the most specific first.
+see: ttk.states, ttk.style-basics
+```py
+import tkinter as tk
+from tkinter import ttk
+
+root = tk.Tk()
+s = ttk.Style(); s.theme_use("clam")
+s.configure("Go.TButton", background="#2e7d4f", foreground="white", padding=10, borderwidth=0)
+s.map("Go.TButton",
+      background=[("disabled", "#9aa"), ("pressed", "#1c4f31"), ("active", "#3fa168")],
+      foreground=[("disabled", "#eee")])
+a = ttk.Button(root, text="Go", style="Go.TButton"); a.pack(padx=30, pady=6)
+b = ttk.Button(root, text="Can't go", style="Go.TButton"); b.pack(padx=30, pady=6)
+b.state(["disabled"])
+root.mainloop()
+```
+
+@@ ttk.style-lookup
+Q: How do I see what options a ttk style has (layout, element_options, lookup)?
+aka: style layout, element_options, style lookup, what can I configure ttk, ttk style options list, find style option
+A: `style.layout("TButton")` shows the parts (elements) a widget is made of; `style.element_options("Button.label")` lists what each part accepts; `style.lookup("TButton", "font")` reads a current value.
+see: ttk.style-basics
+```py
+import tkinter as tk
+from tkinter import ttk
+
+root = tk.Tk()
+s = ttk.Style(); s.theme_use("clam")
+print(s.layout("TEntry"))
+for part in ("Entry.field", "Entry.padding", "Entry.textarea"):
+    print(part, s.element_options(part))
+print(s.lookup("TEntry", "fieldbackground"))
+root.mainloop()
+```
+
+@@ ttk.style-treeview
+Q: How do I style a Treeview (heading colours, row height, selected colour, fonts, no border)?
+aka: treeview heading color, treeview selected color, treeview font, treeview rowheight, treeview border, treeview dark theme, treeview style map
+A: Configure `"Treeview"` (rows: `font`, `rowheight`, `background`, `fieldbackground`, `foreground`) and `"Treeview.Heading"` (header row); `style.map("Treeview", background=[("selected", ...)])` for the selection colour.
+see: tk.treeview-style
+```py
+import tkinter as tk
+from tkinter import ttk
+
+root = tk.Tk()
+s = ttk.Style(); s.theme_use("clam")
+s.configure("Treeview", font=("Arial", 11), rowheight=26, background="#1f1e1b", fieldbackground="#1f1e1b",
+            foreground="#eee", borderwidth=0)
+s.configure("Treeview.Heading", font=("Arial", 11, "bold"), background="#c23b22", foreground="white", relief="flat")
+s.map("Treeview", background=[("selected", "#ffb000")], foreground=[("selected", "black")])
+s.map("Treeview.Heading", background=[("active", "#e0553a")])
+
+tv = ttk.Treeview(root, columns=("a", "b"), show="headings", height=4)
+for c in ("a", "b"):
+    tv.heading(c, text=c.upper())
+for i in range(4):
+    tv.insert("", "end", values=(i, i * i))
+tv.pack(padx=10, pady=10)
+root.mainloop()
+```
+
+@@ ttk.style-notebook
+Q: How do I style Notebook tabs (colours, padding, selected tab)?
+aka: notebook tab color, notebook tab padding, selected tab color, notebook style, hide tabs, tab font
+A: Configure `"TNotebook.Tab"` (`padding`, `font`, `background`) and map `background`/`foreground` for the `"selected"` state. To hide the tab row (for a wizard), set an empty layout: `s.layout("Hidden.TNotebook.Tab", [])`.
+see: ttk.notebook-ref
+```py
+import tkinter as tk
+from tkinter import ttk
+
+root = tk.Tk()
+s = ttk.Style(); s.theme_use("clam")
+s.configure("TNotebook", background="#f2ede3", borderwidth=0)
+s.configure("TNotebook.Tab", padding=(14, 6), font=("Arial", 11), background="#ddd5c4")
+s.map("TNotebook.Tab", background=[("selected", "#c23b22")], foreground=[("selected", "white")])
+
+nb = ttk.Notebook(root)
+for name in ("One", "Two", "Three"):
+    nb.add(ttk.Frame(nb, width=260, height=100), text=name)
+nb.pack(padx=10, pady=10)
+root.mainloop()
+```
+
+@@ ttk.style-scrollbar
+Q: How do I change the colour or width of a ttk Scrollbar?
+aka: scrollbar color, scrollbar width, thin scrollbar, dark scrollbar, scrollbar arrows remove, trough color
+A: Use the `"clam"` (or `"alt"`) theme and configure `"Vertical.TScrollbar"`: `background` (thumb), `troughcolor`, `arrowcolor`, `bordercolor`, `arrowsize` (sets the width).
+see: ttk.style-basics
+```py
+import tkinter as tk
+from tkinter import ttk
+
+root = tk.Tk()
+s = ttk.Style(); s.theme_use("clam")
+s.configure("Thin.Vertical.TScrollbar", background="#c23b22", troughcolor="#f2ede3", bordercolor="#f2ede3",
+            arrowcolor="white", arrowsize=10, relief="flat")
+s.map("Thin.Vertical.TScrollbar", background=[("active", "#e0553a")])
+
+t = tk.Text(root, width=30, height=8)
+sb = ttk.Scrollbar(root, orient="vertical", command=t.yview, style="Thin.Vertical.TScrollbar")
+t.config(yscrollcommand=sb.set)
+t.pack(side="left", fill="both", expand=True); sb.pack(side="right", fill="y")
+t.insert("1.0", "\n".join(f"line {i}" for i in range(60)))
+root.mainloop()
+```
+
+@@ ttk.style-combobox
+Q: How do I change Combobox colours (field, arrow, drop-down list)?
+aka: combobox background color, combobox dropdown color, combobox readonly color, combobox listbox font, combobox arrow color
+A: The field: style `"TCombobox"` with `fieldbackground`, `background` (arrow box), `arrowcolor`, plus `style.map` for the `"readonly"` state. The drop-down list is a classic Listbox: set it with `root.option_add("*TCombobox*Listbox.background", ...)` **before** creating the combobox.
+see: ttk.combobox-ref
+```py
+import tkinter as tk
+from tkinter import ttk
+
+root = tk.Tk()
+root.option_add("*TCombobox*Listbox.background", "#1f1e1b")
+root.option_add("*TCombobox*Listbox.foreground", "#eee")
+root.option_add("*TCombobox*Listbox.selectBackground", "#c23b22")
+root.option_add("*TCombobox*Listbox.font", ("Arial", 12))
+
+s = ttk.Style(); s.theme_use("clam")
+s.configure("TCombobox", fieldbackground="#fff3d6", background="#c23b22", arrowcolor="white", padding=4)
+s.map("TCombobox", fieldbackground=[("readonly", "#fff3d6")], selectbackground=[("readonly", "#fff3d6")],
+      selectforeground=[("readonly", "black")])
+
+cb = ttk.Combobox(root, values=["Red", "Green", "Blue"], state="readonly")
+cb.current(0)
+cb.pack(padx=30, pady=30)
+root.mainloop()
+```
+
+@@ ttk.style-checkbox
+Q: How do I change the colour of ttk Checkbutton/Radiobutton boxes (indicator)?
+aka: checkbox color ttk, indicator color, radiobutton dot color, indicatorbackground, checkbutton background ttk
+A: In the `"clam"` theme, configure `indicatorbackground`, `indicatorforeground` (the tick), and map them for `"selected"`. Set `background` to match your window.
+see: ttk.check-radio
+```py
+import tkinter as tk
+from tkinter import ttk
+
+root = tk.Tk()
+root.configure(bg="#f2ede3")
+s = ttk.Style(); s.theme_use("clam")
+for w in ("TCheckbutton", "TRadiobutton"):
+    s.configure(w, background="#f2ede3", indicatorbackground="white", indicatorforeground="white", font=("Arial", 12))
+    s.map(w, indicatorbackground=[("selected", "#c23b22"), ("pressed", "#e0553a")],
+          background=[("active", "#ebe4d6")])
+v = tk.BooleanVar(value=True)
+ttk.Checkbutton(root, text="Subscribe", variable=v).pack(anchor="w", padx=20, pady=(16, 4))
+r = tk.StringVar(value="a")
+ttk.Radiobutton(root, text="Option A", value="a", variable=r).pack(anchor="w", padx=20)
+ttk.Radiobutton(root, text="Option B", value="b", variable=r).pack(anchor="w", padx=20, pady=(0, 16))
+root.mainloop()
+```
+
+@@ ttk.theme-create
+Q: How do I make my own complete ttk theme?
+aka: theme_create, custom theme, make theme, theme settings, parent theme, ttk theme from scratch, settings dict
+A: `style.theme_create(name, parent="clam", settings={...})` with a dict of `{"TButton": {"configure": {...}, "map": {...}}, ...}`, then `theme_use(name)`. Every window in the app picks it up.
+see: tk.ttk-theme, tk.dark-mode
+```py
+import tkinter as tk
+from tkinter import ttk
+
+INK, PAPER, ACC = "#1b1a17", "#f2ede3", "#c23b22"
+root = tk.Tk()
+root.configure(bg=PAPER)
+s = ttk.Style()
+s.theme_create("paper", parent="clam", settings={
+    ".":            {"configure": {"background": PAPER, "foreground": INK, "font": ("Georgia", 11)}},
+    "TButton":      {"configure": {"padding": (12, 6), "background": INK, "foreground": PAPER, "borderwidth": 0},
+                     "map": {"background": [("active", ACC)]}},
+    "TEntry":       {"configure": {"fieldbackground": "white", "padding": 5}},
+    "TLabel":       {"configure": {"background": PAPER}},
+    "Horizontal.TProgressbar": {"configure": {"background": ACC, "troughcolor": "#ddd5c4"}},
+})
+s.theme_use("paper")
+
+ttk.Label(root, text="Paper theme").pack(padx=20, pady=(16, 6))
+ttk.Entry(root).pack(padx=20, pady=6)
+ttk.Progressbar(root, value=40, length=200).pack(padx=20, pady=6)
+ttk.Button(root, text="Save").pack(padx=20, pady=(6, 16))
+print(s.theme_names())
+root.mainloop()
+```
+
+@@ ttk.focus-ring
+Q: How do I remove the dotted focus rectangle from ttk buttons and tabs?
+aka: remove focus border, dotted line button, focus ring, focuscolor, takefocus false, notebook dotted line
+A: Set `focuscolor` to the background colour in the style (clam theme), or stop the widget taking focus with `takefocus=False` (but then keyboard users can't reach it, so prefer the first).
+see: ttk.style-map
+```py
+import tkinter as tk
+from tkinter import ttk
+
+root = tk.Tk()
+s = ttk.Style(); s.theme_use("clam")
+s.configure("TButton", focuscolor=s.lookup("TButton", "background"))
+s.configure("TNotebook.Tab", focuscolor=s.lookup("TNotebook.Tab", "background"))
+b = ttk.Button(root, text="No dotted ring"); b.pack(padx=30, pady=20)
+b.focus_set()
+root.mainloop()
+```

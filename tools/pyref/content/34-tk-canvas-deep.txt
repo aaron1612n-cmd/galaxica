@@ -1,0 +1,680 @@
+# tk-cv | Canvas in depth | Every item type, animation, physics, charts, zoom and pan, sprites, clocks | tkinter
+
+@@ tk.cv.items-all
+Q: What options do canvas items take (fill, outline, width, dash, arrow, smooth...)?
+aka: canvas item options, create_line options, dash, arrow, capstyle, joinstyle, smooth line, stipple, activefill, state hidden, create_polygon options, outline width
+A: Shapes: `fill`, `outline`, `width`, `dash` (e.g. `(6, 3)`), `stipple`, `activefill`/`activeoutline` (on hover), `state` (`"normal"`, `"hidden"`, `"disabled"`), `tags`. Lines also: `arrow` (`"first"`, `"last"`, `"both"`), `arrowshape`, `capstyle`, `joinstyle`, `smooth=True` (curves), `splinesteps`. Text: `text`, `font`, `anchor`, `justify`, `width` (wrap), `angle`. Images: `image`, `anchor`.
+see: tk.canvas, tk.ref.canvas
+```py
+import tkinter as tk
+
+root = tk.Tk()
+c = tk.Canvas(root, width=420, height=260, bg="white", highlightthickness=0)
+c.pack()
+c.create_line(20, 20, 200, 20, width=4, arrow="last", arrowshape=(14, 16, 6))
+c.create_line(20, 50, 200, 50, width=3, dash=(8, 4), fill="#c23b22")
+c.create_line(20, 80, 80, 130, 140, 80, 200, 130, width=3, smooth=True, fill="#2e7d4f")
+c.create_line(20, 150, 200, 150, width=12, capstyle="round", fill="#888")
+c.create_rectangle(230, 20, 400, 80, fill="#ffd27a", outline="#7a5a00", width=3, activefill="#ffb000")
+c.create_oval(230, 100, 300, 170, fill="#9bd", outline="")
+c.create_polygon(330, 100, 400, 170, 320, 170, fill="#e6a", outline="black", width=2, joinstyle="round")
+c.create_arc(230, 180, 330, 250, start=30, extent=300, fill="#ffb000", style="pieslice")
+c.create_text(380, 220, text="Rotated", angle=30, font=("Arial", 14, "bold"))
+hidden = c.create_rectangle(10, 200, 60, 250, fill="black", state="hidden")
+c.create_text(110, 220, text="Text that wraps at 120 pixels", width=120, font=("Arial", 11))
+root.mainloop()
+```
+
+@@ tk.cv.arc-styles
+Q: How do I draw arcs, pie slices and a pie chart?
+aka: create_arc, pie chart, arc style, chord, pieslice, arc extent start, progress ring, donut chart
+A: `create_arc(x1, y1, x2, y2, start=deg, extent=deg, style=...)`: `start` is the angle from 3 o'clock going **anticlockwise**, `extent` how far it goes. Styles: `"pieslice"` (default), `"chord"`, `"arc"` (just the curved line; use `outline` + `width`).
+see: tk.canvas-chart
+```py
+import tkinter as tk
+
+DATA = {"Rent": 45, "Food": 25, "Fun": 15, "Saving": 15}
+COLS = ["#c23b22", "#ffb000", "#2e7d4f", "#3b6ea8"]
+root = tk.Tk()
+c = tk.Canvas(root, width=420, height=220, bg="white", highlightthickness=0); c.pack()
+
+total, start = sum(DATA.values()), 90
+for (name, v), col in zip(DATA.items(), COLS):
+    ext = -360 * v / total                        # negative = clockwise
+    c.create_arc(20, 20, 200, 200, start=start, extent=ext, fill=col, outline="white", width=2)
+    start += ext
+for i, ((name, v), col) in enumerate(zip(DATA.items(), COLS)):
+    c.create_rectangle(230, 40 + i * 30, 246, 56 + i * 30, fill=col, outline="")
+    c.create_text(256, 48 + i * 30, text=f"{name} {v}%", anchor="w", font=("Arial", 11))
+
+# a progress ring
+c.create_oval(340, 150, 400, 210, outline="#eee", width=8)
+c.create_arc(340, 150, 400, 210, start=90, extent=-360 * 0.7, style="arc", outline="#c23b22", width=8)
+c.create_text(370, 180, text="70%", font=("Arial", 10, "bold"))
+root.mainloop()
+```
+
+@@ tk.cv.line-graph
+Q: How do I draw a line graph with axes from a list of numbers?
+aka: plot graph canvas, line chart tkinter, draw graph axes, plot points, graph without matplotlib, scale data to canvas
+A: Work out a scale from your data range to the canvas size, draw the axes, then one `create_line` through all the scaled points (it accepts a long flat list of x, y values).
+see: tk.canvas-chart, tk.data.matplotlib
+```py
+import math
+import tkinter as tk
+
+values = [math.sin(x / 4) * 10 + x / 2 for x in range(40)]
+W, H, PAD = 420, 240, 36
+root = tk.Tk()
+c = tk.Canvas(root, width=W, height=H, bg="white", highlightthickness=0); c.pack()
+
+lo, hi = min(values), max(values)
+def sx(i): return PAD + i * (W - 2 * PAD) / (len(values) - 1)
+def sy(v): return H - PAD - (v - lo) * (H - 2 * PAD) / (hi - lo)
+
+c.create_line(PAD, H - PAD, W - PAD, H - PAD, arrow="last")       # x axis
+c.create_line(PAD, H - PAD, PAD, PAD - 10, arrow="last")          # y axis
+for k in range(5):                                                # y labels + grid
+    v = lo + (hi - lo) * k / 4
+    c.create_line(PAD, sy(v), W - PAD, sy(v), fill="#eee")
+    c.create_text(PAD - 4, sy(v), text=f"{v:.0f}", anchor="e", font=("Arial", 8))
+points = [p for i, v in enumerate(values) for p in (sx(i), sy(v))]
+c.create_line(points, fill="#c23b22", width=2, smooth=True)
+for i, v in enumerate(values[::5]):
+    x, y = sx(i * 5), sy(v)
+    c.create_oval(x - 3, y - 3, x + 3, y + 3, fill="#c23b22", outline="")
+root.mainloop()
+```
+
+@@ tk.cv.live-graph
+Q: How do I draw a live graph that updates (scrolling chart of sensor/CPU values)?
+aka: live plot, real time graph, scrolling chart, update graph every second, oscilloscope, sensor plot
+A: Keep the last N values in a `deque(maxlen=N)`; every tick add a value and update the line with `c.coords(line, *points)` (faster than deleting and redrawing).
+see: tk.cv.line-graph, tk.after
+```py
+import math, random
+from collections import deque
+import tkinter as tk
+
+W, H, N = 400, 160, 80
+root = tk.Tk()
+c = tk.Canvas(root, width=W, height=H, bg="#111", highlightthickness=0); c.pack()
+data = deque([H / 2] * N, maxlen=N)
+line = c.create_line(0, 0, 0, 0, fill="#6f6", width=2)
+label = c.create_text(W - 6, 6, anchor="ne", fill="#6f6", font=("Consolas", 10))
+t = [0]
+
+def tick():
+    t[0] += 1
+    value = 50 + 35 * math.sin(t[0] / 8) + random.uniform(-6, 6)     # read your sensor here
+    data.append(H - value / 100 * H)
+    pts = [p for i, y in enumerate(data) for p in (i * W / (N - 1), y)]
+    c.coords(line, *pts)
+    c.itemconfig(label, text=f"{value:5.1f}")
+    root.after(40, tick)
+tick()
+root.mainloop()
+```
+
+@@ tk.cv.bounce
+Q: How do I make a ball bounce around the window?
+aka: bouncing ball, ball animation, move ball bounce walls, dvd logo bounce, velocity animation
+A: Store a velocity `(dx, dy)`. Each frame `move` the ball, read its `coords`, and flip `dx` or `dy` when it hits an edge.
+see: tk.game-loop, tk.canvas-move
+```py
+import tkinter as tk
+
+W, H, R = 400, 260, 15
+root = tk.Tk()
+c = tk.Canvas(root, width=W, height=H, bg="white", highlightthickness=0); c.pack()
+ball = c.create_oval(50, 50, 50 + 2 * R, 50 + 2 * R, fill="#c23b22", outline="")
+vel = [4, 3]
+
+def step():
+    c.move(ball, *vel)
+    x1, y1, x2, y2 = c.coords(ball)
+    if x1 <= 0 or x2 >= W:
+        vel[0] = -vel[0]
+    if y1 <= 0 or y2 >= H:
+        vel[1] = -vel[1]
+    root.after(16, step)          # about 60 frames a second
+step()
+root.mainloop()
+```
+
+@@ tk.cv.gravity
+Q: How do I add gravity and jumping (for a platformer or bouncing balls)?
+aka: gravity physics, jump physics, platformer jump, fall and land, velocity acceleration, ground collision, double jump
+A: Each frame add gravity to the vertical speed (`vy += g`), move by `vy`, and if the object goes below the ground, put it back on the ground and set `vy = 0`. Jumping = set `vy` to a negative number, only when on the ground.
+see: tk.key-held, tk.gm.platformer
+```py
+import tkinter as tk
+
+W, H, GROUND = 400, 240, 210
+root = tk.Tk()
+c = tk.Canvas(root, width=W, height=H, bg="#dff0ff", highlightthickness=0); c.pack()
+c.create_rectangle(0, GROUND, W, H, fill="#6a8f3a", outline="")
+p = {"x": 60.0, "y": GROUND - 30.0, "vy": 0.0}
+body = c.create_rectangle(0, 0, 24, 30, fill="#c23b22", outline="")
+keys = set()
+root.bind("<KeyPress>", lambda e: keys.add(e.keysym))
+root.bind("<KeyRelease>", lambda e: keys.discard(e.keysym))
+
+def step():
+    on_ground = p["y"] >= GROUND - 30
+    if ("space" in keys or "Up" in keys) and on_ground:
+        p["vy"] = -11                         # jump
+    p["vy"] += 0.6                            # gravity
+    p["y"] += p["vy"]
+    if p["y"] > GROUND - 30:                  # landed
+        p["y"], p["vy"] = GROUND - 30, 0
+    p["x"] += 4 * (("Right" in keys) - ("Left" in keys))
+    p["x"] = max(0, min(W - 24, p["x"]))
+    c.coords(body, p["x"], p["y"], p["x"] + 24, p["y"] + 30)
+    root.after(16, step)
+
+keys.add("space"); root.after(100, lambda: keys.discard("space"))   # demo jump
+step()
+root.mainloop()
+```
+
+@@ tk.cv.delta-time
+Q: My animation runs at different speeds on different computers. How do I fix it (delta time)?
+aka: delta time, frame rate independent, fps, animation speed varies, time based movement, measure fps
+A: `after(16)` is not exact. Measure the real time between frames with `time.perf_counter()` and move by `speed * dt` (speed in pixels per **second**).
+see: tk.game-loop
+```py
+import time
+import tkinter as tk
+
+root = tk.Tk()
+c = tk.Canvas(root, width=400, height=120, bg="white", highlightthickness=0); c.pack()
+box = c.create_rectangle(0, 40, 40, 80, fill="#3b6ea8", outline="")
+fps_text = c.create_text(394, 6, anchor="ne", font=("Arial", 9))
+SPEED = 150                                  # pixels per second
+last = time.perf_counter()
+x = 0.0
+
+def frame():
+    global last, x
+    now = time.perf_counter()
+    dt, last = now - last, now
+    x = (x + SPEED * dt) % 400
+    c.coords(box, x, 40, x + 40, 80)
+    c.itemconfig(fps_text, text=f"{1 / dt:.0f} fps" if dt else "")
+    root.after(16, frame)
+frame()
+root.mainloop()
+```
+
+@@ tk.cv.sprite-sheet
+Q: How do I animate a sprite (walking character) from images or a sprite sheet?
+aka: sprite animation, sprite sheet, animate frames, character walk animation, flip sprite, frames list photoimage
+A: Load every frame as a PhotoImage (with Pillow you can `crop` them out of one sheet), keep them in a list, and every few ticks change the canvas image item with `itemconfig(item, image=frames[i])`.
+see: tk.gif, tk.pillow
+```py
+import tkinter as tk
+from PIL import Image, ImageDraw, ImageTk
+
+# make a 4-frame sprite sheet in memory (normally: Image.open("sheet.png"))
+sheet = Image.new("RGBA", (4 * 32, 32))
+d = ImageDraw.Draw(sheet)
+for i in range(4):
+    d.ellipse((i * 32 + 4, 4, i * 32 + 28, 28), fill=(194, 59, 34))
+    d.rectangle((i * 32 + 8 + i * 4, 14, i * 32 + 12 + i * 4, 18), fill="white")    # moving eye
+
+root = tk.Tk()
+frames = [ImageTk.PhotoImage(sheet.crop((i * 32, 0, i * 32 + 32, 32)).resize((64, 64), Image.NEAREST)) for i in range(4)]
+flipped = [ImageTk.PhotoImage(sheet.crop((i * 32, 0, i * 32 + 32, 32)).transpose(Image.FLIP_LEFT_RIGHT).resize((64, 64), Image.NEAREST)) for i in range(4)]
+c = tk.Canvas(root, width=300, height=100, bg="white", highlightthickness=0); c.pack()
+hero = c.create_image(150, 50, image=frames[0])
+n = [0]
+
+def animate():
+    n[0] += 1
+    c.itemconfig(hero, image=frames[n[0] % 4])
+    root.after(120, animate)
+animate()
+root.mainloop()
+```
+
+@@ tk.cv.rotate
+Q: How do I rotate a shape (polygon) or an image on a Canvas?
+aka: rotate polygon, rotate shape, rotate image canvas, spin, angle rotation, rotate around center, spaceship rotate
+A: Canvas can't rotate shapes for you, but you can rotate the points yourself with sin/cos around a centre and set them with `coords`. For images, rotate with Pillow (`img.rotate(angle, expand=True)`) and update the image item.
+see: tk.cv.sprite-sheet
+```py
+import math
+import tkinter as tk
+
+root = tk.Tk()
+c = tk.Canvas(root, width=240, height=240, bg="#111", highlightthickness=0); c.pack()
+SHIP = [(0, -22), (14, 16), (0, 8), (-14, 16)]        # points around (0, 0)
+ship = c.create_polygon(0, 0, 0, 0, fill="", outline="#f2ede3", width=2)
+angle = [0.0]
+
+def draw(cx=120, cy=120):
+    a = math.radians(angle[0])
+    pts = []
+    for x, y in SHIP:
+        pts += [cx + x * math.cos(a) - y * math.sin(a), cy + x * math.sin(a) + y * math.cos(a)]
+    c.coords(ship, *pts)
+
+def spin():
+    angle[0] = (angle[0] + 4) % 360
+    draw()
+    root.after(20, spin)
+spin()
+root.mainloop()
+```
+
+@@ tk.cv.zoom-pan
+Q: How do I zoom (mouse wheel) and pan (drag) on a Canvas?
+aka: zoom canvas, pan canvas, scale canvas, canvas.scale, scan_mark scan_dragto, zoom at mouse, map viewer
+A: Pan: `scan_mark(x, y)` on press and `scan_dragto(x, y, gain=1)` while dragging. Zoom: `c.scale("all", x, y, f, f)` around the mouse point (in canvas coordinates: `canvasx/canvasy`). Note: `scale` changes shapes, not text size or images.
+see: tk.mousewheel, tk.canvas-scroll
+```py
+import tkinter as tk
+
+root = tk.Tk()
+c = tk.Canvas(root, width=400, height=280, bg="white", highlightthickness=0); c.pack(fill="both", expand=True)
+for i in range(-10, 11):
+    c.create_line(i * 40, -400, i * 40, 400, fill="#eee")
+    c.create_line(-400, i * 40, 400, i * 40, fill="#eee")
+c.create_rectangle(-20, -20, 20, 20, fill="#c23b22", outline="")
+c.create_oval(80, 40, 160, 120, fill="#3b6ea8", outline="")
+c.xview_moveto(0); c.yview_moveto(0)
+c.config(scrollregion=(-2000, -2000, 2000, 2000))
+c.xview_scroll(-200, "units"); c.yview_scroll(-140, "units")
+
+c.bind("<ButtonPress-1>", lambda e: c.scan_mark(e.x, e.y))
+c.bind("<B1-Motion>", lambda e: c.scan_dragto(e.x, e.y, gain=1))
+
+def zoom(e):
+    f = 1.1 if (getattr(e, "delta", 0) > 0 or e.num == 4) else 1 / 1.1
+    c.scale("all", c.canvasx(e.x), c.canvasy(e.y), f, f)
+
+c.bind("<MouseWheel>", zoom)                           # Windows / macOS
+c.bind("<Button-4>", zoom); c.bind("<Button-5>", zoom)  # Linux
+root.mainloop()
+```
+
+@@ tk.cv.canvasx
+Q: My click positions are wrong after scrolling a Canvas. What are canvasx and canvasy?
+aka: canvasx canvasy, scrolled canvas click wrong, window coordinates vs canvas coordinates, event.x scroll offset
+A: `event.x/event.y` are positions in the **visible window**. After scrolling, convert to canvas coordinates with `c.canvasx(event.x)` and `c.canvasy(event.y)` before comparing with item coords.
+see: tk.canvas-scroll, tk.cv.zoom-pan
+```py
+import tkinter as tk
+
+root = tk.Tk()
+c = tk.Canvas(root, width=300, height=200, bg="white", scrollregion=(0, 0, 1000, 1000)); c.pack()
+c.yview_moveto(0.5)            # scrolled down 500 px
+
+def click(e):
+    x, y = c.canvasx(e.x), c.canvasy(e.y)
+    print("window", (e.x, e.y), "canvas", (x, y))
+    c.create_oval(x - 4, y - 4, x + 4, y + 4, fill="red")
+
+c.bind("<Button-1>", click)
+c.event_generate("<Button-1>", x=10, y=10)
+root.mainloop()
+```
+
+@@ tk.cv.find
+Q: How do I find which items are at a point or inside an area (find_overlapping, find_closest, find_enclosed)?
+aka: find_overlapping, find_closest, find_enclosed, find_above, find_below, items at mouse, select area rubber band
+A: `find_overlapping(x1, y1, x2, y2)` = items touching the box; `find_enclosed(...)` = items fully inside it; `find_closest(x, y)` = nearest item; `find_withtag("current")` = item under the mouse.
+see: tk.collision, tk.canvas-click
+```py
+import tkinter as tk
+
+root = tk.Tk()
+c = tk.Canvas(root, width=300, height=200, bg="white", highlightthickness=0); c.pack()
+for x in range(20, 280, 50):
+    c.create_oval(x, 80, x + 30, 110, fill="#ddd", tags="dot")
+band = c.create_rectangle(0, 0, 0, 0, dash=(4, 2))
+start = {}
+
+def press(e):
+    start["x"], start["y"] = e.x, e.y
+
+def drag(e):
+    c.coords(band, start["x"], start["y"], e.x, e.y)
+
+def release(e):
+    c.itemconfig("dot", fill="#ddd")
+    for i in c.find_enclosed(start["x"], start["y"], e.x, e.y):
+        if "dot" in c.gettags(i):
+            c.itemconfig(i, fill="#c23b22")
+    c.coords(band, 0, 0, 0, 0)
+
+c.bind("<ButtonPress-1>", press); c.bind("<B1-Motion>", drag); c.bind("<ButtonRelease-1>", release)
+print(c.find_overlapping(60, 90, 80, 100))       # touching that box
+print(c.find_closest(10, 10))
+root.mainloop()
+```
+
+@@ tk.cv.circle-collision
+Q: How do I check collisions between circles, or a circle and a rectangle?
+aka: circle collision, distance between points, circle rectangle collision, hypot, ball hits paddle, accurate collision
+A: Two circles touch if the distance between centres `math.hypot(dx, dy)` is less than the sum of the radii. Circle vs rectangle: clamp the circle centre into the rectangle to find the closest point, then measure the distance to it.
+see: tk.collision
+```py
+import math
+
+def circles_touch(x1, y1, r1, x2, y2, r2):
+    return math.hypot(x2 - x1, y2 - y1) < r1 + r2
+
+def circle_rect(cx, cy, r, left, top, right, bottom):
+    nx = max(left, min(cx, right))       # closest point of the rectangle
+    ny = max(top, min(cy, bottom))
+    return math.hypot(cx - nx, cy - ny) < r
+
+print(circles_touch(0, 0, 10, 15, 0, 6))        # True
+print(circles_touch(0, 0, 10, 30, 0, 6))        # False
+print(circle_rect(50, 50, 10, 58, 0, 100, 100)) # True (edge is 8 away)
+```
+```text
+True
+False
+True
+```
+
+@@ tk.cv.create-window
+Q: How do I put buttons or entries on a Canvas (create_window)?
+aka: create_window, widget on canvas, button on canvas, entry over image, form on background image
+A: `c.create_window(x, y, window=widget, anchor="nw")` places a real widget on the canvas. It always sits on top of drawn items, moves with `coords`, and scrolls with the canvas.
+see: tk.bg-image, tk.scroll-frame
+```py
+import tkinter as tk
+
+root = tk.Tk()
+c = tk.Canvas(root, width=320, height=180, bg="#1b1a17", highlightthickness=0); c.pack()
+for i in range(0, 320, 16):
+    c.create_line(i, 0, i + 120, 180, fill="#2c2a26")
+c.create_text(160, 34, text="Sign in", fill="#f2ede3", font=("Georgia", 20))
+name = tk.Entry(c, width=24)
+c.create_window(160, 84, window=name)
+btn = tk.Button(c, text="Go", width=8, command=lambda: print("hello", name.get()))
+c.create_window(160, 124, window=btn)
+root.mainloop()
+```
+
+@@ tk.cv.analog-clock
+Q: How do I draw an analog clock with moving hands?
+aka: analog clock, clock face, clock hands, rotate hand, draw clock tkinter
+A: Each second, compute the angle of each hand (`seconds * 6` degrees, minutes `* 6`, hours `* 30`) and update the line ends with sin/cos.
+see: tk.clock, tk.cv.rotate
+```py
+import math, time
+import tkinter as tk
+
+S, C = 220, 110
+root = tk.Tk()
+c = tk.Canvas(root, width=S, height=S, bg="white", highlightthickness=0); c.pack()
+c.create_oval(10, 10, S - 10, S - 10, width=3)
+for i in range(12):
+    a = math.radians(i * 30)
+    c.create_line(C + 85 * math.sin(a), C - 85 * math.cos(a), C + 95 * math.sin(a), C - 95 * math.cos(a), width=3)
+hands = {name: c.create_line(C, C, C, C, width=w, fill=col, capstyle="round")
+         for name, w, col in (("h", 6, "black"), ("m", 4, "black"), ("s", 2, "#c23b22"))}
+
+def hand(name, deg, length):
+    a = math.radians(deg)
+    c.coords(hands[name], C, C, C + length * math.sin(a), C - length * math.cos(a))
+
+def tick():
+    t = time.localtime()
+    hand("h", (t.tm_hour % 12 + t.tm_min / 60) * 30, 50)
+    hand("m", (t.tm_min + t.tm_sec / 60) * 6, 75)
+    hand("s", t.tm_sec * 6, 85)
+    root.after(1000, tick)
+tick()
+root.mainloop()
+```
+
+@@ tk.cv.gradient
+Q: How do I draw a gradient background on a Canvas?
+aka: gradient canvas, color gradient, fade colour, background gradient tkinter, interpolate colours
+A: Draw many thin lines (or rectangles), each with a colour mixed between the two ends. Redraw on `<Configure>` if the canvas resizes.
+see: tk.colors
+```py
+import tkinter as tk
+
+def mix(c1, c2, t):
+    a = [int(c1[i:i + 2], 16) for i in (1, 3, 5)]
+    b = [int(c2[i:i + 2], 16) for i in (1, 3, 5)]
+    return "#%02x%02x%02x" % tuple(round(x + (y - x) * t) for x, y in zip(a, b))
+
+root = tk.Tk()
+c = tk.Canvas(root, width=360, height=200, highlightthickness=0); c.pack(fill="both", expand=True)
+
+def draw(event=None):
+    c.delete("grad")
+    h, w = c.winfo_height(), c.winfo_width()
+    for y in range(0, h, 2):
+        c.create_line(0, y, w, y, fill=mix("#ffb000", "#c23b22", y / h), width=2, tags="grad")
+    c.tag_lower("grad")
+
+c.bind("<Configure>", draw)
+c.create_text(180, 100, text="Gradient", font=("Georgia", 26), fill="white")
+root.mainloop()
+```
+
+@@ tk.cv.hover-items
+Q: How do I highlight a canvas item when the mouse is over it?
+aka: canvas hover, tag_bind enter leave, activefill, highlight shape on hover, canvas tooltip
+A: Easiest: give the item `activefill=` / `activeoutline=`. For more control, `tag_bind(tag, "<Enter>", ...)` and `"<Leave>"`, and use the `"current"` tag to know which item.
+see: tk.canvas-tags, tk.hover
+```py
+import tkinter as tk
+
+root = tk.Tk()
+c = tk.Canvas(root, width=320, height=120, bg="white", highlightthickness=0); c.pack()
+info = c.create_text(160, 105, text="", font=("Arial", 10))
+for i, name in enumerate(["Mercury", "Venus", "Earth", "Mars"]):
+    c.create_oval(20 + i * 75, 20, 80 + i * 75, 80, fill="#ddd", activefill="#ffd27a", outline="", tags=("planet", name))
+
+def enter(e):
+    name = c.gettags("current")[1]
+    c.itemconfig(info, text=name)
+
+c.tag_bind("planet", "<Enter>", enter)
+c.tag_bind("planet", "<Leave>", lambda e: c.itemconfig(info, text=""))
+root.mainloop()
+```
+
+@@ tk.cv.snap-grid
+Q: How do I make dragged items snap to a grid?
+aka: snap to grid, grid snapping drag, align to grid canvas, drag and drop board pieces
+A: While dragging, round the new position to the nearest multiple of the cell size: `round(x / CELL) * CELL`.
+see: tk.canvas-drag
+```py
+import tkinter as tk
+
+CELL = 40
+root = tk.Tk()
+c = tk.Canvas(root, width=320, height=240, bg="white", highlightthickness=0); c.pack()
+for x in range(0, 320, CELL):
+    c.create_line(x, 0, x, 240, fill="#eee")
+for y in range(0, 240, CELL):
+    c.create_line(0, y, 320, y, fill="#eee")
+for i, col in enumerate(("#c23b22", "#3b6ea8", "#2e7d4f")):
+    c.create_rectangle(i * CELL * 2, 0, i * CELL * 2 + CELL, CELL, fill=col, outline="", tags="piece")
+
+grab = {}
+def press(e):
+    grab["item"] = c.find_withtag("current")[0]
+    x1, y1, *_ = c.coords(grab["item"])
+    grab["off"] = (e.x - x1, e.y - y1)
+
+def drag(e):
+    x = round((e.x - grab["off"][0]) / CELL) * CELL
+    y = round((e.y - grab["off"][1]) / CELL) * CELL
+    c.coords(grab["item"], x, y, x + CELL, y + CELL)
+
+c.tag_bind("piece", "<ButtonPress-1>", press)
+c.tag_bind("piece", "<B1-Motion>", drag)
+root.mainloop()
+```
+
+@@ tk.cv.particles
+Q: How do I make a simple particle effect (explosion, sparks, confetti)?
+aka: particles, explosion effect, confetti, sparks, firework tkinter
+A: Keep a list of particles (item id, velocity, life). Each frame move them, apply gravity, shrink life, and delete the ones that are done.
+see: tk.cv.gravity, tk.game-loop
+```py
+import random
+import tkinter as tk
+
+root = tk.Tk()
+c = tk.Canvas(root, width=360, height=240, bg="#111", highlightthickness=0); c.pack()
+parts = []
+
+def burst(x, y):
+    for _ in range(40):
+        col = random.choice(["#ffb000", "#c23b22", "#f2ede3", "#6cf"])
+        item = c.create_rectangle(x, y, x + 3, y + 3, fill=col, outline="")
+        parts.append([item, random.uniform(-4, 4), random.uniform(-6, 1), random.randint(30, 60)])
+
+def step():
+    for p in parts[:]:
+        item, vx, vy, life = p
+        c.move(item, vx, vy)
+        p[2] += 0.2                 # gravity
+        p[3] -= 1
+        if p[3] <= 0:
+            c.delete(item)
+            parts.remove(p)
+    root.after(16, step)
+
+c.bind("<Button-1>", lambda e: burst(e.x, e.y))
+burst(180, 120)
+step()
+root.mainloop()
+```
+
+@@ tk.cv.postscript
+Q: How do I print a Canvas or save it as PDF/PostScript?
+aka: canvas postscript, print canvas, save canvas pdf, canvas to eps, export drawing
+A: `c.postscript(file="drawing.eps", colormode="color")` writes PostScript, which printers and Ghostscript understand. For PNG/PDF, draw the same things with Pillow, or convert the EPS (Pillow can open EPS when Ghostscript is installed).
+see: tk.canvas-save
+```py
+import tkinter as tk
+
+root = tk.Tk()
+c = tk.Canvas(root, width=200, height=120, bg="white"); c.pack()
+c.create_oval(20, 20, 100, 100, fill="#c23b22")
+c.create_text(150, 60, text="Hello", font=("Times", 18))
+root.update()
+c.postscript(file="drawing.eps", colormode="color")
+print(open("drawing.eps").readline().strip())
+root.mainloop()
+```
+
+@@ tk.cv.text-bbox
+Q: How do I put a background box behind canvas text, or measure text size?
+aka: text background canvas, label on canvas, measure text, text bbox, highlight text canvas
+A: Draw the text first, read its size with `c.bbox(text_id)`, draw a rectangle with that box (plus padding), then `tag_lower` the rectangle under the text.
+see: tk.canvas-text
+```py
+import tkinter as tk
+
+root = tk.Tk()
+c = tk.Canvas(root, width=300, height=120, bg="#3b6ea8", highlightthickness=0); c.pack()
+
+def label(x, y, text):
+    t = c.create_text(x, y, text=text, font=("Arial", 13), fill="black")
+    x1, y1, x2, y2 = c.bbox(t)
+    r = c.create_rectangle(x1 - 6, y1 - 3, x2 + 6, y2 + 3, fill="#ffd27a", outline="")
+    c.tag_lower(r, t)
+    return x2 - x1, y2 - y1
+
+print(label(150, 60, "Text with a box behind it"))
+root.mainloop()
+```
+
+@@ tk.cv.moveto
+Q: How do I move a canvas item to an exact position (not by an amount)?
+aka: moveto, set position canvas item, move to xy, teleport item, coords set position
+A: `c.moveto(item, x, y)` puts the item's top-left corner at x, y. Or set all points with `coords`. `move` is relative (adds dx, dy).
+see: tk.canvas-move
+```py
+import tkinter as tk
+
+root = tk.Tk()
+c = tk.Canvas(root, width=200, height=120, bg="white"); c.pack()
+r = c.create_rectangle(10, 10, 50, 40, fill="#c23b22")
+c.moveto(r, 100, 60)
+print(c.coords(r))
+c.coords(r, 0, 0, 20, 20)        # also changes its size
+print(c.coords(r))
+root.mainloop()
+```
+
+@@ tk.cv.paint-plus
+Q: How do I add colours, brush size, eraser, undo and clear to a paint program?
+aka: paint app features, brush size slider, color picker paint, eraser, undo stroke, clear canvas, drawing app
+A: Give each stroke its own tag (`"s5"`) so undo can delete the last stroke. Brush size from a Scale, colour from `colorchooser`, eraser = paint in the background colour.
+see: tk.canvas-paint, tk.colorchooser
+```py
+import tkinter as tk
+from tkinter import colorchooser
+
+root = tk.Tk()
+bar = tk.Frame(root); bar.pack(fill="x")
+c = tk.Canvas(root, width=420, height=260, bg="white", highlightthickness=0, cursor="pencil"); c.pack()
+state = {"color": "black", "last": None, "n": 0}
+size = tk.IntVar(value=4)
+
+def pick():
+    col = colorchooser.askcolor(state["color"])[1]
+    if col:
+        state["color"] = col
+
+def start(e):
+    state["n"] += 1
+    state["last"] = (e.x, e.y)
+
+def paint(e):
+    x0, y0 = state["last"]
+    c.create_line(x0, y0, e.x, e.y, fill=state["color"], width=size.get(), capstyle="round", smooth=True, tags=f"s{state['n']}")
+    state["last"] = (e.x, e.y)
+
+def undo(e=None):
+    if state["n"]:
+        c.delete(f"s{state['n']}")
+        state["n"] -= 1
+
+tk.Button(bar, text="Colour", command=pick).pack(side="left")
+tk.Button(bar, text="Eraser", command=lambda: state.update(color="white")).pack(side="left")
+tk.Scale(bar, from_=1, to=30, orient="horizontal", variable=size, showvalue=False, length=100).pack(side="left")
+tk.Button(bar, text="Undo", command=undo).pack(side="left")
+tk.Button(bar, text="Clear", command=lambda: c.delete("all")).pack(side="left")
+c.bind("<ButtonPress-1>", start); c.bind("<B1-Motion>", paint)
+root.bind("<Control-z>", undo)
+root.mainloop()
+```
+
+@@ tk.cv.performance
+Q: My Canvas game gets slower and slower. How do I make it fast?
+aka: canvas slow, canvas lag, too many items, performance canvas, memory leak canvas, delete items
+A: Usual causes: creating new items every frame without deleting old ones (the item count grows forever: check `len(c.find_all())`), or redrawing everything each frame. Create items **once** and update them with `coords`/`itemconfig`/`move`; delete off-screen items; keep the number of items in the low thousands.
+see: tk.game-loop
+```py
+import tkinter as tk
+
+root = tk.Tk()
+c = tk.Canvas(root, width=300, height=100, bg="white"); c.pack()
+dot = c.create_oval(0, 40, 20, 60, fill="red")        # created once
+x = [0]
+
+def frame():
+    x[0] = (x[0] + 3) % 300
+    c.coords(dot, x[0], 40, x[0] + 20, 60)              # updated, not recreated
+    root.after(16, frame)
+frame()
+root.after(300, lambda: print("items on canvas:", len(c.find_all())))   # stays 1
+root.mainloop()
+```

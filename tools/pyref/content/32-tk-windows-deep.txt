@@ -1,0 +1,485 @@
+# tk-win | Windows in depth | Many windows, dialogs, splash screens, window states, sizes, monitors and DPI | tkinter
+
+@@ tk.win.transient
+Q: What does transient() do, and how do I make a child window that stays on top of its parent?
+aka: transient window, child window on top, toplevel stay above main window, tool window, no taskbar button, dialog on top of parent
+A: `win.transient(root)` ties a Toplevel to its parent: it stays above the parent, minimises with it and (on Windows) gets no taskbar button. Unlike `-topmost`, it doesn't sit above **other** programs.
+see: tk.topmost, tk.ref.toplevel
+```py
+import tkinter as tk
+
+root = tk.Tk()
+root.geometry("300x200+100+100")
+tool = tk.Toplevel(root)
+tool.title("Tools")
+tool.geometry("120x150+420+100")
+tool.transient(root)
+for t in ("Pen", "Brush", "Eraser"):
+    tk.Button(tool, text=t, width=10).pack(pady=3)
+root.mainloop()
+```
+
+@@ tk.win.winfo
+Q: How do I get a widget's or window's size, position and other info (winfo)?
+aka: winfo_width, winfo_height, winfo_x, winfo_rootx, winfo_reqwidth, widget size 1, size is 1, winfo_pointerxy, winfo_ismapped, winfo_viewable
+A: `winfo_width()/winfo_height()` = actual size (returns **1** until the window is drawn: call `update_idletasks()` first). `winfo_reqwidth()` = the size it asked for. `winfo_x()/winfo_y()` = position in its parent; `winfo_rootx()/winfo_rooty()` = position on screen. `winfo_pointerxy()` = mouse on screen. `winfo_ismapped()` = is it shown.
+see: tk.window-pos, tk.ref.widget-methods
+```py
+import tkinter as tk
+
+root = tk.Tk()
+b = tk.Button(root, text="Measure me", padx=20)
+b.pack(padx=30, pady=30)
+print("before drawing:", b.winfo_width())          # 1
+root.update_idletasks()
+print("size:", b.winfo_width(), b.winfo_height())
+print("asked for:", b.winfo_reqwidth(), b.winfo_reqheight())
+print("in parent:", b.winfo_x(), b.winfo_y())
+print("on screen:", b.winfo_rootx(), b.winfo_rooty())
+print("mapped:", b.winfo_ismapped())
+print("screen:", root.winfo_screenwidth(), "x", root.winfo_screenheight())
+root.mainloop()
+```
+
+@@ tk.win.size-to-content
+Q: How do I make the window exactly fit its contents (or stop it shrinking)?
+aka: window fit content, auto size window, window too small, window shrinks, geometry empty string, reset geometry, window grows when adding widgets
+A: A window without `geometry()` sizes itself to fit what's in it. After you've set a size, `root.geometry("")` returns to automatic size. To make the fit the **minimum**, read `winfo_reqwidth/height` and pass them to `minsize`.
+see: tk.minsize, tk.geometry
+```py
+import tkinter as tk
+
+root = tk.Tk()
+root.geometry("500x400")
+for i in range(3):
+    tk.Label(root, text=f"Row {i}", font=("Arial", 14)).pack(padx=20, pady=4)
+
+def fit():
+    root.geometry("")                     # back to natural size
+    root.update_idletasks()
+    root.minsize(root.winfo_reqwidth(), root.winfo_reqheight())
+    print("fits:", root.winfo_reqwidth(), root.winfo_reqheight())
+
+tk.Button(root, text="Fit to content", command=fit).pack(pady=8)
+root.after(100, fit)
+root.mainloop()
+```
+
+@@ tk.win.state
+Q: How do I minimise, maximise or restore a window from code (and know its state)?
+aka: iconify, deiconify, minimise window, maximize window, zoomed, window state normal, root.state(), minimized event, restore window
+A: `root.iconify()` minimises, `root.deiconify()` restores, `root.state("zoomed")` maximises on Windows/macOS (on Linux use `root.attributes("-zoomed", True)`). `root.state()` returns `"normal"`, `"iconic"`, `"withdrawn"` or `"zoomed"`. `<Unmap>`/`<Map>` events fire on minimise/restore.
+see: tk.fullscreen, tk.withdraw
+```py
+import sys
+import tkinter as tk
+
+root = tk.Tk()
+root.geometry("300x150")
+
+def maximise():
+    if sys.platform.startswith("linux"):
+        root.attributes("-zoomed", True)
+    else:
+        root.state("zoomed")
+
+tk.Button(root, text="Maximise", command=maximise).pack(pady=4)
+tk.Button(root, text="Minimise", command=root.iconify).pack(pady=4)
+root.bind("<Unmap>", lambda e: e.widget is root and print("minimised"))
+root.bind("<Map>", lambda e: e.widget is root and print("shown"))
+print(root.state())
+root.mainloop()
+```
+
+@@ tk.win.splash
+Q: How do I show a splash screen while my app loads?
+aka: splash screen, loading screen, startup screen, intro window, borderless loading window
+A: Hide the main window with `withdraw()`, show a borderless Toplevel, do the loading, then destroy the splash and `deiconify()` the main window.
+see: tk.no-titlebar, tk.withdraw
+```py
+import tkinter as tk
+
+root = tk.Tk()
+root.withdraw()
+
+splash = tk.Toplevel(root, bg="#1b1a17")
+splash.overrideredirect(True)
+w, h = 320, 160
+x = (splash.winfo_screenwidth() - w) // 2
+y = (splash.winfo_screenheight() - h) // 2
+splash.geometry(f"{w}x{h}+{x}+{y}")
+tk.Label(splash, text="My App", font=("Georgia", 26), fg="#f2ede3", bg="#1b1a17").pack(expand=True)
+status = tk.Label(splash, text="Loading…", fg="#c9c2b3", bg="#1b1a17")
+status.pack(pady=(0, 16))
+
+steps = ["Loading settings…", "Loading images…", "Ready"]
+def load(i=0):
+    if i < len(steps):
+        status.config(text=steps[i])
+        root.after(60, load, i + 1)            # real loading work goes here, in small steps
+    else:
+        splash.destroy()
+        root.deiconify()
+        root.title("My App")
+        tk.Label(root, text="Main window", padx=60, pady=40).pack()
+
+load()
+root.mainloop()
+```
+
+@@ tk.win.many-windows
+Q: How do I manage several windows (open, focus an existing one, close all)?
+aka: multiple windows, only one instance of a window, window already open, bring window to front, close all windows, list of toplevels
+A: Keep a reference to each Toplevel. Before opening, check `win is not None and win.winfo_exists()`; if it exists, `lift()` and `focus_force()` it instead of opening a second copy.
+see: tk.toplevel, tk.win.transient
+```py
+import tkinter as tk
+
+root = tk.Tk()
+about = None
+
+def open_about():
+    global about
+    if about is not None and about.winfo_exists():
+        about.deiconify(); about.lift(); about.focus_force()     # already open: bring it forward
+        return
+    about = tk.Toplevel(root, padx=20, pady=20)
+    about.title("About")
+    tk.Label(about, text="Version 1.0").pack()
+
+def close_all_children():
+    for w in root.winfo_children():
+        if isinstance(w, tk.Toplevel):
+            w.destroy()
+
+tk.Button(root, text="About", command=open_about).pack(padx=40, pady=6)
+tk.Button(root, text="Close other windows", command=close_all_children).pack(padx=40, pady=6)
+open_about(); open_about()            # second call just raises the same window
+print(sum(isinstance(w, tk.Toplevel) for w in root.winfo_children()))   # 1
+root.mainloop()
+```
+
+@@ tk.win.dialog-return
+Q: How do I make a custom dialog window that returns a value (like askstring, but my own)?
+aka: custom dialog, return value from toplevel, dialog result, simpledialog.Dialog subclass, custom popup form, get value from popup
+A: Make a Toplevel, `grab_set()`, then `root.wait_window(dialog)` to pause until it closes; store the result on the dialog before destroying it. Or subclass `simpledialog.Dialog` which does the plumbing (OK/Cancel, Enter/Escape).
+see: tk.modal, tk.simpledialog
+```py
+import tkinter as tk
+from tkinter import simpledialog
+
+class NameAge(simpledialog.Dialog):
+    def body(self, master):
+        tk.Label(master, text="Name").grid(row=0, column=0, sticky="w")
+        tk.Label(master, text="Age").grid(row=1, column=0, sticky="w")
+        self.name = tk.Entry(master); self.name.grid(row=0, column=1)
+        self.age = tk.Spinbox(master, from_=1, to=120, width=5); self.age.grid(row=1, column=1, sticky="w")
+        return self.name                           # gets focus first
+
+    def validate(self):
+        if not self.name.get().strip():
+            self.bell()
+            return False
+        return True
+
+    def apply(self):                               # only runs on OK
+        self.result = (self.name.get(), int(self.age.get()))
+
+root = tk.Tk()
+def ask():
+    d = NameAge(root, title="New person")
+    print("got", d.result)                         # None if cancelled
+tk.Button(root, text="Add person…", command=ask).pack(padx=40, pady=30)
+root.mainloop()
+```
+
+@@ tk.win.dialog-plain
+Q: How do I build a modal dialog from scratch that returns a value (without simpledialog)?
+aka: wait_window return, toplevel result, modal form, dialog OK cancel, confirm dialog custom buttons
+A: Create the Toplevel, `transient` + `grab_set`, then `wait_window`. The button callbacks set a variable and destroy the dialog; after `wait_window` returns, read the variable.
+see: tk.win.dialog-return, tk.modal
+```py
+import tkinter as tk
+
+def ask_choice(parent, question, choices):
+    win = tk.Toplevel(parent, padx=16, pady=12)
+    win.title("Choose")
+    win.transient(parent)
+    result = {"value": None}
+    tk.Label(win, text=question).pack(pady=(0, 8))
+    row = tk.Frame(win); row.pack()
+    for c in choices:
+        def pick(c=c):
+            result["value"] = c
+            win.destroy()
+        tk.Button(row, text=c, width=8, command=pick).pack(side="left", padx=3)
+    win.bind("<Escape>", lambda e: win.destroy())
+    win.wait_visibility()
+    win.grab_set()
+    parent.wait_window(win)          # pauses here until the dialog closes
+    return result["value"]
+
+root = tk.Tk()
+tk.Button(root, text="Save changes?", command=lambda: print(ask_choice(root, "Save changes?", ["Save", "Discard", "Cancel"]))).pack(padx=40, pady=30)
+root.mainloop()
+```
+
+@@ tk.win.remember-geometry
+Q: How do I remember the window size and position for next time?
+aka: save window position, restore window size, remember geometry, window settings persist, save geometry on close
+A: On close, save `root.geometry()` (a string like `"640x480+120+80"`) to a file; on start, read it back and pass it to `geometry()`.
+see: tk.save-settings, tk.close-protocol
+```py
+import json, os
+import tkinter as tk
+
+CFG = "window.json"
+root = tk.Tk()
+try:
+    with open(CFG) as f:
+        root.geometry(json.load(f)["geometry"])
+except (OSError, ValueError, KeyError):
+    root.geometry("400x250")
+
+def on_close():
+    with open(CFG, "w") as f:
+        json.dump({"geometry": root.geometry()}, f)
+    root.destroy()
+
+root.protocol("WM_DELETE_WINDOW", on_close)
+tk.Label(root, text="Move or resize me, then close").pack(expand=True)
+root.after(200, on_close)
+root.mainloop()
+print(open(CFG).read())
+```
+
+@@ tk.win.multi-monitor
+Q: How do I put a window on a second monitor, or find out which monitor it's on?
+aka: second monitor, multiple monitors, dual screen, which screen, open on other monitor, virtual root, monitor size
+A: Tk only knows the whole desktop: `winfo_screenwidth()` is usually the **primary** monitor; `winfo_vrootwidth()` may cover all of them. Place a window on a monitor to the right with `geometry(f"+{primary_width + 50}+50")`. For exact monitor layouts use the `screeninfo` package (`pip install screeninfo`).
+see: tk.screen-size, tk.center
+```py
+import tkinter as tk
+
+root = tk.Tk()
+pw, ph = root.winfo_screenwidth(), root.winfo_screenheight()
+print("primary:", pw, ph, " virtual:", root.winfo_vrootwidth(), root.winfo_vrootheight())
+root.geometry(f"300x200+{pw + 100}+100")      # starts 100 px into a monitor on the right, if there is one
+root.update_idletasks()
+print("I'm at", root.winfo_x(), root.winfo_y())
+root.mainloop()
+```
+```py norun
+from screeninfo import get_monitors      # pip install screeninfo
+for m in get_monitors():
+    print(m.name, m.x, m.y, m.width, m.height, m.is_primary)
+```
+
+@@ tk.win.dpi-scaling
+Q: How do I make my app the right size on high-DPI (4K, 150%) screens? What is tk scaling?
+aka: tk scaling, dpi, high dpi, 4k screen tiny, everything too small, scale factor, winfo_fpixels, pixels per inch
+A: Tk converts points (fonts) using `root.tk.call("tk", "scaling")` (pixels per point). On Windows first make the app DPI-aware (see blurry windows answer); then you can read the real DPI with `winfo_fpixels("1i")` and scale your own pixel sizes.
+see: tk.blurry-windows
+```py
+import tkinter as tk
+
+root = tk.Tk()
+dpi = root.winfo_fpixels("1i")                 # pixels in one inch on this screen
+scale = dpi / 96                               # 1.0 at "100%", 1.5 at "150%"
+print("dpi", round(dpi), "scale", round(scale, 2), "tk scaling", root.tk.call("tk", "scaling"))
+
+def px(n):                                     # use for your own pixel sizes
+    return int(n * scale)
+
+root.geometry(f"{px(360)}x{px(200)}")
+tk.Button(root, text="Sized for this screen", padx=px(12), pady=px(6)).pack(pady=px(40))
+root.mainloop()
+```
+
+@@ tk.win.focus-force
+Q: How do I bring my window to the front and give it focus (it opens behind other windows)?
+aka: bring to front, window behind other windows, focus window, lift window, window not focused at start, raise window
+A: `root.lift()` then `root.focus_force()`. If the OS still keeps it behind, briefly turn on topmost: `root.attributes("-topmost", True)` then turn it off with `after`.
+see: tk.topmost
+```py
+import tkinter as tk
+
+root = tk.Tk()
+def to_front():
+    root.deiconify()
+    root.lift()
+    root.attributes("-topmost", True)
+    root.after(200, lambda: root.attributes("-topmost", False))
+    root.focus_force()
+
+tk.Label(root, text="I come to the front").pack(padx=40, pady=30)
+root.after(100, to_front)
+root.mainloop()
+```
+
+@@ tk.win.taskbar-icon
+Q: My taskbar shows the Python icon instead of mine (Windows). How do I fix it?
+aka: taskbar icon python, appusermodelid, windows taskbar icon wrong, iconbitmap taskbar, iconphoto default
+A: On Windows, give your app its own ID **before** creating the window: `ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("me.myapp")`, then set the icon with `iconbitmap("app.ico")` or `iconphoto(True, img)`.
+see: tk.icon
+```py
+import sys
+import tkinter as tk
+
+if sys.platform == "win32":
+    import ctypes
+    ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("mycompany.myapp.1")
+
+root = tk.Tk()
+img = tk.PhotoImage(width=32, height=32)
+img.put("#c23b22", to=(0, 0, 32, 32))
+img.put("#f2ede3", to=(8, 8, 24, 24))
+root.iconphoto(True, img)           # True = also for every later Toplevel
+root.mainloop()
+```
+
+@@ tk.win.aspect
+Q: How do I keep the window's aspect ratio when the user resizes it?
+aka: aspect ratio window, keep proportion, wm aspect, square window resize, 16:9 window
+A: `root.aspect(minNum, minDen, maxNum, maxDen)` asks the window manager to keep width/height between those ratios: `root.aspect(16, 9, 16, 9)`. Some window managers ignore it, so design for any size too.
+see: tk.fullscreen-game-scale
+```py
+import tkinter as tk
+
+root = tk.Tk()
+root.geometry("480x270")
+root.aspect(16, 9, 16, 9)
+tk.Label(root, text="16:9 window", bg="#ffd27a").pack(fill="both", expand=True)
+print(root.aspect())
+root.mainloop()
+```
+
+@@ tk.win.toolwindow
+Q: How do I make a small tool window or a window with no minimise/maximise buttons?
+aka: toolwindow, no minimize button, no maximize button, only close button, attributes toolwindow, disable maximize
+A: On Windows, `win.attributes("-toolwindow", True)` gives a thin title bar with only ×. `resizable(False, False)` removes maximise on most systems. On macOS/Linux use `transient(root)`.
+see: tk.resizable, tk.win.transient
+```py
+import sys
+import tkinter as tk
+
+root = tk.Tk()
+tool = tk.Toplevel(root)
+tool.title("Palette")
+tool.resizable(False, False)
+if sys.platform == "win32":
+    tool.attributes("-toolwindow", True)
+else:
+    tool.transient(root)
+tk.Label(tool, text="Tool window", padx=30, pady=20).pack()
+root.mainloop()
+```
+
+@@ tk.win.disable-close
+Q: How do I stop the user closing a window with the X (or ask first)?
+aka: disable close button, prevent closing, ask before closing, are you sure quit, unsaved changes on close
+A: `root.protocol("WM_DELETE_WINDOW", handler)`: the X now calls your function instead of closing. Do nothing to block it, or ask and call `root.destroy()` if they say yes.
+see: tk.close-protocol
+```py
+import tkinter as tk
+from tkinter import messagebox
+
+root = tk.Tk()
+unsaved = True
+
+def on_close():
+    if not unsaved or messagebox.askyesno("Quit", "You have unsaved changes. Quit anyway?"):
+        root.destroy()
+
+root.protocol("WM_DELETE_WINDOW", on_close)
+tk.Label(root, text="Try to close me").pack(padx=40, pady=30)
+root.mainloop()
+```
+
+@@ tk.win.not-responding-close
+Q: Why does my program keep running after I close the window?
+aka: program still running after closing, python keeps running, process doesnt end, thread keeps running, mainloop returns but script continues
+A: Either a background thread is still running (make it `daemon=True`, or tell it to stop), an `after` loop keeps rescheduling on a hidden root, or you closed a Toplevel but the hidden root `Tk()` is still alive. Closing the **root** ends `mainloop()`; code after `mainloop()` then runs.
+see: tk.thread, tk.withdraw
+```py
+import threading, time
+import tkinter as tk
+
+root = tk.Tk()
+stop = threading.Event()
+
+def worker():
+    while not stop.is_set():
+        time.sleep(0.05)
+
+threading.Thread(target=worker, daemon=True).start()   # daemon: won't keep Python alive
+
+def on_close():
+    stop.set()             # ask the thread to finish
+    root.destroy()
+
+root.protocol("WM_DELETE_WINDOW", on_close)
+root.after(200, on_close)
+root.mainloop()
+print("mainloop ended, program exits")
+```
+
+@@ tk.win.position-near-widget
+Q: How do I open a popup right next to a button (or under the mouse)?
+aka: popup next to widget, position toplevel near button, dropdown window under button, popup at mouse position
+A: Use the widget's screen position: `x = w.winfo_rootx()`, `y = w.winfo_rooty() + w.winfo_height()`, then `popup.geometry(f"+{x}+{y}")`. For the mouse, use `event.x_root`, `event.y_root`.
+see: tk.win.winfo
+```py
+import tkinter as tk
+
+root = tk.Tk()
+def show_under(btn):
+    pop = tk.Toplevel(root, bg="white", bd=1, relief="solid")
+    pop.overrideredirect(True)
+    pop.geometry(f"+{btn.winfo_rootx()}+{btn.winfo_rooty() + btn.winfo_height()}")
+    for c in ("Red", "Green", "Blue"):
+        tk.Button(pop, text=c, relief="flat", bg="white", anchor="w", width=12,
+                  command=lambda c=c: (print(c), pop.destroy())).pack()
+    pop.bind("<FocusOut>", lambda e: pop.destroy())
+    pop.focus_set()
+
+b = tk.Button(root, text="Colour ▾")
+b.config(command=lambda: show_under(b))
+b.pack(padx=60, pady=40)
+root.mainloop()
+```
+
+@@ tk.win.lift-lower
+Q: How do I put one window or widget above or below another (lift and lower)?
+aka: lift, lower, tkraise, z order, bring widget to front, overlapping frames order, stack widgets
+A: `w.lift()` (or `tkraise()`) moves it to the top; `w.lower()` to the bottom; `w.lift(other)` puts it just above `other`. Works for windows and for widgets placed on top of each other (like stacked page frames).
+see: tk.pages, tk.canvas-layers
+```py
+import tkinter as tk
+
+root = tk.Tk()
+root.geometry("240x140")
+a = tk.Label(root, text="A", bg="#ffd27a", font=("Arial", 30))
+b = tk.Label(root, text="B", bg="#9bd", font=("Arial", 30))
+for w in (a, b):
+    w.place(relx=0, rely=0, relwidth=1, relheight=1)    # same spot
+a.lift()                     # A on top
+root.after(150, b.lift)      # now B
+root.mainloop()
+```
+
+@@ tk.win.wm-commands
+Q: What other window-manager methods are there (overrideredirect, attributes, frame, wm_title...)?
+aka: wm methods, window manager commands, wm_attributes list, attributes options, wm_ prefix, window methods list
+A: Main ones: `title`, `geometry`, `resizable`, `minsize/maxsize`, `state`, `iconify/deiconify/withdraw`, `iconphoto/iconbitmap`, `protocol`, `transient`, `overrideredirect`, `attributes` (`-alpha`, `-topmost`, `-fullscreen`, `-disabled` and `-toolwindow` on Windows, `-zoomed` and `-type` on Linux, `-modified` on macOS), `aspect`, `positionfrom`, `group`. Each has a `wm_` alias (`wm_title`).
+see: tk.win.state, tk.alpha, tk.topmost
+```py
+import tkinter as tk
+
+root = tk.Tk()
+print(root.attributes())              # all window attributes this system supports
+root.wm_title("Same as title()")
+root.wm_geometry("300x120")
+print(root.wm_title(), root.wm_resizable())
+root.mainloop()
+```
