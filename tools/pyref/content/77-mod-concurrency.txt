@@ -1,0 +1,264 @@
+# mod-conc | subprocess, threading, concurrent.futures, multiprocessing | Running other programs, doing several things at once, thread pools, process pools, locks | modules
+
+@@ mod.subprocess.run
+Q: How do I run another program or command and get its output (subprocess.run)?
+aka: subprocess run, run command, capture output, shell command python, os.system alternative, run exe, check=True
+A: `subprocess.run(["program", "arg"], capture_output=True, text=True)` runs it and waits; the result has `.returncode`, `.stdout`, `.stderr`. Add `check=True` to raise if it fails, `timeout=` to give up, `cwd=` to choose the folder. Pass a **list** of arguments (no shell needed, no quoting problems).
+see: tk.run-command, mod.subprocess.shell
+```py
+import subprocess, sys
+r = subprocess.run([sys.executable, "-c", "print('hi from child'); import sys; sys.exit(0)"], capture_output=True, text=True)
+print(r.returncode, r.stdout.strip())
+try:
+    subprocess.run([sys.executable, "-c", "raise SystemExit(2)"], check=True)
+except subprocess.CalledProcessError as e:
+    print("failed with", e.returncode)
+r = subprocess.run([sys.executable, "-"], input="print(6 * 7)", capture_output=True, text=True)
+print(r.stdout.strip())
+```
+```text
+0 hi from child
+failed with 2
+42
+```
+
+@@ mod.subprocess.shell
+Q: When do I need shell=True, and is it dangerous?
+aka: shell true, pipes in subprocess, run shell command string, subprocess security, shlex split, command injection
+A: `shell=True` runs the string through the system shell, which you only need for shell features (pipes `|`, `*` wildcards, `&&`). Never put user input into a shell string: use a list of arguments instead. `shlex.split("cmd 'a b'")` turns a command string into a safe list.
+see: mod.subprocess.run
+```py
+import shlex, subprocess, sys
+print(shlex.split('grep -i "hello world" notes.txt'))
+print(shlex.quote("file name; rm -rf /"))
+r = subprocess.run(f'"{sys.executable}" -c "print(1+1)"', shell=True, capture_output=True, text=True)
+print(r.stdout.strip())
+```
+```text
+['grep', '-i', 'hello world', 'notes.txt']
+'file name; rm -rf /'
+2
+```
+
+@@ mod.subprocess.popen
+Q: How do I start a program in the background and talk to it (Popen)?
+aka: popen, background process, non blocking subprocess, kill process, communicate, poll process
+A: `subprocess.Popen(args, ...)` starts it and returns at once. `p.poll()` (None while running), `p.wait(timeout)`, `p.communicate(input)`, `p.terminate()`/`p.kill()`.
+see: tk.thr.subprocess-live
+```py
+import subprocess, sys, time
+p = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(5)"])
+time.sleep(0.1)
+print("running:", p.poll() is None)
+p.terminate()
+p.wait(timeout=5)
+print("stopped, code:", p.returncode is not None)
+q = subprocess.Popen([sys.executable, "-c", "print(input().upper())"], stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
+out, _ = q.communicate("shout\n")
+print(out.strip())
+```
+```text
+running: True
+stopped, code: True
+SHOUT
+```
+
+@@ mod.threading.basics
+Q: How do I run functions at the same time with threads (threading.Thread)?
+aka: threading, thread start join, run in parallel, background thread, concurrent functions, daemon thread
+A: `t = threading.Thread(target=func, args=(...))`, `t.start()`, and `t.join()` to wait for it. Threads help when tasks **wait** (network, files, sleep); for heavy CPU maths use processes. `daemon=True` threads don't keep the program alive.
+see: tk.thread, mod.threading.lock
+```py
+import threading, time
+results = {}
+def download(name, seconds):
+    time.sleep(seconds)              # pretend network wait
+    results[name] = f"{name} done"
+
+start = time.perf_counter()
+threads = [threading.Thread(target=download, args=(n, 0.2)) for n in ("a", "b", "c")]
+for t in threads:
+    t.start()
+for t in threads:
+    t.join()
+print(sorted(results.values()), round(time.perf_counter() - start, 1) < 0.5)
+```
+```text
+['a done', 'b done', 'c done'] True
+```
+
+@@ mod.threading.lock
+Q: How do I stop threads from messing up shared data (Lock)?
+aka: thread lock, race condition, threading lock, shared variable threads, with lock, thread safe counter
+A: When several threads change the same thing, wrap the change in `with lock:` so only one thread does it at a time. Otherwise updates can be lost (a race condition).
+see: mod.threading.basics
+```py
+import threading
+counter = 0
+lock = threading.Lock()
+def add_many():
+    global counter
+    for _ in range(100_000):
+        with lock:
+            counter += 1
+threads = [threading.Thread(target=add_many) for _ in range(4)]
+for t in threads: t.start()
+for t in threads: t.join()
+print(counter)
+```
+```text
+400000
+```
+
+@@ mod.queue.producer-consumer
+Q: How do I pass work between threads safely (queue.Queue, producer/consumer)?
+aka: queue module, producer consumer, worker threads queue, task queue, queue join task_done
+A: `queue.Queue` is thread-safe: producers `put` items, worker threads `get` them, call `task_done()`, and `q.join()` waits until everything is processed. Send a sentinel like `None` to stop workers.
+see: tk.thr.queue
+```py
+import queue, threading
+q = queue.Queue()
+results = []
+lock = threading.Lock()
+def worker():
+    while (item := q.get()) is not None:
+        with lock:
+            results.append(item * item)
+        q.task_done()
+    q.task_done()
+
+workers = [threading.Thread(target=worker) for _ in range(3)]
+for w in workers: w.start()
+for n in range(10): q.put(n)
+q.join()                          # wait for the 10 items
+for _ in workers: q.put(None)     # tell workers to stop
+for w in workers: w.join()
+print(sorted(results))
+```
+```text
+[0, 1, 4, 9, 16, 25, 36, 49, 64, 81]
+```
+
+@@ mod.cf.executor
+Q: What's the easiest way to run many tasks in parallel (ThreadPoolExecutor, map, as_completed)?
+aka: concurrent futures, threadpoolexecutor, executor map, as_completed, parallel downloads, thread pool, max_workers
+A: `with ThreadPoolExecutor(max_workers=8) as pool:` then `pool.map(func, items)` (results in order) or `pool.submit(func, x)` + `as_completed(futures)` (results as they finish). Exceptions come back when you call `.result()`.
+see: tk.thr.result, mod.mp.pool
+```py
+import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
+def fetch(n):
+    time.sleep(0.1 * (4 - n))         # later ones finish first
+    if n == 2:
+        raise ValueError("page 2 broken")
+    return f"page {n}"
+
+with ThreadPoolExecutor(max_workers=4) as pool:
+    futures = {pool.submit(fetch, n): n for n in range(4)}
+    for fut in as_completed(futures):
+        try:
+            print("finished:", fut.result())
+        except ValueError as e:
+            print("error:", e)
+    print(list(pool.map(str.upper, ["a", "b"])))
+```
+```text
+finished: page 3
+error: page 2 broken
+finished: page 1
+finished: page 0
+['A', 'B']
+```
+
+@@ mod.mp.pool
+Q: How do I use all my CPU cores for heavy calculations (multiprocessing, ProcessPoolExecutor)?
+aka: multiprocessing, process pool, use all cores, cpu bound, parallel processing, gil, multiprocessing pool map
+A: Threads can't speed up pure-Python maths (the GIL lets one run at a time); separate **processes** can. `ProcessPoolExecutor().map(func, items)` (or `multiprocessing.Pool`). The function must be defined at the top level, and the start code must be under `if __name__ == "__main__":`.
+see: tk.thr.multiprocessing, mod.cf.executor
+```py
+import os
+from concurrent.futures import ProcessPoolExecutor
+from multiprocessing import Pool
+
+def is_prime(n):
+    return n > 1 and all(n % d for d in range(2, int(n ** 0.5) + 1))
+
+if __name__ == "__main__":
+    nums = range(100_000, 100_200)
+    with ProcessPoolExecutor() as pool:
+        flags = list(pool.map(is_prime, nums, chunksize=20))
+    print(sum(flags), "primes")
+    with Pool(processes=2) as p:
+        print(p.map(abs, [-1, -2, 3]))
+    print(os.cpu_count() >= 1)
+```
+```text
+15 primes
+[1, 2, 3]
+True
+```
+
+@@ mod.threading.event-timer
+Q: How do I signal between threads, or run something after a delay in the background (Event, Timer)?
+aka: threading event, wait for signal, threading timer, stop flag thread, set clear wait
+A: `threading.Event()` is a flag: one thread waits with `event.wait(timeout)`, another calls `event.set()`. `threading.Timer(seconds, func)` runs a function once after a delay (`.cancel()` stops it).
+see: tk.thr.cancel
+```py
+import threading, time
+ready = threading.Event()
+def waiter():
+    print("waiting…")
+    ready.wait()
+    print("got the signal")
+t = threading.Thread(target=waiter); t.start()
+time.sleep(0.05); ready.set(); t.join()
+timer = threading.Timer(0.05, lambda: print("timer fired"))
+timer.start(); timer.join()
+```
+```text
+waiting…
+got the signal
+timer fired
+```
+
+@@ mod.threading.which
+Q: Should I use threads, processes or asyncio?
+aka: threads vs processes vs asyncio, concurrency choice, parallelism python, gil explained, io bound vs cpu bound
+A: **Waiting** a lot (downloads, files, APIs) and want simple code → threads (`ThreadPoolExecutor`). **Thousands** of network connections or an async library → `asyncio`. **Heavy calculation** → processes (`ProcessPoolExecutor`). In tkinter apps, any of these must hand results back to the main thread.
+see: mod.cf.executor, mod.mp.pool, mod.asyncio.basics
+```py
+import time
+from concurrent.futures import ThreadPoolExecutor
+def wait_task(_):
+    time.sleep(0.1)
+start = time.perf_counter()
+with ThreadPoolExecutor(10) as pool:
+    list(pool.map(wait_task, range(10)))
+print("10 waits of 0.1s took under 0.5s:", time.perf_counter() - start < 0.5)
+```
+```text
+10 waits of 0.1s took under 0.5s: True
+```
+
+@@ mod.sched-periodic
+Q: How do I run a function every N seconds in a plain script (no GUI)?
+aka: run every minute, periodic task, schedule function, repeat every second, cron python, schedule library
+A: A loop with `time.sleep` is simplest; to avoid drift, sleep until the next planned time. The third-party `schedule` package reads nicely (`schedule.every(10).minutes.do(job)`); for "every day at 9", use your system's scheduler (cron / Task Scheduler).
+see: py.sleep, mod.threading.event-timer
+```py
+import time
+def job(n):
+    print("tick", n)
+interval, runs = 0.05, 3
+next_time = time.monotonic()
+for n in range(runs):
+    job(n)
+    next_time += interval
+    time.sleep(max(0, next_time - time.monotonic()))
+```
+```text
+tick 0
+tick 1
+tick 2
+```
