@@ -1,0 +1,199 @@
+# mod-intro | ast, inspect, importlib, copy, sys and gc tools | Safe evaluation, looking inside objects and code, importing by name, reloading, memory size, atexit, traceback | modules
+
+@@ mod.ast.literal-eval
+Q: How do I safely turn a string like "[1, 2, {'a': 3}]" back into Python data (ast.literal_eval)?
+aka: literal_eval, safe eval, string to list, string to dict, parse python literal, eval alternative
+A: `ast.literal_eval(text)` accepts only literals (numbers, strings, lists, tuples, dicts, sets, True/False/None), so unlike `eval` it can't run code. For JSON text use `json.loads`.
+see: py.bi.compile-eval-exec
+```py
+import ast
+print(ast.literal_eval("[1, 2, {'a': (3, 4)}]"), ast.literal_eval("{'x', 'y'}") == {"x", "y"})
+for bad in ("__import__('os').getcwd()", "2 ** 1000000"):
+    try:
+        ast.literal_eval(bad)
+    except ValueError:
+        print("refused:", bad[:20])
+```
+```text
+[1, 2, {'a': (3, 4)}] True
+refused: __import__('os').get
+refused: 2 ** 1000000
+```
+
+@@ mod.ast.calculator
+Q: How do I make a safe calculator that evaluates maths typed by a user?
+aka: safe calculator, evaluate math expression, eval math safely, parse arithmetic, ast parse expression
+A: Parse with `ast.parse(text, mode="eval")` and walk the tree yourself, allowing only numbers and the operators you choose. Anything else raises an error, so no code can sneak in.
+see: mod.ast.literal-eval, tk.recipe-calculator
+```py
+import ast, operator
+
+OPS = {ast.Add: operator.add, ast.Sub: operator.sub, ast.Mult: operator.mul, ast.Div: operator.truediv,
+       ast.Pow: operator.pow, ast.Mod: operator.mod, ast.USub: operator.neg}
+
+def calc(text):
+    def ev(node):
+        if isinstance(node, ast.Constant) and isinstance(node.value, (int, float)):
+            return node.value
+        if isinstance(node, ast.BinOp) and type(node.op) in OPS:
+            return OPS[type(node.op)](ev(node.left), ev(node.right))
+        if isinstance(node, ast.UnaryOp) and type(node.op) in OPS:
+            return OPS[type(node.op)](ev(node.operand))
+        raise ValueError("not allowed")
+    return ev(ast.parse(text, mode="eval").body)
+
+print(calc("2 + 3 * (4 - 1) ** 2"), calc("-7 % 3"), calc("10 / 4"))
+try:
+    calc("__import__('os')")
+except ValueError as e:
+    print(e)
+```
+```text
+29 2 2.5
+not allowed
+```
+
+@@ mod.inspect
+Q: How do I look at an object's source code, members or the calling function (inspect)?
+aka: inspect module, getsource, getmembers, who called me, current function name, signature, isfunction
+A: `inspect.getsource(func)` (when the file exists), `inspect.getmembers(obj, inspect.isfunction)`, `inspect.signature(func)`, `inspect.stack()[1].function` = the caller's name, `inspect.isclass/ismodule/isfunction`.
+see: py.fn.attributes
+```py
+import inspect
+
+def helper():
+    return inspect.stack()[1].function       # who called me?
+
+def main_task():
+    return helper()
+
+class Shape:
+    def area(self): ...
+    def perimeter(self): ...
+
+print(main_task())
+print([name for name, _ in inspect.getmembers(Shape, inspect.isfunction)])
+print(inspect.getsource(helper).splitlines()[0])
+```
+```text
+main_task
+['area', 'perimeter']
+def helper():
+```
+
+@@ mod.importlib
+Q: How do I import a module whose name is in a string, or reload a module I edited?
+aka: importlib, import by name, dynamic import, import_module, reload module, plugin loading, import from string
+A: `importlib.import_module("json")` imports by name (handy for plugins). `importlib.reload(module)` re-runs an edited module in an open shell. `importlib.util.find_spec(name)` checks if something is installed.
+see: py.import
+```py
+import importlib, importlib.util, os
+mod = importlib.import_module("math")
+print(mod.sqrt(16), importlib.util.find_spec("tkinter") is not None, importlib.util.find_spec("no_such_pkg"))
+open("plugin_hello.py", "w").write("MESSAGE = 'v1'\n")
+import plugin_hello
+open("plugin_hello.py", "w").write("MESSAGE = 'version 2'\n")    # edited while the program runs
+print(plugin_hello.MESSAGE, importlib.reload(plugin_hello).MESSAGE)
+```
+```text
+4.0 True None
+v1 version 2
+```
+
+@@ mod.sys.getsizeof
+Q: How much memory does an object use?
+aka: object size, memory usage, getsizeof, size of list in memory, tracemalloc, how big is my variable
+A: `sys.getsizeof(x)` gives the size of the object itself (not the things it contains). For a program's real memory use, `tracemalloc` measures allocations between two points.
+see: py.it.generator-expr
+```py
+import sys, tracemalloc
+print(sys.getsizeof(0), sys.getsizeof("") < sys.getsizeof("hello"), sys.getsizeof([]) < sys.getsizeof(list(range(100))))
+tracemalloc.start()
+big = [str(i) * 10 for i in range(10_000)]
+current, peak = tracemalloc.get_traced_memory()
+tracemalloc.stop()
+print(current > 500_000, f"{current / 1e6:.1f} MB" != "")
+```
+```text
+28 True True
+True True
+```
+
+@@ mod.atexit-signal
+Q: How do I run code when my program exits (or when Ctrl+C is pressed)?
+aka: atexit, run on exit, cleanup on exit, signal handler, catch ctrl c, sigint, graceful shutdown
+A: `atexit.register(func)` runs at normal exit (not on a hard crash or kill). For Ctrl+C, catch `KeyboardInterrupt` around your main loop (or install a handler with `signal.signal(signal.SIGINT, handler)`).
+see: py.err.keyboardinterrupt
+```py
+import atexit, signal, subprocess, sys
+atexit.register(lambda: print("saving before exit"))
+child = "import signal, os, time\ndef stop(sig, frame):\n    print('got Ctrl+C, stopping nicely'); raise SystemExit(0)\nsignal.signal(signal.SIGINT, stop)\nos.kill(os.getpid(), signal.SIGINT)\ntime.sleep(5)"
+if sys.platform != "win32":
+    print(subprocess.run([sys.executable, "-c", child], capture_output=True, text=True).stdout.strip())
+print("main work done")
+```
+```text
+got Ctrl+C, stopping nicely
+main work done
+saving before exit
+```
+
+@@ mod.copy-pprint-reprlib
+Q: How do I print a huge or deeply nested object without flooding the screen?
+aka: reprlib, shorten repr, print large list, limit output, repr too long
+A: `reprlib.repr(x)` gives a shortened representation with `...`; `pprint.pp(x, depth=2)` limits nesting depth.
+see: mod.pprint
+```py
+import reprlib
+from pprint import pp
+print(reprlib.repr(list(range(1000))))
+print(reprlib.repr("x" * 100))
+pp({"a": {"b": {"c": {"d": 1}}}}, depth=2)
+```
+```text
+[0, 1, 2, 3, 4, 5, ...]
+'xxxxxxxxxxxx...xxxxxxxxxxxxx'
+{'a': {'b': {...}}}
+```
+
+@@ mod.dis
+Q: How can I see what Python does with my code (bytecode, dis)?
+aka: dis module, bytecode, disassemble, how python runs code, compile to bytecode
+A: `dis.dis(func)` prints the bytecode instructions Python runs. It's for curiosity and deep debugging; you never need it for normal programming.
+see: py.bi.compile-eval-exec
+```py
+import dis
+def add(a, b):
+    return a + b
+ops = [i.opname for i in dis.get_instructions(add)]
+print(ops)
+```
+```text
+['RESUME', 'LOAD_FAST', 'LOAD_FAST', 'BINARY_OP', 'RETURN_VALUE']
+```
+
+@@ mod.weakref-gc
+Q: What are garbage collection and weak references (when is an object deleted)?
+aka: garbage collection, gc module, weakref, memory leak, del object, reference counting, __del__
+A: Python frees an object when nothing refers to it any more (reference counting), plus a collector (`gc`) for reference cycles. A `weakref` points to an object without keeping it alive: useful for caches. You rarely need either directly.
+see: py.kw.del
+```py
+import gc, weakref
+class Big:
+    pass
+obj = Big()
+ref = weakref.ref(obj)
+print(ref() is obj)
+del obj
+gc.collect()
+print(ref())                 # gone: the weak reference didn't keep it alive
+cache = weakref.WeakValueDictionary()
+item = Big(); cache["x"] = item
+print(len(cache)); del item; gc.collect(); print(len(cache))
+```
+```text
+True
+None
+1
+0
+```
