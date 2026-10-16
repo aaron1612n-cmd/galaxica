@@ -95,7 +95,7 @@ root.mainloop()
 
 @@ tk.button
 Q: How do I make a button that runs a function?
-aka: button click, button command, onclick, on click event, button callback, button does nothing, call function button
+aka: tkinter button, make a button, create a button, add a button, button click, button command, onclick, on click event, button callback, button does nothing, call function button
 A: Pass the function **name without brackets** as `command=`: `tk.Button(root, text="Go", command=go)`.
 see: tk.err.command-runs-early, tk.button-args, tk.button-state
 ```py

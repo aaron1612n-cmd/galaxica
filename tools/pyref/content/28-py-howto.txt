@@ -1,0 +1,265 @@
+# py-howto | Common tasks | Small, frequently searched programs and techniques | python
+
+@@ py.lambda
+Q: What is a lambda?
+aka: lambda, anonymous function, inline function, lambda function, key lambda
+A: A one-line function without a name: `lambda x: x * 2`. Mostly used for `key=` in sorting and short callbacks.
+see: py.sort, tk.button-args
+```py
+double = lambda x: x * 2
+print(double(5))
+pairs = [(1, "b"), (2, "a")]
+print(sorted(pairs, key=lambda p: p[1]))
+```
+
+@@ py.map-filter
+Q: What do map() and filter() do?
+aka: map, filter, apply function to list, map int input, list(map(int))
+A: `map(f, items)` applies `f` to each item; `filter(f, items)` keeps items where `f` is true. Wrap in `list()` to see them. List comprehensions often read better.
+```py
+nums = list(map(int, "3 1 4 1 5".split()))    # handy for reading many numbers
+print(nums)
+print(list(filter(lambda n: n > 2, nums)))
+print([n for n in nums if n > 2])              # same thing
+```
+
+@@ py.recursion
+Q: How does recursion work?
+aka: recursion, recursive function, function calls itself, factorial recursive, base case
+A: A function that calls itself on a smaller problem, with a **base case** that stops it.
+see: py.err.recursion
+```py
+def factorial(n):
+    if n <= 1:            # base case
+        return 1
+    return n * factorial(n - 1)
+
+def total(items):
+    if not items:
+        return 0
+    return items[0] + total(items[1:])
+
+print(factorial(5), total([1, 2, 3, 4]))
+```
+
+@@ py.fizzbuzz
+Q: How do I do FizzBuzz?
+aka: fizzbuzz, fizz buzz, divisible by 3 and 5, modulo exercise
+A: Check divisibility by 15 (both) first, then 3, then 5.
+```py
+for n in range(1, 16):
+    if n % 15 == 0:
+        print("FizzBuzz")
+    elif n % 3 == 0:
+        print("Fizz")
+    elif n % 5 == 0:
+        print("Buzz")
+    else:
+        print(n)
+```
+
+@@ py.prime
+Q: How do I check if a number is prime (or list primes)?
+aka: prime number, is prime, list of primes, sieve, prime checker
+A: Try dividing by every number from 2 up to the square root.
+```py
+def is_prime(n):
+    if n < 2:
+        return False
+    for d in range(2, int(n ** 0.5) + 1):
+        if n % d == 0:
+            return False
+    return True
+
+print([n for n in range(50) if is_prime(n)])
+```
+
+@@ py.fibonacci
+Q: How do I make the Fibonacci sequence?
+aka: fibonacci, fib sequence, fibonacci numbers
+A: Keep the last two numbers and add them.
+```py
+def fib(n):
+    a, b = 0, 1
+    out = []
+    for _ in range(n):
+        out.append(a)
+        a, b = b, a + b
+    return out
+
+print(fib(12))
+```
+
+@@ py.digits
+Q: How do I get the digits of a number, sum them, or reverse a number?
+aka: sum of digits, reverse number, digits of number, count digits, split number into digits
+A: Convert to a string: `str(n)`. Or use `% 10` and `// 10` to peel off digits mathematically.
+```py
+n = 4721
+digits = [int(d) for d in str(n)]
+print(digits, sum(digits), int(str(n)[::-1]), len(str(n)))
+total, x = 0, n
+while x:
+    total += x % 10
+    x //= 10
+print(total)
+```
+
+@@ py.even-odd
+Q: How do I check if a number is even or odd (or divisible by something)?
+aka: even odd, divisible, modulo, remainder check, multiple of
+A: `n % 2 == 0` is even. `n % k == 0` means divisible by `k`.
+```py
+for n in (4, 7, 15):
+    print(n, "even" if n % 2 == 0 else "odd", "| divisible by 5" if n % 5 == 0 else "")
+```
+
+@@ py.max-loop
+Q: How do I find the largest number without max() (or with its position)?
+aka: find largest, find max manually, highest score, index of max
+A: Keep the best so far while looping. With `max`: `max(range(len(x)), key=x.__getitem__)` gives its index.
+```py
+scores = [12, 45, 7, 45, 30]
+best = scores[0]
+for s in scores:
+    if s > best:
+        best = s
+print(best, scores.index(max(scores)))
+```
+
+@@ py.menu-loop
+Q: How do I make a text menu that repeats until the user quits?
+aka: menu loop, console menu, choose option, text menu program, program loop
+A: `while True:` show options, read a choice, act with if/elif, `break` on quit.
+```py
+items = []
+while True:
+    print("\n1) Add  2) Show  3) Quit")
+    choice = input("Choose: ").strip()
+    if choice == "1":
+        items.append(input("Item: "))
+    elif choice == "2":
+        print(items)
+    elif choice in ("3", "q", "quit"):
+        break
+    else:
+        print("Unknown option")
+print("Bye")
+```
+
+@@ py.guess-game
+Q: How do I make a number guessing game (console)?
+aka: guess the number, guessing game, higher or lower, random game
+A: Pick a random number, loop asking for guesses, say higher/lower, count tries.
+see: tk.recipe-guess
+```py
+import random
+secret = random.randint(1, 10)
+tries = 0
+while True:
+    text = input("Guess 1-10: ")
+    if not text.isdigit():
+        print("Numbers only")
+        if text in ("quit", "q"):
+            break
+        continue
+    tries += 1
+    g = int(text)
+    if g == secret:
+        print(f"Correct in {tries} tries!")
+        break
+    print("Higher" if g < secret else "Lower")
+```
+
+@@ py.generators
+Q: What does yield do (generators)?
+aka: yield, generator, lazy sequence, generator expression, iterator
+A: A function with `yield` produces values one at a time when looped over, instead of building a whole list. Good for big or endless sequences.
+```py
+def countdown(n):
+    while n > 0:
+        yield n
+        n -= 1
+
+for x in countdown(3):
+    print(x)
+squares = (n * n for n in range(1_000_000))     # generator expression: no big list
+print(next(squares), next(squares), sum(n for n in range(10)))
+```
+
+@@ py.time-ago
+Q: How do I convert seconds into minutes and seconds (or hours)?
+aka: seconds to minutes, format duration, divmod, hh mm ss
+A: `divmod(seconds, 60)` gives minutes and leftover seconds.
+```py
+total = 3725
+h, rest = divmod(total, 3600)
+m, s = divmod(rest, 60)
+print(f"{h}:{m:02d}:{s:02d}")
+```
+
+@@ py.unpack-star
+Q: How do I swap, unpack or "spread" values?
+aka: unpacking, star unpack, swap two variables, a b = b a, spread operator
+A: `a, b = b, a` swaps. `first, *rest = items` grabs the first and the rest. `print(*items)` spreads a list into separate arguments.
+```py
+a, b = 1, 2
+a, b = b, a
+first, *middle, last = [1, 2, 3, 4, 5]
+print(a, b, first, middle, last)
+print(*["x", "y", "z"], sep=" | ")
+```
+
+@@ py.debug-print
+Q: How do I debug my code (find where it goes wrong)?
+aka: debug, debugging, find bug, print debugging, breakpoint, step through code, pdb
+A: Print variables at key points (`print(f"{x=}")`), read the traceback bottom-up, test small pieces on their own, and use a debugger (IDLE: Debug > Debugger; VS Code: click left of a line number to set a breakpoint, then F5; or put `breakpoint()` in your code).
+see: py.read-traceback
+```py
+def average(nums):
+    print(f"DEBUG {nums=}")          # what came in?
+    total = sum(nums)
+    print(f"DEBUG {total=} {len(nums)=}")
+    return total / len(nums)
+
+print(average([2, 4, 9]))
+```
+
+@@ py.assert
+Q: What does assert do (quick tests)?
+aka: assert, test function, unit test, check result, pytest
+A: `assert condition, "message"` raises `AssertionError` if the condition is false. Use it to check your functions; for real test suites use `pytest`.
+```py
+def add(a, b):
+    return a + b
+
+assert add(2, 3) == 5
+assert add(-1, 1) == 0, "should cancel out"
+print("all tests passed")
+```
+
+@@ py.copy-paste-run
+Q: How do I run a Python file?
+aka: run python file, run script, execute python, how to run code, python command, run in terminal, f5 idle
+A: In IDLE: open the file and press F5. In VS Code: the ▶ button (top right). In a terminal: go to the folder with `cd` and type `python file.py` (`py file.py` on Windows, `python3 file.py` on macOS/Linux).
+```sh
+cd Documents/projects
+python my_script.py
+```
+
+@@ py.idle-tips
+Q: How do I use IDLE well (shortcuts, running, restarting)?
+aka: idle, idle shortcuts, idle shell, idle editor, idle tips, comment out idle, indent idle
+A: F5 runs the file, Ctrl+F6 restarts the shell, Alt+3 / Alt+4 comment / uncomment lines, Ctrl+] / Ctrl+[ indent / dedent, Alt+P / Alt+N cycle through past shell commands, Tab completes names.
+see: tk.err.no-mainloop-idle
+```text
+F5          run the current file          (Run > Run Module)
+Ctrl+F6     restart the shell             (clears old variables and windows)
+Alt+3/Alt+4 comment / uncomment lines     (Format menu)
+Ctrl+] / [  indent / dedent selection
+Alt+P/Alt+N previous / next command in the shell
+Tab         autocomplete
+Alt+/       expand word from the file
+Debug > Debugger, then run: step through your code line by line
+```
+On macOS use Ctrl where the list says Alt for some shortcuts; the menus always show the right key.

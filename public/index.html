@@ -30,6 +30,8 @@
   @media(max-width:560px){.row{grid-template-columns:96px 1fr;gap:12px}.no{display:none}.go{grid-column:1/-1;justify-self:start}.th{width:96px;height:72px}.t{font-size:1rem}}
   .go{font:700 11px var(--px);border:2px solid var(--paper);padding:6px 10px;align-self:center}
   .empty{color:var(--dim);padding:18px 0;font-size:13px}
+  .pyl{color:var(--paper);text-decoration:none;border:2px solid var(--paper);padding:7px 10px;font-size:10px;margin-right:auto}
+  .pyl:hover,.pyl:focus-visible{background:var(--amber);color:var(--ink);border-color:var(--amber);outline:none}
   footer{margin-top:40px;font-size:11px;color:var(--dim)}
   .cursor{display:inline-block;width:.55em;height:1em;background:var(--amber);vertical-align:-.12em;animation:b 1s steps(1) infinite}
   @keyframes b{50%{opacity:0}}
@@ -38,7 +40,7 @@
 <body>
 <canvas id="stars"></canvas>
 <div class="wrap">
-  <div class="top px"><span>Galaxica Arcade · Cat. 01</span><div class="cl"><button class="btn ghost" id="bot" title="Auto-play: every game plays itself" style="min-height:34px;padding:0 10px;font-size:10px;box-shadow:3px 3px 0 var(--paper)">AUTO</button><span data-speed></span></div></div>
+  <div class="top px"><span>Galaxica Arcade · Cat. 01</span><a class="pyl" href="python/" title="Searchable answers for Python and tkinter">Python answers</a><div class="cl"><button class="btn ghost" id="bot" title="Auto-play: every game plays itself" style="min-height:34px;padding:0 10px;font-size:10px;box-shadow:3px 3px 0 var(--paper)">AUTO</button><span data-speed></span></div></div>
   <h1>Galax<span>ica</span></h1>
   <div class="head px"><span>No.</span><span>Title</span><span></span></div>
   <div id="games"><div class="empty"><span class="cursor"></span></div></div>

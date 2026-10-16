@@ -20,7 +20,18 @@ OUT = os.path.join(ROOT, 'public', 'python', 'data.js')
 
 RUNNER = r'''
 import sys, builtins, runpy, os
-builtins.input = lambda prompt='': (print(prompt, end=''), '5')[1]
+_seq = ['5', 'quit', 'q', 'no', 'exit', 'n', '0', 'stop', '', 'done']
+_seen = {}
+_calls = [0]
+def _input(prompt=''):
+    print(prompt, end='')
+    _calls[0] += 1
+    if _calls[0] > 40:
+        raise EOFError('example asked for input too many times')
+    k = _seen.get(prompt, 0)
+    _seen[prompt] = k + 1
+    return _seq[k % len(_seq)]
+builtins.input = _input
 try:
     import tkinter
     from tkinter import messagebox, filedialog, simpledialog, colorchooser

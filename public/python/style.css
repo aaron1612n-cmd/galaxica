@@ -64,8 +64,9 @@ main:focus{outline:none}
 .errs{margin:0 0 36px}
 .errs h2,.home h2{font:700 13px var(--narrow);letter-spacing:.14em;text-transform:uppercase;margin:0 0 10px;color:var(--mute)}
 .errs ul{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
-.errs a{display:block;font:400 13.5px var(--mono);border:1px solid var(--rule);padding:4px 8px;text-decoration:none;background:var(--paper2)}
-.errs a:hover{border-color:var(--acc);color:var(--ink)}
+.errs ul a{display:block;font:400 13.5px var(--mono);border:1px solid var(--rule);padding:4px 8px;text-decoration:none;background:var(--paper2)}
+.errs ul a:hover{border-color:var(--acc);color:var(--ink)}
+.allerr{font:600 13px var(--narrow);text-transform:uppercase;letter-spacing:.08em;color:var(--mute);margin:10px 0 0}
 .group{margin:0 0 40px}
 .group>h2{display:flex;align-items:baseline;gap:12px;border-bottom:1.5px solid var(--ink);padding-bottom:6px}
 .group>h2 span{font:700 30px/1 var(--narrow);letter-spacing:0;text-transform:none;color:var(--ink)}
@@ -105,7 +106,7 @@ h1{font:700 clamp(26px,4.4vw,38px)/1.12 var(--narrow);margin:0 0 18px;letter-spa
 .body li{margin:3px 0}
 .body aside{border:1px dashed var(--mute);padding:10px 14px;margin:16px 0;font-size:16px}
 code{font:400 .86em var(--mono);background:var(--paper3);padding:1px 4px;border-radius:2px;overflow-wrap:break-word}
-.code{position:relative;margin:16px 0;border:1.5px solid var(--ink);background:var(--paper2)}
+.code{position:relative;margin:22px 0 16px;border:1.5px solid var(--ink);background:var(--paper2)}
 .code pre{margin:0;padding:14px 16px;overflow:auto;font:400 14.5px/1.55 var(--mono);tab-size:4;-webkit-overflow-scrolling:touch}
 .code.out{border-style:dashed;border-color:var(--mute);background:transparent}
 .code.sh{background:var(--ink);color:var(--paper);border-color:var(--ink)}
@@ -114,9 +115,9 @@ code{font:400 .86em var(--mono);background:var(--paper3);padding:1px 4px;border-
 .code.bad::before{color:var(--acc)}
 .code.out::before{color:var(--mute)}
 .code.sh::before{color:var(--ink)}
-.copy{position:absolute;top:6px;right:6px;font:600 12px var(--narrow);text-transform:uppercase;letter-spacing:.08em;border:1px solid var(--ink);background:var(--paper);padding:4px 9px;cursor:pointer;opacity:.85}
-.code.sh .copy{border-color:var(--paper);background:var(--ink);color:var(--paper)}
-.copy:hover{opacity:1}
+.copy{position:absolute;top:-13px;right:10px;font:600 12px/1 var(--narrow);text-transform:uppercase;letter-spacing:.1em;border:1.5px solid var(--ink);background:var(--paper);color:var(--ink);padding:5px 10px;cursor:pointer;min-height:26px}
+.copy:hover{background:var(--ink);color:var(--paper)}
+.code.sh .copy{border-color:var(--ink);background:var(--paper);color:var(--ink)}
 .copy.done{animation:stamp .55s cubic-bezier(.2,1.6,.4,1);background:var(--acc);color:var(--acc-ink);border-color:var(--acc)}
 @keyframes stamp{0%{transform:scale(1.7) rotate(-14deg);opacity:0}60%{transform:scale(.94) rotate(-6deg);opacity:1}100%{transform:scale(1) rotate(-6deg)}}
 .code i{font-style:normal}

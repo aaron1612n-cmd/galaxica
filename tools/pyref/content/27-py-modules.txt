@@ -1,0 +1,258 @@
+# py-modules | Modules and installing | import, pip, venv, useful built-in modules | python
+
+@@ py.import
+Q: How does import work (import x, from x import y, as)?
+aka: import, from import, import as, import module, import function
+A: `import math` then `math.sqrt(4)`; `from math import sqrt` then `sqrt(4)`; `import numpy as np` gives a short name.
+see: py.own-module, py.err.modulenotfound
+```py
+import math
+from random import randint, choice
+import datetime as dt
+print(math.pi, randint(1, 6), choice("abc"), dt.date.today().year)
+```
+
+@@ py.pip
+Q: How do I install a package with pip?
+aka: pip install, install module, install library, pip not recognized, python -m pip, upgrade pip, pip list
+A: In a terminal (not inside Python): `python -m pip install package`. On Windows `py -m pip install package`; on macOS/Linux `python3 -m pip install package`.
+see: py.err.modulenotfound, py.venv
+```sh
+py -m pip install requests              # Windows
+python3 -m pip install requests         # macOS / Linux
+python -m pip install --upgrade pip
+python -m pip list                       # what's installed
+python -m pip uninstall requests
+```
+`'pip' is not recognized` means pip isn't on PATH; `python -m pip` avoids that. Typing `pip install` **inside** the `>>>` prompt gives a SyntaxError: use the terminal/command prompt.
+
+@@ py.venv
+Q: What is a virtual environment (venv) and how do I make one?
+aka: venv, virtual environment, virtualenv, activate venv, requirements.txt, isolate packages
+A: A folder with its own Python and packages, so projects don't clash. Create it, activate it, then pip installs go into it.
+```sh
+python -m venv .venv
+.venv\Scripts\activate          # Windows
+source .venv/bin/activate       # macOS / Linux
+pip install requests
+pip freeze > requirements.txt   # save the list
+pip install -r requirements.txt # recreate it elsewhere
+deactivate
+```
+
+@@ py.own-module
+Q: How do I import my own file (module)?
+aka: import my own file, import another python file, my module, call function from another file, module not found own file
+A: Put `helpers.py` in the same folder as your main script and `import helpers` (no `.py`). Then call `helpers.some_function()`.
+see: py.main-guard, py.err.circular-import
+```py norun
+# helpers.py
+def shout(text):
+    return text.upper() + "!"
+```
+```py norun
+# main.py  (same folder)
+import helpers
+from helpers import shout
+
+print(helpers.shout("hi"), shout("there"))
+```
+Don't name your file after an existing module (`random.py`, `math.py`, `tkinter.py`...), or Python will import yours instead.
+
+@@ py.main-guard
+Q: What does if __name__ == "__main__": mean?
+aka: __name__ == __main__, main function, if name main, run only when executed
+A: Code inside it runs only when you run that file directly, not when another file imports it. Use it so importing your module doesn't start the program.
+```py
+def main():
+    print("Running the program")
+
+if __name__ == "__main__":
+    main()
+```
+
+@@ py.random
+Q: How do I make random numbers?
+aka: random number, randint, random float, random module, dice roll, seed, random between
+A: `random.randint(1, 6)` (both ends included), `random.random()` (0 to 1), `random.uniform(a, b)` (float), `random.choice(seq)`. `random.seed(n)` repeats the same sequence.
+see: py.random-choice
+```py
+import random
+print(random.randint(1, 6))
+print(round(random.uniform(1.5, 2.5), 2))
+print(random.random())
+random.seed(42)
+print([random.randint(1, 10) for _ in range(5)])
+```
+For passwords or tokens, use the `secrets` module instead (`secrets.token_hex(16)`).
+
+@@ py.sleep
+Q: How do I pause or wait for a few seconds?
+aka: sleep, wait, delay, pause program, time.sleep, wait seconds
+A: `import time` then `time.sleep(2)` waits 2 seconds (decimals work: `0.5`). In tkinter use `after()` instead.
+see: tk.after-not-sleep
+```py
+import time
+for i in range(3, 0, -1):
+    print(i)
+    time.sleep(0.01)
+print("Go!")
+```
+
+@@ py.datetime-format
+Q: How do I get the current date and time, and format it?
+aka: datetime, current date, current time, now, today, strftime, format date, date string, timestamp
+A: `datetime.now()` and `.strftime("%d/%m/%Y %H:%M")`. Common codes: `%Y` year, `%m` month, `%d` day, `%H` hour (24h), `%I` hour (12h), `%M` minute, `%S` second, `%p` AM/PM, `%A` weekday, `%B` month name.
+see: py.date-math
+```py
+from datetime import datetime, date
+now = datetime.now()
+print(now)
+print(now.strftime("%d/%m/%Y %H:%M"))
+print(now.strftime("%A %d %B %Y, %I:%M %p"))
+print(date.today().isoformat())
+d = datetime.strptime("16/10/2026", "%d/%m/%Y")      # text -> date
+print(d.year, d.month, d.day)
+```
+
+@@ py.date-math
+Q: How do I add days to a date or find the difference between dates?
+aka: date difference, days between dates, add days, timedelta, age from birthday, countdown days
+A: Subtract dates to get a `timedelta`; add `timedelta(days=7)` to move a date.
+```py
+from datetime import date, timedelta
+today = date(2026, 10, 16)
+print(today + timedelta(days=30))
+birthday = date(2010, 3, 5)
+print((today - birthday).days, "days old")
+age = today.year - birthday.year - ((today.month, today.day) < (birthday.month, birthday.day))
+print("age", age)
+print((date(2026, 12, 25) - today).days, "days to go")
+```
+
+@@ py.timing
+Q: How do I time how long my code takes?
+aka: time code, measure speed, benchmark, perf_counter, timeit, execution time
+A: Record `time.perf_counter()` before and after.
+```py
+import time
+start = time.perf_counter()
+total = sum(i * i for i in range(200_000))
+print(f"took {time.perf_counter() - start:.4f} seconds")
+```
+
+@@ py.os-sys
+Q: What are the os and sys modules for?
+aka: os module, sys module, sys.argv, environment variables, sys.exit, os.environ, platform
+A: `sys`: the running Python (`sys.argv` command-line arguments, `sys.exit()`, `sys.platform`, `sys.version`). `os`: the operating system (`os.getcwd()`, `os.environ`, `os.listdir()`).
+```py
+import os, sys
+print(sys.version.split()[0], sys.platform)
+print(sys.argv)
+print(os.getcwd())
+print(os.environ.get("HOME") or os.environ.get("USERPROFILE"))
+```
+
+@@ py.exit
+Q: How do I stop / exit the program?
+aka: exit program, quit, sys.exit, stop script, end program, terminate
+A: `sys.exit()` (optionally with a message or code). In a function, `return` leaves just that function. In tkinter, `root.destroy()`.
+see: tk.quit-vs-destroy
+```py raises
+import sys
+answer = "no"
+if answer != "yes":
+    sys.exit("Stopping: user said no")
+print("never reached")
+```
+
+@@ py.math-module
+Q: What's in the math module (pi, sqrt, sin, factorial...)?
+aka: math module, pi, square root, trigonometry, sin cos, factorial, gcd, log
+A: `math.pi`, `math.sqrt`, `math.sin/cos/tan` (radians), `math.radians`, `math.factorial`, `math.gcd`, `math.log`, `math.hypot`, `math.inf`.
+```py
+import math
+print(math.pi, math.sqrt(2), math.factorial(5), math.gcd(12, 18))
+print(math.sin(math.radians(30)), math.hypot(3, 4), math.log(100, 10))
+```
+
+@@ py.hash-password
+Q: How do I store passwords safely?
+aka: hash password, password hashing, store password, hashlib, bcrypt, salt
+A: Never store the password itself. Store a slow salted hash (`hashlib.pbkdf2_hmac`, or the `bcrypt` package), and compare hashes when logging in.
+```py
+import hashlib, os, hmac
+
+def make_hash(password):
+    salt = os.urandom(16)
+    digest = hashlib.pbkdf2_hmac("sha256", password.encode(), salt, 200_000)
+    return salt.hex() + ":" + digest.hex()
+
+def check(password, stored):
+    salt_hex, digest_hex = stored.split(":")
+    digest = hashlib.pbkdf2_hmac("sha256", password.encode(), bytes.fromhex(salt_hex), 200_000)
+    return hmac.compare_digest(digest.hex(), digest_hex)
+
+stored = make_hash("hunter2")
+print(check("hunter2", stored), check("wrong", stored))
+```
+
+@@ py.requests
+Q: How do I download a web page or call a web API?
+aka: requests, http get, api call, download file, fetch url, urllib, json api
+A: Install `requests` and use `requests.get(url)`. `.json()` decodes JSON responses. Built-in alternative: `urllib.request`.
+```py norun
+import requests                       # pip install requests
+
+r = requests.get("https://api.github.com/repos/python/cpython", timeout=10)
+r.raise_for_status()
+data = r.json()
+print(data["stargazers_count"])
+```
+
+@@ py.command-args
+Q: How do I read command-line arguments?
+aka: command line arguments, sys.argv, argparse, script arguments, run with parameters
+A: `sys.argv` is a list: `[script_name, arg1, arg2...]`. For options and help text use `argparse`.
+```py
+import argparse
+p = argparse.ArgumentParser(description="Greet someone")
+p.add_argument("name", nargs="?", default="world")
+p.add_argument("--times", type=int, default=1)
+args = p.parse_args()
+for _ in range(args.times):
+    print(f"Hello, {args.name}")
+```
+```sh
+python greet.py Ada --times 2
+```
+
+@@ py.clear-screen
+Q: How do I clear the console screen?
+aka: clear screen, cls, clear terminal, clear output
+A: `os.system("cls" if os.name == "nt" else "clear")`. In IDLE this doesn't work (IDLE isn't a terminal); print blank lines instead.
+```py norun
+import os
+os.system("cls" if os.name == "nt" else "clear")
+```
+
+@@ py.colors-terminal
+Q: How do I print coloured text in the terminal?
+aka: colored text, color terminal, ansi colors, colorama, rich, print in color
+A: ANSI codes like `"\033[31m"` (red) and `"\033[0m"` (reset) work in most terminals (Windows 10+ included). The `rich` or `colorama` packages make it easier. IDLE ignores them.
+```py
+RED, GREEN, BOLD, RESET = "\033[31m", "\033[32m", "\033[1m", "\033[0m"
+print(f"{RED}error{RESET} {GREEN}{BOLD}ok{RESET}")
+```
+
+@@ py.version
+Q: Which Python version do I have?
+aka: python version, check version, python --version, which python
+A: In a terminal: `python --version`. In code: `sys.version`.
+```sh
+python --version          # or: py --version  /  python3 --version
+```
+```py
+import sys
+print(sys.version_info >= (3, 10), sys.version)
+```

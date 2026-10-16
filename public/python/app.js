@@ -70,6 +70,7 @@
     sound: ['winsound', 'audio'], music: ['audio'], screenshot: ['image', 'pillow'], dark: ['theme', 'color'], theme: ['ttk', 'style'], style: ['ttk', 'style'], pretty: ['ttk', 'style'], modern: ['ttk']
   };
   var INV = {}, VOCAB = [];
+  function norm(t) { return String(t).toLowerCase().replace(/[^a-z0-9_]+/g, ' ').replace(/\s+/g, ' ').trim(); }
   function addTok(t, i, w) { var m = INV[t] || (INV[t] = {}); m[i] = Math.max(m[i] || 0, w) + (m[i] ? 0.15 : 0); }
   D.entries.forEach(function (e, i) {
     e.aPlain = strip(e.a);
@@ -82,6 +83,7 @@
     words(e.t).forEach(function (t) { addTok(t, i, 1); });
     e.hay = (e.q + ' | ' + e.aka + ' | ' + e.err).toLowerCase();
     e.errs = e.err ? e.err.split('|').map(function (p) { return p.trim().toLowerCase(); }) : [];
+    e.akas = (e.aka + ',' + e.q).split(',').map(function (p) { return ' ' + norm(p) + ' '; }).filter(function (p) { return p.length > 4; });
   });
   VOCAB = Object.keys(INV).sort();
 
@@ -115,10 +117,11 @@
       var max = t.length >= 7 ? 2 : 1, fz = [];
       for (var v = 0; v < VOCAB.length; v++) { var d = lev(t, VOCAB[v], max); if (d <= max) fz.push([VOCAB[v], d]); }
       fz.sort(function (a, b) { return a[1] - b[1]; }).slice(0, 6).forEach(function (p) { merge(INV[p[0]], p[1] === 1 ? 0.6 : 0.4); typo.push(p[0]); });
+      if (fz.length) fixes[t] = fz[0][0];
     }
     return found ? hits : null;
   }
-  var typo = [];
+  var typo = [], fixes = {};
 
   function errorLine(s) {
     var lines = s.split(/\n/).map(function (l) { return l.trim(); }).filter(Boolean);
@@ -132,7 +135,7 @@
     return true;
   }
   function search(raw) {
-    typo = [];
+    typo = []; fixes = {};
     var s = raw.trim(); if (!s) return { list: [] };
     var eline = errorLine(s), el = eline.toLowerCase();
     var body = eline ? eline.replace(/'[^']*'|"[^"]*"/g, ' ') : s;
@@ -145,10 +148,15 @@
       for (var i in h) { score[i] = (score[i] || 0) + h[i]; matched[i] = (matched[i] || 0) + 1; }
     });
     var low = s.toLowerCase().replace(/\s+/g, ' ');
+    var nq = ' ' + norm(eline ? body : s) + ' ';
+    var nfix = ' ' + nq.trim().split(' ').map(function (w) { var st = stem(w); return fixes[st] || w; }).join(' ') + ' ';
     D.entries.forEach(function (e, i) {
       var bonus = 0;
       if (el) e.errs.forEach(function (p) { if (patMatch(p, el)) bonus = Math.max(bonus, 40 + p.length / 3); });
       if (low.length > 3 && e.hay.indexOf(low) >= 0) bonus += 14;
+      var pb = 0;
+      e.akas.forEach(function (a) { if (nq.indexOf(a) >= 0 || nfix.indexOf(a) >= 0) pb = Math.max(pb, 8 + a.length / 2); });
+      bonus += pb;
       if (bonus) { score[i] = (score[i] || 0) + bonus; matched[i] = Math.max(matched[i] || 0, toks.length); }
     });
     var n = Math.max(1, toks.length), list = [];
@@ -194,12 +202,15 @@
     document.title = 'Python Answer Book';
     var nCode = D.entries.reduce(function (a, e) { return a + (e.h.match(/<figure class="code(?! out| sh)/g) || []).length; }, 0);
     var h = '<p class="lede"><span><b>' + D.entries.length + '</b> answers</span><span><b>' + D.sections.length + '</b> sections</span><span><b>' + nCode + '</b> examples, each one run before publishing</span></p>';
-    var errs = D.entries.filter(function (e) { return e.err; });
+    var TOP = [['tk.err.pack-grid', 'cannot use geometry manager'], ['tk.err.none-grid', "'NoneType' has no attribute 'get'"], ['tk.err.command-runs-early', 'button runs too early'],
+      ['tk.err.image-gone', 'image not showing'], ['tk.err.pyimage', 'image "pyimage1" doesn\'t exist'], ['tk.after-not-sleep', 'window Not Responding'], ['tk.err.bind-missing-arg', 'takes 0 positional arguments'],
+      ['tk.err.unknown-option', 'unknown option "-bg"'], ['py.err.str-int-concat', 'can only concatenate str'], ['py.err.valueerror-int', 'invalid literal for int()'], ['py.err.indexerror', 'list index out of range'],
+      ['py.err.nameerror', 'name is not defined'], ['py.err.nonetype', "'NoneType' not subscriptable"], ['py.err.modulenotfound', 'No module named'], ['py.err.filenotfound', 'No such file or directory'], ['py.err.indentation', 'IndentationError']];
+    var errs = TOP.filter(function (t) { return BY[t[0]]; });
     if (errs.length) {
-      h += '<section class="errs"><h2>Error messages</h2><ul>' + errs.map(function (e) {
-        var first = e.err.split('|')[0].replace(/\*/g, '…').trim();
-        return '<li><a href="#/a/' + e.id + '" title="' + esc(e.q) + '">' + esc(first.length > 46 ? first.slice(0, 44) + '…' : first) + '</a></li>';
-      }).join('') + '</ul></section>';
+      h += '<section class="errs"><h2>Most searched errors</h2><ul>' + errs.map(function (t) {
+        return '<li><a href="#/a/' + t[0] + '" title="' + esc(BY[t[0]].q) + '">' + esc(t[1]) + '</a></li>';
+      }).join('') + '</ul><p class="allerr">All error messages: <a href="#/s/tk-errors">tkinter</a> · <a href="#/s/py-errors">Python</a></p></section>';
     }
     var seen = (store('pyrefSeen') || []).filter(function (id) { return BY[id]; }).slice(0, 6);
     if (seen.length) h += '<section class="recent"><h2 class="lab">Opened recently</h2><ol>' + seen.map(function (id) { return '<li><a href="#/a/' + id + '">' + esc(BY[id].q) + '</a></li>'; }).join('') + '</ol></section>';
@@ -234,7 +245,7 @@
     if (e.see.length) h += '<section class="see"><h2>See also</h2><ul>' + e.see.filter(function (x) { return BY[x]; }).map(function (x) { return '<li><a href="#/a/' + x + '">' + BY[x].qh + '</a></li>'; }).join('') + '</ul></section>';
     h += '<nav class="pn">' + (prev ? '<a href="#/a/' + prev.id + '"><small>Previous</small>' + prev.qh + '</a>' : '') + (next ? '<a class="nx" href="#/a/' + next.id + '"><small>Next</small>' + next.qh + '</a>' : '') + '</nav>';
     main.innerHTML = h;
-    main.querySelectorAll('.code:not(.out)').forEach(function (f) {
+    main.querySelectorAll('.code:not(.out):not(.bad)').forEach(function (f) {
       var b = document.createElement('button'); b.className = 'copy'; b.type = 'button'; b.textContent = 'Copy';
       b.onclick = function () {
         var txt = f.querySelector('pre').textContent;
@@ -256,7 +267,7 @@
     var h = '';
     if (r.eline) h += '<div class="errline">' + esc(r.eline) + '</div>';
     if (r.list.length) {
-      h += '<p class="rhead"><span>' + r.list.length + (r.list.length === 40 ? '+' : '') + ' answers</span>' + (r.typo.length ? '<span>also matched: ' + esc(r.typo.slice(0, 3).join(', ')) + '</span>' : '') + '</p><ol class="res">' +
+      h += '<p class="rhead"><span>' + r.list.length + (r.list.length === 40 ? '+' : '') + (r.list.length === 1 ? ' answer' : ' answers') + '</span>' + (r.typo.length ? '<span>also matched: ' + esc(r.typo.slice(0, 3).join(', ')) + '</span>' : '') + '</p><ol class="res">' +
         r.list.map(function (x, i) {
           var s = SEC[x.e.s];
           return '<li><a href="#/a/' + x.e.id + '" class="' + (i === 0 ? 'sel' : '') + '"><span class="rq">' + mark(x.e.q, r.toks) + '</span><span class="rs">' + s.no + ' · ' + esc(s.title) + '</span><span class="ra">' + mark(x.e.aPlain, r.toks) + '</span></a></li>';

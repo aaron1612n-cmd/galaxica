@@ -1,0 +1,156 @@
+# py-dicts | Dictionaries and sets | Key/value data, counting, grouping, sets | python
+
+@@ py.dict-basics
+Q: How do I make a dictionary and get, add or change values?
+aka: dictionary, dict, key value, create dict, add to dict, update dict, access dict, hashmap, lookup table
+A: `d = {"name": "Ada", "age": 36}`. Read `d["name"]`, add or change with `d["city"] = "London"`.
+see: py.dict-get, py.dict-loop
+```py
+person = {"name": "Ada", "age": 36}
+print(person["name"])
+person["city"] = "London"        # add
+person["age"] += 1               # change
+print(person, len(person))
+```
+Keys must be unchangeable types (str, int, tuple). Values can be anything.
+
+@@ py.dict-get
+Q: How do I get a value without a KeyError if the key is missing?
+aka: dict get default, check key exists, key in dict, KeyError dictionary, setdefault, safe dict access
+A: `d.get(key)` returns `None` if missing, `d.get(key, default)` returns your default. Check with `if key in d:`.
+see: py.err.keyerror
+```py
+stock = {"apples": 5}
+print(stock.get("pears"), stock.get("pears", 0))
+if "apples" in stock:
+    print("we have apples")
+stock.setdefault("pears", 0)     # add only if missing
+print(stock)
+```
+
+@@ py.dict-loop
+Q: How do I loop through a dictionary's keys and values?
+aka: loop dict, iterate dictionary, items, keys, values, for key value in dict
+A: `for key, value in d.items():`. Looping over `d` directly gives just the keys; `d.values()` gives just the values.
+```py
+prices = {"tea": 2.5, "cake": 3.0, "soup": 4.2}
+for item, price in prices.items():
+    print(f"{item}: {price:.2f}")
+print(list(prices.keys()), sum(prices.values()))
+```
+Don't add or delete keys while looping over the dict (`RuntimeError: dictionary changed size during iteration`); loop over `list(d)` instead.
+
+@@ py.dict-remove
+Q: How do I delete a key from a dictionary?
+aka: delete key, remove from dict, pop dict, del dict key
+A: `del d[key]` (error if missing) or `d.pop(key, None)` (safe, returns the value).
+```py
+d = {"a": 1, "b": 2, "c": 3}
+del d["a"]
+print(d.pop("b"), d.pop("zzz", None), d)
+```
+
+@@ py.dict-sort
+Q: How do I sort a dictionary by value (or by key)?
+aka: sort dict by value, sort dictionary, highest value in dict, leaderboard, top scores
+A: `sorted(d.items(), key=lambda kv: kv[1], reverse=True)` gives a list of `(key, value)` pairs, highest first. Wrap in `dict(...)` for a dict again.
+see: py.sort
+```py
+scores = {"Ada": 90, "Bob": 72, "Cy": 99}
+ranked = sorted(scores.items(), key=lambda kv: kv[1], reverse=True)
+for name, s in ranked:
+    print(name, s)
+print(max(scores, key=scores.get))      # key with the highest value
+print(dict(sorted(scores.items())))     # by key
+```
+
+@@ py.counter
+Q: How do I count how many times each thing appears?
+aka: count occurrences, frequency, tally, Counter, count items in list, most common, histogram
+A: `collections.Counter(items)` does it in one go; or use a dict with `d[x] = d.get(x, 0) + 1`.
+```py
+from collections import Counter
+votes = ["red", "blue", "red", "green", "red", "blue"]
+c = Counter(votes)
+print(c, c["red"], c.most_common(1))
+
+counts = {}
+for v in votes:
+    counts[v] = counts.get(v, 0) + 1
+print(counts)
+```
+
+@@ py.defaultdict
+Q: How do I group items into lists by a key?
+aka: group by, defaultdict, dict of lists, categorize, append to dict list
+A: `collections.defaultdict(list)` creates an empty list for new keys automatically.
+```py
+from collections import defaultdict
+words = ["apple", "avocado", "banana", "blueberry", "cherry"]
+by_letter = defaultdict(list)
+for w in words:
+    by_letter[w[0]].append(w)
+print(dict(by_letter))
+```
+
+@@ py.dict-merge
+Q: How do I merge two dictionaries?
+aka: merge dicts, combine dictionaries, update dict, join dicts
+A: `merged = a | b` (Python 3.9+) or `{**a, **b}`. `a.update(b)` changes `a` in place. Values from `b` win on duplicate keys.
+```py
+defaults = {"volume": 5, "theme": "light"}
+user = {"theme": "dark"}
+print(defaults | user)
+print({**defaults, **user})
+```
+
+@@ py.nested-dict
+Q: How do I work with nested dictionaries (dicts inside dicts or lists of dicts)?
+aka: nested dict, dict of dicts, list of dicts, json like data, access nested value
+A: Chain the lookups: `data["users"][0]["name"]`. Loop over the outer level and index into each inner one.
+see: py.json
+```py
+data = {"users": [{"name": "Ada", "langs": ["Python", "C"]},
+                  {"name": "Bob", "langs": ["JS"]}]}
+print(data["users"][0]["name"])
+for u in data["users"]:
+    print(u["name"], ", ".join(u["langs"]))
+data["users"][1]["langs"].append("Python")
+print([u["name"] for u in data["users"] if "Python" in u["langs"]])
+```
+
+@@ py.dict-comp
+Q: What is a dictionary comprehension?
+aka: dict comprehension, create dict one line, invert dictionary, swap keys and values
+A: `{key_expr: value_expr for item in iterable}`.
+```py
+names = ["ada", "bob"]
+print({n: len(n) for n in names})
+d = {"a": 1, "b": 2}
+print({v: k for k, v in d.items()})        # swap keys and values
+```
+
+@@ py.set
+Q: What is a set and how do I use it (union, intersection, difference)?
+aka: set, unique values, set operations, union, intersection, difference, common elements, in both lists
+A: A set holds unique items with no order. `a | b` union, `a & b` in both, `a - b` in a but not b, `a ^ b` in exactly one.
+```py
+a = {1, 2, 3, 4}
+b = {3, 4, 5}
+print(a | b, a & b, a - b, a ^ b)
+s = set()                  # empty set ({} is an empty dict)
+s.add("x"); s.add("x")
+print(s, "x" in s)
+print(set([1, 1, 2]) == {1, 2})
+```
+Checking `x in some_set` is very fast, even with millions of items.
+
+@@ py.dict-key-from-value
+Q: How do I find the key for a given value?
+aka: key from value, reverse lookup dict, find key by value
+A: Loop: `[k for k, v in d.items() if v == target]`. If you do it often, keep a reversed dict.
+```py
+capitals = {"France": "Paris", "Japan": "Tokyo"}
+print([k for k, v in capitals.items() if v == "Tokyo"])
+print(next((k for k, v in capitals.items() if v == "Rome"), None))
+```

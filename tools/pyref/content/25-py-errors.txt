@@ -1,0 +1,501 @@
+# py-errors | Error messages | What each error means and how to fix it | python
+
+@@ py.read-traceback
+Q: How do I read an error message (traceback)?
+aka: traceback, read error, understand error, stack trace, what does this error mean, error line number
+A: Read it **from the bottom up**. The last line is the error type and message. The line above it shows the exact code and line number that failed. Lines higher up show how the program got there.
+see: py.try-except
+```py raises
+def average(nums):
+    return sum(nums) / len(nums)
+
+print(average([]))
+```
+```text
+Traceback (most recent call last):
+  File "example.py", line 4, in <module>
+    print(average([]))
+  File "example.py", line 2, in average
+    return sum(nums) / len(nums)
+ZeroDivisionError: division by zero
+```
+Here: dividing by `len(nums)`, which was 0, on line 2, inside `average`, called from line 4. Paste the **last line** into the search box above.
+
+@@ py.try-except
+Q: How do I catch errors so my program doesn't crash (try/except)?
+aka: try except, catch error, error handling, exception handling, handle exception, finally, else, except Exception as e
+A: Put risky code in `try:` and handle a **specific** error in `except ErrorType:`. `else:` runs if nothing failed; `finally:` always runs.
+see: py.raise
+```py
+def safe_divide(a, b):
+    try:
+        result = a / b
+    except ZeroDivisionError:
+        print("Can't divide by zero")
+        return None
+    except TypeError as e:
+        print("Bad types:", e)
+        return None
+    else:
+        return result
+    finally:
+        print("(done)")
+
+print(safe_divide(10, 2))
+print(safe_divide(1, 0))
+print(safe_divide("a", 2))
+```
+Avoid a bare `except:`: it also hides typos and Ctrl+C. At most use `except Exception as e:` and print `e`.
+
+@@ py.raise
+Q: How do I raise my own error (or make a custom exception)?
+aka: raise, throw exception, custom exception, raise ValueError, assert
+A: `raise ValueError("message")`. For your own kind, subclass `Exception`.
+```py
+class OutOfStock(Exception):
+    pass
+
+def buy(stock, qty):
+    if qty <= 0:
+        raise ValueError("quantity must be positive")
+    if qty > stock:
+        raise OutOfStock(f"only {stock} left")
+    return stock - qty
+
+try:
+    buy(3, 5)
+except OutOfStock as e:
+    print("Sorry:", e)
+```
+
+@@ py.err.syntax
+Q: SyntaxError: invalid syntax. What's wrong?
+aka: syntax error, invalid syntax, unexpected eof, expected ':', unterminated string, unmatched bracket, was never closed, cannot assign to
+err: SyntaxError|invalid syntax|expected ':'|was never closed|unterminated string literal|unexpected EOF while parsing|cannot assign to
+A: Python couldn't understand the code's shape. Check the line shown **and the line before it** for: a missing `:` after `if`/`for`/`def`, unclosed brackets or quotes, `=` instead of `==`, or a missing comma.
+```py bad
+if x = 5            # needs ==  and a colon
+print("hi"          # bracket never closed
+name = "Ada         # quote never closed
+for i in range(3)   # missing colon
+```
+```text
+SyntaxError: expected ':'                     -> add the colon at the end of the line
+SyntaxError: '(' was never closed             -> count your brackets
+SyntaxError: unterminated string literal      -> a quote is missing
+SyntaxError: invalid syntax. Maybe you meant '==' or ':=' instead of '='?
+```
+The arrow `^` points to where Python gave up, which is often just **after** the real mistake.
+
+@@ py.err.indentation
+Q: IndentationError: expected an indented block / unexpected indent / unindent does not match
+aka: indentation error, unexpected indent, expected an indented block, unindent does not match any outer indentation level, inconsistent use of tabs and spaces, TabError
+err: IndentationError|expected an indented block|unexpected indent|unindent does not match|TabError|inconsistent use of tabs and spaces
+A: The spaces at the start of lines don't line up. Every line in a block needs the same indentation (4 spaces), a line ending in `:` must be followed by an indented line, and tabs and spaces must not be mixed.
+see: py.indentation
+```py bad
+def greet():
+print("hi")          # expected an indented block
+
+x = 1
+    y = 2            # unexpected indent
+```
+```py
+def greet():
+    print("hi")
+
+x = 1
+y = 2
+greet()
+```
+In IDLE: select all and use Format > Untabify Region. In VS Code: "Convert Indentation to Spaces".
+
+@@ py.err.nameerror
+Q: NameError: name 'x' is not defined
+aka: name is not defined, nameerror, variable not defined, undefined variable, function not defined
+err: NameError: name '*' is not defined|is not defined
+A: Python doesn't know that name at that moment. Usually: a typo (or wrong capitals), using a variable before assigning it, a missing `import`, a variable that only exists inside another function, or text that needs quotes.
+see: py.err.unboundlocal
+```py bad
+print(score)              # never assigned
+Print("hi")               # capital P
+print(hello)              # meant the text "hello"
+x = math.sqrt(4)          # forgot: import math
+```
+```py
+import math
+score = 0
+print(score, "hello", math.sqrt(4))
+```
+
+@@ py.err.str-int-concat
+Q: TypeError: can only concatenate str (not "int") to str
+aka: can only concatenate str, must be str not int, unsupported operand type(s) for +: 'int' and 'str', add string and number, concatenate int and string
+err: can only concatenate str (not "*") to str|unsupported operand type(s) for +: 'int' and 'str'|must be str, not int
+A: You used `+` between text and a number. Convert the number with `str()`, or use an f-string. If the text came from `input()`, convert it with `int()` to do maths.
+see: py.fstring, py.convert
+```py bad
+age = 12
+print("Age: " + age)
+```
+```py
+age = 12
+print("Age: " + str(age))
+print(f"Age: {age}")
+years = int("5")             # e.g. from input()
+print(years + 1)
+```
+
+@@ py.err.valueerror-int
+Q: ValueError: invalid literal for int() with base 10
+aka: invalid literal for int, valueerror int, could not convert string to float, int input error, convert text to number fails
+err: invalid literal for int() with base 10|could not convert string to float
+A: `int()` got text that isn't a whole number: letters, an empty string `''`, a decimal like `'3.5'`, or hidden spaces/newlines. Check the value shown in quotes in the message, then validate the input or catch the error.
+see: py.input-number
+```py
+for text in ("42", " 7\n", "3.5", "", "abc"):
+    try:
+        print(repr(text), "->", int(text))
+    except ValueError:
+        try:
+            print(repr(text), "->", int(float(text)), "(via float)")
+        except ValueError:
+            print(repr(text), "-> not a number")
+```
+
+@@ py.err.indexerror
+Q: IndexError: list index out of range
+aka: list index out of range, index error, string index out of range, tuple index out of range, off by one
+err: index out of range
+A: You asked for a position that doesn't exist. A list of length 3 has indexes 0, 1, 2. Common causes: `range(len(x) + 1)`, using `x[len(x)]` for the last item (use `x[-1]`), or an empty list.
+see: py.list-index-error
+```py bad
+items = ["a", "b", "c"]
+print(items[3])               # only 0..2
+for i in range(len(items) + 1):
+    print(items[i])
+```
+```py
+items = ["a", "b", "c"]
+print(items[-1])
+for item in items:            # no index needed
+    print(item)
+if items:
+    print(items[0])
+```
+
+@@ py.err.keyerror
+Q: KeyError: 'something'
+aka: keyerror, key not found, dictionary key error, missing key
+err: KeyError
+A: The dictionary has no such key. Check spelling and capitals, or use `d.get(key, default)` / `if key in d:`. Print `d.keys()` to see what's really there.
+see: py.dict-get
+```py
+d = {"Name": "Ada"}
+print(d.keys())
+print(d.get("name", "not found"))       # lowercase key isn't there
+print(d["Name"])
+```
+
+@@ py.err.attributeerror
+Q: AttributeError: 'X' object has no attribute 'y'
+aka: has no attribute, attribute error, object has no attribute, str has no attribute, list has no attribute append
+err: object has no attribute|has no attribute
+A: That type doesn't have that method/property. Usually a typo, the variable holds a different type than you think (print `type(x)`), or a method from another type (lists have `append`, strings don't).
+see: py.err.nonetype, tk.err.none-grid
+```py
+name = "ada"
+print(type(name), [m for m in dir(name) if not m.startswith("_")][:8])
+words = name.split()          # strings have no append(); make a list first
+words.append("lovelace")
+print(words)
+```
+
+@@ py.err.nonetype
+Q: TypeError: 'NoneType' object is not subscriptable (or not iterable / has no attribute)
+aka: nonetype, none type error, nonetype object is not subscriptable, nonetype object is not iterable, cannot unpack non-iterable NoneType
+err: 'NoneType' object is not subscriptable|'NoneType' object is not iterable|cannot unpack non-iterable NoneType object
+A: A variable you expected to hold something is `None`. Usually: a function with no `return` (or a path that doesn't reach it), or storing the result of an in-place method like `x = list.sort()` or `x = list.append(...)`.
+see: py.return-vs-print, tk.err.none-grid
+```py bad
+nums = [3, 1, 2]
+nums = nums.sort()          # sort() returns None
+print(nums[0])
+```
+```py
+nums = [3, 1, 2]
+nums.sort()                 # sorts in place
+print(nums[0])
+
+def find(name):
+    if name == "ada":
+        return {"age": 36}
+    return {}               # always return something useful
+
+print(find("bob").get("age"))
+```
+
+@@ py.err.not-callable
+Q: TypeError: 'int' object is not callable (or 'str', 'list'...)
+aka: object is not callable, int not callable, str not callable, list not callable, shadowed builtin
+err: object is not callable
+A: You put `()` after something that isn't a function. Usually you reused a built-in name as a variable (`list = [...]`, `str = "..."`, `sum = 0`, `max = 5`), or forgot an operator (`2(3 + 4)` instead of `2 * (3 + 4)`).
+```py bad
+sum = 0
+total = sum([1, 2, 3])      # sum is now an int
+print(2(3 + 4))
+```
+```py
+total_so_far = 0                 # don't name it sum
+print(sum([1, 2, 3]), 2 * (3 + 4))
+```
+In IDLE or a notebook, restart after fixing so the old variable is gone.
+
+@@ py.err.not-subscriptable
+Q: TypeError: 'int' object is not subscriptable
+aka: not subscriptable, int not subscriptable, function object is not subscriptable, type object is not subscriptable
+err: object is not subscriptable
+A: You used `[ ]` on something that isn't a list/str/dict. Check the variable really holds what you think, and whether you meant `( )` for a function call.
+```py
+n = 1234
+print(str(n)[0])              # digits: convert to str first
+print([int(d) for d in str(n)])
+def get_items():
+    return [1, 2]
+print(get_items()[0])         # call it with () first, then index
+```
+
+@@ py.err.not-iterable
+Q: TypeError: 'int' object is not iterable
+aka: not iterable, int is not iterable, for loop int, cannot unpack non-iterable int
+err: object is not iterable|cannot unpack non-iterable
+A: A `for` loop (or `sum`, `list()`, unpacking) got a single number. To loop a number of times use `range(n)`.
+```py bad
+for i in 5:
+    print(i)
+```
+```py
+for i in range(5):
+    print(i, end=" ")
+```
+
+@@ py.err.positional-args
+Q: TypeError: f() takes 1 positional argument but 2 were given / missing 1 required positional argument
+aka: takes positional arguments but were given, missing required positional argument, missing self, wrong number of arguments
+err: takes * positional argument* but * were given|missing * required positional argument
+A: You called the function with the wrong number of arguments. In a **class**, every method needs `self` as its first parameter, and you call it on an object (`obj.method()`), not on the class.
+see: tk.err.bind-missing-arg, py.class-basics
+```py bad
+class Dog:
+    def bark():                 # missing self
+        print("woof")
+Dog().bark()                    # takes 0 positional arguments but 1 was given
+```
+```py
+class Dog:
+    def bark(self):
+        print("woof")
+
+def area(w, h):
+    return w * h
+
+Dog().bark()
+print(area(3, 4))
+```
+
+@@ py.err.zerodivision
+Q: ZeroDivisionError: division by zero
+aka: division by zero, zerodivisionerror, divide by zero, modulo by zero
+err: ZeroDivisionError|division by zero|integer modulo by zero
+A: You divided by 0 (often `len()` of an empty list, or a counter that never increased). Check first.
+```py
+scores = []
+average = sum(scores) / len(scores) if scores else 0
+print(average)
+```
+
+@@ py.err.modulenotfound
+Q: ModuleNotFoundError: No module named 'x'
+aka: no module named, module not found, import error, pip installed but not found, cannot import name
+err: ModuleNotFoundError: No module named|ImportError: cannot import name
+A: The package isn't installed **for the Python you're running**. Install with `python -m pip install x` using the same `python` command you run your script with. Some names differ: `pip install pillow` gives `import PIL`, `pip install opencv-python` gives `import cv2`, `beautifulsoup4` gives `bs4`.
+see: py.pip, tk.install
+```sh
+python -m pip install requests          # Windows: py -m pip install requests
+python3 -m pip install requests         # macOS / Linux
+python -c "import sys; print(sys.executable)"   # which Python am I running?
+```
+In VS Code, check the interpreter shown in the bottom-right corner matches the one you installed into. `cannot import name 'X'` means the module exists but has no `X` (typo, wrong version, or a circular import).
+
+@@ py.err.filenotfound
+Q: FileNotFoundError: [Errno 2] No such file or directory
+aka: no such file or directory, file not found, errno 2, can't open file, path wrong
+err: FileNotFoundError|No such file or directory|Errno 2
+A: The path is wrong **from where Python is running**. Print `os.getcwd()` to see that folder, use the script's own folder (`Path(__file__).parent`), check the exact name and extension (Windows can hide `.txt`), and use `r"..."` for Windows paths.
+see: py.script-dir, py.file-exists
+```py
+from pathlib import Path
+import os
+print("Running in:", os.getcwd())
+target = Path(__file__).parent / "notes.txt"
+print(target, "exists" if target.exists() else "MISSING")
+```
+`python: can't open file 'x.py'` is the same problem in the terminal: `cd` into the script's folder first.
+
+@@ py.err.unboundlocal
+Q: UnboundLocalError: cannot access local variable 'x' where it is not associated with a value
+aka: unboundlocalerror, local variable referenced before assignment, cannot access local variable, global variable in function error
+err: UnboundLocalError|referenced before assignment|cannot access local variable
+A: Inside a function you assign to a variable that also exists outside. Python then treats it as local everywhere in the function, so reading it first fails. Add `global x` (or `nonlocal x`), or pass it in and return it.
+see: py.global
+```py bad
+count = 0
+def add():
+    count += 1          # UnboundLocalError
+```
+```py
+count = 0
+def add():
+    global count
+    count += 1
+add()
+print(count)
+```
+
+@@ py.err.recursion
+Q: RecursionError: maximum recursion depth exceeded
+aka: recursion error, maximum recursion depth, infinite recursion, stack overflow python
+err: RecursionError|maximum recursion depth exceeded
+A: A function calls itself without ever stopping (missing or unreachable base case), or recursion is just too deep (over ~1000 levels). Fix the base case or use a loop.
+see: py.recursion, tk.err.recursion-after
+```py
+def countdown(n):
+    if n <= 0:                # base case: stops the recursion
+        print("Lift off")
+        return
+    print(n)
+    countdown(n - 1)
+
+countdown(3)
+```
+
+@@ py.err.unhashable
+Q: TypeError: unhashable type: 'list'
+aka: unhashable type list, unhashable dict, list as dict key, list in set
+err: unhashable type
+A: Lists, dicts and sets can't be dict keys or set items because they can change. Use a tuple instead of a list.
+```py
+seen = set()
+seen.add((1, 2))           # tuple, not [1, 2]
+grid = {(0, 0): "start"}
+print(seen, grid)
+```
+
+@@ py.err.circular-import
+Q: ImportError: cannot import name 'X' from partially initialized module (circular import)
+aka: circular import, partially initialized module, most likely due to a circular import, import each other
+err: partially initialized module|most likely due to a circular import
+A: Either two of your files import each other, or your file has the same name as the module you import (e.g. `random.py`, `tkinter.py`). Rename your file, or move the shared code into a third file both can import.
+see: tk.file-named-tkinter, py.own-module
+```text
+game.py  imports  ui.py
+ui.py    imports  game.py      <- circular
+
+fix: put the shared bits in  common.py,  and have both import it
+```
+Also delete any `__pycache__` folder after renaming.
+
+@@ py.err.eof
+Q: EOFError: EOF when reading a line
+aka: eoferror, eof when reading a line, input not working, input in online ide
+err: EOFError
+A: `input()` was called but there's no keyboard to read from: the program runs where input isn't connected (some online editors, a tkinter app started without a console, or a test runner). Run it in a terminal, or get input from a GUI widget instead.
+
+@@ py.err.keyboardinterrupt
+Q: KeyboardInterrupt (after pressing Ctrl+C)
+aka: keyboardinterrupt, ctrl c, stop program, stop infinite loop
+err: KeyboardInterrupt
+A: That's you stopping the program with Ctrl+C: not a bug. If it was stuck, look at the line shown to find the loop that never ended.
+```py
+import time
+try:
+    for i in range(3):
+        time.sleep(0.01)
+except KeyboardInterrupt:
+    print("Stopped by user")
+```
+
+@@ py.err.index-str-assign
+Q: TypeError: 'str' object does not support item assignment
+aka: str does not support item assignment, change character in string, tuple does not support item assignment, immutable
+err: does not support item assignment
+A: Strings and tuples can't be changed in place. Build a new one (or convert to a list, change it, and join).
+```py
+word = "cat"
+word = "b" + word[1:]
+print(word)
+letters = list("hello")
+letters[0] = "j"
+print("".join(letters))
+```
+
+@@ py.err.too-many-values
+Q: ValueError: too many values to unpack (expected 2)
+aka: too many values to unpack, not enough values to unpack, unpack error, expected 2 got 3
+err: too many values to unpack|not enough values to unpack
+A: The number of names on the left doesn't match the number of items on the right. Common when looping a dict without `.items()`, or splitting a line that has more parts than expected.
+```py
+d = {"a": 1}
+for key, value in d.items():           # not: for key, value in d
+    print(key, value)
+name, *rest = "Ada Byron Lovelace".split()
+print(name, rest)
+first, second = "x=1=2".split("=", 1)
+print(first, second)
+```
+
+@@ py.err.missing-self-attr
+Q: AttributeError: 'MyClass' object has no attribute 'x' (inside my class)
+aka: object has no attribute class, self attribute missing, forgot self, init not called
+err: object has no attribute
+A: The attribute was never set on `self`: you wrote `x = ...` instead of `self.x = ...` in `__init__`, misspelled `__init__` (needs two underscores each side), or used it before it was set.
+see: py.class-basics
+```py
+class Player:
+    def __init__(self, name):      # __init__, two underscores each side
+        self.name = name           # not just: name = name
+        self.score = 0
+
+p = Player("Ada")
+print(p.name, p.score)
+```
+
+@@ py.err.permission
+Q: PermissionError: [Errno 13] Permission denied
+aka: permission denied, errno 13, can't write file, access denied
+err: PermissionError|Permission denied|Errno 13
+A: The file is open in another program (Excel locks files), the path is a folder not a file, or you're writing somewhere protected (like `C:\Program Files`). Close the file, check the path, or save into your own folders.
+
+@@ py.err.oserror-path
+Q: OSError: [Errno 22] Invalid argument (Windows path)
+aka: errno 22 invalid argument, unicode escape error path, windows path backslash, truncated \UXXXXXXXX escape
+err: Errno 22|Invalid argument|truncated*escape|unicodeescape
+A: Backslashes in Windows paths become escape codes (`\n`, `\t`, `\U`). Use a raw string `r"C:\Users\me\file.txt"`, forward slashes, or `pathlib`.
+```py
+path1 = r"C:\Users\me\new_folder\test.txt"
+path2 = "C:/Users/me/new_folder/test.txt"
+print(path1, path2)
+```
+
+@@ py.err.infinite-loop
+Q: My program just hangs or never ends. How do I find out why?
+aka: program hangs, infinite loop, stuck, nothing happens, frozen program, not responding
+A: Usually a `while` loop whose condition never becomes false (the variable never changes), or `input()` waiting for you. Press Ctrl+C to see where it stopped, or add a `print` inside the loop.
+```py
+n = 10
+steps = 0
+while n != 1:
+    n = n // 2 if n % 2 == 0 else 3 * n + 1    # make sure the loop variable changes
+    steps += 1
+print("finished in", steps, "steps")
+```
