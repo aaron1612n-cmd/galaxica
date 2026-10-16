@@ -29,15 +29,14 @@ galaxica, squeeze, pinprick, hairline, gravity-garden (challenges + #w= share li
 - DONE 2026-10-16: 414 answers / 26 sections (T1-T17 tkinter: windows, labels+buttons, text input, choices, layout, events, variables, timers+threads, menus+dialogs, canvas, images, style, tables/tabs/progress, app structure, tk errors, 11 complete apps, extras; P1-P9 python: basics, strings, lists, dicts, files, 31 error messages, classes, modules, common tasks). 430 examples all pass. Hub top bar links to it ('Python answers'). Search checked with ~70 real queries + pasted tracebacks (scratchpad searchq.mjs). Live: https://play.galaxica.workers.dev/python/
 - To add answers: new `@@` entry in a content file (aka = phrases people would type; err = message patterns), rebuild, commit, deploy. Ideas: more recipes, pygame/turtle sections, user 'not found' log.
 
-## NOW (chat "Galaxica 5", 2026-10-16, branch `claude/nice-lovelace-x5im31`, draft PR aaron1612n-cmd/galaxica#4 stacked on #3)
-User: "expand tkinter until no more questions can be asked, many examples per subject, replicate for other modules and Python itself".
-DONE: tkinter 504 answers (files 30-43: widget refs classic+ttk, windows, Text, Canvas, forms, data, games, apps, threads, layout, events, errors2, extras). Python 440 (files 50-62: functions, iterators, decorators/with, OOP, typing, numbers, formatting, builtins A-Z, keywords+match, errors2, exceptions, collections ref, projects).
-TODO: Modules group `modules` (files 70-99, ids `mod.*`, rail M1..; app.js GROUPS supports it). Required ids already linked: mod.asyncio.basics cf.executor configparser gettext itertools.basics mp.pool pathlib.basics secrets socket.tcp turtle.basics unittest.basics ast.literal-eval collections.deque logging.basics statistics textwrap. Then: search check, data.js size (2 MB+, consider lazy bodies), screenshots, deploy, PR body.
-Build: `python3 tools/pyref/build.py [--only prefix]`; now FAILS if a ```text block after a run block differs from real output, and on invisible chars (Write tool turns \uXXXX into real chars: fix with python). Fake events need focus_force()+update() first. TK_MS=3000 runs tk examples longer.
-Env: `uv venv --managed-python -p 3.12 /home/user/pyenv` + pillow matplotlib (system python has no tk).
+## Python Answer Book expansion (chat "Galaxica 5", 2026-10-16) - DONE + DEPLOYED
+Branch `claude/nice-lovelace-x5im31`, draft PR aaron1612n-cmd/galaxica#4 (stacked on #3). 1149 answers / 70 sections / 1223 examples, 0 failures. tkinter 504 (files 30-43), Python 440 (50-62), Modules 205 (70-86, group `modules`, rail M1..; app.js GROUPS/GNAME/GNO/GCLS).
+Build: `python3 tools/pyref/build.py [--only idprefix]` (~90 s full). FAILS if a ```text block after a run block differs from real output, on invisible chars (Write tool turns \uXXXX into real chars: fix with python), on broken [[links]]/see:. Fake tk events need focus_force()+update(). TK_MS=3000 runs tk examples longer. Runner auto-closes turtle.
+Env: `uv venv --managed-python -p 3.12 /home/user/pyenv` + pillow matplotlib numpy pandas openpyxl beautifulsoup4 flask requests (system python has no tk).
+Search check: scratchpad search.js (72 queries: 66 top-1, 72 top-3). Tune by adding phrases to `aka:`.
 
 ## NEXT
-1. Finish the expansion above; then ask user which answers were missing.
+1. Ask user which Answer Book answers are missing (ideas: lazy-load bodies if data.js grows past 2.4 MB, struct/io, email parsing, pygame section).
 2. Game ideas (Deepdig/Hedgerow-like). 3. Leaderboards, phone playtest, balance.
 
 ## Test kit (scratchpad, ephemeral)
