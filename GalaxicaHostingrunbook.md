@@ -4,7 +4,7 @@ Purpose: resume this chat with full context. Cap ~1,500 tokens; condense, don't 
 ## Hosting
 - Repo `aaron1612n-cmd/galaxica`. Static arcade in `public/`, served by Cloudflare Worker `play` (wrangler.jsonc assets ./public).
 - LIVE: https://play.galaxica.workers.dev. Deploy: `npx wrangler deploy` (user approved deploys 2026-10-15; edge cache lags ~1 min). Pushing alone does not publish.
-- Branch this session: `claude/determined-brown-9f1py4`, draft PR aaron1612n-cmd/galaxica#2 (no CI). Commit + push + deploy after each finished game.
+- Branches: work landed on `claude/determined-brown-9f1py4` (draft PR aaron1612n-cmd/galaxica#2, open, unmerged; main still at d27943c). Session 2026-10-16 branch `claude/keen-johnson-dabr2d` fast-forwarded to it (9d2fb0a). Live site = that state (25 games). Commit + push + deploy after each finished game.
 
 ## Structure
 - Hub `public/index.html` reads `public/games.json` ({id,title,blurb,thumb}). Game = `public/games/<id>/index.html` + `thumb.jpg` (469x352).
@@ -22,13 +22,15 @@ Purpose: resume this chat with full context. Cap ~1,500 tokens; condense, don't 
 ## Games (25 live)
 galaxica, squeeze, pinprick, hairline, gravity-garden (challenges + #w= share links), powder-lab, tidewater, loom, moth-mail, cairn, tantrum, ant-kingdom, peg-song, switchyard, chirp (all with fun layer), floe, brass-pinball, ripple, cauldron, snail-rocket, deepdig, hedgerow, sneeze-heist, bramble, rube-garden. User favourites: Deepdig, Hedgerow.
 
-## Pybench (removed 2026-10-16)
-- Built an IDLE-style browser Python editor at public/pybench (Pyodide 0.26.4 + CodeMirror 5, lessons, debugger, turtle). User then said "no convert website, no more python editor, I'll just use shell": removed from site, hub row and public/_headers. Still recoverable from git commit 575eaa9 if ever wanted. Don't rebuild unless asked.
-- Facts learned (useful if Python help comes up again): in Pyodide 182/212 stdlib modules import; sqlite3/lzma/ssl are optional Pyodide packages; no threads, subprocess, sockets/urllib, tkinter in a browser.
-- User is learning Python and will use the real Python shell/IDLE on their computer; help there with explanations, not a web tool.
+## Python Answer Book (started 2026-10-16) `public/python/`
+- User: "instead of a course make it like browsing... almost every answer, especially tkinter". Searchable Q&A reference, NOT lessons/editor (Pybench stays removed).
+- Content: `tools/pyref/content/NN-*.txt` (`# id | Title | blurb | tkinter|python`, `@@ entry.id`, `Q:/A:/aka:/err:/see:` lines, markdown-ish body, ```py run|norun|bad|raises, ```text, ```sh, [[id|label]] links). `python3 tools/pyref/build.py` -> `public/python/data.js`; it RUNS every example (tk under xvfb, mainloop auto-closes, dialogs stubbed) with `/home/user/pyenv/bin/python` (uv Python 3.12 + Tk 9 + Pillow; recreate with `uv venv` if container is new). Build fails on any broken example or link.
+- Site: index.html/style.css/app.js. Look = printed pocket reference: paper #f2ede3, ink #1b1a17, ONE accent vermilion #c23b22, Archivo Narrow + Source Serif 4 + IBM Plex Mono, double rule header, rail index (T1.., P1..), answer box, hatched "wrong" code. Motion moment = Copy button stamp. Search: inverted index + synonyms + prefix + typo (edit distance) + pasted-traceback error matching (`err:` patterns, `*` wildcard); fallback links to docs/Stack Overflow.
+- DONE 2026-10-16: 414 answers / 26 sections (T1-T17 tkinter: windows, labels+buttons, text input, choices, layout, events, variables, timers+threads, menus+dialogs, canvas, images, style, tables/tabs/progress, app structure, tk errors, 11 complete apps, extras; P1-P9 python: basics, strings, lists, dicts, files, 31 error messages, classes, modules, common tasks). 430 examples all pass. Hub top bar links to it ('Python answers'). Search checked with ~70 real queries + pasted tracebacks (scratchpad searchq.mjs). Live: https://play.galaxica.workers.dev/python/
+- To add answers: new `@@` entry in a content file (aka = phrases people would type; err = message patterns), rebuild, commit, deploy. Ideas: more recipes, pygame/turtle sections, user 'not found' log.
 
 ## NEXT
-1. User is continuing in a new chat. Ask what they want next (arcade work, or Python help in their own shell).
+1. 2026-10-16: Python Answer Book shipped (above). Ask user what to add or which answers were missing.
 2. Game ideas still open (dig- and hedge-like, user favourites Deepdig + Hedgerow).
 3. Later: leaderboards, real-phone playtest, balance (Cauldron hard, Deepdig economy). Keep runbook under cap.
 

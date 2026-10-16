@@ -1,0 +1,336 @@
+# tk-choices | Choices and lists | Checkbuttons, radio buttons, dropdowns, listboxes, sliders, spinboxes | tkinter
+
+@@ tk.checkbutton
+Q: How do I make a checkbox and read whether it's ticked?
+aka: checkbox, checkbutton, tick box, check box value, is checked, BooleanVar checkbox
+A: Link it to a `BooleanVar` (or `IntVar`) with `variable=`, then read `var.get()`.
+see: tk.checkbutton-many, tk.booleanvar
+```py
+import tkinter as tk
+
+root = tk.Tk()
+sugar = tk.BooleanVar(value=True)
+tk.Checkbutton(root, text="Sugar", variable=sugar).pack(anchor="w", padx=20, pady=10)
+
+def order():
+    print("Sugar:", sugar.get())     # True or False
+
+tk.Button(root, text="Order", command=order).pack(pady=(0, 10))
+root.mainloop()
+```
+`command=` runs a function every time it's clicked. With `IntVar`, it gives 1/0; set `onvalue`/`offvalue` for other values.
+
+@@ tk.checkbutton-many
+Q: How do I make many checkboxes from a list and see which are ticked?
+aka: multiple checkboxes, list of checkbuttons, checkboxes in loop, get selected checkboxes
+A: Keep a dict of `{name: BooleanVar}` and loop over it.
+```py
+import tkinter as tk
+
+root = tk.Tk()
+toppings = ["Cheese", "Ham", "Pineapple", "Olives"]
+chosen = {}
+for t in toppings:
+    chosen[t] = tk.BooleanVar()
+    tk.Checkbutton(root, text=t, variable=chosen[t]).pack(anchor="w", padx=20)
+
+def show():
+    picked = [t for t, v in chosen.items() if v.get()]
+    print("Picked:", picked)
+
+tk.Button(root, text="Done", command=show).pack(pady=10)
+root.mainloop()
+```
+
+@@ tk.radiobutton
+Q: How do I make radio buttons (choose one option)?
+aka: radio button, option buttons, choose one, multiple choice, radiobutton value, quiz options
+A: Give every Radiobutton the **same** variable and a different `value=`. The variable holds the chosen value.
+see: tk.recipe-quiz
+```py
+import tkinter as tk
+
+root = tk.Tk()
+size = tk.StringVar(value="M")
+for text, val in [("Small", "S"), ("Medium", "M"), ("Large", "L")]:
+    tk.Radiobutton(root, text=text, variable=size, value=val).pack(anchor="w", padx=20)
+
+tk.Button(root, text="OK", command=lambda: print("Size:", size.get())).pack(pady=10)
+root.mainloop()
+```
+If all of them start selected (or none can be picked), they don't share one variable, or the variable was garbage-collected (it was created inside a function and not stored).
+
+@@ tk.combobox
+Q: How do I make a dropdown menu (combobox)?
+aka: dropdown, drop down list, combobox, select box, choose from list, ttk.Combobox, picker
+A: Use `ttk.Combobox(root, values=[...], state="readonly")` and read it with `.get()`.
+see: tk.combobox-event, tk.optionmenu
+```py
+import tkinter as tk
+from tkinter import ttk
+
+root = tk.Tk()
+fruit = ttk.Combobox(root, values=["Apple", "Banana", "Cherry"], state="readonly")
+fruit.current(0)             # select the first item
+fruit.pack(padx=20, pady=10)
+
+tk.Button(root, text="Show", command=lambda: print(fruit.get())).pack(pady=(0, 10))
+root.mainloop()
+```
+Without `state="readonly"` the user can also type their own value.
+
+@@ tk.combobox-event
+Q: How do I run code when the user picks something from a Combobox?
+aka: combobox selected event, ComboboxSelected, on select dropdown, combobox change, combobox callback
+A: Bind the virtual event `"<<ComboboxSelected>>"`.
+see: tk.combobox, tk.combobox-update
+```py
+import tkinter as tk
+from tkinter import ttk
+
+root = tk.Tk()
+box = ttk.Combobox(root, values=["Red", "Green", "Blue"], state="readonly")
+box.pack(padx=20, pady=10)
+swatch = tk.Label(root, text="     ", width=20)
+swatch.pack(pady=(0, 10))
+
+def picked(event):
+    swatch.config(bg=box.get().lower())
+
+box.bind("<<ComboboxSelected>>", picked)
+root.mainloop()
+```
+
+@@ tk.combobox-update
+Q: How do I change the list of options in a Combobox later (dependent dropdowns)?
+aka: update combobox values, dynamic dropdown, second dropdown depends on first, combobox set values
+A: `box["values"] = new_list` (or `box.config(values=...)`), then `box.set("")` to clear the old choice.
+```py
+import tkinter as tk
+from tkinter import ttk
+
+data = {"Fruit": ["Apple", "Pear"], "Veg": ["Carrot", "Leek", "Pea"]}
+root = tk.Tk()
+kind = ttk.Combobox(root, values=list(data), state="readonly")
+item = ttk.Combobox(root, state="readonly")
+kind.pack(padx=20, pady=5)
+item.pack(padx=20, pady=5)
+
+def kind_changed(e):
+    item["values"] = data[kind.get()]
+    item.set("")
+
+kind.bind("<<ComboboxSelected>>", kind_changed)
+root.mainloop()
+```
+
+@@ tk.optionmenu
+Q: What is OptionMenu and how do I use it?
+aka: optionmenu, tk.OptionMenu, menu button dropdown, simple dropdown
+A: `tk.OptionMenu(root, var, *choices)` is a simple dropdown button. Note the `*` before the list.
+see: tk.combobox
+```py
+import tkinter as tk
+
+root = tk.Tk()
+choices = ["Easy", "Normal", "Hard"]
+level = tk.StringVar(value=choices[1])
+tk.OptionMenu(root, level, *choices).pack(padx=20, pady=10)
+level.trace_add("write", lambda *a: print("Level:", level.get()))
+root.mainloop()
+```
+To change its choices later:
+```py
+import tkinter as tk
+
+root = tk.Tk()
+var = tk.StringVar(value="a")
+om = tk.OptionMenu(root, var, "a", "b")
+om.pack(padx=20, pady=10)
+
+def set_options(options):
+    menu = om["menu"]
+    menu.delete(0, "end")
+    for o in options:
+        menu.add_command(label=o, command=lambda v=o: var.set(v))
+    var.set(options[0])
+
+set_options(["x", "y", "z"])
+root.mainloop()
+```
+
+@@ tk.listbox
+Q: How do I make a list the user can pick from (Listbox)?
+aka: listbox, list widget, list of items, show list, selectable list, tk.Listbox
+A: Create `tk.Listbox`, add items with `insert("end", item)`, and read the selection with `curselection()`.
+see: tk.listbox-select, tk.listbox-delete, tk.listbox-scroll
+```py
+import tkinter as tk
+
+root = tk.Tk()
+lb = tk.Listbox(root, height=6)
+lb.pack(padx=20, pady=10)
+for name in ["Ada", "Bob", "Cara", "Dev"]:
+    lb.insert("end", name)
+
+def show():
+    sel = lb.curselection()          # a tuple of indexes, e.g. (2,)
+    if sel:
+        print("Picked:", lb.get(sel[0]))
+
+tk.Button(root, text="Show", command=show).pack(pady=(0, 10))
+root.mainloop()
+```
+To fill it from a list in one go: `lb.insert("end", *my_list)`.
+
+@@ tk.listbox-select
+Q: How do I run code when a Listbox item is clicked or double-clicked?
+aka: listbox select event, ListboxSelect, double click listbox, on select listbox, listbox click
+A: Bind `"<<ListboxSelect>>"` for single selection changes, `"<Double-Button-1>"` for double-click.
+see: tk.listbox
+```py
+import tkinter as tk
+
+root = tk.Tk()
+lb = tk.Listbox(root)
+lb.insert("end", "Paris", "Tokyo", "Lima")
+lb.pack(padx=20, pady=10)
+info = tk.Label(root, text="")
+info.pack(pady=(0, 10))
+
+def selected(e):
+    sel = lb.curselection()
+    if sel:
+        info.config(text="Selected " + lb.get(sel[0]))
+
+lb.bind("<<ListboxSelect>>", selected)
+lb.bind("<Double-Button-1>", lambda e: print("Opened", lb.get("active")))
+root.mainloop()
+```
+`<<ListboxSelect>>` also fires when the selection is cleared, so check `curselection()` isn't empty.
+
+@@ tk.listbox-delete
+Q: How do I delete items from a Listbox (selected or all)?
+aka: listbox delete, remove selected item, clear listbox, delete all items listbox
+A: `lb.delete(index)` for one item, `lb.delete(0, "end")` for all. For the selection, delete in **reverse** order so the indexes don't shift.
+```py
+import tkinter as tk
+
+root = tk.Tk()
+lb = tk.Listbox(root, selectmode="extended")
+lb.insert("end", *["one", "two", "three", "four"])
+lb.pack(padx=20, pady=10)
+
+def remove_selected():
+    for i in reversed(lb.curselection()):
+        lb.delete(i)
+
+tk.Button(root, text="Delete selected", command=remove_selected).pack(side="left", padx=10, pady=10)
+tk.Button(root, text="Clear", command=lambda: lb.delete(0, "end")).pack(side="left", pady=10)
+root.mainloop()
+```
+
+@@ tk.listbox-multi
+Q: How do I let the user select several items in a Listbox?
+aka: multiple selection, selectmode, multi select listbox, select many
+A: `selectmode="multiple"` (click toggles) or `"extended"` (Shift/Ctrl like a file manager). `curselection()` gives all indexes.
+```py
+import tkinter as tk
+
+root = tk.Tk()
+lb = tk.Listbox(root, selectmode="multiple", exportselection=False)
+lb.insert("end", *["Mon", "Tue", "Wed", "Thu", "Fri"])
+lb.pack(padx=20, pady=10)
+tk.Button(root, text="Days", command=lambda: print([lb.get(i) for i in lb.curselection()])).pack(pady=(0, 10))
+root.mainloop()
+```
+`exportselection=False` stops the selection vanishing when you select text somewhere else (common with two listboxes).
+
+@@ tk.listbox-scroll
+Q: How do I add a scrollbar to a Listbox?
+aka: listbox scrollbar, scroll list, long listbox
+A: Put both in a Frame, then connect them: `yscrollcommand=sb.set` on the listbox and `command=lb.yview` on the scrollbar.
+see: tk.scrollbar
+```py
+import tkinter as tk
+
+root = tk.Tk()
+frame = tk.Frame(root)
+frame.pack(padx=10, pady=10, fill="both", expand=True)
+sb = tk.Scrollbar(frame, orient="vertical")
+lb = tk.Listbox(frame, yscrollcommand=sb.set, height=8)
+sb.config(command=lb.yview)
+sb.pack(side="right", fill="y")
+lb.pack(side="left", fill="both", expand=True)
+lb.insert("end", *[f"Item {i}" for i in range(100)])
+root.mainloop()
+```
+
+@@ tk.listbox-colors
+Q: How do I change the colour of one Listbox item or edit an item?
+aka: listbox item color, itemconfig, update listbox item, edit item listbox
+A: Colour: `lb.itemconfig(i, fg="red", bg="#fee")`. Edit: there's no "replace", so `delete(i)` then `insert(i, new)`.
+```py
+import tkinter as tk
+
+root = tk.Tk()
+lb = tk.Listbox(root)
+lb.insert("end", "done", "late", "todo")
+lb.itemconfig(1, fg="white", bg="#c23b22")
+lb.delete(2)
+lb.insert(2, "todo (edited)")
+lb.pack(padx=20, pady=20)
+root.mainloop()
+```
+
+@@ tk.scale
+Q: How do I make a slider?
+aka: slider, scale, range input, volume slider, ttk.Scale, horizontal slider, value slider
+A: `tk.Scale(root, from_=0, to=100, orient="horizontal")`. Read it with `.get()` or a variable; `command=` runs while it moves.
+```py
+import tkinter as tk
+
+root = tk.Tk()
+vol = tk.IntVar(value=50)
+tk.Scale(root, from_=0, to=100, orient="horizontal", variable=vol, length=200, label="Volume").pack(padx=20, pady=10)
+tk.Label(root, textvariable=vol).pack(pady=(0, 10))
+root.mainloop()
+```
+It's `from_` with an underscore, because `from` is a Python keyword. For steps use `resolution=0.5` or `tickinterval=10`.
+
+@@ tk.spinbox
+Q: How do I make a number box with up/down arrows (Spinbox)?
+aka: spinbox, number picker, up down arrows, increment box, numeric input
+A: `tk.Spinbox(root, from_=1, to=10)` or with a list: `values=("S", "M", "L")`. Read with `.get()` (a string).
+```py
+import tkinter as tk
+
+root = tk.Tk()
+qty = tk.Spinbox(root, from_=1, to=10, width=5)
+qty.pack(padx=20, pady=10)
+size = tk.Spinbox(root, values=("S", "M", "L", "XL"), width=5, state="readonly")
+size.pack(padx=20, pady=(0, 10))
+tk.Button(root, text="Buy", command=lambda: print(int(qty.get()), size.get())).pack(pady=(0, 10))
+root.mainloop()
+```
+
+@@ tk.checkbutton-switch
+Q: How do I make a toggle button (on/off switch)?
+aka: toggle button, on off button, switch, indicatoron, push button toggle
+A: A Checkbutton with `indicatoron=False` looks like a button that stays pressed. Or change a Button's text in its command.
+```py
+import tkinter as tk
+
+root = tk.Tk()
+on = tk.BooleanVar()
+tk.Checkbutton(root, text="Bold", variable=on, indicatoron=False, width=8, selectcolor="#ffcc66").pack(padx=20, pady=10)
+
+state = {"on": False}
+def flip():
+    state["on"] = not state["on"]
+    sw.config(text="ON" if state["on"] else "OFF", bg="#2e7d32" if state["on"] else "#888")
+
+sw = tk.Button(root, text="OFF", bg="#888", fg="white", width=8, command=flip)
+sw.pack(pady=(0, 10))
+root.mainloop()
+```

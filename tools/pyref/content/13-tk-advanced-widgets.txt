@@ -1,0 +1,271 @@
+# tk-adv | Tables, tabs and progress | Treeview tables, Notebook tabs, Progressbar | tkinter
+
+@@ tk.treeview
+Q: How do I show a table (rows and columns)?
+aka: table, treeview, data grid, spreadsheet view, columns, show data in table, ttk.Treeview, listview
+A: Use `ttk.Treeview(root, columns=..., show="headings")`, set each `heading` and `column`, then `insert("", "end", values=(...))` for each row.
+see: tk.treeview-select, tk.treeview-edit, tk.treeview-sort
+```py
+import tkinter as tk
+from tkinter import ttk
+
+root = tk.Tk()
+cols = ("name", "age", "city")
+tree = ttk.Treeview(root, columns=cols, show="headings", height=6)
+for c in cols:
+    tree.heading(c, text=c.title())
+    tree.column(c, width=100, anchor="w")
+tree.column("age", width=50, anchor="center")
+
+people = [("Ada", 36, "London"), ("Linus", 28, "Helsinki"), ("Grace", 45, "New York")]
+for p in people:
+    tree.insert("", "end", values=p)
+
+sb = ttk.Scrollbar(root, orient="vertical", command=tree.yview)
+tree.configure(yscrollcommand=sb.set)
+tree.pack(side="left", fill="both", expand=True, padx=(10, 0), pady=10)
+sb.pack(side="left", fill="y", pady=10)
+root.mainloop()
+```
+Without `show="headings"` you get an extra empty first column (the tree column `#0`).
+
+@@ tk.treeview-select
+Q: How do I get the selected row in a Treeview?
+aka: treeview selection, selected row, TreeviewSelect, get values treeview, focus, click row
+A: `tree.selection()` gives the selected item ids; `tree.item(iid, "values")` gives that row's values. Bind `"<<TreeviewSelect>>"` to react.
+```py
+import tkinter as tk
+from tkinter import ttk
+
+root = tk.Tk()
+tree = ttk.Treeview(root, columns=("item", "price"), show="headings", height=4)
+tree.heading("item", text="Item"); tree.heading("price", text="Price")
+for row in [("Tea", 2.5), ("Cake", 3.0), ("Soup", 4.2)]:
+    tree.insert("", "end", values=row)
+tree.pack(padx=10, pady=10)
+info = tk.Label(root, text="")
+info.pack(pady=(0, 10))
+
+def selected(event):
+    for iid in tree.selection():
+        item, price = tree.item(iid, "values")      # values come back as strings
+        info.config(text=f"{item}: {float(price):.2f}")
+
+tree.bind("<<TreeviewSelect>>", selected)
+root.mainloop()
+```
+
+@@ tk.treeview-edit
+Q: How do I update, delete or clear rows in a Treeview?
+aka: treeview delete, treeview update row, clear treeview, delete all rows, edit row treeview, treeview set
+A: Update with `tree.item(iid, values=new)`, delete with `tree.delete(iid)`, clear all with `tree.delete(*tree.get_children())`.
+```py
+import tkinter as tk
+from tkinter import ttk
+
+root = tk.Tk()
+tree = ttk.Treeview(root, columns=("task", "done"), show="headings", height=5)
+tree.heading("task", text="Task"); tree.heading("done", text="Done")
+tree.pack(padx=10, pady=10)
+for t in ("Shop", "Code", "Sleep"):
+    tree.insert("", "end", values=(t, "no"))
+
+def mark_done():
+    for iid in tree.selection():
+        task, _ = tree.item(iid, "values")
+        tree.item(iid, values=(task, "yes"))
+
+def remove():
+    for iid in tree.selection():
+        tree.delete(iid)
+
+bar = tk.Frame(root); bar.pack(pady=(0, 10))
+tk.Button(bar, text="Done", command=mark_done).pack(side="left", padx=4)
+tk.Button(bar, text="Delete", command=remove).pack(side="left", padx=4)
+tk.Button(bar, text="Clear", command=lambda: tree.delete(*tree.get_children())).pack(side="left", padx=4)
+root.mainloop()
+```
+To edit a cell by double-clicking, place an Entry over it using `tree.bbox(iid, column)`; there's no built-in cell editor.
+
+@@ tk.treeview-sort
+Q: How do I sort a Treeview by clicking a column heading?
+aka: sort treeview, sort table column, click heading to sort
+A: Give each heading a `command` that reads all rows, sorts them, and moves them into the new order with `tree.move`.
+```py
+import tkinter as tk
+from tkinter import ttk
+
+root = tk.Tk()
+cols = ("name", "score")
+tree = ttk.Treeview(root, columns=cols, show="headings", height=5)
+for r in [("Ada", 90), ("Sam", 72), ("Kim", 85), ("Lee", 99)]:
+    tree.insert("", "end", values=r)
+
+def sort_by(col, reverse=False):
+    rows = [(tree.set(iid, col), iid) for iid in tree.get_children("")]
+    rows.sort(key=lambda t: float(t[0]) if t[0].replace(".", "", 1).isdigit() else t[0].lower(), reverse=reverse)
+    for index, (_, iid) in enumerate(rows):
+        tree.move(iid, "", index)
+    tree.heading(col, command=lambda: sort_by(col, not reverse))
+
+for c in cols:
+    tree.heading(c, text=c.title(), command=lambda c=c: sort_by(c))
+tree.pack(padx=10, pady=10)
+root.mainloop()
+```
+
+@@ tk.treeview-tree
+Q: How do I make a tree (folders with children) in a Treeview?
+aka: tree view, hierarchy, nested items, folders tree, parent child items, expand collapse
+A: Insert children with the parent's id as the first argument; `open=True` expands it.
+```py
+import tkinter as tk
+from tkinter import ttk
+
+root = tk.Tk()
+tree = ttk.Treeview(root, height=8)
+tree.heading("#0", text="Files")
+src = tree.insert("", "end", text="src", open=True)
+tree.insert(src, "end", text="main.py")
+tree.insert(src, "end", text="utils.py")
+docs = tree.insert("", "end", text="docs")
+tree.insert(docs, "end", text="readme.md")
+tree.pack(fill="both", expand=True, padx=10, pady=10)
+root.mainloop()
+```
+
+@@ tk.treeview-style
+Q: How do I change Treeview row height, fonts, or stripe the rows?
+aka: treeview row height, treeview font, alternating row colors, striped rows, treeview tag colour
+A: Row height and font via `ttk.Style().configure("Treeview", rowheight=28, font=...)`. Row colours via tags: `tree.tag_configure("odd", background="#eee")`.
+```py
+import tkinter as tk
+from tkinter import ttk
+
+root = tk.Tk()
+style = ttk.Style()
+style.theme_use("clam")
+style.configure("Treeview", rowheight=26, font=("Helvetica", 11))
+style.configure("Treeview.Heading", font=("Helvetica", 11, "bold"))
+tree = ttk.Treeview(root, columns=("n",), show="headings", height=6)
+tree.heading("n", text="Number")
+tree.tag_configure("odd", background="#efeae0")
+tree.tag_configure("big", foreground="#c23b22")
+for i in range(8):
+    tags = ["odd"] if i % 2 else []
+    if i > 5:
+        tags.append("big")
+    tree.insert("", "end", values=(i * 111,), tags=tags)
+tree.pack(padx=10, pady=10)
+root.mainloop()
+```
+
+@@ tk.notebook
+Q: How do I make tabs?
+aka: tabs, notebook, tabbed window, ttk.Notebook, tab pages, switch tabs
+A: `nb = ttk.Notebook(root)`, make a Frame per tab, then `nb.add(frame, text="Tab name")`.
+see: tk.pages
+```py
+import tkinter as tk
+from tkinter import ttk
+
+root = tk.Tk()
+nb = ttk.Notebook(root)
+nb.pack(fill="both", expand=True, padx=10, pady=10)
+
+home = ttk.Frame(nb, padding=20)
+ttk.Label(home, text="Welcome home").pack()
+settings = ttk.Frame(nb, padding=20)
+ttk.Checkbutton(settings, text="Sound on").pack(anchor="w")
+
+nb.add(home, text="Home")
+nb.add(settings, text="Settings")
+nb.bind("<<NotebookTabChanged>>", lambda e: print("Tab:", nb.tab(nb.select(), "text")))
+root.mainloop()
+```
+Switch tabs from code with `nb.select(1)` or `nb.select(settings)`; remove one with `nb.forget(frame)`.
+
+@@ tk.progressbar
+Q: How do I show a progress bar?
+aka: progress bar, loading bar, ttk.Progressbar, percent complete, indeterminate spinner, loading animation
+A: `ttk.Progressbar(root, maximum=100, length=200)`; set `bar["value"] = n`. For "busy, unknown length" use `mode="indeterminate"` and `bar.start()`.
+see: tk.thread
+```py
+import tkinter as tk
+from tkinter import ttk
+
+root = tk.Tk()
+bar = ttk.Progressbar(root, maximum=100, length=240)
+bar.pack(padx=20, pady=10)
+pct = tk.Label(root, text="0%")
+pct.pack()
+busy = ttk.Progressbar(root, mode="indeterminate", length=240)
+busy.pack(padx=20, pady=10)
+busy.start(15)
+
+def step(n=0):
+    bar["value"] = n
+    pct.config(text=f"{n}%")
+    if n < 100:
+        root.after(30, step, n + 2)
+
+step()
+root.mainloop()
+```
+If the bar only jumps to the end, your work is blocking the main loop; update it from `after()` steps or a [[tk.thread|thread]].
+
+@@ tk.sizegrip-status
+Q: How do I add a status bar at the bottom of the window?
+aka: status bar, footer bar, bottom bar, sizegrip
+A: A Label (or Frame) packed with `side="bottom", fill="x"` before the main content. `ttk.Sizegrip` adds the resize handle in the corner.
+```py
+import tkinter as tk
+from tkinter import ttk
+
+root = tk.Tk()
+root.geometry("320x200")
+status = tk.Frame(root, relief="sunken", bd=1)
+status.pack(side="bottom", fill="x")
+msg = tk.Label(status, text="Ready", anchor="w")
+msg.pack(side="left", fill="x", expand=True)
+ttk.Sizegrip(status).pack(side="right")
+tk.Text(root).pack(fill="both", expand=True)
+root.mainloop()
+```
+
+@@ tk.calendar
+Q: Is there a date picker / calendar widget?
+aka: date picker, calendar widget, choose date, tkcalendar, DateEntry
+A: Not built in. Install `tkcalendar` (`pip install tkcalendar`) for `Calendar` and `DateEntry`, or build simple day/month/year Spinboxes.
+```py norun
+import tkinter as tk
+from tkcalendar import DateEntry      # pip install tkcalendar
+
+root = tk.Tk()
+d = DateEntry(root, date_pattern="yyyy-mm-dd")
+d.pack(padx=20, pady=20)
+tk.Button(root, text="OK", command=lambda: print(d.get_date())).pack()
+root.mainloop()
+```
+No-install version:
+```py
+import tkinter as tk
+import datetime
+
+root = tk.Tk()
+today = datetime.date.today()
+day = tk.Spinbox(root, from_=1, to=31, width=3); day.delete(0, "end"); day.insert(0, today.day)
+month = tk.Spinbox(root, from_=1, to=12, width=3); month.delete(0, "end"); month.insert(0, today.month)
+year = tk.Spinbox(root, from_=1900, to=2100, width=5); year.delete(0, "end"); year.insert(0, today.year)
+for w in (day, month, year):
+    w.pack(side="left", padx=4, pady=10)
+
+def read():
+    try:
+        print(datetime.date(int(year.get()), int(month.get()), int(day.get())))
+    except ValueError as e:
+        print("Bad date:", e)
+
+tk.Button(root, text="OK", command=read).pack(side="left", padx=6)
+root.mainloop()
+```

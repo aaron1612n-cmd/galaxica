@@ -1,0 +1,152 @@
+# tk-vars | Variables | StringVar, IntVar, BooleanVar, trace, sharing values | tkinter
+
+@@ tk.stringvar
+Q: What is StringVar and when should I use it?
+aka: StringVar, textvariable, tkinter variable, IntVar, DoubleVar, BooleanVar, control variable, tk variables
+A: A `StringVar` holds a value that widgets can watch. Link it with `textvariable=` (Label, Entry) or `variable=` (Checkbutton, Radiobutton, Scale); then `var.set(...)` updates every linked widget, and `var.get()` reads it.
+see: tk.trace, tk.var-types
+```py
+import tkinter as tk
+
+root = tk.Tk()
+name = tk.StringVar(value="world")
+tk.Entry(root, textvariable=name).pack(padx=20, pady=5)
+tk.Label(root, textvariable=name, font=("Arial", 16)).pack(pady=5)     # changes as you type
+tk.Button(root, text="Reset", command=lambda: name.set("world")).pack(pady=5)
+root.mainloop()
+```
+You don't **need** them; `widget.config(text=...)` and `entry.get()` do the same. They're handy when several widgets show one value.
+
+@@ tk.var-types
+Q: What's the difference between StringVar, IntVar, DoubleVar and BooleanVar?
+aka: IntVar, DoubleVar, BooleanVar, var get type, intvar error, expected floating-point number
+A: They differ only in what `get()` returns: `str`, `int`, `float`, `bool`. If the linked Entry holds text that isn't a number, `IntVar.get()` raises `TclError`.
+err: TclError: expected floating-point number but got|expected integer but got
+```py
+import tkinter as tk
+
+root = tk.Tk()
+age = tk.IntVar(value=12)
+e = tk.Entry(root, textvariable=age)
+e.pack(padx=20, pady=10)
+
+def check():
+    try:
+        print("Next year:", age.get() + 1)
+    except tk.TclError:
+        print("That's not a whole number")
+
+tk.Button(root, text="Check", command=check).pack(pady=(0, 10))
+root.mainloop()
+```
+For user-typed numbers, a StringVar + your own `int()` in `try` is often simpler.
+
+@@ tk.trace
+Q: How do I run a function whenever a variable changes (trace)?
+aka: trace_add, trace variable, on change, watch variable, trace write, trace_variable deprecated
+A: `var.trace_add("write", callback)`. The callback receives three arguments you can ignore with `*args`. (`trace("w", ...)` is the old, deprecated form.)
+see: tk.entry-changes
+```py
+import tkinter as tk
+
+root = tk.Tk()
+f = tk.DoubleVar(value=32)
+c = tk.StringVar()
+
+def convert(*args):
+    try:
+        c.set(f"{(f.get() - 32) * 5 / 9:.1f} °C")
+    except tk.TclError:
+        c.set("?")
+
+f.trace_add("write", convert)
+tk.Scale(root, from_=-40, to=212, orient="horizontal", variable=f, length=240, label="°F").pack(padx=10)
+tk.Label(root, textvariable=c, font=("Arial", 18)).pack(pady=10)
+convert()
+root.mainloop()
+```
+
+@@ tk.var-gc
+Q: Why does my Checkbutton/Radiobutton/Label not show the variable's value (it looks empty or all selected)?
+aka: variable garbage collected, variable in function, radiobutton all selected, checkbutton not working in function, StringVar local variable
+A: The `StringVar` was created inside a function as a local variable and got deleted when the function ended. Store it somewhere that lives on: a global, `self.var` in a class, or a list/dict.
+see: tk.err.image-gone
+```py bad
+def build():
+    choice = tk.StringVar(value="a")      # deleted when build() ends
+    tk.Radiobutton(root, text="A", variable=choice, value="a").pack()
+```
+```py
+import tkinter as tk
+
+class App:
+    def __init__(self, root):
+        self.choice = tk.StringVar(value="a")     # kept alive by self
+        for v in "abc":
+            tk.Radiobutton(root, text=v.upper(), variable=self.choice, value=v).pack(anchor="w")
+
+root = tk.Tk()
+app = App(root)
+root.mainloop()
+```
+
+@@ tk.var-before-root
+Q: RuntimeError: Too early to create variable: no default root window
+aka: too early to create variable, no default root window, StringVar before Tk, too early to create image, too early to use font
+err: Too early to create variable|no default root window|Too early to create image|Too early to use font
+A: You created a `StringVar`, `PhotoImage` or `Font` before `root = tk.Tk()`. Create the root window first.
+```py bad
+import tkinter as tk
+name = tk.StringVar()     # RuntimeError: no window yet
+root = tk.Tk()
+```
+```py
+import tkinter as tk
+
+root = tk.Tk()
+name = tk.StringVar(value="ok")
+print(name.get())
+root.destroy()
+```
+
+@@ tk.global-vs-class
+Q: How do I share or change values between my functions (global, nonlocal, or a class)?
+aka: global variable tkinter, change variable in function, score variable, counter button, UnboundLocalError tkinter, share data between functions
+A: For small scripts, declare `global score` in the function that changes it. For anything bigger, keep state on a class (`self.score`) or a dict; it scales better.
+see: tk.app-class, py.global
+```py
+import tkinter as tk
+
+root = tk.Tk()
+score = 0
+lab = tk.Label(root, text="0", font=("Arial", 24))
+lab.pack(padx=40, pady=10)
+
+def add():
+    global score            # without this: UnboundLocalError
+    score += 1
+    lab.config(text=str(score))
+
+tk.Button(root, text="+1", command=add).pack(pady=(0, 10))
+root.mainloop()
+```
+
+@@ tk.booleanvar
+Q: How do I use BooleanVar with a Checkbutton?
+aka: booleanvar, checkbox true false, toggle variable
+A: `v = tk.BooleanVar()`, `Checkbutton(..., variable=v)`. `v.get()` gives `True`/`False`; `v.set(True)` ticks it from code.
+see: tk.checkbutton
+```py
+import tkinter as tk
+
+root = tk.Tk()
+dark = tk.BooleanVar()
+area = tk.Label(root, text="Preview", width=24, height=4, bg="white")
+area.pack(padx=10, pady=10)
+
+def apply():
+    area.config(bg="#222" if dark.get() else "white", fg="white" if dark.get() else "black")
+
+tk.Checkbutton(root, text="Dark mode", variable=dark, command=apply).pack(pady=(0, 10))
+root.mainloop()
+```

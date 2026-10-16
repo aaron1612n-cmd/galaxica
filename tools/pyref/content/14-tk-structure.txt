@@ -1,0 +1,311 @@
+# tk-structure | Organising an app | Classes, multiple pages, sharing data, saving settings, bigger programs | tkinter
+
+@@ tk.app-class
+Q: How do I write a tkinter app as a class?
+aka: tkinter class, oop tkinter, class based gui, self in tkinter, inherit Tk, App class, object oriented tkinter
+A: Subclass `tk.Tk` (or `tk.Frame`), build widgets in `__init__`, store anything you need later on `self`, and make callbacks methods.
+see: tk.pages, py.class-basics
+```py
+import tkinter as tk
+
+class Counter(tk.Tk):
+    def __init__(self):
+        super().__init__()
+        self.title("Counter")
+        self.count = 0
+        self.label = tk.Label(self, text="0", font=("Helvetica", 32))
+        self.label.pack(padx=40, pady=10)
+        tk.Button(self, text="+1", command=self.add).pack(side="left", padx=10, pady=10)
+        tk.Button(self, text="Reset", command=self.reset).pack(side="right", padx=10, pady=10)
+
+    def add(self):
+        self.count += 1
+        self.label.config(text=str(self.count))
+
+    def reset(self):
+        self.count = 0
+        self.label.config(text="0")
+
+if __name__ == "__main__":
+    Counter().mainloop()
+```
+No `global` needed: everything lives on `self`. Remember `self.` both when storing (`self.label = ...`) and using (`self.label.config`).
+
+@@ tk.pages
+Q: How do I switch between pages/screens (menu screen, game screen...)?
+aka: multiple pages, switch frames, change screen, next page button, login then main page, show frame, screens tkinter, navigate pages
+A: Make each page a Frame, stack them all in the same grid cell, and call `tkraise()` on the one to show. Or destroy the old page and build the new one.
+see: tk.app-class, tk.notebook
+```py
+import tkinter as tk
+
+class App(tk.Tk):
+    def __init__(self):
+        super().__init__()
+        self.geometry("300x180")
+        box = tk.Frame(self)
+        box.pack(fill="both", expand=True)
+        box.rowconfigure(0, weight=1); box.columnconfigure(0, weight=1)
+        self.pages = {}
+        for Page in (Home, Game):
+            p = Page(box, self)
+            p.grid(row=0, column=0, sticky="nsew")
+            self.pages[Page.__name__] = p
+        self.show("Home")
+
+    def show(self, name):
+        self.pages[name].tkraise()
+
+class Home(tk.Frame):
+    def __init__(self, parent, app):
+        super().__init__(parent)
+        tk.Label(self, text="Main menu", font=("Helvetica", 18)).pack(pady=20)
+        tk.Button(self, text="Play", command=lambda: app.show("Game")).pack()
+
+class Game(tk.Frame):
+    def __init__(self, parent, app):
+        super().__init__(parent, bg="#203040")
+        tk.Label(self, text="Game screen", fg="white", bg="#203040", font=("Helvetica", 18)).pack(pady=20)
+        tk.Button(self, text="Back", command=lambda: app.show("Home")).pack()
+
+App().mainloop()
+```
+
+@@ tk.pass-data-windows
+Q: How do I pass data between windows or pages?
+aka: share data between windows, pass variable to another window, return value from toplevel, communicate between frames, access widget from another class
+A: Keep shared data in one place (the App object or a dict), give each page/window a reference to it, and pass callbacks for "send the answer back".
+see: tk.pages, tk.modal
+```py
+import tkinter as tk
+
+class App(tk.Tk):
+    def __init__(self):
+        super().__init__()
+        self.username = tk.StringVar(value="nobody")
+        tk.Label(self, text="Logged in as:").pack(padx=30, pady=(16, 0))
+        tk.Label(self, textvariable=self.username, font=("Helvetica", 14, "bold")).pack()
+        tk.Button(self, text="Change...", command=self.open_dialog).pack(pady=12)
+
+    def open_dialog(self):
+        NameDialog(self, on_done=self.username.set)
+
+class NameDialog(tk.Toplevel):
+    def __init__(self, master, on_done):
+        super().__init__(master)
+        self.on_done = on_done
+        self.entry = tk.Entry(self)
+        self.entry.pack(padx=20, pady=10)
+        tk.Button(self, text="OK", command=self.ok).pack(pady=(0, 10))
+
+    def ok(self):
+        self.on_done(self.entry.get())      # send the value back
+        self.destroy()
+
+App().mainloop()
+```
+
+@@ tk.split-files
+Q: How do I split a big tkinter program into several files?
+aka: multiple files, modules tkinter, import my own file, organize code, project structure, separate gui and logic
+A: Put each page/window class in its own `.py` file in the same folder and `import` it. Keep logic (calculations, saving) in files that don't import tkinter at all, so they're easy to test.
+see: py.own-module, py.err.circular-import
+```text
+my_app/
+    main.py          # creates App and calls mainloop()
+    pages.py         # class Home(tk.Frame), class Game(tk.Frame)
+    storage.py       # load_scores(), save_scores()  (no tkinter here)
+```
+```py norun
+# main.py
+import tkinter as tk
+from pages import Home, Game
+import storage
+
+class App(tk.Tk):
+    def __init__(self):
+        super().__init__()
+        self.scores = storage.load_scores()
+        ...
+
+if __name__ == "__main__":
+    App().mainloop()
+```
+If two files import each other you get a circular import; pass objects in as arguments instead.
+
+@@ tk.save-settings
+Q: How do I save settings or data between runs?
+aka: save data, remember settings, persist, json save load, save high score, config file, store data tkinter
+A: Save a dict to a JSON file when things change (or on close), and load it at start. Handle the first run when the file doesn't exist yet.
+see: py.json, tk.close-protocol
+```py
+import tkinter as tk
+import json
+from pathlib import Path
+
+FILE = Path("settings.json")
+
+def load():
+    try:
+        return json.loads(FILE.read_text())
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {"name": "", "volume": 50}
+
+def save():
+    FILE.write_text(json.dumps({"name": name.get(), "volume": volume.get()}, indent=2))
+    root.destroy()
+
+data = load()
+root = tk.Tk()
+name = tk.StringVar(value=data["name"])
+volume = tk.IntVar(value=data["volume"])
+tk.Entry(root, textvariable=name).pack(padx=20, pady=6)
+tk.Scale(root, from_=0, to=100, orient="horizontal", variable=volume).pack(padx=20, pady=6)
+root.protocol("WM_DELETE_WINDOW", save)
+root.mainloop()
+```
+
+@@ tk.sqlite
+Q: How do I save data in a database (SQLite) from a tkinter app?
+aka: sqlite tkinter, database gui, sqlite3, save to database, crud app, contacts app
+A: Python's built-in `sqlite3` stores data in one file. Connect once, `execute` SQL with `?` placeholders, and `commit()` after changes.
+see: tk.treeview, py.sqlite
+```py
+import tkinter as tk
+from tkinter import ttk
+import sqlite3
+
+db = sqlite3.connect("contacts.db")
+db.execute("CREATE TABLE IF NOT EXISTS contacts (id INTEGER PRIMARY KEY, name TEXT, phone TEXT)")
+
+root = tk.Tk()
+name, phone = tk.Entry(root), tk.Entry(root)
+name.grid(row=0, column=0, padx=4, pady=4); phone.grid(row=0, column=1, padx=4)
+tree = ttk.Treeview(root, columns=("name", "phone"), show="headings", height=6)
+tree.heading("name", text="Name"); tree.heading("phone", text="Phone")
+tree.grid(row=1, column=0, columnspan=3, padx=4, pady=4)
+
+def refresh():
+    tree.delete(*tree.get_children())
+    for row in db.execute("SELECT id, name, phone FROM contacts ORDER BY name"):
+        tree.insert("", "end", iid=row[0], values=row[1:])
+
+def add():
+    if name.get():
+        db.execute("INSERT INTO contacts (name, phone) VALUES (?, ?)", (name.get(), phone.get()))
+        db.commit()
+        name.delete(0, "end"); phone.delete(0, "end")
+        refresh()
+
+def delete():
+    for iid in tree.selection():
+        db.execute("DELETE FROM contacts WHERE id = ?", (iid,))
+    db.commit()
+    refresh()
+
+tk.Button(root, text="Add", command=add).grid(row=0, column=2, padx=4)
+tk.Button(root, text="Delete selected", command=delete).grid(row=2, column=0, columnspan=3, pady=4)
+refresh()
+root.mainloop()
+db.close()
+```
+Never build SQL with f-strings from user input; always use `?` placeholders.
+
+@@ tk.restart-app
+Q: How do I reset or restart my app (start the game again)?
+aka: restart program, reset game, play again, new game button, restart tkinter
+A: Don't restart Python. Write a `reset()` that sets your variables back and redraws, or destroy the page's Frame and build a new one.
+```py
+import tkinter as tk
+import random
+
+class Game(tk.Frame):
+    def __init__(self, master, on_restart):
+        super().__init__(master, padx=20, pady=20)
+        self.secret = random.randint(1, 10)
+        tk.Label(self, text="Guess 1-10").pack()
+        self.e = tk.Entry(self, width=5); self.e.pack()
+        self.msg = tk.Label(self, text=""); self.msg.pack()
+        tk.Button(self, text="Guess", command=self.guess).pack()
+        tk.Button(self, text="New game", command=on_restart).pack(pady=(8, 0))
+
+    def guess(self):
+        try:
+            g = int(self.e.get())
+        except ValueError:
+            return
+        self.msg.config(text="Correct!" if g == self.secret else ("Higher" if g < self.secret else "Lower"))
+
+root = tk.Tk()
+current = None
+
+def new_game():
+    global current
+    if current:
+        current.destroy()
+    current = Game(root, new_game)
+    current.pack()
+
+new_game()
+root.mainloop()
+```
+
+@@ tk.widget-from-list
+Q: How do I create widgets from a list or dict (and get their values back)?
+aka: dynamic widgets, create entries in loop, form from list, generate widgets, list of entries
+A: Loop over your data, create each widget, and store it in a dict keyed by name so you can read them all later.
+```py
+import tkinter as tk
+
+fields = ["Name", "Email", "Phone", "City"]
+root = tk.Tk()
+entries = {}
+for row, f in enumerate(fields):
+    tk.Label(root, text=f).grid(row=row, column=0, sticky="e", padx=6, pady=3)
+    entries[f] = tk.Entry(root, width=28)
+    entries[f].grid(row=row, column=1, padx=6, pady=3)
+
+def submit():
+    data = {f: e.get() for f, e in entries.items()}
+    print(data)
+
+tk.Button(root, text="Submit", command=submit).grid(row=len(fields), column=1, sticky="e", padx=6, pady=6)
+root.mainloop()
+```
+
+@@ tk.mvc
+Q: How should I separate the GUI from the program logic?
+aka: separate logic and gui, mvc tkinter, model view, clean code tkinter, testable gui
+A: Put rules and data in a plain class with no tkinter, and have the GUI call it and display the results. Then you can test and reuse the logic.
+```py
+import tkinter as tk
+
+class Bank:                         # logic only: no tkinter
+    def __init__(self):
+        self.balance = 0
+
+    def deposit(self, amount):
+        if amount <= 0:
+            raise ValueError("Amount must be positive")
+        self.balance += amount
+
+class BankView(tk.Frame):           # GUI only
+    def __init__(self, master, bank):
+        super().__init__(master, padx=20, pady=20)
+        self.bank = bank
+        self.amount = tk.Entry(self); self.amount.pack()
+        tk.Button(self, text="Deposit", command=self.deposit).pack(pady=6)
+        self.out = tk.Label(self, text="Balance: 0"); self.out.pack()
+
+    def deposit(self):
+        try:
+            self.bank.deposit(float(self.amount.get()))
+        except ValueError as e:
+            self.out.config(text=str(e))
+            return
+        self.out.config(text=f"Balance: {self.bank.balance:.2f}")
+
+root = tk.Tk()
+BankView(root, Bank()).pack()
+root.mainloop()
+```

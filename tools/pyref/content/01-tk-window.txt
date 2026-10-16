@@ -1,0 +1,462 @@
+# tk-window | Windows | Opening, sizing, placing and closing windows | tkinter
+
+@@ tk.first-window
+Q: How do I make a window in tkinter?
+aka: create window, open gui, empty window, tk.Tk, hello world gui, start tkinter, blank window
+A: Create one `Tk()` object, add widgets to it, then call `mainloop()` as the last line.
+see: tk.mainloop, tk.import-style, tk.geometry
+```py
+import tkinter as tk
+
+root = tk.Tk()              # the main window
+root.title("My app")        # text in the title bar
+
+tk.Label(root, text="Hello!").pack(padx=40, pady=40)
+
+root.mainloop()             # keeps the window open and responding
+```
+`root` is just a name; `window` or `app` works the same. Make only **one** `Tk()` per program. For extra windows use [[tk.toplevel|Toplevel]].
+
+@@ tk.mainloop
+Q: Why does my window open and close instantly (or never show)?
+aka: window disappears, window not showing, mainloop missing, gui closes immediately, nothing happens when I run
+A: You're missing `root.mainloop()` at the end, or something after it never gets reached. `mainloop()` is what keeps the window alive.
+see: tk.first-window, tk.after-not-sleep
+`mainloop()` waits for clicks and key presses and redraws the window. Code **after** it only runs once the window is closed.
+```py
+import tkinter as tk
+
+root = tk.Tk()
+tk.Label(root, text="Still here").pack(padx=30, pady=30)
+root.mainloop()
+print("This prints after you close the window")
+```
+Other causes:
+- Double-clicking a `.pyw`/`.py` file that crashes. Run it from a terminal or IDLE so you can see the error.
+- An infinite `while True:` loop before `mainloop()`. Use [[tk.after|after()]] for repeating work instead.
+
+@@ tk.import-style
+Q: Should I use `import tkinter as tk` or `from tkinter import *`?
+aka: import tkinter, from tkinter import star, tkinter vs Tkinter, ttk import, import ttk
+A: Prefer `import tkinter as tk` (and `from tkinter import ttk`). It keeps names clear and avoids clashes. `from tkinter import *` works but hides where names come from.
+see: tk.install, tk.ttk-vs-tk
+```py
+import tkinter as tk
+from tkinter import ttk, messagebox
+
+root = tk.Tk()
+ttk.Button(root, text="Hi", command=lambda: messagebox.showinfo("Hi", "Hello")).pack(padx=30, pady=30)
+root.mainloop()
+```
+- Python 3: `tkinter` (lowercase). Python 2 used `Tkinter`. If a tutorial says `import Tkinter`, it is very old.
+- `messagebox`, `filedialog`, `ttk`, `simpledialog`, `colorchooser` are **submodules**: `import tkinter` alone does not load them, so `tk.messagebox` can fail. Import them explicitly.
+
+@@ tk.install
+Q: ModuleNotFoundError: No module named 'tkinter'. How do I install it?
+aka: install tkinter, pip install tkinter, tkinter missing, no module named _tkinter, tkinter not found linux, tkinter mac
+err: ModuleNotFoundError: No module named 'tkinter'|No module named '_tkinter'|ImportError: No module named Tkinter
+A: tkinter comes with Python; you don't `pip install` it. On Windows/macOS re-run the python.org installer and tick "tcl/tk and IDLE". On Linux install the system package.
+see: tk.import-style, tk.file-named-tkinter
+```sh
+# Debian / Ubuntu / Raspberry Pi OS
+sudo apt install python3-tk
+# Fedora
+sudo dnf install python3-tkinter
+# Arch
+sudo pacman -S tk
+# macOS with Homebrew Python
+brew install python-tk
+```
+Test it:
+```sh
+python3 -m tkinter
+```
+A small window with a "Click me!" button means tkinter works. `pip install tkinter` always fails because it isn't on PyPI.
+
+@@ tk.file-named-tkinter
+Q: AttributeError: module 'tkinter' has no attribute 'Tk'
+aka: partially initialized module tkinter, tkinter has no attribute, circular import tkinter, my file is called tkinter.py
+err: AttributeError: module 'tkinter' has no attribute|partially initialized module 'tkinter'
+A: You named your own file `tkinter.py` (or there's a `tkinter` folder next to it), so Python imports **your** file instead of the real one. Rename it, and delete any `__pycache__` folder beside it.
+see: py.err.circular-import
+The same happens with `random.py`, `math.py`, `turtle.py`, `time.py`, `socket.py`... Never name a script after a module you import.
+```py
+import tkinter
+print(tkinter.__file__)   # shows which file was really imported
+```
+
+@@ tk.title
+Q: How do I change the window title?
+aka: title bar text, rename window, window name, set title
+A: `root.title("New title")`. Call it again any time to change it.
+```py
+import tkinter as tk
+
+root = tk.Tk()
+root.title("Score: 0")
+score = 0
+
+def add():
+    global score
+    score += 1
+    root.title(f"Score: {score}")
+
+tk.Button(root, text="+1", command=add).pack(padx=40, pady=40)
+root.mainloop()
+```
+
+@@ tk.geometry
+Q: How do I set the window size?
+aka: window size, width height, geometry, resize window, set window dimensions, 800x600
+A: `root.geometry("400x300")` sets width x height in pixels. Add `+x+y` to also set its position: `"400x300+100+50"`.
+see: tk.center, tk.resizable, tk.minsize, tk.fullscreen
+```py
+import tkinter as tk
+
+root = tk.Tk()
+root.geometry("400x300")        # width x height
+# root.geometry("400x300+200+100")  # ... and 200px from left, 100px from top
+tk.Label(root, text="400 x 300").pack(expand=True)
+root.mainloop()
+```
+Without `geometry()` the window shrinks to fit its widgets. Note the `x` is a lowercase letter, not `*`.
+
+@@ tk.center
+Q: How do I center the window on the screen?
+aka: centre window, middle of screen, center gui, position window center
+A: Read the screen size with `winfo_screenwidth()`/`winfo_screenheight()`, work out the top-left corner, and pass it to `geometry()`.
+see: tk.geometry, tk.screen-size
+```py
+import tkinter as tk
+
+def center(win, w, h):
+    sw = win.winfo_screenwidth()
+    sh = win.winfo_screenheight()
+    x = (sw - w) // 2
+    y = (sh - h) // 2
+    win.geometry(f"{w}x{h}+{x}+{y}")
+
+root = tk.Tk()
+center(root, 420, 260)
+tk.Label(root, text="Centered").pack(expand=True)
+root.mainloop()
+```
+If you don't know the size in advance, call `win.update_idletasks()` first, then use `win.winfo_width()` / `winfo_height()`.
+
+@@ tk.screen-size
+Q: How do I get the screen width and height?
+aka: monitor size, screen resolution, display size, winfo_screenwidth
+A: `root.winfo_screenwidth()` and `root.winfo_screenheight()` return pixels.
+```py
+import tkinter as tk
+
+root = tk.Tk()
+w, h = root.winfo_screenwidth(), root.winfo_screenheight()
+tk.Label(root, text=f"Your screen is {w} x {h}").pack(padx=30, pady=30)
+root.mainloop()
+```
+With display scaling on Windows (e.g. 150%), the numbers may be the scaled size. See [[tk.blurry-windows]].
+
+@@ tk.resizable
+Q: How do I stop the user resizing the window?
+aka: fixed size window, disable resize, disable maximize, lock window size, resizable false
+A: `root.resizable(False, False)` (width, height). This also greys out maximize on Windows.
+see: tk.minsize, tk.geometry
+```py
+import tkinter as tk
+
+root = tk.Tk()
+root.geometry("300x200")
+root.resizable(False, False)
+tk.Label(root, text="Can't resize me").pack(expand=True)
+root.mainloop()
+```
+
+@@ tk.minsize
+Q: How do I set a minimum or maximum window size?
+aka: minsize, maxsize, smallest window size, limit resize
+A: `root.minsize(w, h)` and `root.maxsize(w, h)`.
+```py
+import tkinter as tk
+
+root = tk.Tk()
+root.minsize(300, 200)
+root.maxsize(800, 600)
+tk.Label(root, text="Resize me, within limits").pack(expand=True)
+root.mainloop()
+```
+
+@@ tk.fullscreen
+Q: How do I make the window fullscreen or maximized?
+aka: full screen, maximize window, zoomed, kiosk mode, F11 fullscreen, escape exit fullscreen
+A: `root.attributes("-fullscreen", True)` for true fullscreen. For maximized use `root.state("zoomed")` on Windows/macOS or `root.attributes("-zoomed", True)` on Linux.
+see: tk.bind-keys
+```py
+import tkinter as tk
+
+root = tk.Tk()
+tk.Label(root, text="F11 toggles fullscreen, Esc leaves").pack(expand=True)
+
+def toggle(event=None):
+    root.attributes("-fullscreen", not root.attributes("-fullscreen"))
+
+root.bind("<F11>", toggle)
+root.bind("<Escape>", lambda e: root.attributes("-fullscreen", False))
+root.mainloop()
+```
+Always give the user a key to leave fullscreen; there is no title bar to close it.
+
+@@ tk.icon
+Q: How do I change the window icon?
+aka: window icon, iconbitmap, iconphoto, taskbar icon, feather icon, ico file
+A: Use `root.iconphoto(True, tk.PhotoImage(file="icon.png"))`, which works on all systems. `root.iconbitmap("app.ico")` works with `.ico` files on Windows only.
+see: tk.photoimage
+```py
+import tkinter as tk
+
+root = tk.Tk()
+icon = tk.PhotoImage(file="icon.png")   # keep this variable around
+root.iconphoto(True, icon)              # True = also for later windows
+tk.Label(root, text="New icon").pack(padx=40, pady=40)
+root.mainloop()
+```
+On Windows the taskbar may still show the Python icon when run as a script; it shows correctly once packaged (e.g. with PyInstaller `--icon`).
+
+@@ tk.bg-color
+Q: How do I change the background colour of the window?
+aka: window background, bg color, background color, root color, configure bg
+A: `root.configure(bg="lightblue")` (or a hex code like `"#223344"`). Widgets keep their own background, so set `bg` on them too.
+see: tk.colors, tk.ttk-style
+```py
+import tkinter as tk
+
+root = tk.Tk()
+root.geometry("300x200")
+root.configure(bg="#1e2a38")
+tk.Label(root, text="Dark", bg="#1e2a38", fg="white").pack(expand=True)
+root.mainloop()
+```
+ttk widgets ignore `bg=`; style them with [[tk.ttk-style|ttk.Style]].
+
+@@ tk.topmost
+Q: How do I keep the window always on top?
+aka: always on top, stay on top, topmost, float above other windows, pin window
+A: `root.attributes("-topmost", True)`.
+```py
+import tkinter as tk
+
+root = tk.Tk()
+root.attributes("-topmost", True)
+tk.Label(root, text="I stay on top").pack(padx=30, pady=30)
+root.mainloop()
+```
+To bring a window to the front once, call `root.lift()` then `root.focus_force()`.
+
+@@ tk.alpha
+Q: How do I make a window transparent?
+aka: transparency, opacity, see through window, alpha, transparent background
+A: `root.attributes("-alpha", 0.8)` sets the opacity of the whole window (0 = invisible, 1 = solid).
+```py
+import tkinter as tk
+
+root = tk.Tk()
+root.attributes("-alpha", 0.85)
+tk.Label(root, text="85% opaque").pack(padx=40, pady=40)
+root.mainloop()
+```
+Making only the **background** see-through (not the widgets) is Windows-only: `root.attributes("-transparentcolor", "white")` makes every pure white pixel transparent.
+
+@@ tk.no-titlebar
+Q: How do I remove the title bar (borderless window)?
+aka: overrideredirect, no border, frameless window, hide title bar, custom title bar, splash screen
+A: `root.overrideredirect(True)`. You then have to provide your own close button and dragging.
+see: tk.drag-window
+```py
+import tkinter as tk
+
+root = tk.Tk()
+root.overrideredirect(True)
+root.geometry("260x120+300+200")
+tk.Label(root, text="No title bar").pack(expand=True)
+tk.Button(root, text="Close", command=root.destroy).pack(pady=8)
+root.mainloop()
+```
+Good for splash screens. Such a window won't appear in the taskbar on Windows.
+
+@@ tk.drag-window
+Q: How do I drag a window that has no title bar?
+aka: move borderless window, drag frameless window, move window with mouse
+A: Remember where the mouse went down, then move the window by the difference on `<B1-Motion>`.
+see: tk.no-titlebar, tk.mouse
+```py
+import tkinter as tk
+
+root = tk.Tk()
+root.overrideredirect(True)
+root.geometry("240x100+300+300")
+bar = tk.Label(root, text="drag me", bg="#333", fg="white")
+bar.pack(fill="x")
+tk.Button(root, text="Close", command=root.destroy).pack(pady=10)
+
+def start(e):
+    root._dx, root._dy = e.x, e.y
+
+def move(e):
+    root.geometry(f"+{e.x_root - root._dx}+{e.y_root - root._dy}")
+
+bar.bind("<Button-1>", start)
+bar.bind("<B1-Motion>", move)
+root.mainloop()
+```
+
+@@ tk.close-protocol
+Q: How do I run code when the user clicks the X (close) button?
+aka: on close, WM_DELETE_WINDOW, confirm exit, are you sure you want to quit, save before closing, close event, intercept close
+A: `root.protocol("WM_DELETE_WINDOW", your_function)`. Your function must call `root.destroy()` if it wants the window to actually close.
+see: tk.quit-vs-destroy, tk.messagebox
+```py
+import tkinter as tk
+from tkinter import messagebox
+
+root = tk.Tk()
+tk.Label(root, text="Try closing me").pack(padx=40, pady=40)
+
+def on_close():
+    if messagebox.askokcancel("Quit", "Really quit?"):
+        root.destroy()
+
+root.protocol("WM_DELETE_WINDOW", on_close)
+root.mainloop()
+```
+
+@@ tk.quit-vs-destroy
+Q: What's the difference between `quit()` and `destroy()`? How do I close the window from code?
+aka: close window button, exit button, quit button, root.quit, root.destroy, close program, end tkinter
+A: Use `root.destroy()`. It closes the window and ends `mainloop()`. `root.quit()` only stops `mainloop()` and can leave the window on screen (common in IDLE).
+see: tk.close-protocol
+```py
+import tkinter as tk
+
+root = tk.Tk()
+tk.Button(root, text="Exit", command=root.destroy).pack(padx=40, pady=40)
+root.mainloop()
+```
+To close a second window only, call `that_window.destroy()`.
+
+@@ tk.toplevel
+Q: How do I open a second window?
+aka: new window, popup window, Toplevel, open another window, child window, multiple windows, second Tk
+A: Use `tk.Toplevel(root)`. Do not create a second `tk.Tk()`; it causes strange bugs like "image doesn't exist".
+see: tk.modal, tk.err.pyimage, tk.pass-data-windows
+```py
+import tkinter as tk
+
+root = tk.Tk()
+root.title("Main")
+
+def open_window():
+    win = tk.Toplevel(root)
+    win.title("Second")
+    win.geometry("220x120")
+    tk.Label(win, text="Hello from window 2").pack(pady=20)
+    tk.Button(win, text="Close", command=win.destroy).pack()
+
+tk.Button(root, text="Open", command=open_window).pack(padx=50, pady=40)
+root.mainloop()
+```
+
+@@ tk.modal
+Q: How do I make a popup window that blocks the main window until it's closed (modal)?
+aka: modal dialog, grab_set, wait_window, block main window, dialog box, custom dialog
+A: In the Toplevel call `grab_set()` (all clicks go to it), `transient(root)` (stays on top of root), then `root.wait_window(win)` if you need to wait for the answer.
+see: tk.toplevel, tk.simpledialog
+```py
+import tkinter as tk
+
+root = tk.Tk()
+result = tk.StringVar(value="(nothing yet)")
+
+def ask_name():
+    win = tk.Toplevel(root)
+    win.title("Name")
+    win.transient(root)
+    win.grab_set()
+    e = tk.Entry(win)
+    e.pack(padx=20, pady=10)
+    e.focus()
+    def ok():
+        result.set(e.get())
+        win.destroy()
+    tk.Button(win, text="OK", command=ok).pack(pady=(0, 10))
+    root.wait_window(win)       # code below waits until win closes
+    print("Got:", result.get())
+
+tk.Button(root, text="Ask name", command=ask_name).pack(padx=40, pady=20)
+tk.Label(root, textvariable=result).pack(pady=(0, 20))
+root.mainloop()
+```
+
+@@ tk.withdraw
+Q: How do I hide a window and show it again?
+aka: hide window, show window, withdraw, deiconify, iconify, minimize window, hide main window, show dialog without main window
+A: `win.withdraw()` hides it, `win.deiconify()` shows it again. `win.iconify()` minimizes it.
+```py
+import tkinter as tk
+
+root = tk.Tk()
+other = tk.Toplevel(root)
+tk.Label(other, text="Peekaboo").pack(padx=30, pady=30)
+
+def toggle():
+    if other.winfo_viewable():
+        other.withdraw()
+    else:
+        other.deiconify()
+
+tk.Button(root, text="Hide / show", command=toggle).pack(padx=40, pady=40)
+root.mainloop()
+```
+To show only a messagebox with no empty main window, call `root.withdraw()` first.
+
+@@ tk.blurry-windows
+Q: Why does my tkinter window look blurry on Windows?
+aka: blurry text, fuzzy fonts, high dpi, dpi awareness, pixelated tkinter, scaling 150%
+A: Windows stretches programs that aren't DPI-aware. Tell Windows your program is DPI-aware **before** creating `Tk()`.
+```py
+import tkinter as tk
+import sys
+
+if sys.platform == "win32":
+    import ctypes
+    try:
+        ctypes.windll.shcore.SetProcessDpiAwareness(1)
+    except Exception:
+        pass
+
+root = tk.Tk()
+tk.Label(root, text="Sharp text").pack(padx=40, pady=40)
+root.mainloop()
+```
+Everything will look smaller but crisp. Use `root.tk.call("tk", "scaling", 2.0)` to scale up if needed.
+
+@@ tk.window-pos
+Q: How do I get the window's current size and position?
+aka: window x y, winfo_x, winfo_width, where is the window, window coordinates
+A: `winfo_width()`, `winfo_height()`, `winfo_x()`, `winfo_y()`. Call `update_idletasks()` first if the window was just created, or you'll get 1.
+```py
+import tkinter as tk
+
+root = tk.Tk()
+root.geometry("320x180+100+100")
+info = tk.Label(root)
+info.pack(expand=True)
+
+def show(event=None):
+    info.config(text=f"{root.winfo_width()}x{root.winfo_height()} at {root.winfo_x()},{root.winfo_y()}")
+
+root.bind("<Configure>", show)
+root.update_idletasks()
+show()
+root.mainloop()
+```
+`root.geometry()` with no argument returns the same info as one string like `"320x180+100+100"`.

@@ -1,0 +1,445 @@
+# tk-label-button | Labels and buttons | Showing text, changing it, and running code on click | tkinter
+
+@@ tk.label
+Q: How do I show text in a window?
+aka: label, display text, show message, print to window, put text on screen, tk.Label
+A: Use a `Label`: `tk.Label(root, text="Hi").pack()`.
+see: tk.label-change, tk.label-font, tk.label-wrap
+```py
+import tkinter as tk
+
+root = tk.Tk()
+tk.Label(root, text="Hello, world").pack(padx=20, pady=10)
+tk.Label(root, text="Big and red", font=("Arial", 20), fg="red").pack(pady=10)
+root.mainloop()
+```
+Useful options: `text`, `font`, `fg` (text colour), `bg`, `padx`/`pady` (inside space), `width` (in characters), `anchor`, `justify`, `wraplength`, `image`.
+
+@@ tk.label-change
+Q: How do I change a label's text after it's created?
+aka: update label, change label text, set label text, label config, refresh label, label not updating, change text of label
+A: Keep the label in a variable and call `label.config(text="new")`. Or link it to a `StringVar` with `textvariable=`.
+see: tk.err.none-grid, tk.stringvar
+```py
+import tkinter as tk
+
+root = tk.Tk()
+label = tk.Label(root, text="Not clicked")
+label.pack(padx=40, pady=10)
+
+def clicked():
+    label.config(text="Clicked!")      # same as label["text"] = "Clicked!"
+
+tk.Button(root, text="Click", command=clicked).pack(pady=10)
+root.mainloop()
+```
+If you get `'NoneType' object has no attribute 'config'`, you wrote `label = tk.Label(...).pack()`. See [[tk.err.none-grid]].
+
+@@ tk.label-font
+Q: How do I change the font and size of text?
+aka: font size, bigger text, bold text, italic, change font, font family, text size label button
+A: Pass `font=("Family", size, "bold")`, e.g. `font=("Helvetica", 16, "bold")`. Styles: `"bold"`, `"italic"`, `"underline"`, `"overstrike"`, or several: `"bold italic"`.
+see: tk.font-object, tk.font-list
+```py
+import tkinter as tk
+
+root = tk.Tk()
+tk.Label(root, text="Normal", font=("Helvetica", 12)).pack()
+tk.Label(root, text="Bold 18", font=("Helvetica", 18, "bold")).pack()
+tk.Label(root, text="Italic underline", font=("Times", 14, "italic underline")).pack()
+tk.Label(root, text="Mono", font=("Courier", 14)).pack(pady=(0, 10))
+root.mainloop()
+```
+If the font isn't installed, Tk silently picks a fallback. A font name with spaces must be inside the tuple: `("Comic Sans MS", 12)`.
+
+@@ tk.label-wrap
+Q: How do I make long text wrap onto several lines?
+aka: wrap text, wraplength, multiline label, text goes off screen, newline in label, line break label
+A: Use `wraplength=` (in pixels) on a Label, or put `\n` in the text. `justify="left"` lines the lines up on the left.
+```py
+import tkinter as tk
+
+root = tk.Tk()
+long = "This is a long sentence that would run off the side of a small window if it did not wrap."
+tk.Label(root, text=long, wraplength=220, justify="left").pack(padx=20, pady=10)
+tk.Label(root, text="Line one\nLine two").pack(pady=10)
+root.mainloop()
+```
+To wrap to whatever width the window is, update `wraplength` on resize:
+```py
+import tkinter as tk
+
+root = tk.Tk()
+lab = tk.Label(root, text="Resize the window and this text rewraps to fit the new width. " * 3, justify="left")
+lab.pack(fill="x", padx=10, pady=10)
+lab.bind("<Configure>", lambda e: lab.config(wraplength=e.width - 10))
+root.mainloop()
+```
+
+@@ tk.label-align
+Q: How do I align text left or right inside a label?
+aka: anchor, justify, left align, right align, text alignment, align label text
+A: `anchor="w"` moves the text to the left of the label's area (`"e"` right, `"center"`). `justify` only lines up multiple lines relative to each other.
+see: tk.pack-fill, tk.grid-sticky
+```py
+import tkinter as tk
+
+root = tk.Tk()
+root.geometry("300x150")
+tk.Label(root, text="left", anchor="w", bg="#eee").pack(fill="x", padx=10, pady=4)
+tk.Label(root, text="right", anchor="e", bg="#eee").pack(fill="x", padx=10, pady=4)
+tk.Label(root, text="center", bg="#eee").pack(fill="x", padx=10, pady=4)
+root.mainloop()
+```
+`anchor` only matters when the label is wider than its text, which is why `fill="x"` is used here.
+
+@@ tk.button
+Q: How do I make a button that runs a function?
+aka: tkinter button, make a button, create a button, add a button, button click, button command, onclick, on click event, button callback, button does nothing, call function button
+A: Pass the function **name without brackets** as `command=`: `tk.Button(root, text="Go", command=go)`.
+see: tk.err.command-runs-early, tk.button-args, tk.button-state
+```py
+import tkinter as tk
+
+def say_hi():
+    print("Hi!")
+
+root = tk.Tk()
+tk.Button(root, text="Say hi", command=say_hi).pack(padx=40, pady=40)
+root.mainloop()
+```
+`command=say_hi()` is wrong: it calls the function once at startup and gives the button its return value (`None`).
+
+@@ tk.err.command-runs-early
+Q: Why does my button's function run straight away instead of when I click?
+aka: command runs immediately, function runs on start, button runs once, button command called at startup, button not working on click
+A: You wrote `command=func()` with brackets. That calls it right away. Write `command=func`, or `command=lambda: func(arg)` if you need arguments.
+see: tk.button-args, tk.lambda-loop
+```py bad
+tk.Button(root, text="Save", command=save())   # runs save() now, once
+```
+```py
+import tkinter as tk
+
+def save(name):
+    print("Saving", name)
+
+root = tk.Tk()
+tk.Button(root, text="Save", command=lambda: save("notes.txt")).pack(padx=40, pady=40)
+root.mainloop()
+```
+
+@@ tk.button-args
+Q: How do I pass arguments to a button's command?
+aka: button function with parameters, command with arguments, lambda button, partial, pass value to function button
+A: Wrap the call in a `lambda`: `command=lambda: add(5)`. `functools.partial(add, 5)` also works.
+see: tk.lambda-loop
+```py
+import tkinter as tk
+from functools import partial
+
+root = tk.Tk()
+total = tk.IntVar(value=0)
+
+def add(n):
+    total.set(total.get() + n)
+
+tk.Label(root, textvariable=total, font=("Arial", 20)).pack(pady=10)
+tk.Button(root, text="+1", command=lambda: add(1)).pack(side="left", padx=10, pady=10)
+tk.Button(root, text="+10", command=partial(add, 10)).pack(side="left", padx=10, pady=10)
+root.mainloop()
+```
+
+@@ tk.lambda-loop
+Q: I made buttons in a loop and they all do the same thing (the last value). Why?
+aka: lambda in loop, buttons all same value, loop variable lambda, late binding, every button prints last number, buttons in for loop
+A: A lambda remembers the **variable**, not its value at that moment. Freeze the value with a default argument: `command=lambda n=n: pick(n)`.
+see: tk.button-args, tk.button-grid
+```py bad
+for n in range(5):
+    tk.Button(root, text=n, command=lambda: pick(n))   # every button gives 4
+```
+```py
+import tkinter as tk
+
+root = tk.Tk()
+out = tk.Label(root, text="Pick one")
+out.pack()
+
+def pick(n):
+    out.config(text=f"You picked {n}")
+
+for n in range(5):
+    tk.Button(root, text=str(n), width=4, command=lambda n=n: pick(n)).pack(side="left", padx=2, pady=10)
+root.mainloop()
+```
+
+@@ tk.button-grid
+Q: How do I make a grid of buttons (like a keypad or tic-tac-toe board)?
+aka: button grid, 3x3 buttons, keypad, many buttons loop, board of buttons, list of buttons
+A: Create them in nested loops with `grid(row=r, column=c)` and store them in a list so you can change them later.
+see: tk.lambda-loop, tk.grid, tk.recipe-tictactoe
+```py
+import tkinter as tk
+
+root = tk.Tk()
+buttons = []
+
+def press(r, c):
+    b = buttons[r][c]
+    b.config(text="X", state="disabled")
+
+for r in range(3):
+    row = []
+    for c in range(3):
+        b = tk.Button(root, text=" ", width=6, height=3, command=lambda r=r, c=c: press(r, c))
+        b.grid(row=r, column=c, padx=2, pady=2)
+        row.append(b)
+    buttons.append(row)
+root.mainloop()
+```
+
+@@ tk.button-state
+Q: How do I disable a button (grey it out) and enable it again?
+aka: disable button, enable button, grey out, state disabled, unclickable button, button state normal
+A: `button.config(state="disabled")` and `button.config(state="normal")`. Works for most widgets (Entry, Text, Checkbutton...).
+```py
+import tkinter as tk
+
+root = tk.Tk()
+go = tk.Button(root, text="Go", state="disabled")
+go.pack(padx=40, pady=10)
+agree = tk.BooleanVar()
+
+def changed():
+    go.config(state="normal" if agree.get() else "disabled")
+
+tk.Checkbutton(root, text="I agree", variable=agree, command=changed).pack(pady=10)
+root.mainloop()
+```
+For ttk widgets use `btn.state(["disabled"])` and `btn.state(["!disabled"])`, or `config(state=...)`, which also works.
+
+@@ tk.button-size
+Q: How do I change a button's size?
+aka: button width height, bigger button, button size pixels, resize button, large button
+A: `width` and `height` are in **characters/lines** for text buttons. For pixel sizes, use `padx`/`pady`, or put the button in a Frame of fixed size, or use `place(width=, height=)`.
+see: tk.pack-fill
+```py
+import tkinter as tk
+
+root = tk.Tk()
+tk.Button(root, text="width=20", width=20).pack(pady=4)
+tk.Button(root, text="height=3", height=3).pack(pady=4)
+tk.Button(root, text="padding", padx=30, pady=12).pack(pady=4)
+tk.Button(root, text="fills the width").pack(fill="x", padx=10, pady=4)
+root.mainloop()
+```
+If a button shows an image, `width`/`height` are in pixels.
+
+@@ tk.button-color
+Q: How do I change a button's colour? (And why doesn't it work on Mac?)
+aka: button background color, button bg, button color mac, button fg, activebackground, colored button macos
+A: `tk.Button(root, bg="green", fg="white", activebackground="darkgreen")`. On macOS the native button ignores `bg`; use a `Label` that acts like a button, or ttk with the `"clam"` theme.
+see: tk.hover, tk.ttk-style
+```py
+import tkinter as tk
+
+root = tk.Tk()
+tk.Button(root, text="Green", bg="#2e7d32", fg="white", activebackground="#1b5e20", activeforeground="white").pack(padx=40, pady=10)
+
+# a label that behaves like a button: works everywhere, including macOS
+fake = tk.Label(root, text="Flat button", bg="#c23b22", fg="white", padx=16, pady=8, cursor="hand2")
+fake.pack(pady=10)
+fake.bind("<Button-1>", lambda e: print("clicked"))
+root.mainloop()
+```
+
+@@ tk.hover
+Q: How do I change a widget's colour when the mouse hovers over it?
+aka: hover effect, mouse over, mouseover, on hover, Enter Leave events, highlight on hover
+A: Bind `<Enter>` and `<Leave>` and change the colour in each.
+see: tk.bind, tk.tooltip
+```py
+import tkinter as tk
+
+root = tk.Tk()
+b = tk.Label(root, text="Hover me", bg="#ddd", padx=20, pady=10)
+b.pack(padx=40, pady=40)
+b.bind("<Enter>", lambda e: b.config(bg="#ffcc66"))
+b.bind("<Leave>", lambda e: b.config(bg="#ddd"))
+root.mainloop()
+```
+Plain `tk.Button` on Windows/Linux also has `activebackground`, the colour while pressed or hovered.
+
+@@ tk.tooltip
+Q: How do I show a tooltip when hovering over a widget?
+aka: tooltip, hint text on hover, hover text, balloon help, popup text mouse over
+A: tkinter has no built-in tooltip. Make a small borderless `Toplevel` on `<Enter>` and destroy it on `<Leave>`.
+see: tk.hover, tk.no-titlebar
+```py
+import tkinter as tk
+
+class Tooltip:
+    def __init__(self, widget, text):
+        self.widget, self.text, self.tip = widget, text, None
+        widget.bind("<Enter>", self.show)
+        widget.bind("<Leave>", self.hide)
+
+    def show(self, event=None):
+        x = self.widget.winfo_rootx() + 10
+        y = self.widget.winfo_rooty() + self.widget.winfo_height() + 4
+        self.tip = tk.Toplevel(self.widget)
+        self.tip.overrideredirect(True)
+        self.tip.geometry(f"+{x}+{y}")
+        tk.Label(self.tip, text=self.text, bg="#ffffe0", relief="solid", borderwidth=1, padx=6, pady=2).pack()
+
+    def hide(self, event=None):
+        if self.tip:
+            self.tip.destroy()
+            self.tip = None
+
+root = tk.Tk()
+b = tk.Button(root, text="Save")
+b.pack(padx=60, pady=40)
+Tooltip(b, "Save the file (Ctrl+S)")
+root.mainloop()
+```
+
+@@ tk.button-image
+Q: How do I put an image on a button?
+aka: image button, icon button, button with picture, button image and text, compound
+A: Load a `PhotoImage` and pass `image=`. Add `compound="left"` to show text beside it. Keep a reference to the image.
+see: tk.photoimage, tk.err.image-gone
+```py
+import tkinter as tk
+
+root = tk.Tk()
+img = tk.PhotoImage(file="icon.png")
+tk.Button(root, image=img).pack(padx=20, pady=10)
+tk.Button(root, text=" Open", image=img, compound="left").pack(padx=20, pady=10)
+root.img = img      # keep the image alive
+root.mainloop()
+```
+
+@@ tk.button-enter
+Q: How do I make the Enter key press a button?
+aka: enter key button, return key submit, default button, press enter to submit
+A: Bind `<Return>` on the window (or the Entry) to the same function. The function receives an event, so give it `event=None`.
+see: tk.bind-keys, tk.entry-get
+```py
+import tkinter as tk
+
+root = tk.Tk()
+e = tk.Entry(root)
+e.pack(padx=20, pady=10)
+e.focus()
+
+def submit(event=None):
+    print("Submitted:", e.get())
+
+tk.Button(root, text="Submit", command=submit).pack(pady=10)
+root.bind("<Return>", submit)
+root.mainloop()
+```
+
+@@ tk.relief
+Q: How do I change the border style of a widget?
+aka: relief, border, borderwidth, flat button, sunken, raised, groove, ridge, remove border, highlightthickness
+A: Use `relief=` (`"flat"`, `"raised"`, `"sunken"`, `"groove"`, `"ridge"`, `"solid"`) and `borderwidth=` (`bd=`). The focus ring is `highlightthickness=`.
+```py
+import tkinter as tk
+
+root = tk.Tk()
+for r in ("flat", "raised", "sunken", "groove", "ridge", "solid"):
+    tk.Label(root, text=r, relief=r, borderwidth=3, width=12, pady=4).pack(padx=20, pady=3)
+tk.Button(root, text="no border", relief="flat", borderwidth=0, highlightthickness=0).pack(pady=8)
+root.mainloop()
+```
+
+@@ tk.cursor
+Q: How do I change the mouse cursor over a widget?
+aka: cursor hand, pointer cursor, hand2, busy cursor, watch cursor, change mouse pointer
+A: `cursor="hand2"` on the widget. Others: `"arrow"`, `"watch"` (busy), `"cross"`, `"xterm"` (text), `"fleur"` (move), `"sb_h_double_arrow"`.
+```py
+import tkinter as tk
+
+root = tk.Tk()
+tk.Label(root, text="hand", cursor="hand2", pady=10).pack(fill="x")
+tk.Label(root, text="cross", cursor="cross", pady=10).pack(fill="x")
+tk.Label(root, text="watch (busy)", cursor="watch", pady=10).pack(fill="x")
+root.mainloop()
+```
+To show "busy" for the whole window: `root.config(cursor="watch")`, then `root.update()`, and set it back to `""` afterwards.
+
+@@ tk.widget-destroy
+Q: How do I delete or remove a widget?
+aka: remove widget, delete label, destroy widget, remove button, clear widget, delete all widgets in frame, clear frame
+A: `widget.destroy()` removes it for good. To clear a frame: `for w in frame.winfo_children(): w.destroy()`.
+see: tk.forget
+```py
+import tkinter as tk
+
+root = tk.Tk()
+box = tk.Frame(root)
+box.pack(padx=20, pady=10)
+for i in range(4):
+    tk.Label(box, text=f"item {i}").pack()
+
+def clear():
+    for w in box.winfo_children():
+        w.destroy()
+
+tk.Button(root, text="Clear", command=clear).pack(pady=10)
+root.mainloop()
+```
+
+@@ tk.forget
+Q: How do I hide a widget and show it again later?
+aka: hide widget, show widget, pack_forget, grid_forget, grid_remove, toggle visibility, make invisible
+A: `pack_forget()` / `grid_forget()` hide it (it still exists). Show it again with `pack()` / `grid()`. `grid_remove()` remembers its grid options so a plain `grid()` puts it back.
+see: tk.widget-destroy
+```py
+import tkinter as tk
+
+root = tk.Tk()
+secret = tk.Label(root, text="Now you see me", bg="#ffcc66")
+secret.grid(row=0, column=0, padx=20, pady=10)
+
+def toggle():
+    if secret.winfo_ismapped():
+        secret.grid_remove()
+    else:
+        secret.grid()
+
+tk.Button(root, text="Toggle", command=toggle).grid(row=1, column=0, pady=10)
+root.mainloop()
+```
+With `pack`, the widget may come back in a different place. Pack it again with the same options, or use `before=`/`after=`.
+
+@@ tk.widget-config-get
+Q: How do I read a widget option, like its current text or colour?
+aka: cget, get label text, widget option value, read button text, label text get
+A: `widget.cget("text")` or `widget["text"]`. Set with `widget.config(text=...)` or `widget["text"] = ...`.
+```py
+import tkinter as tk
+
+root = tk.Tk()
+lab = tk.Label(root, text="Hello", fg="blue")
+lab.pack(padx=30, pady=30)
+print(lab.cget("text"), lab["fg"])
+print(lab.keys()[:6], "...")   # every option this widget has
+root.mainloop()
+```
+
+@@ tk.message-widget
+Q: What's the Message widget?
+aka: tk.Message, message widget, multiline text display
+A: `tk.Message` is like a Label that wraps text automatically, keeping a width/height ratio (`aspect`). Most people just use a Label with `wraplength`.
+see: tk.label-wrap
+```py
+import tkinter as tk
+
+root = tk.Tk()
+tk.Message(root, text="A Message widget wraps long text on its own, aiming for a shape set by aspect.", width=200).pack(padx=20, pady=20)
+root.mainloop()
+```

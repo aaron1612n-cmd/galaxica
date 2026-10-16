@@ -1,0 +1,203 @@
+# py-files | Files and folders | Reading, writing, CSV, JSON, paths, folders | python
+
+@@ py.file-read
+Q: How do I read a text file?
+aka: read file, open file, read lines, read text file, file contents, with open, readlines
+A: `with open("notes.txt", encoding="utf-8") as f:` then `f.read()` (all text) or loop `for line in f:` (line by line). `with` closes the file for you.
+see: py.err.filenotfound, py.script-dir
+```py
+with open("notes.txt", encoding="utf-8") as f:
+    text = f.read()
+print(text)
+
+with open("notes.txt", encoding="utf-8") as f:
+    for line in f:
+        print(line.rstrip("\n"))
+
+lines = open("notes.txt", encoding="utf-8").read().splitlines()   # list without \n
+print(lines)
+```
+
+@@ py.file-write
+Q: How do I write or append to a text file?
+aka: write file, save to file, create file, append to file, write lines, mode w a
+A: `open(path, "w")` creates/overwrites; `"a"` appends to the end. Write with `f.write(text)`; add `"\n"` yourself.
+```py
+with open("out.txt", "w", encoding="utf-8") as f:
+    f.write("first line\n")
+    f.write("second line\n")
+
+with open("out.txt", "a", encoding="utf-8") as f:
+    f.write("added later\n")
+
+with open("out.txt", encoding="utf-8") as f:
+    print(f.read())
+```
+`print(..., file=f)` also writes to a file and adds the newline.
+
+@@ py.file-modes
+Q: What do the file modes r, w, a, x, b and + mean?
+aka: file modes, open modes, rb wb, read write mode, binary mode
+A: `"r"` read (default), `"w"` write (erases first), `"a"` append, `"x"` create only if new, `"b"` binary (images, etc.), `"+"` read and write.
+```text
+"r"   read text                 error if the file doesn't exist
+"w"   write text                creates the file, or ERASES it
+"a"   append text               creates the file, writes at the end
+"x"   create                    error if the file already exists
+"rb"  read bytes                images, zip, any non-text file
+"wb"  write bytes
+"r+"  read and write            file must exist
+```
+
+@@ py.csv
+Q: How do I read and write CSV files?
+aka: csv, read csv, write csv, spreadsheet file, comma separated, DictReader, excel csv
+A: Use the `csv` module. `csv.reader` gives lists, `csv.DictReader` gives dicts using the header row. Open with `newline=""`.
+```py
+import csv
+
+with open("scores.csv", newline="", encoding="utf-8") as f:
+    for row in csv.DictReader(f):
+        print(row["name"], int(row["score"]))
+
+rows = [["name", "score"], ["Kim", 88], ["Lee", 95]]
+with open("new.csv", "w", newline="", encoding="utf-8") as f:
+    csv.writer(f).writerows(rows)
+
+print(open("new.csv").read())
+```
+Without `newline=""`, Windows gets an empty line between rows. For Excel files (`.xlsx`) use `openpyxl` or `pandas`.
+
+@@ py.json
+Q: How do I save and load data as JSON?
+aka: json, save dict to file, load json, json dump, json load, store data, serialize
+A: `json.dump(data, f)` writes; `json.load(f)` reads. `json.dumps`/`json.loads` (with s) work with strings.
+see: tk.save-settings
+```py
+import json
+
+data = {"name": "Ada", "scores": [90, 85], "member": True}
+with open("data.json", "w", encoding="utf-8") as f:
+    json.dump(data, f, indent=2)
+
+with open("data.json", encoding="utf-8") as f:
+    loaded = json.load(f)
+print(loaded["scores"], loaded == data)
+print(json.dumps({"a": 1}))
+```
+JSON keys are always strings: an int key `{1: "x"}` comes back as `{"1": "x"}`. Tuples come back as lists.
+
+@@ py.script-dir
+Q: Why can't Python find my file when it's in the same folder as my script?
+aka: file not found same folder, relative path, working directory, os.getcwd, __file__, path of script, file not found vscode
+A: Relative paths start from the **current working directory**, which depends on how the program was started (VS Code, IDLE, double-click). Build paths from the script's own folder: `Path(__file__).parent / "data.txt"`.
+see: py.err.filenotfound, py.pathlib
+```py
+from pathlib import Path
+import os
+
+HERE = Path(__file__).resolve().parent
+print("working directory:", os.getcwd())
+print("script folder:    ", HERE)
+path = HERE / "notes.txt"
+print(path.exists())
+```
+
+@@ py.pathlib
+Q: How do I work with file paths (join, file name, extension, parent folder)?
+aka: pathlib, os.path, join path, file extension, file name from path, parent directory, path separator windows
+A: `pathlib.Path` handles paths on every system: `/` joins, `.name`, `.stem`, `.suffix`, `.parent`, `.exists()`.
+```py
+from pathlib import Path
+p = Path("projects") / "game" / "score.txt"
+print(p, p.name, p.stem, p.suffix, p.parent)
+print(p.with_suffix(".json"))
+print(Path.home())
+print(Path("notes.txt").resolve())
+```
+
+@@ py.file-exists
+Q: How do I check if a file or folder exists, and create or delete them?
+aka: file exists, os.path.exists, create folder, mkdir, delete file, remove file, rename file, makedirs
+A: `Path(p).exists()`, `Path(p).mkdir(parents=True, exist_ok=True)`, `Path(p).unlink()` (delete file), `Path(p).rename(new)`, `shutil.rmtree(folder)` (delete folder and contents).
+```py
+from pathlib import Path
+import shutil
+
+folder = Path("backup/2026")
+folder.mkdir(parents=True, exist_ok=True)
+f = folder / "a.txt"
+f.write_text("hello")
+print(f.exists(), f.is_file(), folder.is_dir())
+f.rename(folder / "b.txt")
+(folder / "b.txt").unlink()
+shutil.rmtree("backup")
+print(Path("backup").exists())
+```
+
+@@ py.listdir
+Q: How do I list the files in a folder (or find all .txt files)?
+aka: list files, os.listdir, files in directory, glob, find files, walk folders, recursive
+A: `Path(".").iterdir()` lists everything; `Path(".").glob("*.txt")` matches a pattern; `rglob` searches subfolders too.
+```py
+from pathlib import Path
+for p in sorted(Path(".").iterdir()):
+    print(("DIR " if p.is_dir() else "    ") + p.name)
+print([p.name for p in Path(".").glob("*.txt")])
+print(len(list(Path(".").rglob("*.py"))), "python files here and below")
+```
+
+@@ py.file-lines-count
+Q: How do I read a file into a list of numbers (one per line)?
+aka: read numbers from file, file to list, parse file, load numbers
+A: Read lines, strip them, skip blanks, convert each.
+```py
+with open("nums.txt", "w") as f:
+    f.write("4\n8\n\n15\n")
+with open("nums.txt") as f:
+    nums = [int(line) for line in f if line.strip()]
+print(nums, sum(nums))
+```
+
+@@ py.encoding
+Q: UnicodeDecodeError: 'charmap' codec can't decode byte ... How do I fix it?
+aka: unicodedecodeerror, charmap codec, utf-8 error, encoding error, can't decode byte, emoji in file, special characters file
+err: UnicodeDecodeError|UnicodeEncodeError|'charmap' codec can't
+A: Say which encoding to use: `open(path, encoding="utf-8")`. Windows otherwise uses an older default. If the file really isn't UTF-8, try `encoding="cp1252"` or `errors="replace"`.
+```py
+with open("u.txt", "w", encoding="utf-8") as f:
+    f.write("café, naïve, emoji ✓\n")
+with open("u.txt", encoding="utf-8") as f:
+    print(f.read())
+with open("u.txt", encoding="ascii", errors="replace") as f:
+    print(f.read())
+```
+
+@@ py.pickle
+Q: How do I save any Python object (not just JSON-friendly data)?
+aka: pickle, save object, serialize class, save game state
+A: `pickle.dump(obj, f)` / `pickle.load(f)` with files opened in binary (`"wb"`/`"rb"`). Only load pickles you created yourself; a malicious pickle can run code.
+```py
+import pickle
+state = {"level": 3, "items": {"sword", "map"}, "pos": (4, 7)}
+with open("save.pkl", "wb") as f:
+    pickle.dump(state, f)
+with open("save.pkl", "rb") as f:
+    print(pickle.load(f))
+```
+
+@@ py.sqlite
+Q: How do I use an SQLite database?
+aka: sqlite3, database, sql python, create table, insert, select, query database
+A: `sqlite3.connect("file.db")`, then `execute` SQL with `?` placeholders; `commit()` after changes; `fetchall()` to read results.
+see: tk.sqlite
+```py
+import sqlite3
+db = sqlite3.connect(":memory:")          # or "app.db" for a file
+db.execute("CREATE TABLE scores (name TEXT, points INTEGER)")
+db.executemany("INSERT INTO scores VALUES (?, ?)", [("Ada", 90), ("Bob", 72), ("Cy", 99)])
+db.commit()
+for name, pts in db.execute("SELECT name, points FROM scores WHERE points > ? ORDER BY points DESC", (80,)):
+    print(name, pts)
+db.close()
+```

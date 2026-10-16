@@ -1,0 +1,361 @@
+# tk-events | Events and keys | bind, keyboard, mouse, shortcuts, focus | tkinter
+
+@@ tk.bind
+Q: How does bind() work?
+aka: bind event, event binding, event handler, bind function, widget.bind, event callback
+A: `widget.bind("<Event>", function)`. The function receives one `event` argument with details (`event.x`, `event.keysym`, `event.widget`...).
+see: tk.bind-keys, tk.mouse, tk.event-names
+```py
+import tkinter as tk
+
+root = tk.Tk()
+lab = tk.Label(root, text="Click or type", width=30, height=5, bg="#eee")
+lab.pack(padx=10, pady=10)
+
+def clicked(event):
+    lab.config(text=f"Click at {event.x}, {event.y}")
+
+def typed(event):
+    lab.config(text=f"Key: {event.keysym}  char: {event.char!r}")
+
+lab.bind("<Button-1>", clicked)
+root.bind("<Key>", typed)
+root.mainloop()
+```
+A function used for both `command=` (no argument) and `bind` (one argument) should be written `def f(event=None):`.
+
+@@ tk.err.bind-missing-arg
+Q: TypeError: my_function() takes 0 positional arguments but 1 was given (when using bind)
+aka: bind takes 0 positional arguments, bind missing event argument, function takes no arguments but 1 given tkinter
+err: takes 0 positional arguments but 1 was given|takes 1 positional argument but 2 were given
+A: `bind` always passes an `event` argument. Add a parameter: `def go(event=None):`. (In a class method, `self` is the first one, so you need `def go(self, event=None):`.)
+see: tk.bind, py.err.positional-args
+```py bad
+def go():
+    print("go")
+root.bind("<Return>", go)     # TypeError when Enter is pressed
+```
+```py
+import tkinter as tk
+
+def go(event=None):
+    print("go")
+
+root = tk.Tk()
+root.bind("<Return>", go)
+tk.Button(root, text="Go", command=go).pack(padx=40, pady=40)
+root.mainloop()
+```
+
+@@ tk.bind-keys
+Q: How do I detect key presses (arrow keys, letters, Enter, Escape)?
+aka: keyboard input, key press event, arrow keys, keypress, detect key, keyboard controls, wasd, KeyPress
+A: Bind on the window: `root.bind("<Left>", f)`, `root.bind("<Return>", f)`, `root.bind("<Escape>", f)`, `root.bind("a", f)`, or `"<Key>"` for every key and check `event.keysym`.
+see: tk.shortcuts, tk.key-held, tk.event-names
+```py
+import tkinter as tk
+
+root = tk.Tk()
+c = tk.Canvas(root, width=240, height=160, bg="white")
+c.pack()
+dot = c.create_oval(110, 70, 130, 90, fill="red")
+moves = {"Left": (-10, 0), "Right": (10, 0), "Up": (0, -10), "Down": (0, 10),
+         "a": (-10, 0), "d": (10, 0), "w": (0, -10), "s": (0, 10)}
+
+def key(event):
+    if event.keysym in moves:
+        c.move(dot, *moves[event.keysym])
+
+root.bind("<Key>", key)
+root.mainloop()
+```
+Key events go to the widget that has **focus**. Binding on `root` catches keys anywhere in that window. If nothing happens, click the window first.
+
+@@ tk.key-held
+Q: How do I make smooth movement while a key is held down (for games)?
+aka: key held down, smooth movement, keyrelease, multiple keys at once, game controls, key repeat delay
+A: Don't move on each key event (it stutters and has a repeat delay). Track which keys are down with `<KeyPress>`/`<KeyRelease>` in a set, and move in an [[tk.after|after()]] game loop.
+see: tk.game-loop
+```py
+import tkinter as tk
+
+root = tk.Tk()
+c = tk.Canvas(root, width=300, height=200, bg="black")
+c.pack()
+ship = c.create_rectangle(140, 90, 160, 110, fill="orange")
+held = set()
+root.bind("<KeyPress>", lambda e: held.add(e.keysym))
+root.bind("<KeyRelease>", lambda e: held.discard(e.keysym))
+
+def tick():
+    dx = (("Right" in held) - ("Left" in held)) * 4
+    dy = (("Down" in held) - ("Up" in held)) * 4
+    c.move(ship, dx, dy)
+    root.after(16, tick)          # about 60 times a second
+
+tick()
+root.mainloop()
+```
+
+@@ tk.shortcuts
+Q: How do I add keyboard shortcuts like Ctrl+S?
+aka: keyboard shortcut, hotkey, ctrl s, control key binding, command key mac, accelerator, ctrl+c ctrl+v
+A: `root.bind("<Control-s>", save)`. Shift is a different key: `"<Control-S>"` (capital) is Ctrl+Shift+S. On macOS use `"<Command-s>"`.
+see: tk.menu-accelerator
+```py
+import tkinter as tk
+import sys
+
+root = tk.Tk()
+status = tk.Label(root, text="Press Ctrl+S or Ctrl+O", width=30, pady=20)
+status.pack()
+mod = "Command" if sys.platform == "darwin" else "Control"
+
+def save(event=None):
+    status.config(text="Saved")
+    return "break"          # stop the key doing anything else
+
+root.bind(f"<{mod}-s>", save)
+root.bind(f"<{mod}-o>", lambda e: status.config(text="Open"))
+root.mainloop()
+```
+
+@@ tk.mouse
+Q: How do I detect mouse clicks, right-clicks and mouse position?
+aka: mouse click event, right click, middle click, mouse position, mouse coordinates, Button-1, Button-3, cursor position
+A: `<Button-1>` left, `<Button-2>`/`<Button-3>` middle/right (on macOS right-click is `<Button-2>`), `<Motion>` when moving. `event.x, event.y` are relative to the widget; `event.x_root, event.y_root` to the screen.
+see: tk.drag, tk.right-click-menu
+```py
+import tkinter as tk
+import sys
+
+root = tk.Tk()
+c = tk.Canvas(root, width=300, height=200, bg="white")
+c.pack()
+pos = tk.Label(root, text="")
+pos.pack()
+right = "<Button-2>" if sys.platform == "darwin" else "<Button-3>"
+
+c.bind("<Motion>", lambda e: pos.config(text=f"x={e.x} y={e.y}"))
+c.bind("<Button-1>", lambda e: c.create_oval(e.x-4, e.y-4, e.x+4, e.y+4, fill="blue"))
+c.bind(right, lambda e: c.create_oval(e.x-4, e.y-4, e.x+4, e.y+4, fill="red"))
+root.mainloop()
+```
+To get the mouse position at any moment: `root.winfo_pointerxy()` (screen coordinates).
+
+@@ tk.double-click
+Q: How do I detect a double-click?
+aka: double click event, Double-Button-1, double tap
+A: Bind `"<Double-Button-1>"`. Note the single-click handler also runs on the first click.
+```py
+import tkinter as tk
+
+root = tk.Tk()
+lab = tk.Label(root, text="Double-click me", bg="#eee", padx=30, pady=30)
+lab.pack(padx=20, pady=20)
+lab.bind("<Double-Button-1>", lambda e: lab.config(text="Double!"))
+root.mainloop()
+```
+
+@@ tk.drag
+Q: How do I drag something with the mouse?
+aka: drag and drop, drag widget, drag item canvas, move with mouse, B1-Motion, click and drag
+A: On `<Button-1>` remember the start point; on `<B1-Motion>` move by the difference and update the start point.
+see: tk.canvas-drag, tk.drag-window
+```py
+import tkinter as tk
+
+root = tk.Tk()
+root.geometry("300x200")
+card = tk.Label(root, text="drag me", bg="#fc6", padx=10, pady=6)
+card.place(x=20, y=20)
+
+def start(e):
+    card._x, card._y = e.x, e.y
+
+def move(e):
+    card.place(x=card.winfo_x() + e.x - card._x, y=card.winfo_y() + e.y - card._y)
+
+card.bind("<Button-1>", start)
+card.bind("<B1-Motion>", move)
+root.mainloop()
+```
+Dragging **files from your desktop** into tkinter isn't built in; the `tkinterdnd2` package adds it.
+
+@@ tk.mousewheel
+Q: How do I use the mouse wheel / scroll wheel?
+aka: mouse wheel event, scroll wheel, MouseWheel, Button-4 Button-5, scroll linux, zoom with wheel
+A: Bind `<MouseWheel>` and look at `event.delta` (positive = up). Older Tk on Linux sends `<Button-4>` (up) and `<Button-5>` (down) instead, so bind those too.
+see: tk.scroll-frame
+```py
+import tkinter as tk
+
+root = tk.Tk()
+n = tk.IntVar(value=0)
+tk.Label(root, textvariable=n, font=("Arial", 30), width=6).pack(padx=20, pady=20)
+
+def wheel(event):
+    up = event.num == 4 or getattr(event, "delta", 0) > 0
+    n.set(n.get() + (1 if up else -1))
+
+root.bind("<MouseWheel>", wheel)     # Windows, macOS, Tk 9 on Linux
+root.bind("<Button-4>", wheel)       # Linux, Tk 8.6
+root.bind("<Button-5>", wheel)
+root.mainloop()
+```
+Windows gives `delta` in steps of 120; macOS gives small numbers like 1 or 3.
+
+@@ tk.event-names
+Q: What event names can I bind?
+aka: list of events, event types, bind strings, event sequence, keysym names, event syntax
+A: Common ones below. Format: `<Modifier-Type-Detail>`, e.g. `<Control-Shift-Key-a>`, `<Double-Button-1>`.
+see: tk.bind
+```text
+<Button-1> <Button-3>        mouse button pressed (1 left, 2 middle, 3 right; mac right = 2)
+<ButtonRelease-1>            mouse button released
+<Double-Button-1>            double-click
+<B1-Motion>                  mouse moved with left button held (dragging)
+<Motion>                     mouse moved
+<Enter> <Leave>              mouse moved into / out of the widget
+<MouseWheel>                 scroll wheel (Linux Tk 8.6: <Button-4>/<Button-5>)
+<Key> <KeyPress>             any key;  <KeyRelease> any key released
+<Return> <Escape> <Tab> <BackSpace> <Delete> <space>
+<Up> <Down> <Left> <Right> <Home> <End> <Prior>(PageUp) <Next>(PageDown)
+<F1> ... <F12>
+a   A   1                    a single character (A means Shift+a)
+<Control-s> <Alt-x> <Shift-Up> <Command-s>(mac)
+<FocusIn> <FocusOut>         widget gained / lost keyboard focus
+<Configure>                  widget resized or moved (event.width, event.height)
+<Destroy>                    widget destroyed
+<Map> <Unmap>                shown / hidden
+<<ComboboxSelected>> <<ListboxSelect>> <<TreeviewSelect>> <<NotebookTabChanged>> <<Modified>>
+```
+To find the name of any key, bind `<Key>` and print `event.keysym`.
+
+@@ tk.event-attrs
+Q: What information does the event object have?
+aka: event object, event attributes, event.widget, event.keysym, event.char, event.x
+A: The useful fields: `widget`, `x`, `y`, `x_root`, `y_root`, `keysym`, `char`, `keycode`, `num` (mouse button), `delta` (wheel), `width`, `height` (Configure), `state` (modifier keys).
+```py
+import tkinter as tk
+
+root = tk.Tk()
+lab = tk.Label(root, text="press a key or click", width=40, height=4)
+lab.pack()
+
+def show(e):
+    lab.config(text=f"widget={e.widget.winfo_class()} keysym={e.keysym} char={e.char!r}\nx={e.x} y={e.y} num={e.num} state={e.state}")
+
+root.bind("<Key>", show)
+root.bind("<Button>", show)
+root.mainloop()
+```
+`event.widget` is the widget it happened on: handy when one function handles many widgets.
+
+@@ tk.return-break
+Q: How do I stop a key doing its normal thing (e.g. stop Enter adding a new line in a Text)?
+aka: return break, prevent default, block key, stop newline text widget, override key behaviour
+A: Return the string `"break"` from your handler. Tk then skips the widget's built-in behaviour for that event.
+```py
+import tkinter as tk
+
+root = tk.Tk()
+t = tk.Text(root, width=30, height=5)
+t.pack(padx=10, pady=10)
+
+def send(event):
+    print("Sent:", t.get("1.0", "end-1c"))
+    t.delete("1.0", "end")
+    return "break"           # no newline gets inserted
+
+t.bind("<Return>", send)
+t.bind("<Shift-Return>", lambda e: None)   # Shift+Enter still makes a new line
+root.mainloop()
+```
+
+@@ tk.unbind
+Q: How do I remove a binding (unbind)?
+aka: unbind, remove event, stop listening to key, disable bind
+A: `widget.unbind("<Event>")`. To remove only one of several handlers, keep the id that `bind(..., add="+")` returns and pass it as the second argument.
+```py
+import tkinter as tk
+
+root = tk.Tk()
+lab = tk.Label(root, text="Click me once", padx=30, pady=30, bg="#eee")
+lab.pack(padx=20, pady=20)
+
+def once(e):
+    lab.config(text="Clicked (now unbound)")
+    lab.unbind("<Button-1>")
+
+lab.bind("<Button-1>", once)
+root.mainloop()
+```
+`bind` normally **replaces** the previous handler for that event; pass `add="+"` to keep both.
+
+@@ tk.bind-all
+Q: What's the difference between bind, bind_all and bind_class?
+aka: bind_all, bind_class, global key binding, bind to every widget
+A: `w.bind` is for one widget. `bind_all` fires in every widget of the app. `bind_class("Entry", ...)` affects every widget of that type.
+```py
+import tkinter as tk
+
+root = tk.Tk()
+tk.Entry(root).pack(padx=20, pady=5)
+tk.Entry(root).pack(padx=20, pady=5)
+root.bind_all("<F1>", lambda e: print("Help (from anywhere)"))
+root.bind_class("Entry", "<FocusIn>", lambda e: e.widget.config(bg="#ffffe0"), add="+")
+root.bind_class("Entry", "<FocusOut>", lambda e: e.widget.config(bg="white"), add="+")
+root.mainloop()
+```
+
+@@ tk.focus
+Q: How do I tell which widget has focus, or react when it gains/loses focus?
+aka: focus_get, focus in, focus out, FocusIn, FocusOut, focused widget, on blur
+A: `root.focus_get()` returns the focused widget. Bind `<FocusIn>` / `<FocusOut>` to react.
+```py
+import tkinter as tk
+
+root = tk.Tk()
+a = tk.Entry(root); a.pack(padx=20, pady=5)
+b = tk.Entry(root); b.pack(padx=20, pady=5)
+for e in (a, b):
+    e.bind("<FocusIn>", lambda ev: ev.widget.config(highlightthickness=2, highlightcolor="orange"))
+a.focus()
+root.after(100, lambda: print("focused:", root.focus_get() is a))
+root.mainloop()
+```
+
+@@ tk.virtual-event
+Q: How do I create my own event (virtual event) and trigger it?
+aka: event_generate, custom event, virtual event, trigger event programmatically, simulate key press
+A: Bind a name in double angle brackets, `<<MyEvent>>`, and fire it with `widget.event_generate("<<MyEvent>>")`. `event_generate` also simulates real events.
+```py
+import tkinter as tk
+
+root = tk.Tk()
+lab = tk.Label(root, text="waiting", padx=30, pady=30)
+lab.pack()
+root.bind("<<Scored>>", lambda e: lab.config(text="Somebody scored!"))
+tk.Button(root, text="Score", command=lambda: root.event_generate("<<Scored>>")).pack(pady=10)
+root.mainloop()
+```
+
+@@ tk.configure-event
+Q: How do I run code when the window is resized?
+aka: window resize event, Configure event, on resize, detect window size change
+A: Bind `<Configure>` on the window. It also fires when the window moves, and for child widgets, so check `event.widget`.
+```py
+import tkinter as tk
+
+root = tk.Tk()
+lab = tk.Label(root, text="resize me")
+lab.pack(expand=True)
+
+def resized(e):
+    if e.widget is root:
+        lab.config(text=f"{e.width} x {e.height}")
+
+root.bind("<Configure>", resized)
+root.mainloop()
+```

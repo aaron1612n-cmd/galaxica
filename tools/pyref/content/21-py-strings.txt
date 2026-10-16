@@ -1,0 +1,216 @@
+# py-strings | Strings | Text: slicing, splitting, joining, searching, changing | python
+
+@@ py.str-basics
+Q: How do I get one character or part of a string (indexing and slicing)?
+aka: string index, slice string, substring, first character, last character, string slicing, characters of string
+A: `s[0]` is the first character, `s[-1]` the last, `s[2:5]` characters 2 to 4, `s[:3]` the first three, `s[3:]` from 3 to the end.
+see: py.reverse-str
+```py
+s = "Python"
+print(s[0], s[-1])        # P n
+print(s[1:4])             # yth
+print(s[:2], s[2:])       # Py thon
+print(s[::2])             # Pto (every 2nd)
+print(len(s))
+```
+Strings can't be changed in place (`s[0] = "J"` fails). Build a new one: `"J" + s[1:]`.
+
+@@ py.reverse-str
+Q: How do I reverse a string (or check for a palindrome)?
+aka: reverse string, palindrome, backwards string, string backwards
+A: `s[::-1]` reverses it.
+```py
+word = "racecar"
+print(word[::-1])
+clean = "".join(ch.lower() for ch in "Never odd or even" if ch.isalnum())
+print(clean == clean[::-1])      # palindrome check ignoring spaces/case
+```
+
+@@ py.split
+Q: How do I split a string into words or parts?
+aka: split string, string to list, split by comma, split lines, split words, separate string, csv line split
+A: `s.split()` splits on any whitespace; `s.split(",")` on commas; `s.splitlines()` into lines. `maxsplit` limits how many splits.
+see: py.join
+```py
+print("the cat sat".split())
+print("a,b,,c".split(","))
+print("key=value=x".split("=", 1))
+print("line1\nline2".splitlines())
+name, age = "Ada,36".split(",")
+print(name, int(age))
+print(list("abc"))                  # into characters
+```
+
+@@ py.join
+Q: How do I join a list of strings into one string?
+aka: join, list to string, combine strings, concatenate list, join with comma
+A: `", ".join(list_of_strings)`. The items must be strings; convert numbers first.
+see: py.split
+```py
+words = ["red", "green", "blue"]
+print(", ".join(words))
+print("".join(["a", "b", "c"]))
+nums = [1, 2, 3]
+print(" + ".join(str(n) for n in nums), "=", sum(nums))
+```
+
+@@ py.strip
+Q: How do I remove spaces or newlines from the start/end of a string?
+aka: strip, trim, remove whitespace, remove newline, rstrip, lstrip, remove \n
+A: `s.strip()` removes whitespace from both ends; `lstrip()`/`rstrip()` one end. Give characters to remove others: `s.strip(".!")`.
+```py
+line = "   hello world \n"
+print(repr(line.strip()))
+print(repr("...wow!!!".strip(".!")))
+print(repr("file.txt".removesuffix(".txt")))      # Python 3.9+
+```
+
+@@ py.replace
+Q: How do I replace text in a string?
+aka: replace, string replace, remove character from string, substitute, change word in string
+A: `s.replace("old", "new")` returns a new string (the original doesn't change). Remove characters by replacing with `""`.
+see: py.regex
+```py
+s = "I like cats. cats are great."
+s2 = s.replace("cats", "dogs")
+print(s2)
+print(s.replace("cats", "dogs", 1))      # only the first
+print("1,234,567".replace(",", ""))
+```
+`s.replace(...)` alone does nothing: you must store the result, `s = s.replace(...)`.
+
+@@ py.case
+Q: How do I change upper/lower case, or compare ignoring case?
+aka: uppercase, lowercase, capitalize, title case, case insensitive compare, upper lower
+A: `upper()`, `lower()`, `title()`, `capitalize()`, `swapcase()`. Compare with both sides lowered (or `casefold()`).
+```py
+s = "hello World"
+print(s.upper(), s.lower(), s.title(), s.capitalize())
+answer = "YES"
+if answer.lower() == "yes":
+    print("matched")
+```
+
+@@ py.find
+Q: How do I check if a string contains something, or find where it is?
+aka: string contains, substring in string, find, index of substring, startswith, endswith, count occurrences
+A: `"cat" in s` (True/False), `s.find("cat")` (position or -1), `s.count("a")`, `s.startswith("http")`, `s.endswith(".py")`.
+```py
+s = "the cat sat on the mat"
+print("cat" in s, "dog" in s)
+print(s.find("sat"), s.find("dog"))
+print(s.count("at"))
+print(s.startswith("the"), s.endswith((".py", ".txt")))
+```
+
+@@ py.str-checks
+Q: How do I check if a string is a number, letters, uppercase...?
+aka: isdigit, isnumeric, isalpha, isalnum, isupper, check if string is number, is integer string
+A: `isdigit()` (only 0-9), `isalpha()`, `isalnum()`, `isupper()`, `islower()`, `isspace()`. For negatives/decimals, try `float()` in `try`.
+```py
+for s in ("123", "-5", "3.5", "abc", "a1", ""):
+    print(repr(s), s.isdigit(), s.isalpha(), s.isalnum())
+
+def is_number(s):
+    try:
+        float(s)
+        return True
+    except ValueError:
+        return False
+
+print(is_number("-3.5"), is_number("x"))
+```
+
+@@ py.multiline-str
+Q: How do I write a string over several lines, or include quotes and special characters?
+aka: multiline string, triple quotes, escape characters, newline character, quotes in string, backslash, raw string, tab character
+A: Triple quotes `"""..."""` for multi-line text. `\n` newline, `\t` tab, `\\` backslash, `\"` quote. Prefix `r` for raw strings (Windows paths, regex).
+```py
+poem = """Roses are red,
+violets are blue."""
+print(poem)
+print("She said \"hi\"\tand left.\n(new line)")
+print('It\'s fine', "It's also fine")
+print(r"C:\new\folder")
+```
+`"C:\new"` without `r` contains a newline character (`\n`). Use `r"..."` or forward slashes for Windows paths.
+
+@@ py.str-repeat
+Q: How do I repeat a string or make a line of characters?
+aka: repeat string, multiply string, line of dashes, string times number
+A: Multiply it: `"-" * 20`.
+```py
+print("-" * 20)
+print("ha" * 3)
+for i in range(1, 5):
+    print("*" * i)
+```
+
+@@ py.count-words
+Q: How do I count words or letters in text?
+aka: word count, count letters, character frequency, most common word, counter
+A: `len(text.split())` counts words. `collections.Counter` counts how often each one appears.
+see: py.counter
+```py
+from collections import Counter
+text = "the cat and the hat and the bat"
+print(len(text.split()), "words")
+c = Counter(text.split())
+print(c.most_common(2))
+print(Counter("mississippi"))
+```
+
+@@ py.str-chars
+Q: How do I get the ASCII/Unicode code of a character (and back)?
+aka: ord, chr, ascii code, unicode, character code, caesar cipher
+A: `ord("A")` gives 65, `chr(65)` gives `"A"`.
+```py
+print(ord("A"), chr(97))
+
+def caesar(text, shift):
+    out = ""
+    for ch in text:
+        if ch.isalpha():
+            base = ord("A") if ch.isupper() else ord("a")
+            out += chr((ord(ch) - base + shift) % 26 + base)
+        else:
+            out += ch
+    return out
+
+print(caesar("Hello, World", 3))
+```
+
+@@ py.regex
+Q: How do I use regular expressions (find patterns, emails, numbers in text)?
+aka: regex, re module, regular expression, find all numbers, pattern matching, re.findall, re.sub, validate email
+A: `import re`. `re.findall(pattern, text)` returns all matches; `re.search` the first; `re.sub` replaces; `re.fullmatch` checks the whole string. Write patterns as raw strings `r"..."`.
+```py
+import re
+text = "Call 555-1234 or 555-9876 before 5pm. Email: ada@example.com"
+print(re.findall(r"\d{3}-\d{4}", text))
+print(re.findall(r"\d+", "a1b22c333"))
+print(re.sub(r"\s+", " ", "too    many   spaces"))
+print(bool(re.fullmatch(r"[\w.+-]+@[\w-]+\.[\w.]+", "ada@example.com")))
+m = re.search(r"(\w+)@(\w+)", text)
+print(m.group(1), m.group(2))
+```
+
+@@ py.str-pad
+Q: How do I line up text in columns (padding)?
+aka: pad string, align columns, ljust, rjust, center text, table output, zfill
+A: f-string alignment `{s:<10}` / `{s:>10}` / `{s:^10}`, or `ljust`, `rjust`, `center`, `zfill`.
+```py
+rows = [("Apple", 1.5), ("Watermelon", 3.25), ("Fig", 0.4)]
+for name, price in rows:
+    print(f"{name:<12}{price:>6.2f}")
+print("7".zfill(3), "hi".center(10, "*"))
+```
+
+@@ py.str-empty
+Q: How do I check if a string is empty?
+aka: empty string, blank string, check empty input, string is empty
+A: `if not s:` is True for `""`. To also treat spaces as empty: `if not s.strip():`.
+```py
+for s in ("", "  ", "hi"):
+    print(repr(s), "empty" if not s else "not empty", "| blank" if not s.strip() else "")
+```

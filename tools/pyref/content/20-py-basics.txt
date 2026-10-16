@@ -1,0 +1,490 @@
+# py-basics | Basics | print, input, variables, numbers, if, loops, functions | python
+
+@@ py.print
+Q: How do I print several things, without a new line, or with a separator?
+aka: print, print without newline, end parameter, sep parameter, print on same line, print multiple variables
+A: `print(a, b)` puts a space between items. `sep=` changes the separator, `end=` changes what comes after (default `"\n"`).
+see: py.fstring
+```py
+name, age = "Ada", 36
+print("Name:", name, "Age:", age)
+print("a", "b", "c", sep="-")
+print("Loading", end="")
+print("...", end="")
+print(" done")
+```
+```text
+Name: Ada Age: 36
+a-b-c
+Loading... done
+```
+
+@@ py.input
+Q: How do I ask the user for input?
+aka: input, user input, read from keyboard, ask question, raw_input, get input from user
+A: `answer = input("Question? ")`. It always returns a **string**; convert with `int()` or `float()` for numbers.
+see: py.input-number, py.err.valueerror-int
+```py
+name = input("What's your name? ")
+age = int(input("How old are you? "))
+print(f"Hi {name}, next year you'll be {age + 1}")
+```
+`raw_input()` is Python 2. In Python 3 it's just `input()`.
+
+@@ py.input-number
+Q: How do I keep asking until the user types a valid number?
+aka: validate input, input loop, ask again, input must be number, try except input, input validation
+A: Loop forever, `try` to convert, and `break` (or `return`) when it works.
+see: py.try-except
+```py
+def ask_int(prompt, low=None, high=None):
+    while True:
+        text = input(prompt)
+        try:
+            n = int(text)
+        except ValueError:
+            print("Please type a whole number.")
+            continue
+        if (low is not None and n < low) or (high is not None and n > high):
+            print(f"Pick between {low} and {high}.")
+            continue
+        return n
+
+age = ask_int("Age: ", 1, 120)
+print("OK:", age)
+```
+
+@@ py.variables
+Q: How do variables work in Python?
+aka: variable, assign, create variable, variable names, multiple assignment, swap variables, constants
+A: `name = value` creates or updates a variable; no type declaration needed. Names use letters, digits and `_`, can't start with a digit, and are case-sensitive.
+see: py.types
+```py
+score = 0
+score = score + 10        # or: score += 10
+x, y = 3, 4               # assign two at once
+x, y = y, x               # swap
+MAX_LIVES = 3             # CAPITALS = a constant by convention
+print(score, x, y, MAX_LIVES)
+```
+
+@@ py.types
+Q: What are the basic data types, and how do I check a value's type?
+aka: data types, type(), isinstance, int float str bool, check type, what type is this
+A: `int` (whole numbers), `float` (decimals), `str` (text), `bool` (`True`/`False`), `None`, plus `list`, `tuple`, `dict`, `set`. Check with `type(x)` or `isinstance(x, int)`.
+see: py.convert
+```py
+for value in (42, 3.14, "hi", True, None, [1, 2], (1, 2), {"a": 1}, {1, 2}):
+    print(repr(value), type(value).__name__)
+print(isinstance(5, (int, float)))
+```
+
+@@ py.convert
+Q: How do I convert between strings and numbers?
+aka: convert string to int, int to string, str(), int(), float(), cast, type conversion, number to text
+A: `int("42")`, `float("3.5")`, `str(42)`. `int(3.9)` cuts off the decimals (gives 3); use `round()` to round.
+see: py.err.valueerror-int, py.err.str-int-concat
+```py
+print(int("42") + 1)
+print(float("3.5") * 2)
+print("Score: " + str(99))
+print(int(3.9), round(3.9))
+print(int("ff", 16), bin(10), hex(255))    # other bases
+print(int(float("3.0")))                     # "3.0" -> 3 needs float() first
+```
+
+@@ py.fstring
+Q: How do I put variables inside a string (f-strings, format)?
+aka: f string, format string, string formatting, string interpolation, .format(), % formatting, insert variable in string
+A: Put `f` before the quotes and variables in `{}`: `f"Hi {name}"`. Expressions work too: `f"{price * 2}"`.
+see: py.format-decimals
+```py
+name, score, price = "Ada", 7, 3.5
+print(f"{name} scored {score} points")
+print(f"Twice the price: {price * 2}")
+print(f"{name=}, {score=}")                     # handy for debugging
+print("{} scored {}".format(name, score))       # older style
+print("%s scored %d" % (name, score))           # oldest style
+```
+
+@@ py.format-decimals
+Q: How do I show a number with 2 decimal places, commas, or padding?
+aka: 2 decimal places, round to 2 decimals, format float, thousands separator, comma number, percentage, leading zeros, pad number, money format
+A: Use a format spec after `:` in an f-string: `{x:.2f}` (2 decimals), `{n:,}` (commas), `{p:.0%}` (percent), `{n:03d}` (leading zeros), `{s:>10}` (right-align).
+```py
+x, big, part, n = 3.14159, 1234567.891, 0.256, 7
+print(f"{x:.2f}")        # 3.14
+print(f"{big:,.2f}")     # 1,234,567.89
+print(f"{part:.1%}")     # 25.6%
+print(f"{n:03d}")        # 007
+print(f"[{'left':<8}][{'right':>8}][{'mid':^8}]")
+print(f"£{19.5:.2f}")   # £19.50
+```
+
+@@ py.if
+Q: How do if, elif and else work?
+aka: if statement, elif, else, conditions, if else, multiple conditions, nested if
+A: Python checks each condition from top to bottom and runs the first block that is true. Blocks are marked by **indentation** (4 spaces) and every line before a block ends with `:`.
+see: py.and-or, py.comparisons
+```py
+temp = 18
+if temp >= 25:
+    print("Hot")
+elif temp >= 15:
+    print("Mild")
+else:
+    print("Cold")
+```
+
+@@ py.comparisons
+Q: What comparison operators are there (==, !=, <, in...)?
+aka: comparison operators, equals, not equal, greater than, double equals, == vs =, compare strings
+A: `==` equal, `!=` not equal, `<`, `>`, `<=`, `>=`, `in`, `not in`. A single `=` assigns; `==` compares. You can chain: `0 <= x < 10`.
+see: py.is-vs-eq
+```py
+age = 15
+print(age == 15, age != 15, 13 <= age <= 19)
+print("a" in "cat", 3 in [1, 2, 3], "z" not in "cat")
+print("apple" < "banana", "Zebra" < "apple")     # strings compare by character codes
+```
+
+@@ py.and-or
+Q: How do I combine conditions with and, or, not?
+aka: and or not, multiple conditions, logical operators, if x or y, x == 1 or 2 bug
+A: `and` (both true), `or` (at least one), `not` (flip). Write the full comparison on **each side**: `x == 1 or x == 2`, or better `x in (1, 2)`.
+```py bad
+answer = "no"
+if answer == "yes" or "y":      # always True! "y" on its own is truthy
+    print("oops")
+```
+```py
+answer = "no"
+if answer == "yes" or answer == "y":
+    print("yes")
+if answer in ("yes", "y"):
+    print("yes")
+age, member = 20, True
+if age >= 18 and not member:
+    print("adult guest")
+```
+
+@@ py.truthy
+Q: What counts as True or False (truthiness)?
+aka: truthy falsy, empty list false, if list, if not string, bool of zero
+A: These are false: `False`, `None`, `0`, `0.0`, `""`, `[]`, `{}`, `()`, `set()`. Everything else is true. So `if items:` means "if the list isn't empty".
+```py
+for v in (0, 1, "", "hi", [], [0], None):
+    print(repr(v), bool(v))
+name = ""
+if not name:
+    print("name is empty")
+```
+
+@@ py.ternary
+Q: How do I write an if/else on one line?
+aka: ternary operator, inline if, conditional expression, one line if else
+A: `result = a if condition else b`.
+```py
+age = 20
+status = "adult" if age >= 18 else "child"
+print(status)
+print("even" if 7 % 2 == 0 else "odd")
+```
+
+@@ py.for
+Q: How do for loops and range() work?
+aka: for loop, range, loop n times, loop through list, range start stop step, count down, loop backwards
+A: `for item in something:` runs once per item. `range(5)` gives 0-4, `range(1, 6)` gives 1-5, `range(10, 0, -2)` counts down in twos.
+see: py.enumerate, py.while
+```py
+for i in range(3):
+    print("hello", i)
+for n in range(10, 0, -3):
+    print(n, end=" ")
+print()
+for letter in "abc":
+    print(letter.upper())
+for fruit in ["apple", "pear"]:
+    print(fruit)
+```
+
+@@ py.while
+Q: How do while loops work (and how do I stop an infinite loop)?
+aka: while loop, while true, infinite loop, loop until, stop loop, ctrl c, loop forever
+A: `while condition:` repeats as long as the condition is true. With `while True:` use `break` to leave. Stop a runaway program with **Ctrl+C**.
+see: py.break-continue
+```py
+count = 3
+while count > 0:
+    print(count)
+    count -= 1          # forget this and it never ends
+print("Lift off!")
+
+while True:
+    word = input("Type quit: ")
+    if word == "quit":
+        break
+```
+
+@@ py.break-continue
+Q: What do break, continue and pass do?
+aka: break, continue, pass, exit loop, skip iteration, loop else
+A: `break` leaves the loop now; `continue` skips to the next round; `pass` does nothing (a placeholder where a block is required).
+```py
+for n in range(10):
+    if n == 6:
+        break           # stop at 6
+    if n % 2 == 0:
+        continue        # skip even numbers
+    print(n)
+
+def todo():
+    pass                # write this later
+```
+A loop's `else:` block runs only if the loop **didn't** `break`: handy for "not found".
+
+@@ py.nested-break
+Q: How do I break out of two nested loops at once?
+aka: break nested loop, exit both loops, break outer loop
+A: Put the loops in a function and `return`, or use a flag variable.
+```py
+grid = [[1, 2, 3], [4, 99, 6], [7, 8, 9]]
+
+def find(target):
+    for r, row in enumerate(grid):
+        for c, value in enumerate(row):
+            if value == target:
+                return r, c
+    return None
+
+print(find(99))
+```
+
+@@ py.function
+Q: How do I write and call a function?
+aka: def, function, define function, call function, parameters, arguments, how functions work
+A: `def name(parameters):` then the indented body. Call it with `name(arguments)`. Use `return` to send a value back.
+see: py.return-vs-print, py.default-args
+```py
+def area(width, height):
+    return width * height
+
+def greet(name):
+    print(f"Hello, {name}!")
+
+a = area(3, 4)
+print(a)
+greet("Sam")
+```
+A function must be defined (its `def` must have run) before the line that calls it runs.
+
+@@ py.return-vs-print
+Q: What's the difference between return and print? Why does my function give None?
+aka: return vs print, function returns none, none printed, function output none, return value
+A: `print` shows something on the screen; `return` hands a value back to the code that called the function. A function without `return` gives back `None`.
+see: py.err.nonetype
+```py
+def add_print(a, b):
+    print(a + b)
+
+def add_return(a, b):
+    return a + b
+
+x = add_print(2, 3)     # shows 5, but x is None
+y = add_return(2, 3)    # shows nothing, y is 5
+print(x, y)
+```
+
+@@ py.default-args
+Q: How do I give a function default arguments or keyword arguments?
+aka: default parameter, optional argument, keyword arguments, named arguments, mutable default argument
+A: `def f(name, greeting="Hello"):` makes `greeting` optional. Call with names in any order: `f(greeting="Hi", name="Ada")`. Never use a list or dict as a default; use `None`.
+```py
+def greet(name, greeting="Hello", punct="!"):
+    return f"{greeting}, {name}{punct}"
+
+print(greet("Ada"))
+print(greet("Ada", "Hi"))
+print(greet(punct="?", name="Sam"))
+
+def add_item(item, items=None):     # not items=[] (that list is shared between calls)
+    if items is None:
+        items = []
+    items.append(item)
+    return items
+
+print(add_item("a"), add_item("b"))
+```
+
+@@ py.args-kwargs
+Q: What are *args and **kwargs?
+aka: args kwargs, variable number of arguments, star args, unpack arguments, splat
+A: `*args` collects extra positional arguments into a tuple; `**kwargs` collects extra keyword arguments into a dict. At a call, `*list` and `**dict` unpack.
+```py
+def total(*numbers):
+    return sum(numbers)
+
+def describe(**info):
+    for k, v in info.items():
+        print(f"{k}: {v}")
+
+print(total(1, 2, 3, 4))
+describe(name="Ada", job="programmer")
+nums = [5, 6]
+print(total(*nums))
+```
+
+@@ py.return-multiple
+Q: How do I return several values from a function?
+aka: return two values, return multiple, tuple return, unpack return
+A: Return them separated by commas (a tuple) and unpack them when calling.
+```py
+def min_max(numbers):
+    return min(numbers), max(numbers)
+
+low, high = min_max([4, 9, 1, 7])
+print(low, high)
+```
+
+@@ py.global
+Q: How do I change a global variable inside a function?
+aka: global keyword, global variable, change variable in function, UnboundLocalError, scope, local variable, nonlocal
+A: Reading a global inside a function works. **Assigning** to it needs `global name` at the top of the function, otherwise Python makes a new local variable. Often better: pass values in and `return` them.
+see: py.err.unboundlocal
+```py
+counter = 0
+
+def bump():
+    global counter
+    counter += 1
+
+bump(); bump()
+print(counter)
+
+def bump_pure(n):           # usually cleaner
+    return n + 1
+
+counter = bump_pure(counter)
+print(counter)
+```
+`nonlocal` does the same for a variable of an enclosing function.
+
+@@ py.is-vs-eq
+Q: What's the difference between == and is?
+aka: is vs ==, is none, identity, equality, is operator
+A: `==` asks "same value?"; `is` asks "the very same object?". Use `is` only for `None` (`if x is None:`), and `==` for everything else.
+```py
+a = [1, 2]
+b = [1, 2]
+print(a == b, a is b)
+c = a
+print(c is a)
+x = None
+print(x is None)
+```
+
+@@ py.math-ops
+Q: How do maths operators work (division, power, remainder)?
+aka: division, integer division, floor division, modulo, remainder, power, exponent, square root, //, %
+A: `/` always gives a float, `//` divides and rounds down, `%` is the remainder, `**` is power. Square root: `x ** 0.5` or `math.sqrt(x)`.
+see: py.float-precision, py.round
+```py
+import math
+print(7 / 2, 7 // 2, 7 % 2, 2 ** 10)
+print(math.sqrt(16), 27 ** (1 / 3))
+print(-7 // 2)        # -4: rounds down, not toward zero
+print(10 % 3 == 1)    # check remainders: even/odd, every nth item
+print(abs(-5), max(3, 9), min(3, 9))
+```
+
+@@ py.round
+Q: How do I round numbers (and why does round(2.5) give 2)?
+aka: round, round up, round down, ceil, floor, banker's rounding, round half up
+A: `round(x, 2)` rounds to 2 decimals. Python rounds exact halves to the **even** number (`round(2.5)` is 2, `round(3.5)` is 4). Use `math.ceil`/`math.floor` to always go up/down, or `Decimal` for school-style rounding.
+see: py.float-precision
+```py
+import math
+from decimal import Decimal, ROUND_HALF_UP
+print(round(3.14159, 2), round(2.5), round(3.5))
+print(math.ceil(2.1), math.floor(2.9))
+print(Decimal("2.5").quantize(Decimal("1"), rounding=ROUND_HALF_UP))
+```
+
+@@ py.float-precision
+Q: Why does 0.1 + 0.2 give 0.30000000000000004?
+aka: float precision, floating point error, 0.1+0.2, decimal inaccurate, compare floats
+A: Computers store decimals in binary, which can't hold 0.1 exactly. Round when **displaying** (`f"{x:.2f}"`), compare with `math.isclose`, and use `Decimal` (or whole pennies as ints) for money.
+```py
+import math
+from decimal import Decimal
+x = 0.1 + 0.2
+print(x, f"{x:.2f}")
+print(x == 0.3, math.isclose(x, 0.3))
+print(Decimal("0.1") + Decimal("0.2"))
+```
+
+@@ py.comments
+Q: How do I write comments (and multi-line comments)?
+aka: comment, comments, multiline comment, docstring, hash
+A: `#` comments out the rest of the line. Python has no block comment; put `#` on each line (most editors do it with Ctrl+/ or Alt+3 in IDLE). Triple-quoted strings under a `def` are docstrings.
+```py
+# this whole line is a comment
+x = 5  # a comment after code
+
+def area(r):
+    """Return the area of a circle with radius r."""
+    return 3.14159 * r * r
+
+help(area)
+```
+
+@@ py.match
+Q: Is there a switch/case statement in Python?
+aka: switch case, match case, switch statement, pattern matching
+A: Python 3.10+ has `match`/`case`. Before that, use `if`/`elif` or a dict of functions.
+```py
+command = "go north"
+match command.split():
+    case ["go", direction]:
+        print("Going", direction)
+    case ["quit"] | ["exit"]:
+        print("Bye")
+    case _:
+        print("Unknown command")
+```
+
+@@ py.indentation
+Q: How does indentation work in Python?
+aka: indentation, tabs vs spaces, indent block, colon, code block, spaces
+A: The lines inside an `if`, `for`, `def`, `class`... are indented by the same amount (4 spaces is standard). The block ends where the indentation goes back. Don't mix tabs and spaces.
+see: py.err.indentation
+```py
+for i in range(2):
+    print("inside the loop", i)
+    if i == 1:
+        print("inside the if")
+print("after the loop")
+```
+
+@@ py.none
+Q: What is None?
+aka: None, null, nil, nothing value, NoneType
+A: `None` means "no value". Functions return it by default; use it as a placeholder ("not set yet"), and test it with `is None`.
+```py
+best = None
+for score in [3, 9, 4]:
+    if best is None or score > best:
+        best = score
+print(best)
+```
+
+@@ py.walrus
+Q: What does := (the walrus operator) do?
+aka: walrus operator, assignment expression, colon equals
+A: It assigns **and** gives the value in one expression (Python 3.8+). Handy in `while` loops and comprehensions.
+```py
+data = [3, 8, 1, 9]
+if (n := len(data)) > 3:
+    print(f"long list ({n} items)")
+print([y for x in data if (y := x * 10) > 30])
+```

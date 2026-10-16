@@ -1,0 +1,225 @@
+# py-classes | Classes and objects | class, self, __init__, inheritance, dataclasses | python
+
+@@ py.class-basics
+Q: How do I make a class (and what is self)?
+aka: class, object, oop, self, __init__, constructor, instance, create object, methods, object oriented
+A: A class is a blueprint; each object made from it has its own data. `__init__` runs when an object is created; `self` is "this particular object", so `self.name` is that object's name.
+see: py.inheritance, py.err.missing-self-attr
+```py
+class Dog:
+    def __init__(self, name, age):
+        self.name = name
+        self.age = age
+
+    def bark(self):
+        return f"{self.name} says woof"
+
+    def birthday(self):
+        self.age += 1
+
+rex = Dog("Rex", 3)
+fido = Dog("Fido", 5)
+rex.birthday()
+print(rex.bark(), rex.age, fido.age)
+```
+You write `self` in every method's definition but **don't** pass it when calling: `rex.bark()`.
+
+@@ py.inheritance
+Q: How does inheritance work (and what does super() do)?
+aka: inheritance, subclass, parent class, child class, super, override method, extends
+A: `class Cat(Animal):` gets everything `Animal` has. Redefine a method to override it; call the parent's version with `super().method()`.
+```py
+class Animal:
+    def __init__(self, name):
+        self.name = name
+
+    def speak(self):
+        return "..."
+
+    def intro(self):
+        return f"I'm {self.name} and I say {self.speak()}"
+
+class Cat(Animal):
+    def __init__(self, name, indoor):
+        super().__init__(name)         # let Animal set the name
+        self.indoor = indoor
+
+    def speak(self):
+        return "meow"
+
+c = Cat("Tom", True)
+print(c.intro(), c.indoor, isinstance(c, Animal))
+```
+
+@@ py.str-method
+Q: How do I control what print() shows for my object (__str__ / __repr__)?
+aka: __str__, __repr__, print object, object at 0x, custom print, string representation
+A: Define `__str__` (for people, used by `print`) and/or `__repr__` (for debugging, used in lists and the shell).
+```py
+class Point:
+    def __init__(self, x, y):
+        self.x, self.y = x, y
+
+    def __str__(self):
+        return f"({self.x}, {self.y})"
+
+    def __repr__(self):
+        return f"Point({self.x}, {self.y})"
+
+p = Point(2, 3)
+print(p)
+print([p, Point(0, 0)])
+```
+
+@@ py.class-vs-instance
+Q: What's the difference between class attributes and instance attributes?
+aka: class variable, instance variable, shared between objects, static variable
+A: Attributes set on `self` belong to one object. Attributes written directly in the class body are shared by all objects (careful with lists there).
+```py
+class Player:
+    count = 0                     # shared by every Player
+
+    def __init__(self, name):
+        self.name = name          # this player's own
+        Player.count += 1
+
+a, b = Player("Ada"), Player("Bob")
+print(Player.count, a.name, b.name)
+```
+
+@@ py.dataclass
+Q: Is there a shorter way to write a class that just holds data?
+aka: dataclass, data class, record, struct, namedtuple
+A: `@dataclass` writes `__init__`, `__repr__` and `==` for you.
+```py
+from dataclasses import dataclass, field
+
+@dataclass
+class Item:
+    name: str
+    price: float
+    tags: list = field(default_factory=list)
+
+    def total(self, qty):
+        return self.price * qty
+
+pen = Item("pen", 1.5)
+print(pen, pen.total(4), pen == Item("pen", 1.5))
+```
+
+@@ py.property
+Q: How do I make a computed attribute or validate a value when it's set (@property)?
+aka: property, getter setter, computed attribute, validate attribute
+A: `@property` makes a method read like an attribute; `@name.setter` runs code when it's assigned.
+```py
+class Temperature:
+    def __init__(self, celsius):
+        self.celsius = celsius
+
+    @property
+    def fahrenheit(self):
+        return self.celsius * 9 / 5 + 32
+
+    @property
+    def celsius(self):
+        return self._c
+
+    @celsius.setter
+    def celsius(self, value):
+        if value < -273.15:
+            raise ValueError("below absolute zero")
+        self._c = value
+
+t = Temperature(20)
+print(t.fahrenheit)
+t.celsius = 100
+print(t.fahrenheit)
+```
+
+@@ py.static-classmethod
+Q: What are @staticmethod and @classmethod?
+aka: staticmethod, classmethod, alternative constructor, cls
+A: A `@staticmethod` is a plain function kept inside the class (no `self`). A `@classmethod` receives the class as `cls`, often used as another way to create objects.
+```py
+class Date:
+    def __init__(self, y, m, d):
+        self.y, self.m, self.d = y, m, d
+
+    @classmethod
+    def from_string(cls, text):
+        y, m, d = map(int, text.split("-"))
+        return cls(y, m, d)
+
+    @staticmethod
+    def is_leap(year):
+        return year % 4 == 0 and (year % 100 != 0 or year % 400 == 0)
+
+d = Date.from_string("2026-10-16")
+print(d.y, d.m, d.d, Date.is_leap(2024))
+```
+
+@@ py.objects-list
+Q: How do I keep many objects in a list and find one?
+aka: list of objects, find object by attribute, loop objects, sort objects
+A: Store them in a list; loop or use `next(...)` to find one; sort with `key=lambda o: o.attr`.
+```py
+class Student:
+    def __init__(self, name, grade):
+        self.name, self.grade = name, grade
+
+students = [Student("Ada", 91), Student("Bob", 78), Student("Cy", 85)]
+best = max(students, key=lambda s: s.grade)
+bob = next((s for s in students if s.name == "Bob"), None)
+print(best.name, bob.grade)
+for s in sorted(students, key=lambda s: s.name):
+    print(s.name, s.grade)
+```
+
+@@ py.dunder
+Q: How do I make my objects work with +, ==, <, len() or for loops?
+aka: operator overloading, magic methods, dunder methods, __eq__, __add__, __len__, __lt__, __iter__
+A: Define special methods: `__add__` (+), `__eq__` (==), `__lt__` (<, used by sorting), `__len__` (len), `__iter__` (for loops), `__getitem__` (`obj[i]`).
+```py
+class Vector:
+    def __init__(self, x, y):
+        self.x, self.y = x, y
+    def __add__(self, other):
+        return Vector(self.x + other.x, self.y + other.y)
+    def __eq__(self, other):
+        return (self.x, self.y) == (other.x, other.y)
+    def __repr__(self):
+        return f"Vector({self.x}, {self.y})"
+
+class Deck:
+    def __init__(self):
+        self.cards = [r + s for s in "♠♥" for r in "AKQ"]
+    def __len__(self):
+        return len(self.cards)
+    def __iter__(self):
+        return iter(self.cards)
+
+print(Vector(1, 2) + Vector(3, 4), Vector(1, 1) == Vector(1, 1))
+d = Deck()
+print(len(d), list(d))
+```
+
+@@ py.private
+Q: How do I make attributes private?
+aka: private variable, underscore, double underscore, name mangling, encapsulation
+A: Python has no real private. By convention `_name` means "internal, don't touch". `__name` (two underscores) gets renamed to avoid clashes in subclasses.
+```py
+class Account:
+    def __init__(self):
+        self._balance = 0          # internal by convention
+
+    def deposit(self, n):
+        self._balance += n
+
+    @property
+    def balance(self):
+        return self._balance
+
+a = Account()
+a.deposit(50)
+print(a.balance)
+```

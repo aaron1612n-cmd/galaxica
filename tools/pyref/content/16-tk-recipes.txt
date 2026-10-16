@@ -1,0 +1,578 @@
+# tk-recipes | Complete small apps | Whole working programs to copy, run and change | tkinter
+
+@@ tk.recipe-calculator
+Q: How do I make a calculator in tkinter?
+aka: calculator app, calculator gui, simple calculator, button calculator, calculator project
+A: A display Entry plus a grid of buttons. Each button appends its character; `=` evaluates the expression safely.
+see: tk.button-grid, tk.lambda-loop
+```py
+import tkinter as tk
+import ast, operator
+
+OPS = {ast.Add: operator.add, ast.Sub: operator.sub, ast.Mult: operator.mul, ast.Div: operator.truediv, ast.USub: operator.neg}
+
+def calc(expr):
+    """Evaluate + - * / and brackets without using eval()."""
+    def ev(node):
+        if isinstance(node, ast.Expression):
+            return ev(node.body)
+        if isinstance(node, ast.Constant) and isinstance(node.value, (int, float)):
+            return node.value
+        if isinstance(node, ast.BinOp) and type(node.op) in OPS:
+            return OPS[type(node.op)](ev(node.left), ev(node.right))
+        if isinstance(node, ast.UnaryOp) and type(node.op) in OPS:
+            return OPS[type(node.op)](ev(node.operand))
+        raise ValueError("bad input")
+    return ev(ast.parse(expr, mode="eval"))
+
+root = tk.Tk()
+root.title("Calculator")
+display = tk.Entry(root, font=("Helvetica", 22), justify="right", bd=8, relief="flat")
+display.grid(row=0, column=0, columnspan=4, sticky="ew", padx=6, pady=6)
+
+def press(ch):
+    if ch == "C":
+        display.delete(0, "end")
+    elif ch == "=":
+        try:
+            result = calc(display.get())
+            display.delete(0, "end")
+            display.insert(0, f"{result:g}")
+        except (ValueError, SyntaxError, ZeroDivisionError):
+            display.delete(0, "end")
+            display.insert(0, "Error")
+    else:
+        display.insert("end", ch)
+
+keys = ["7", "8", "9", "/",
+        "4", "5", "6", "*",
+        "1", "2", "3", "-",
+        "C", "0", "=", "+"]
+for i, k in enumerate(keys):
+    tk.Button(root, text=k, font=("Helvetica", 16), width=4, height=2,
+              command=lambda k=k: press(k)).grid(row=1 + i // 4, column=i % 4, padx=2, pady=2, sticky="nsew")
+root.bind("<Return>", lambda e: press("="))
+root.mainloop()
+```
+Using `eval()` on typed text would also work but can run any Python code; the small `calc` above only allows arithmetic.
+
+@@ tk.recipe-todo
+Q: How do I make a to-do list app (that saves)?
+aka: todo app, to do list, task list app, checklist app, todo project
+A: An Entry + Listbox; Add, Done and Delete buttons; save the list to a JSON file on every change.
+see: tk.listbox, tk.save-settings
+```py
+import tkinter as tk
+import json
+from pathlib import Path
+
+FILE = Path("todo.json")
+tasks = json.loads(FILE.read_text()) if FILE.exists() else []
+
+def save():
+    FILE.write_text(json.dumps(tasks))
+
+def refresh():
+    lb.delete(0, "end")
+    for t in tasks:
+        lb.insert("end", ("✓ " if t["done"] else "   ") + t["text"])
+
+def add(event=None):
+    text = entry.get().strip()
+    if text:
+        tasks.append({"text": text, "done": False})
+        entry.delete(0, "end")
+        save(); refresh()
+
+def toggle(event=None):
+    for i in lb.curselection():
+        tasks[i]["done"] = not tasks[i]["done"]
+    save(); refresh()
+
+def delete():
+    for i in reversed(lb.curselection()):
+        tasks.pop(i)
+    save(); refresh()
+
+root = tk.Tk()
+root.title("To-do")
+entry = tk.Entry(root, width=30)
+entry.grid(row=0, column=0, padx=6, pady=6)
+entry.bind("<Return>", add)
+tk.Button(root, text="Add", command=add).grid(row=0, column=1, padx=6)
+lb = tk.Listbox(root, width=40, height=10, font=("Helvetica", 12))
+lb.grid(row=1, column=0, columnspan=2, padx=6)
+lb.bind("<Double-Button-1>", toggle)
+tk.Button(root, text="Done / undo", command=toggle).grid(row=2, column=0, sticky="w", padx=6, pady=6)
+tk.Button(root, text="Delete", command=delete).grid(row=2, column=1, padx=6, pady=6)
+refresh()
+entry.focus()
+root.mainloop()
+```
+
+@@ tk.recipe-stopwatch
+Q: How do I make a stopwatch or countdown timer?
+aka: stopwatch, timer app, countdown timer, start stop reset, pomodoro timer, egg timer
+A: Store the start time with `time.perf_counter()`, and refresh the display with `after()`. Measuring real time (instead of counting ticks) keeps it accurate.
+see: tk.after, tk.after-cancel
+```py
+import tkinter as tk
+import time
+
+class Stopwatch(tk.Tk):
+    def __init__(self):
+        super().__init__()
+        self.title("Stopwatch")
+        self.elapsed, self.started, self.job = 0.0, None, None
+        self.display = tk.Label(self, text="00:00.0", font=("Courier", 40), padx=20)
+        self.display.pack()
+        bar = tk.Frame(self); bar.pack(pady=8)
+        tk.Button(bar, text="Start", width=8, command=self.start).pack(side="left", padx=4)
+        tk.Button(bar, text="Stop", width=8, command=self.stop).pack(side="left", padx=4)
+        tk.Button(bar, text="Reset", width=8, command=self.reset).pack(side="left", padx=4)
+
+    def total(self):
+        return self.elapsed + (time.perf_counter() - self.started if self.started else 0)
+
+    def show(self):
+        t = self.total()
+        self.display.config(text=f"{int(t // 60):02d}:{t % 60:04.1f}")
+        self.job = self.after(50, self.show)
+
+    def start(self):
+        if self.started is None:
+            self.started = time.perf_counter()
+            self.show()
+
+    def stop(self):
+        if self.started is not None:
+            self.elapsed = self.total()
+            self.started = None
+            self.after_cancel(self.job)
+
+    def reset(self):
+        self.stop()
+        self.elapsed = 0.0
+        self.display.config(text="00:00.0")
+
+Stopwatch().mainloop()
+```
+Countdown version: show `limit - total()` and stop when it reaches 0.
+
+@@ tk.recipe-login
+Q: How do I make a login form?
+aka: login screen, login page, username password form, sign in gui, login system tkinter
+A: Two Entries (password with `show="*"`), a button that checks them, and a message label. Never store plain passwords; store a salted hash.
+see: tk.entry-password, py.hash-password
+```py
+import tkinter as tk
+import hashlib, os
+
+def hash_pw(password, salt):
+    return hashlib.pbkdf2_hmac("sha256", password.encode(), salt, 100_000).hex()
+
+SALT = os.urandom(16)
+USERS = {"ada": hash_pw("secret123", SALT)}      # normally loaded from a file/database
+
+root = tk.Tk()
+root.title("Log in")
+frm = tk.Frame(root, padx=20, pady=20)
+frm.pack()
+tk.Label(frm, text="Username").grid(row=0, column=0, sticky="w")
+user = tk.Entry(frm); user.grid(row=0, column=1, pady=4)
+tk.Label(frm, text="Password").grid(row=1, column=0, sticky="w")
+pw = tk.Entry(frm, show="*"); pw.grid(row=1, column=1, pady=4)
+msg = tk.Label(frm, text="", fg="red"); msg.grid(row=3, column=0, columnspan=2)
+
+def login(event=None):
+    name = user.get().strip().lower()
+    if name in USERS and USERS[name] == hash_pw(pw.get(), SALT):
+        frm.destroy()
+        tk.Label(root, text=f"Welcome, {name}!", font=("Helvetica", 18), padx=40, pady=40).pack()
+    else:
+        msg.config(text="Wrong username or password")
+        pw.delete(0, "end")
+
+tk.Button(frm, text="Log in", command=login).grid(row=2, column=1, sticky="e", pady=6)
+root.bind("<Return>", login)
+user.focus()
+root.mainloop()
+```
+
+@@ tk.recipe-quiz
+Q: How do I make a quiz app?
+aka: quiz game, multiple choice quiz, quiz gui, questions and answers app, trivia
+A: Keep questions in a list of dicts, show one at a time with Radiobuttons, check the answer, then move on and show the score at the end.
+see: tk.radiobutton
+```py
+import tkinter as tk
+
+QUESTIONS = [
+    {"q": "What does len('cat') return?", "options": ["2", "3", "'cat'"], "answer": "3"},
+    {"q": "Which is a tkinter widget?", "options": ["Label", "Printer", "Window()"], "answer": "Label"},
+    {"q": "What starts the tkinter event loop?", "options": ["run()", "mainloop()", "start()"], "answer": "mainloop()"},
+]
+
+class Quiz(tk.Tk):
+    def __init__(self):
+        super().__init__()
+        self.title("Quiz")
+        self.i, self.score = 0, 0
+        self.choice = tk.StringVar()
+        self.q = tk.Label(self, font=("Helvetica", 14), wraplength=320, justify="left")
+        self.q.pack(padx=20, pady=(20, 10), anchor="w")
+        self.opts = [tk.Radiobutton(self, variable=self.choice, font=("Helvetica", 12)) for _ in range(3)]
+        for r in self.opts:
+            r.pack(anchor="w", padx=30)
+        self.feedback = tk.Label(self, text="")
+        self.feedback.pack(pady=6)
+        self.btn = tk.Button(self, text="Answer", command=self.answer)
+        self.btn.pack(pady=(0, 20))
+        self.show()
+
+    def show(self):
+        item = QUESTIONS[self.i]
+        self.q.config(text=f"{self.i + 1}. {item['q']}")
+        self.choice.set(None)
+        for r, opt in zip(self.opts, item["options"]):
+            r.config(text=opt, value=opt)
+        self.feedback.config(text="")
+
+    def answer(self):
+        if not self.choice.get() or self.choice.get() == "None":
+            return
+        right = QUESTIONS[self.i]["answer"]
+        if self.choice.get() == right:
+            self.score += 1
+            self.feedback.config(text="Correct", fg="green")
+        else:
+            self.feedback.config(text=f"No, it was {right}", fg="red")
+        self.btn.config(text="Next", command=self.next)
+
+    def next(self):
+        self.i += 1
+        if self.i == len(QUESTIONS):
+            for w in self.winfo_children():
+                w.destroy()
+            tk.Label(self, text=f"Score: {self.score}/{len(QUESTIONS)}", font=("Helvetica", 22), padx=40, pady=40).pack()
+            return
+        self.btn.config(text="Answer", command=self.answer)
+        self.show()
+
+Quiz().mainloop()
+```
+
+@@ tk.recipe-tictactoe
+Q: How do I make tic-tac-toe (noughts and crosses)?
+aka: tic tac toe, noughts and crosses, x and o game, 3x3 game, board game tkinter
+A: A 3x3 grid of buttons, a list of the 8 winning lines, and a turn variable.
+see: tk.button-grid
+```py
+import tkinter as tk
+
+LINES = [(0, 1, 2), (3, 4, 5), (6, 7, 8), (0, 3, 6), (1, 4, 7), (2, 5, 8), (0, 4, 8), (2, 4, 6)]
+root = tk.Tk()
+root.title("Tic-tac-toe")
+board = [""] * 9
+turn = "X"
+status = tk.Label(root, text="X to play", font=("Helvetica", 14))
+status.grid(row=3, column=0, columnspan=3, pady=6)
+cells = []
+
+def winner():
+    for a, b, c in LINES:
+        if board[a] and board[a] == board[b] == board[c]:
+            return board[a]
+    return "draw" if all(board) else None
+
+def play(i):
+    global turn
+    if board[i] or winner():
+        return
+    board[i] = turn
+    cells[i].config(text=turn, fg="#c23b22" if turn == "X" else "#3f5a7a")
+    w = winner()
+    if w:
+        status.config(text="Draw!" if w == "draw" else f"{w} wins!")
+    else:
+        turn = "O" if turn == "X" else "X"
+        status.config(text=f"{turn} to play")
+
+def reset():
+    global turn
+    turn = "X"
+    for i in range(9):
+        board[i] = ""
+        cells[i].config(text="")
+    status.config(text="X to play")
+
+for i in range(9):
+    b = tk.Button(root, text="", font=("Helvetica", 28, "bold"), width=3, height=1, command=lambda i=i: play(i))
+    b.grid(row=i // 3, column=i % 3, padx=2, pady=2)
+    cells.append(b)
+tk.Button(root, text="New game", command=reset).grid(row=4, column=0, columnspan=3, pady=(0, 8))
+root.mainloop()
+```
+
+@@ tk.recipe-snake
+Q: How do I make Snake in tkinter?
+aka: snake game, snake tkinter, canvas game, arcade game tkinter, simple game
+A: A Canvas grid, a list of segment positions, an `after()` loop that adds a new head and drops the tail (unless food was eaten), and arrow keys to turn.
+see: tk.game-loop, tk.bind-keys
+```py
+import tkinter as tk
+import random
+
+CELL, COLS, ROWS, SPEED = 20, 20, 15, 120
+root = tk.Tk()
+root.title("Snake")
+c = tk.Canvas(root, width=CELL * COLS, height=CELL * ROWS, bg="#111", highlightthickness=0)
+c.pack()
+
+def new_game():
+    global snake, direction, food, score, alive
+    snake = [(5, 7), (4, 7), (3, 7)]
+    direction, score, alive = (1, 0), 0, True
+    food = place_food()
+    step()
+
+def place_food():
+    while True:
+        p = (random.randrange(COLS), random.randrange(ROWS))
+        if p not in snake:
+            return p
+
+def turn(dx, dy):
+    global direction
+    if (dx, dy) != (-direction[0], -direction[1]):      # no reversing into yourself
+        direction = (dx, dy)
+
+def draw():
+    c.delete("all")
+    fx, fy = food
+    c.create_oval(fx * CELL + 3, fy * CELL + 3, (fx + 1) * CELL - 3, (fy + 1) * CELL - 3, fill="#c23b22", outline="")
+    for x, y in snake:
+        c.create_rectangle(x * CELL + 1, y * CELL + 1, (x + 1) * CELL - 1, (y + 1) * CELL - 1, fill="#ffb000", outline="")
+    c.create_text(6, 4, text=f"Score {score}", anchor="nw", fill="white")
+    if not alive:
+        c.create_text(CELL * COLS / 2, CELL * ROWS / 2, text="Game over: press Space", fill="white", font=("Helvetica", 16))
+
+def step():
+    global food, score, alive
+    hx, hy = snake[0]
+    head = (hx + direction[0], hy + direction[1])
+    if head in snake or not (0 <= head[0] < COLS and 0 <= head[1] < ROWS):
+        alive = False
+        draw()
+        return
+    snake.insert(0, head)
+    if head == food:
+        score += 1
+        food = place_food()
+    else:
+        snake.pop()
+    draw()
+    root.after(SPEED, step)
+
+for key, d in {"Up": (0, -1), "Down": (0, 1), "Left": (-1, 0), "Right": (1, 0)}.items():
+    root.bind(f"<{key}>", lambda e, d=d: turn(*d))
+root.bind("<space>", lambda e: None if alive else new_game())
+new_game()
+root.mainloop()
+```
+
+@@ tk.recipe-notepad
+Q: How do I make a simple text editor (Notepad)?
+aka: text editor, notepad clone, open save file editor, editor project
+A: A Text widget with scrollbar, a File menu with New/Open/Save/Save As, keyboard shortcuts, and a title showing the file name.
+see: tk.filedialog-open, tk.filedialog-save, tk.menubar
+```py
+import tkinter as tk
+from tkinter import filedialog, messagebox, scrolledtext
+
+class Editor(tk.Tk):
+    def __init__(self):
+        super().__init__()
+        self.path = None
+        self.geometry("600x400")
+        self.text = scrolledtext.ScrolledText(self, wrap="word", undo=True, font=("Courier", 12))
+        self.text.pack(fill="both", expand=True)
+        bar = tk.Menu(self)
+        fm = tk.Menu(bar, tearoff=False)
+        fm.add_command(label="New", accelerator="Ctrl+N", command=self.new)
+        fm.add_command(label="Open...", accelerator="Ctrl+O", command=self.open)
+        fm.add_command(label="Save", accelerator="Ctrl+S", command=self.save)
+        fm.add_command(label="Save as...", command=self.save_as)
+        fm.add_separator()
+        fm.add_command(label="Exit", command=self.quit_app)
+        bar.add_cascade(label="File", menu=fm)
+        self.config(menu=bar)
+        self.bind("<Control-n>", lambda e: self.new())
+        self.bind("<Control-o>", lambda e: self.open())
+        self.bind("<Control-s>", lambda e: self.save())
+        self.protocol("WM_DELETE_WINDOW", self.quit_app)
+        self.update_title()
+
+    def update_title(self):
+        self.title((self.path or "Untitled") + " - Editor")
+
+    def new(self):
+        self.text.delete("1.0", "end"); self.path = None; self.update_title()
+
+    def open(self):
+        p = filedialog.askopenfilename(filetypes=[("Text", "*.txt"), ("All", "*.*")])
+        if p:
+            with open(p, encoding="utf-8") as f:
+                self.text.delete("1.0", "end"); self.text.insert("1.0", f.read())
+            self.path = p; self.update_title(); self.text.edit_modified(False)
+
+    def save(self):
+        if not self.path:
+            return self.save_as()
+        with open(self.path, "w", encoding="utf-8") as f:
+            f.write(self.text.get("1.0", "end-1c"))
+        self.text.edit_modified(False)
+        return True
+
+    def save_as(self):
+        p = filedialog.asksaveasfilename(defaultextension=".txt")
+        if p:
+            self.path = p; self.update_title()
+            return self.save()
+
+    def quit_app(self):
+        if self.text.edit_modified():
+            ans = messagebox.askyesnocancel("Save?", "Save changes first?")
+            if ans is None:
+                return
+            if ans and not self.save():
+                return
+        self.destroy()
+
+Editor().mainloop()
+```
+
+@@ tk.recipe-converter
+Q: How do I make a unit converter (temperature, distance)?
+aka: unit converter, temperature converter, celsius fahrenheit converter, km miles converter, currency converter gui
+A: An Entry, a Combobox of conversions, and a dict of formulas; update the result live with `trace_add`.
+see: tk.trace, tk.combobox
+```py
+import tkinter as tk
+from tkinter import ttk
+
+CONVERSIONS = {
+    "°C → °F": lambda x: x * 9 / 5 + 32,
+    "°F → °C": lambda x: (x - 32) * 5 / 9,
+    "km → miles": lambda x: x * 0.621371,
+    "miles → km": lambda x: x / 0.621371,
+    "kg → lb": lambda x: x * 2.20462,
+}
+root = tk.Tk()
+root.title("Converter")
+value = tk.StringVar(value="100")
+kind = ttk.Combobox(root, values=list(CONVERSIONS), state="readonly", width=14)
+kind.current(0)
+result = tk.Label(root, font=("Helvetica", 18), width=14)
+tk.Entry(root, textvariable=value, width=10, font=("Helvetica", 14)).grid(row=0, column=0, padx=8, pady=10)
+kind.grid(row=0, column=1, padx=8)
+result.grid(row=1, column=0, columnspan=2, pady=(0, 10))
+
+def update(*args):
+    try:
+        result.config(text=f"{CONVERSIONS[kind.get()](float(value.get())):.2f}")
+    except ValueError:
+        result.config(text="-")
+
+value.trace_add("write", update)
+kind.bind("<<ComboboxSelected>>", update)
+update()
+root.mainloop()
+```
+
+@@ tk.recipe-guess
+Q: How do I make a number guessing game with a GUI?
+aka: guess the number, guessing game gui, higher lower game, random number game tkinter
+A: Pick `random.randint`, read guesses from an Entry, say higher/lower, count tries.
+```py
+import tkinter as tk
+import random
+
+root = tk.Tk()
+root.title("Guess")
+state = {"secret": random.randint(1, 100), "tries": 0}
+tk.Label(root, text="I'm thinking of a number from 1 to 100").pack(padx=20, pady=(16, 6))
+guess = tk.Entry(root, width=6, font=("Helvetica", 16), justify="center")
+guess.pack()
+msg = tk.Label(root, text="", font=("Helvetica", 13))
+msg.pack(pady=6)
+
+def check(event=None):
+    try:
+        g = int(guess.get())
+    except ValueError:
+        msg.config(text="Type a whole number")
+        return
+    state["tries"] += 1
+    guess.delete(0, "end")
+    if g < state["secret"]:
+        msg.config(text=f"{g}: higher")
+    elif g > state["secret"]:
+        msg.config(text=f"{g}: lower")
+    else:
+        msg.config(text=f"Yes! {g} in {state['tries']} tries. New number chosen.")
+        state["secret"], state["tries"] = random.randint(1, 100), 0
+
+tk.Button(root, text="Guess", command=check).pack(pady=(0, 16))
+root.bind("<Return>", check)
+guess.focus()
+root.mainloop()
+```
+
+@@ tk.recipe-image-viewer
+Q: How do I make an image viewer (open and browse images in a folder)?
+aka: image viewer, photo viewer, picture browser, next previous image
+A: Pick a folder, list its image files, and show one at a time scaled to fit with Pillow; Left/Right keys move between them.
+see: tk.pillow, tk.filedialog-folder
+```py
+import tkinter as tk
+from tkinter import filedialog
+from pathlib import Path
+from PIL import Image, ImageTk
+
+EXTS = {".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp"}
+root = tk.Tk()
+root.geometry("520x420")
+view = tk.Label(root, bg="black", fg="white", text="Open a folder")
+view.pack(fill="both", expand=True)
+files, index = [], 0
+
+def show():
+    if not files:
+        return
+    img = Image.open(files[index])
+    img.thumbnail((max(view.winfo_width(), 50), max(view.winfo_height(), 50)))
+    view.photo = ImageTk.PhotoImage(img)
+    view.config(image=view.photo, text="")
+    root.title(f"{files[index].name}  ({index + 1}/{len(files)})")
+
+def open_folder(folder=None):
+    global files, index
+    folder = folder or filedialog.askdirectory()
+    if folder:
+        files = sorted(p for p in Path(folder).iterdir() if p.suffix.lower() in EXTS)
+        index = 0
+        show()
+
+def move(step):
+    global index
+    if files:
+        index = (index + step) % len(files)
+        show()
+
+tk.Button(root, text="Open folder", command=open_folder).pack(side="left")
+root.bind("<Left>", lambda e: move(-1))
+root.bind("<Right>", lambda e: move(1))
+root.after(100, lambda: open_folder("."))     # start with the current folder
+root.mainloop()
+```

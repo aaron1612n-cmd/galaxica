@@ -1,0 +1,244 @@
+# tk-time | Timers, loops and threads | after(), animation, clocks, freezing, background work | tkinter
+
+@@ tk.after
+Q: How do I run something after a delay, or repeat it every second?
+aka: after, timer, delay, schedule, repeat every second, set interval, set timeout, loop in tkinter, run function every x seconds
+A: `root.after(ms, function)` runs the function once after `ms` milliseconds. To repeat, the function schedules itself again at its end.
+see: tk.after-not-sleep, tk.after-cancel, tk.clock
+```py
+import tkinter as tk
+
+root = tk.Tk()
+count = tk.IntVar(value=0)
+tk.Label(root, textvariable=count, font=("Arial", 40), width=4).pack(padx=30, pady=20)
+
+def tick():
+    count.set(count.get() + 1)
+    root.after(1000, tick)        # call me again in 1 second
+
+root.after(1000, tick)            # first call
+root.mainloop()
+```
+Pass arguments after the function: `root.after(500, move, 10, 0)` calls `move(10, 0)`.
+
+@@ tk.after-not-sleep
+Q: Why does time.sleep() freeze my window ("Not Responding")?
+aka: time.sleep tkinter, window frozen, not responding, gui freezes, while loop freezes tkinter, sleep in tkinter, label doesn't update until end
+A: `sleep` (and long loops) block `mainloop`, so the window can't redraw or respond. Use [[tk.after|after()]] for delays and repeating steps, or a [[tk.thread|thread]] for long work.
+see: tk.after, tk.thread, tk.update
+```py bad
+def countdown():
+    for i in range(5, 0, -1):
+        label.config(text=i)
+        time.sleep(1)          # window freezes, shows only the end
+```
+```py
+import tkinter as tk
+
+root = tk.Tk()
+label = tk.Label(root, font=("Arial", 40), width=4)
+label.pack(padx=30, pady=20)
+
+def countdown(i=5):
+    label.config(text=str(i) if i else "Go!")
+    if i > 0:
+        root.after(1000, countdown, i - 1)
+
+countdown()
+root.mainloop()
+```
+
+@@ tk.after-cancel
+Q: How do I stop an after() loop (cancel a timer)?
+aka: after_cancel, stop timer, stop loop, cancel after, pause timer, stop animation
+A: `after()` returns an id. Keep it and call `root.after_cancel(id)`. Or use a flag the loop checks.
+see: tk.recipe-stopwatch
+```py
+import tkinter as tk
+
+root = tk.Tk()
+n = tk.IntVar(value=0)
+job = None
+tk.Label(root, textvariable=n, font=("Arial", 30)).pack(padx=40, pady=10)
+
+def tick():
+    global job
+    n.set(n.get() + 1)
+    job = root.after(200, tick)
+
+def start():
+    if job is None:
+        tick()
+
+def stop():
+    global job
+    if job is not None:
+        root.after_cancel(job)
+        job = None
+
+tk.Button(root, text="Start", command=start).pack(side="left", padx=10, pady=10)
+tk.Button(root, text="Stop", command=stop).pack(side="left", pady=10)
+root.mainloop()
+```
+Pressing Start twice without the `if job is None` check starts two loops that run at double speed.
+
+@@ tk.clock
+Q: How do I show a live clock (current time)?
+aka: digital clock, show time, current time label, live time, time display, date and time label
+A: Update a label with `time.strftime("%H:%M:%S")` every second using `after`.
+see: py.datetime-format
+```py
+import tkinter as tk
+import time
+
+root = tk.Tk()
+root.title("Clock")
+clock = tk.Label(root, font=("Courier", 48), bg="black", fg="#ffb000", padx=20)
+clock.pack()
+
+def update():
+    clock.config(text=time.strftime("%H:%M:%S"))
+    root.after(1000, update)
+
+update()
+root.mainloop()
+```
+Use `%I:%M %p` for 12-hour time with AM/PM, `%A %d %B %Y` for a date like "Monday 05 June 2026".
+
+@@ tk.game-loop
+Q: How do I make a game loop / animation in tkinter?
+aka: game loop, animation loop, move object continuously, fps, frame rate, animate canvas, bouncing ball
+A: One function that updates positions, then calls `root.after(16, itself)` (about 60 frames/second). Move canvas items with `move()` or `coords()`.
+see: tk.canvas-move, tk.key-held, tk.recipe-snake
+```py
+import tkinter as tk
+
+W, H = 400, 260
+root = tk.Tk()
+c = tk.Canvas(root, width=W, height=H, bg="#111")
+c.pack()
+ball = c.create_oval(0, 0, 20, 20, fill="#ffb000")
+vx, vy = 4, 3
+
+def frame():
+    global vx, vy
+    c.move(ball, vx, vy)
+    x1, y1, x2, y2 = c.coords(ball)
+    if x1 <= 0 or x2 >= W:
+        vx = -vx
+    if y1 <= 0 or y2 >= H:
+        vy = -vy
+    root.after(16, frame)
+
+frame()
+root.mainloop()
+```
+
+@@ tk.update
+Q: What do update() and update_idletasks() do? Should I use them?
+aka: update, update_idletasks, refresh window, force redraw, root.update loop
+A: `update_idletasks()` redraws pending changes now (safe). `update()` also handles clicks and keys, which can re-enter your code in confusing ways. Prefer `after()` over loops with `update()`.
+see: tk.after-not-sleep
+```py
+import tkinter as tk
+
+root = tk.Tk()
+lab = tk.Label(root, text="", width=30)
+lab.pack(padx=10, pady=20)
+
+def slow_work():
+    for step in range(1, 6):
+        lab.config(text=f"Step {step} of 5")
+        lab.update_idletasks()        # show the text now
+        sum(range(300000))            # pretend work
+
+tk.Button(root, text="Run", command=slow_work).pack(pady=(0, 10))
+root.after(100, slow_work)
+root.mainloop()
+```
+The window still can't be moved or clicked during the loop. For real work use a [[tk.thread|thread]].
+
+@@ tk.thread
+Q: How do I run a long task (download, calculation) without freezing the window?
+aka: threading tkinter, background task, long running task, freeze during download, worker thread, non blocking, progress while working
+A: Run the work in a `threading.Thread`. **Don't touch widgets from that thread.** Send results back through a `queue.Queue` and read it with `after()` in the main thread.
+see: tk.err.main-thread, tk.progressbar
+```py
+import tkinter as tk
+import threading, queue, time
+
+root = tk.Tk()
+status = tk.Label(root, text="Idle", width=30)
+status.pack(padx=10, pady=10)
+q = queue.Queue()
+
+def work():                       # runs in the background thread
+    for i in range(1, 4):
+        time.sleep(0.05)          # pretend slow work
+        q.put(f"Step {i} done")
+    q.put("DONE")
+
+def poll():                       # runs in the main thread
+    try:
+        while True:
+            msg = q.get_nowait()
+            status.config(text=msg)
+            if msg == "DONE":
+                btn.config(state="normal")
+                return
+    except queue.Empty:
+        pass
+    root.after(50, poll)
+
+def start():
+    btn.config(state="disabled")
+    threading.Thread(target=work, daemon=True).start()
+    poll()
+
+btn = tk.Button(root, text="Start", command=start)
+btn.pack(pady=(0, 10))
+start()
+root.mainloop()
+```
+`daemon=True` lets the program quit even if the thread is still running.
+
+@@ tk.err.main-thread
+Q: RuntimeError: main thread is not in main loop
+aka: main thread is not in main loop, tkinter thread error, Tcl_AsyncDelete, calling tkinter from thread, update gui from thread
+err: main thread is not in main loop|Tcl_AsyncDelete: async handler deleted by the wrong thread|Calling Tcl from different apartment
+A: A background thread touched a widget (or tkinter object) directly. Only the main thread may use tkinter. Pass data back with a queue and `after()`, as in [[tk.thread]].
+see: tk.thread
+A quick alternative for small updates is `root.after(0, func)` from the thread: it schedules `func` on the main loop. This usually works in practice, but a queue is the safe way.
+
+@@ tk.after-idle
+Q: How do I run code right after the window has appeared?
+aka: after_idle, run after window shows, on startup, after window loaded, after mainloop starts
+A: `root.after(0, func)` or `root.after_idle(func)` runs once `mainloop()` has started and the window is drawn.
+```py
+import tkinter as tk
+
+root = tk.Tk()
+lab = tk.Label(root, text="loading...", padx=40, pady=30)
+lab.pack()
+root.after(0, lambda: lab.config(text=f"Window is {root.winfo_width()} px wide"))
+root.mainloop()
+```
+
+@@ tk.blink
+Q: How do I make text blink or flash?
+aka: blink label, flashing text, flash color, alternate colors
+A: Toggle a colour with `after()`.
+```py
+import tkinter as tk
+
+root = tk.Tk()
+lab = tk.Label(root, text="ALERT", font=("Arial", 24, "bold"), fg="red", padx=30, pady=20)
+lab.pack()
+
+def blink(on=True):
+    lab.config(fg="red" if on else root["bg"])
+    root.after(400, blink, not on)
+
+blink()
+root.mainloop()
+```

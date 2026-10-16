@@ -1,0 +1,278 @@
+# py-lists | Lists and tuples | Adding, removing, sorting, searching, copying, comprehensions | python
+
+@@ py.list-basics
+Q: How do I make a list and get items from it?
+aka: list, array, create list, list index, access list item, first item, last item, list length
+A: `items = [1, 2, 3]`. `items[0]` is the first, `items[-1]` the last, `len(items)` the count, `items[1:3]` a slice.
+see: py.list-add, py.list-remove
+```py
+fruits = ["apple", "banana", "cherry"]
+print(fruits[0], fruits[-1], len(fruits))
+fruits[1] = "blueberry"          # lists can be changed
+print(fruits)
+print(fruits[:2])
+```
+
+@@ py.list-add
+Q: How do I add items to a list (append, insert, extend)?
+aka: append, add to list, insert, extend, add item, push, join two lists, concatenate lists
+A: `append(x)` adds one item at the end; `insert(i, x)` at a position; `extend(other)` (or `+=`) adds every item from another list.
+```py
+nums = [1, 2]
+nums.append(3)
+nums.insert(0, 0)
+nums.extend([4, 5])
+print(nums)
+both = [1, 2] + [3, 4]
+print(both)
+```
+`append([4, 5])` adds **one** item that is itself a list: `[..., [4, 5]]`.
+
+@@ py.list-remove
+Q: How do I remove items from a list (remove, pop, del, clear)?
+aka: remove from list, delete item, pop, del, clear list, remove by index, remove by value, remove all occurrences
+A: `remove(x)` removes the first matching value; `pop(i)` removes by position and returns it (`pop()` = last); `del items[i]` deletes; `clear()` empties it.
+see: py.list-remove-loop
+```py
+items = ["a", "b", "c", "b", "d"]
+items.remove("b")          # first "b"
+print(items)
+last = items.pop()
+print(last, items)
+del items[0]
+print(items)
+items = [x for x in items if x != "b"]     # remove all "b"
+print(items)
+```
+`remove` raises `ValueError` if the value isn't there; check with `if x in items:` first.
+
+@@ py.list-remove-loop
+Q: Why does removing items while looping over a list skip some?
+aka: remove while iterating, modify list during loop, list skips items, delete in for loop
+A: Removing shifts the remaining items left, so the loop jumps over the next one. Build a new list instead, or loop over a copy.
+```py bad
+nums = [1, 2, 2, 3]
+for n in nums:
+    if n == 2:
+        nums.remove(n)     # leaves [1, 2, 3]
+```
+```py
+nums = [1, 2, 2, 3]
+nums = [n for n in nums if n != 2]
+print(nums)
+nums = [1, 2, 2, 3]
+for n in nums[:]:          # loop over a copy
+    if n == 2:
+        nums.remove(n)
+print(nums)
+```
+
+@@ py.list-find
+Q: How do I check if an item is in a list, or find its position?
+aka: in list, list contains, index of item, find in list, list search, position in list
+A: `x in items` (True/False); `items.index(x)` gives the first position (raises `ValueError` if missing); `items.count(x)` counts.
+```py
+names = ["ann", "bob", "cat", "bob"]
+print("bob" in names, names.index("bob"), names.count("bob"))
+print([i for i, n in enumerate(names) if n == "bob"])      # all positions
+```
+
+@@ py.sort
+Q: How do I sort a list (and what's the difference between sort and sorted)?
+aka: sort list, sorted, reverse sort, descending, sort by key, sort by second item, sort by length, sort list of dicts
+A: `items.sort()` sorts in place and returns `None`; `sorted(items)` returns a new list. Add `reverse=True` for descending, `key=` to sort by something else.
+see: py.lambda
+```py
+nums = [5, 2, 9, 1]
+print(sorted(nums), sorted(nums, reverse=True))
+nums.sort()
+print(nums)
+words = ["banana", "Fig", "apple"]
+print(sorted(words, key=str.lower))
+print(sorted(words, key=len))
+people = [("Ada", 36), ("Bob", 25), ("Cy", 41)]
+print(sorted(people, key=lambda p: p[1]))
+scores = [{"name": "A", "pts": 3}, {"name": "B", "pts": 9}]
+print(max(scores, key=lambda d: d["pts"])["name"])
+```
+`nums = nums.sort()` makes `nums` None. Use one or the other.
+
+@@ py.list-reverse
+Q: How do I reverse a list?
+aka: reverse list, backwards list, reversed
+A: `items.reverse()` (in place), `items[::-1]` or `list(reversed(items))` (new list).
+```py
+a = [1, 2, 3]
+print(a[::-1])
+a.reverse()
+print(a)
+for x in reversed([1, 2, 3]):
+    print(x, end=" ")
+```
+
+@@ py.list-math
+Q: How do I get the sum, average, max or min of a list?
+aka: sum of list, average, mean, max, min, largest number, smallest, total
+A: `sum(nums)`, `max(nums)`, `min(nums)`, average = `sum(nums) / len(nums)` (or `statistics.mean`).
+```py
+import statistics
+nums = [4, 8, 15, 16, 23, 42]
+print(sum(nums), max(nums), min(nums))
+print(sum(nums) / len(nums), statistics.mean(nums), statistics.median(nums))
+```
+Empty lists: `max([])` raises `ValueError`; use `max(nums, default=0)`.
+
+@@ py.enumerate
+Q: How do I loop over a list and also get the index?
+aka: enumerate, index in for loop, loop with counter, for i in range(len())
+A: `for i, item in enumerate(items):` gives position and item together. `enumerate(items, start=1)` counts from 1.
+```py
+fruits = ["apple", "banana", "cherry"]
+for i, f in enumerate(fruits, start=1):
+    print(f"{i}. {f}")
+```
+
+@@ py.zip
+Q: How do I loop over two lists at the same time?
+aka: zip, loop two lists, parallel lists, combine lists into pairs, lists to dict
+A: `for a, b in zip(list1, list2):`. It stops at the shorter list. `dict(zip(keys, values))` builds a dict.
+```py
+names = ["Ada", "Bob"]
+scores = [90, 72]
+for n, s in zip(names, scores):
+    print(n, s)
+print(dict(zip(names, scores)))
+```
+
+@@ py.list-comp
+Q: What is a list comprehension?
+aka: list comprehension, one line for loop, create list in one line, filter list, map list, comprehension with if
+A: `[expression for item in iterable if condition]` builds a list in one line.
+see: py.map-filter
+```py
+nums = range(1, 11)
+squares = [n * n for n in nums]
+evens = [n for n in nums if n % 2 == 0]
+labels = ["even" if n % 2 == 0 else "odd" for n in range(4)]
+print(squares, evens, labels)
+words = ["Hi", "there"]
+print([w.upper() for w in words])
+```
+
+@@ py.copy-list
+Q: Why did changing one list change the other? How do I copy a list?
+aka: copy list, list aliasing, list changes both, shallow copy, deep copy, b = a list
+A: `b = a` doesn't copy; both names point to the same list. Copy with `a.copy()`, `a[:]` or `list(a)`; for lists inside lists use `copy.deepcopy(a)`.
+```py
+import copy
+a = [1, 2, 3]
+b = a
+b.append(4)
+print(a)                  # [1, 2, 3, 4]: same list
+c = a.copy()
+c.append(5)
+print(a, c)
+grid = [[0, 0], [0, 0]]
+deep = copy.deepcopy(grid)
+deep[0][0] = 9
+print(grid, deep)
+```
+
+@@ py.2d-list
+Q: How do I make a 2D list (grid), and why does changing one row change them all?
+aka: 2d list, list of lists, grid, matrix, nested list, [[0]*3]*3 bug, board
+A: Build each row separately with a comprehension: `[[0] * cols for _ in range(rows)]`. `[[0] * 3] * 3` repeats the **same** row 3 times.
+```py bad
+grid = [[0] * 3] * 3
+grid[0][0] = 1            # [[1,0,0],[1,0,0],[1,0,0]]
+```
+```py
+rows, cols = 3, 4
+grid = [[0] * cols for _ in range(rows)]
+grid[0][0] = 1
+for row in grid:
+    print(row)
+print(grid[0][0])          # row 0, column 0
+```
+
+@@ py.dedupe
+Q: How do I remove duplicates from a list?
+aka: remove duplicates, unique values, distinct, dedupe list, keep order unique
+A: `list(set(items))` (order is lost) or `list(dict.fromkeys(items))` (keeps the first-seen order).
+```py
+items = [3, 1, 3, 2, 1]
+print(list(set(items)))
+print(list(dict.fromkeys(items)))
+```
+
+@@ py.flatten
+Q: How do I flatten a list of lists?
+aka: flatten list, nested list to flat, list of lists to list
+A: `[x for row in nested for x in row]`, or `itertools.chain.from_iterable(nested)`.
+```py
+import itertools
+nested = [[1, 2], [3], [4, 5]]
+print([x for row in nested for x in row])
+print(list(itertools.chain.from_iterable(nested)))
+```
+
+@@ py.random-choice
+Q: How do I pick a random item, shuffle a list, or pick several?
+aka: random choice, shuffle, random sample, random item from list, random element
+A: `random.choice(items)`, `random.shuffle(items)` (in place), `random.sample(items, k)` (k different items), `random.choices(items, k=5)` (with repeats).
+see: py.random
+```py
+import random
+colours = ["red", "green", "blue", "yellow"]
+print(random.choice(colours))
+print(random.sample(colours, 2))
+random.shuffle(colours)
+print(colours)
+print(random.choices(["H", "T"], k=5))
+```
+
+@@ py.tuple
+Q: What's a tuple and how is it different from a list?
+aka: tuple, immutable list, tuple vs list, one item tuple, unpack tuple
+A: A tuple `(1, 2, 3)` is like a list that can't be changed. Use it for fixed groups (coordinates, RGB) and as dict keys. A one-item tuple needs a comma: `(5,)`.
+```py
+point = (3, 4)
+x, y = point
+print(x, y)
+single = (5,)
+print(type(single), type((5)))
+locations = {(0, 0): "home"}
+print(locations[(0, 0)])
+```
+
+@@ py.list-chunks
+Q: How do I split a list into chunks (groups of n)?
+aka: chunks, split list into groups, batch list, groups of 3
+A: Slice in steps: `[items[i:i + n] for i in range(0, len(items), n)]`.
+```py
+items = list(range(10))
+n = 3
+print([items[i:i + n] for i in range(0, len(items), n)])
+```
+
+@@ py.list-any-all
+Q: How do I check if any or all items match a condition?
+aka: any, all, check all items, every item, at least one
+A: `any(cond for x in items)` / `all(cond for x in items)`.
+```py
+scores = [55, 72, 91]
+print(any(s > 90 for s in scores), all(s >= 50 for s in scores))
+```
+
+@@ py.list-index-error
+Q: How do I safely get an item when the list might be too short?
+aka: safe index, default if index missing, list get default
+A: Check the length first, or use a slice (slices never raise errors).
+see: py.err.indexerror
+```py
+items = [1, 2]
+i = 5
+value = items[i] if i < len(items) else None
+print(value)
+print(items[5:6])      # [] instead of an error
+```
