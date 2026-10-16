@@ -1,0 +1,346 @@
+# mod-data | json, csv, configparser, tomllib, xml, pickle, shelve | Reading and writing data files in every common format | modules
+
+@@ mod.json.options
+Q: How do I make JSON pretty, keep accents, sort keys, or save dates and sets?
+aka: json dumps indent, json ensure_ascii, json sort_keys, json datetime not serializable, json default, json set, pretty print json
+A: `json.dumps(obj, indent=2, ensure_ascii=False, sort_keys=True)`. Types JSON doesn't know (dates, sets, your classes) raise `TypeError: Object of type X is not JSON serializable`; pass `default=` a function that converts them (e.g. `str`, or `list` for sets).
+see: py.json
+```py
+import json
+from datetime import date
+data = {"name": "Zoë", "tags": {"b", "a"}, "born": date(2010, 5, 1), "score": 9.5}
+
+def convert(o):
+    if isinstance(o, set):
+        return sorted(o)
+    if isinstance(o, date):
+        return o.isoformat()
+    raise TypeError(f"can't save {type(o).__name__}")
+
+print(json.dumps(data, default=convert, ensure_ascii=False, sort_keys=True))
+print(json.dumps({"a": [1, 2]}, indent=2))
+```
+```text
+{"born": "2010-05-01", "name": "Zoë", "score": 9.5, "tags": ["a", "b"]}
+{
+  "a": [
+    1,
+    2
+  ]
+}
+```
+
+@@ mod.json.not-serializable
+Q: TypeError: Object of type X is not JSON serializable
+aka: not json serializable, datetime not json serializable, set not json serializable, object not serializable, numpy int64 json
+err: Object of type * is not JSON serializable
+A: JSON only has objects, arrays, strings, numbers, true/false and null. Convert other types first (`str(date)`, `list(a_set)`, `obj.__dict__` or `dataclasses.asdict(obj)`, `int(numpy_value)`), or use `default=` in `json.dumps`.
+see: mod.json.options
+```py raises
+import json
+from datetime import datetime
+json.dumps({"when": datetime.now()})
+```
+```py
+import json
+from dataclasses import dataclass, asdict
+@dataclass
+class Player:
+    name: str
+    level: int
+print(json.dumps(asdict(Player("Ada", 3))), json.dumps({"ids": list({1})}))
+```
+```text
+{"name": "Ada", "level": 3} {"ids": [1]}
+```
+
+@@ mod.json.objects
+Q: How do I save my own objects to JSON and load them back as objects?
+aka: json custom class, save objects json, load json into class, object_hook, serialize class
+A: Save with `asdict`/`vars`; when loading, rebuild with `Class(**d)` (or `object_hook=` to convert every dict as it's read).
+see: mod.json.not-serializable, py.dataclass
+```py
+import json
+from dataclasses import dataclass, asdict
+
+@dataclass
+class Task:
+    title: str
+    done: bool = False
+
+tasks = [Task("write"), Task("test", True)]
+text = json.dumps([asdict(t) for t in tasks])
+loaded = [Task(**d) for d in json.loads(text)]
+print(text)
+print(loaded[1], loaded == tasks)
+```
+```text
+[{"title": "write", "done": false}, {"title": "test", "done": true}]
+Task(title='test', done=True) True
+```
+
+@@ mod.json.lines
+Q: How do I read a big JSON file, or JSON Lines (one object per line)?
+aka: json lines, jsonl, ndjson, large json file, append json records, stream json
+A: JSON Lines (`.jsonl`) stores one JSON object per line: append records with `f.write(json.dumps(obj) + "\n")` and read with `json.loads(line)` per line, so you never load everything at once.
+see: py.proj.big-files
+```py
+import json
+with open("events.jsonl", "w") as f:
+    for i in range(3):
+        f.write(json.dumps({"id": i, "event": "click"}) + "\n")
+with open("events.jsonl") as f:
+    events = [json.loads(line) for line in f if line.strip()]
+print(len(events), events[-1])
+```
+```text
+3 {'id': 2, 'event': 'click'}
+```
+
+@@ mod.csv.dict
+Q: How do I read and write CSV files with column names (DictReader, DictWriter)?
+aka: csv dictreader, csv dictwriter, csv with header, csv columns by name, csv to list of dicts
+A: `csv.DictReader(f)` gives each row as a dict keyed by the header line; `csv.DictWriter(f, fieldnames=[...])` writes dicts (`writeheader()` first). Open files with `newline=""`.
+see: py.csv
+```py
+import csv
+rows = [{"name": "Ada", "score": 90}, {"name": "Sam", "score": 72}]
+with open("out.csv", "w", newline="", encoding="utf-8") as f:
+    w = csv.DictWriter(f, fieldnames=["name", "score"])
+    w.writeheader()
+    w.writerows(rows)
+with open("out.csv", newline="", encoding="utf-8") as f:
+    data = list(csv.DictReader(f))
+print(data)
+print(sum(int(r["score"]) for r in data))
+```
+```text
+[{'name': 'Ada', 'score': '90'}, {'name': 'Sam', 'score': '72'}]
+162
+```
+Values come back as **strings**: convert numbers yourself.
+
+@@ mod.csv.dialects
+Q: How do I read CSV with semicolons, tabs, quotes or Excel's format?
+aka: csv delimiter semicolon, tab separated, tsv, csv quotechar, csv excel, csv sniffer, european csv
+A: Pass `delimiter=";"` (or `"\t"` for TSV); quoted fields with commas inside are handled automatically. `csv.Sniffer().sniff(sample)` can guess the format. Excel files saved as "CSV UTF-8" start with a BOM: open with `encoding="utf-8-sig"`.
+see: mod.csv.dict
+```py
+import csv, io
+text = 'name;city;note\n"Smith, J";Paris;"said ""hi"""\n'
+for row in csv.reader(io.StringIO(text), delimiter=";"):
+    print(row)
+dialect = csv.Sniffer().sniff("a\tb\tc\n1\t2\t3\n")
+print(repr(dialect.delimiter))
+```
+```text
+['name', 'city', 'note']
+['Smith, J', 'Paris', 'said "hi"']
+'\t'
+```
+
+@@ mod.csv.blank-lines
+Q: Why does my CSV file have blank lines between rows (on Windows)?
+aka: csv blank lines, csv extra newline windows, empty rows csv, newline='' csv
+A: Open the file with `newline=""` when using the csv module. Without it, Windows adds an extra line break after each row.
+see: py.csv
+```py
+import csv
+with open("ok.csv", "w", newline="") as f:
+    csv.writer(f).writerows([["a", 1], ["b", 2]])
+print(open("ok.csv", newline="").read().count("\n"))
+```
+```text
+2
+```
+
+@@ mod.csv.columns
+Q: How do I get one column from a CSV, or calculate totals per group?
+aka: csv column, sum column csv, average column csv, group by csv, csv statistics
+A: Read with `DictReader`, then use comprehensions for a column and a dict (or `defaultdict`) for per-group totals.
+see: mod.csv.dict, py.defaultdict
+```py
+import csv, io
+from collections import defaultdict
+text = "region,sales\nnorth,100\nsouth,250\nnorth,40\n"
+rows = list(csv.DictReader(io.StringIO(text)))
+sales = [int(r["sales"]) for r in rows]
+by_region = defaultdict(int)
+for r in rows:
+    by_region[r["region"]] += int(r["sales"])
+print(sales, sum(sales) / len(sales), dict(by_region))
+```
+```text
+[100, 250, 40] 130.0 {'north': 140, 'south': 250}
+```
+
+@@ mod.configparser
+Q: How do I read and write .ini config files (configparser)?
+aka: configparser, ini file, read config file, settings ini, config sections, getint getboolean
+A: `cfg = configparser.ConfigParser(); cfg.read("settings.ini")`; values are `cfg["section"]["key"]` (strings) or typed with `getint`, `getfloat`, `getboolean` and `fallback=`. Write by assigning dicts and `cfg.write(f)`.
+see: tk.x.config-file
+```py
+import configparser
+open("app.ini", "w").write("[window]\nwidth = 800\nfullscreen = no\n\n[user]\nname = Ada\n")
+cfg = configparser.ConfigParser()
+cfg.read("app.ini")
+print(cfg.sections(), cfg.getint("window", "width"), cfg.getboolean("window", "fullscreen"))
+print(cfg.get("user", "theme", fallback="light"))
+cfg["user"]["theme"] = "dark"
+with open("app.ini", "w") as f:
+    cfg.write(f)
+print("theme = dark" in open("app.ini").read())
+```
+```text
+['window', 'user'] 800 False
+light
+True
+```
+
+@@ mod.tomllib
+Q: How do I read a TOML file (like pyproject.toml)?
+aka: tomllib, toml file, read toml, pyproject toml, write toml
+A: Python 3.11+ has `tomllib` for **reading**: open the file in binary mode and `tomllib.load(f)`. To write TOML, install `tomli-w`.
+see: mod.configparser
+```py
+import tomllib
+open("settings.toml", "w").write('title = "Game"\n[player]\nname = "Ada"\nlives = 3\nitems = ["sword", "map"]\n')
+with open("settings.toml", "rb") as f:
+    cfg = tomllib.load(f)
+print(cfg["title"], cfg["player"]["lives"], cfg["player"]["items"])
+```
+```text
+Game 3 ['sword', 'map']
+```
+
+@@ mod.xml
+Q: How do I read or create XML (ElementTree)?
+aka: xml parse, elementtree, read xml file, xml find, create xml, xml attributes
+A: `xml.etree.ElementTree`: `ET.fromstring(text)` or `ET.parse(file).getroot()`; find children with `find`/`findall`/`iter`; attributes via `.get("name")`, text via `.text`. Build with `ET.Element`/`SubElement` and save with `ET.ElementTree(root).write(...)`.
+see: mod.json.options
+```py
+import xml.etree.ElementTree as ET
+xml = """<library>
+  <book id="1" year="1965"><title>Dune</title></book>
+  <book id="2" year="1951"><title>Foundation</title></book>
+</library>"""
+root = ET.fromstring(xml)
+for b in root.findall("book"):
+    print(b.get("id"), b.find("title").text, int(b.get("year")) < 1960)
+new = ET.Element("library")
+ET.SubElement(new, "book", id="3").text = "Emma"
+print(ET.tostring(new, encoding="unicode"))
+```
+```text
+1 Dune False
+2 Foundation True
+<library><book id="3">Emma</book></library>
+```
+
+@@ mod.pickle-shelve
+Q: What are pickle and shelve, and when should I (not) use them?
+aka: pickle, shelve, save python objects, persistent dict, pickle security, unpickle untrusted
+A: `pickle` saves almost any Python object to a binary file (`pickle.dump`/`load`); `shelve` is a dict stored on disk. Both are Python-only, and **loading a pickle from someone else can run their code**: only load your own files. Prefer JSON for sharing.
+see: py.pickle
+```py
+import pickle, shelve
+state = {"level": 3, "inventory": {"sword", "map"}, "pos": (4, 7)}
+with open("save.pkl", "wb") as f:
+    pickle.dump(state, f)
+with open("save.pkl", "rb") as f:
+    print(pickle.load(f) == state)
+with shelve.open("scores") as db:
+    db["Ada"] = [90, 95]
+    db["Sam"] = [70]
+with shelve.open("scores") as db:
+    print(sorted(db.keys()), db["Ada"])
+```
+```text
+True
+['Ada', 'Sam'] [90, 95]
+```
+
+@@ mod.sqlite.row-factory
+Q: How do I get SQLite rows as dicts (column names) instead of tuples?
+aka: sqlite row factory, sqlite3 Row, column names sqlite, fetch as dict, cursor description
+A: Set `conn.row_factory = sqlite3.Row`: rows can then be read by column name (`row["name"]`) and turned into dicts with `dict(row)`.
+see: py.sqlite, mod.sqlite.params
+```py
+import sqlite3
+conn = sqlite3.connect(":memory:")
+conn.row_factory = sqlite3.Row
+conn.execute("CREATE TABLE p (name TEXT, age INT)")
+conn.executemany("INSERT INTO p VALUES (?, ?)", [("Ada", 36), ("Sam", 14)])
+for row in conn.execute("SELECT * FROM p ORDER BY age"):
+    print(row["name"], row["age"], dict(row))
+```
+```text
+Sam 14 {'name': 'Sam', 'age': 14}
+Ada 36 {'name': 'Ada', 'age': 36}
+```
+
+@@ mod.sqlite.params
+Q: How do I put variables into SQL safely (and why not f-strings)?
+aka: sql injection, sqlite parameters, question mark placeholder, named parameters, executemany, sql variables
+A: Use `?` placeholders (or `:name`) and pass the values separately: `conn.execute("SELECT * FROM t WHERE name = ?", (name,))`. Building SQL with f-strings lets user input change your query (SQL injection) and breaks on quotes.
+see: mod.sqlite.row-factory
+```py
+import sqlite3
+conn = sqlite3.connect(":memory:")
+conn.execute("CREATE TABLE users (name TEXT, pw TEXT)")
+conn.execute("INSERT INTO users VALUES ('admin', 'secret')")
+evil = "x' OR '1'='1"
+unsafe = conn.execute(f"SELECT name FROM users WHERE pw = '{evil}'").fetchall()
+safe = conn.execute("SELECT name FROM users WHERE pw = ?", (evil,)).fetchall()
+print("f-string:", unsafe, " placeholder:", safe)
+print(conn.execute("SELECT :a + :b", {"a": 2, "b": 3}).fetchone()[0])
+```
+```text
+f-string: [('admin',)]  placeholder: []
+5
+```
+
+@@ mod.sqlite.crud-all
+Q: How do I create, read, update and delete rows in SQLite (with commit)?
+aka: sqlite insert update delete, sqlite commit, lastrowid, rowcount, sqlite crud, sqlite create table if not exists
+A: `CREATE TABLE IF NOT EXISTS`, `INSERT`, `SELECT`, `UPDATE ... WHERE`, `DELETE ... WHERE`, then `conn.commit()` to save changes (or use `with conn:` which commits automatically). `cursor.lastrowid` = id of the new row; `cursor.rowcount` = rows changed.
+see: py.sqlite, mod.sqlite.params
+```py
+import sqlite3
+conn = sqlite3.connect("shop.db")
+with conn:
+    conn.execute("DROP TABLE IF EXISTS items")
+    conn.execute("CREATE TABLE IF NOT EXISTS items (id INTEGER PRIMARY KEY, name TEXT UNIQUE, qty INT)")
+    cur = conn.execute("INSERT INTO items (name, qty) VALUES (?, ?)", ("tea", 5))
+    new_id = cur.lastrowid
+    conn.executemany("INSERT INTO items (name, qty) VALUES (?, ?)", [("milk", 2), ("eggs", 12)])
+    changed = conn.execute("UPDATE items SET qty = qty - 1 WHERE qty > 3").rowcount
+    conn.execute("DELETE FROM items WHERE name = ?", ("milk",))
+print(new_id, changed, conn.execute("SELECT name, qty FROM items ORDER BY name").fetchall())
+conn.close()
+```
+```text
+1 2 [('eggs', 11), ('tea', 4)]
+```
+
+@@ mod.sqlite.queries
+Q: How do I search, sort, count and group in SQLite (WHERE, LIKE, ORDER BY, GROUP BY, JOIN)?
+aka: sql queries, where like, order by, group by, count, sum, join tables, sqlite search
+A: SQL does the heavy lifting: `WHERE name LIKE ?` with `"%text%"`, `ORDER BY x DESC`, `LIMIT n`, `COUNT(*)`, `SUM()`, `GROUP BY`, and `JOIN` to combine tables.
+see: mod.sqlite.crud-all
+```py
+import sqlite3
+db = sqlite3.connect(":memory:")
+db.executescript("""
+CREATE TABLE authors (id INTEGER PRIMARY KEY, name TEXT);
+CREATE TABLE books (title TEXT, year INT, author_id INT);
+INSERT INTO authors VALUES (1, 'Asimov'), (2, 'Herbert');
+INSERT INTO books VALUES ('Foundation', 1951, 1), ('I, Robot', 1950, 1), ('Dune', 1965, 2);
+""")
+print(db.execute("SELECT title FROM books WHERE title LIKE ? ORDER BY year DESC", ("%o%",)).fetchall())
+print(db.execute("SELECT a.name, COUNT(*), MIN(b.year) FROM books b JOIN authors a ON a.id = b.author_id GROUP BY a.name").fetchall())
+```
+```text
+[('Foundation',), ('I, Robot',)]
+[('Asimov', 2, 1950), ('Herbert', 1, 1965)]
+```
