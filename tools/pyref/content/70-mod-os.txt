@@ -1,0 +1,281 @@
+# mod-os | os, sys, shutil, platform | Files and folders, copying and moving, walking folder trees, system information, the running Python | modules
+
+@@ mod.os.overview
+Q: What's in the os module (the most useful functions)?
+aka: os module, os functions list, os getcwd, os listdir, os remove, os rename, os makedirs, os path
+A: Folders: `getcwd`, `chdir`, `listdir`, `scandir`, `mkdir`, `makedirs`, `rmdir`, `walk`. Files: `remove`, `rename`, `replace`, `stat`. Paths: `os.path.join/exists/isfile/isdir/basename/dirname/splitext/abspath/getsize`. System: `environ`, `getenv`, `cpu_count`, `getpid`, `sep`, `linesep`, `startfile` (Windows). For new code `pathlib` is often nicer.
+see: mod.pathlib.basics, py.os-sys
+```py
+import os
+os.makedirs("demo/sub", exist_ok=True)
+open("demo/a.txt", "w").write("hello")
+print(sorted(os.listdir("demo")), os.path.getsize("demo/a.txt"))     # listdir order is random: sort it
+os.rename("demo/a.txt", "demo/b.txt")
+print(sorted(os.listdir("demo")), os.path.splitext("demo/b.txt"))
+print(os.cpu_count() > 0, os.sep in ("/", "\\"))
+```
+```text
+['a.txt', 'sub'] 5
+['b.txt', 'sub'] ('demo/b', '.txt')
+True True
+```
+
+@@ mod.os.walk
+Q: How do I go through every file in a folder and all its subfolders (os.walk)?
+aka: os.walk, walk folder tree, recursive file list, all files subfolders, find files recursively, directory tree
+A: `for folder, subfolders, files in os.walk(top):` visits each folder once. Join `folder` and each file name to get full paths. You can remove names from `subfolders` to skip them (e.g. `.git`). `pathlib.Path.rglob("*")` is a shorter alternative.
+see: mod.pathlib.glob
+```py
+import os
+for d in ("tree/a", "tree/b/c", "tree/.git"):
+    os.makedirs(d, exist_ok=True)
+for p in ("tree/x.txt", "tree/a/y.txt", "tree/b/c/z.py", "tree/.git/skip.txt"):
+    open(p, "w").close()
+
+found = []
+for folder, subfolders, files in os.walk("tree"):
+    subfolders[:] = [s for s in subfolders if not s.startswith(".")]   # skip hidden
+    for name in files:
+        found.append(os.path.join(folder, name).replace(os.sep, "/"))
+print(sorted(found))
+```
+```text
+['tree/a/y.txt', 'tree/b/c/z.py', 'tree/x.txt']
+```
+
+@@ mod.os.scandir
+Q: How do I list a folder with file sizes and dates quickly (os.scandir)?
+aka: scandir, list files with size, file modified date, DirEntry, folder contents details
+A: `os.scandir(path)` yields entries with `.name`, `.path`, `.is_file()`, `.is_dir()`, and `.stat()` (size, modification time), faster than calling `os.stat` separately.
+see: mod.os.stat
+```py
+import os, time
+os.makedirs("sd", exist_ok=True)
+for name, text in (("small.txt", "hi"), ("big.txt", "x" * 5000)):
+    open(f"sd/{name}", "w").write(text)
+with os.scandir("sd") as it:
+    for e in sorted(it, key=lambda e: e.stat().st_size, reverse=True):
+        st = e.stat()
+        print(f"{e.name:<10} {st.st_size:>6} bytes  {time.strftime('%Y', time.localtime(st.st_mtime)) > '2000'}")
+```
+```text
+big.txt      5000 bytes  True
+small.txt       2 bytes  True
+```
+
+@@ mod.os.stat
+Q: How do I get a file's size, creation or modification time?
+aka: file size, file modified time, getmtime, os.stat, last modified date, file age, getsize
+A: `os.path.getsize(p)` (bytes), `os.path.getmtime(p)` (modified, as a timestamp); turn timestamps into dates with `datetime.fromtimestamp`. `os.stat(p)` has all the details.
+see: mod.dt.timestamps
+```py
+import os, time
+from datetime import datetime
+with open("f.txt", "w") as f:
+    f.write("12345")
+size = os.path.getsize("f.txt")
+mtime = datetime.fromtimestamp(os.path.getmtime("f.txt"))
+age = time.time() - os.path.getmtime("f.txt")
+print(size, mtime.year >= 2024, age < 60)
+```
+```text
+5 True True
+```
+
+@@ mod.shutil.copy-move
+Q: How do I copy, move or delete files and whole folders (shutil)?
+aka: copy file, move file, delete folder with files, shutil copy, shutil move, shutil rmtree, copytree, copy folder
+A: `shutil.copy(src, dst)` copies a file (`copy2` also keeps dates); `shutil.copytree(src, dst)` copies a folder; `shutil.move(src, dst)` moves/renames; `shutil.rmtree(path)` deletes a folder **and everything in it** (careful!). Single files: `os.remove`.
+see: mod.os.overview
+```py
+import os, shutil
+os.makedirs("src_dir/inner", exist_ok=True)
+open("src_dir/inner/a.txt", "w").write("a")
+shutil.copy("src_dir/inner/a.txt", "copy_a.txt")
+shutil.copytree("src_dir", "backup_dir", dirs_exist_ok=True)
+shutil.move("copy_a.txt", "moved_a.txt")
+shutil.rmtree("src_dir")
+print(os.path.exists("src_dir"), os.listdir("backup_dir/inner"), os.path.exists("moved_a.txt"))
+```
+```text
+False ['a.txt'] True
+```
+
+@@ mod.shutil.disk
+Q: How do I check free disk space, find a program on the PATH, or make a zip of a folder?
+aka: disk space, free space, disk_usage, shutil which, find executable, make_archive, zip folder
+A: `shutil.disk_usage(path)` gives total/used/free bytes; `shutil.which("git")` finds a program (or `None`); `shutil.make_archive("name", "zip", folder)` zips a whole folder.
+see: mod.zip.basics
+```py
+import os, shutil
+total, used, free = shutil.disk_usage(".")
+print(free > 0, round(used / total * 100) <= 100)
+print(shutil.which("python3") is not None or shutil.which("python") is not None)
+os.makedirs("site", exist_ok=True); open("site/index.html", "w").write("<h1>hi</h1>")
+print(os.path.basename(shutil.make_archive("site_backup", "zip", "site")))
+```
+```text
+True True
+True
+site_backup.zip
+```
+
+@@ mod.sys.overview
+Q: What's in the sys module (argv, path, exit, version, stdin/stdout)?
+aka: sys module, sys argv, sys path, sys exit, sys version, sys platform, sys executable, sys modules, sys getsizeof
+A: `sys.argv` (command-line arguments), `sys.exit()`, `sys.version`/`version_info`, `sys.platform` (`"win32"`, `"darwin"`, `"linux"`), `sys.executable` (path to this Python), `sys.path` (where imports are searched), `sys.modules` (loaded modules), `sys.stdin/stdout/stderr`, `sys.getsizeof(x)`, `sys.getrecursionlimit()`.
+see: py.os-sys, py.command-args
+```py
+import sys
+print(sys.version_info[:2] >= (3, 8), sys.platform in ("win32", "darwin", "linux"))
+print(sys.executable.endswith(("python", "python3", "python.exe", "python3.12")))
+print(type(sys.path).__name__, "os" in sys.modules or True)
+print(sys.getsizeof([]) < sys.getsizeof([1, 2, 3]))
+```
+```text
+True True
+True
+list True
+True
+```
+
+@@ mod.sys.path-import
+Q: How do I import a module from another folder (sys.path)?
+aka: import from other folder, sys.path append, module not found other directory, import from parent directory, PYTHONPATH
+A: Python searches the folders in `sys.path` (the script's own folder comes first). Best: make a package and run with `-m`. Quick fix: `sys.path.insert(0, folder)` before the import, or set the `PYTHONPATH` environment variable.
+see: py.own-module, py.proj.package
+```py
+import os, sys
+os.makedirs("libs", exist_ok=True)
+open("libs/helpers.py", "w").write("def shout(s):\n    return s.upper() + '!'\n")
+sys.path.insert(0, os.path.abspath("libs"))
+import helpers
+print(helpers.shout("found it"))
+```
+```text
+FOUND IT!
+```
+
+@@ mod.platform
+Q: How do I find out which operating system, computer name or Python implementation I'm on?
+aka: platform module, which os, operating system name, windows or mac or linux, computer name, hostname, os version
+A: `platform.system()` → `"Windows"`, `"Darwin"` (macOS), `"Linux"`; `platform.release()`, `platform.machine()` (`"x86_64"`, `"arm64"`), `platform.python_version()`, `platform.node()` (computer name). `sys.platform` is the quick check in code.
+see: mod.sys.overview
+```py
+import platform, sys
+print(platform.system() in ("Windows", "Darwin", "Linux"), platform.python_version().startswith("3."))
+print(platform.machine() != "", platform.python_implementation())
+IS_WINDOWS = sys.platform == "win32"
+print(type(IS_WINDOWS).__name__)
+```
+```text
+True True
+True CPython
+bool
+```
+
+@@ mod.glob
+Q: How do I find files matching a pattern like *.txt (glob, fnmatch)?
+aka: glob, find files pattern, wildcard files, *.txt, recursive glob, fnmatch, match filename
+A: `glob.glob("*.txt")` returns matching paths; `glob.glob("**/*.py", recursive=True)` searches subfolders. `fnmatch.fnmatch(name, "*.jp*g")` tests one name. `Path.glob` / `Path.rglob` do the same with pathlib.
+see: mod.pathlib.glob, py.listdir
+```py
+import fnmatch, glob, os
+os.makedirs("g/sub", exist_ok=True)
+for p in ("g/a.txt", "g/b.csv", "g/sub/c.txt"):
+    open(p, "w").close()
+print(sorted(glob.glob("g/*.txt")))
+print(sorted(p.replace(os.sep, "/") for p in glob.glob("g/**/*.txt", recursive=True)))
+print([n for n in ("a.JPG", "b.jpeg", "c.png") if fnmatch.fnmatch(n.lower(), "*.jp*g")])
+```
+```text
+['g/a.txt']
+['g/a.txt', 'g/sub/c.txt']
+['a.JPG', 'b.jpeg']
+```
+
+@@ mod.os.environ-path
+Q: How do I add a folder to PATH or set an environment variable for a program I start?
+aka: set environment variable, modify PATH, os environ set, subprocess env, environment for child process
+A: Change `os.environ` (affects this process and children), or pass a modified copy to `subprocess.run(..., env=env)` to affect only that program. Join PATH entries with `os.pathsep`.
+see: py.proj.env-vars
+```py
+import os, subprocess, sys
+env = os.environ.copy()
+env["GREETING"] = "hello from parent"
+env["PATH"] = os.pathsep.join(["/opt/tools", env.get("PATH", "")])
+r = subprocess.run([sys.executable, "-c", "import os; print(os.environ['GREETING'])"], env=env, capture_output=True, text=True)
+print(r.stdout.strip(), "GREETING" in os.environ)
+```
+```text
+hello from parent False
+```
+
+@@ mod.os.home-folders
+Q: How do I find the user's home, Desktop, Documents or app-data folder?
+aka: home directory, desktop path, documents folder, appdata, user folder, expanduser, config folder location
+A: `Path.home()` (or `os.path.expanduser("~")`). Desktop/Documents are usually `Path.home() / "Desktop"`. For app settings use `%APPDATA%` on Windows, `~/Library/Application Support` on macOS, `~/.config` on Linux (the `platformdirs` package picks the right one).
+see: tk.save-settings
+```py
+import os, sys
+from pathlib import Path
+
+def config_dir(app):
+    if sys.platform == "win32":
+        base = Path(os.environ.get("APPDATA", Path.home()))
+    elif sys.platform == "darwin":
+        base = Path.home() / "Library" / "Application Support"
+    else:
+        base = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config"))
+    return base / app
+
+print(Path.home().is_dir(), config_dir("MyApp").name, (Path.home() / "Desktop").name)
+```
+```text
+True MyApp Desktop
+```
+
+@@ mod.os.permissions
+Q: How do I check or change file permissions (read-only, executable)?
+aka: file permissions, chmod, make file read only, os access, make executable, stat mode
+A: `os.access(p, os.R_OK | os.W_OK)` checks what you may do; `os.chmod(p, mode)` changes permissions (`stat.S_IREAD` for read-only; `0o755` = executable on macOS/Linux).
+see: py.err.permission
+```py
+import os, stat
+open("ro.txt", "w").write("x")
+os.chmod("ro.txt", stat.S_IREAD)                 # read-only
+print(os.access("ro.txt", os.R_OK), bool(os.stat("ro.txt").st_mode & stat.S_IWUSR))
+os.chmod("ro.txt", stat.S_IREAD | stat.S_IWRITE)
+print(bool(os.stat("ro.txt").st_mode & stat.S_IWUSR))
+```
+```text
+True False
+True
+```
+
+@@ mod.os.temp-cleanup
+Q: How do I delete files older than N days in a folder?
+aka: delete old files, cleanup folder, remove files older than, file age cleanup, purge logs
+A: Loop over the folder, compare each file's `getmtime` with `time.time() - days * 86400`, and remove the old ones. Print first (dry run) before deleting for real.
+see: mod.os.stat
+```py
+import os, time
+os.makedirs("logs", exist_ok=True)
+for name, days_old in (("new.log", 1), ("old.log", 40)):
+    p = os.path.join("logs", name)
+    open(p, "w").close()
+    t = time.time() - days_old * 86400
+    os.utime(p, (t, t))                       # pretend age
+
+cutoff = time.time() - 30 * 86400
+for name in sorted(os.listdir("logs")):
+    p = os.path.join("logs", name)
+    if os.path.isfile(p) and os.path.getmtime(p) < cutoff:
+        os.remove(p)
+        print("deleted", name)
+print(os.listdir("logs"))
+```
+```text
+deleted old.log
+['new.log']
+```
