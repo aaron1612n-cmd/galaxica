@@ -1,0 +1,234 @@
+# py-typing | Type hints | Annotating variables and functions, Optional, unions, generics, TypedDict, Callable, checking with mypy | python
+
+@@ py.typing.basics
+Q: What are type hints and how do I write them?
+aka: type hints, type annotations, function annotations, -> return type, variable annotation, typing python, x: int
+A: Hints say what types you expect: `def area(w: float, h: float) -> float:` and `count: int = 0`. Python itself **doesn't enforce** them at run time; editors and checkers like mypy use them to catch mistakes and give better autocomplete.
+see: py.typing.mypy, py.typing.collections
+```py
+def greet(name: str, times: int = 1) -> str:
+    return ", ".join([f"Hi {name}"] * times)
+
+score: int = 0
+names: list[str] = ["Ada", "Sam"]
+print(greet("Kai", 2))
+print(greet.__annotations__)
+print(greet(42))         # runs anyway: hints are not checked at run time
+```
+```text
+Hi Kai, Hi Kai
+{'name': <class 'str'>, 'times': <class 'int'>, 'return': <class 'str'>}
+Hi 42
+```
+
+@@ py.typing.collections
+Q: How do I type lists, dicts, tuples and sets (list[int], dict[str, int])?
+aka: list of int type hint, dict type hint, tuple type hint, set type hint, nested types, List from typing
+A: Use the built-in names with brackets (Python 3.9+): `list[int]`, `dict[str, float]`, `set[str]`, `tuple[int, str]` (fixed length), `tuple[int, ...]` (any length). Older code imports `List`, `Dict` from `typing`; they mean the same.
+see: py.typing.basics
+```py
+def average(scores: dict[str, list[int]]) -> dict[str, float]:
+    return {name: sum(s) / len(s) for name, s in scores.items()}
+
+point: tuple[int, int] = (3, 4)
+ids: tuple[int, ...] = (1, 2, 3, 4)
+tags: set[str] = {"a", "b"}
+print(average({"Ada": [90, 80], "Sam": [70]}))
+```
+```text
+{'Ada': 85.0, 'Sam': 70.0}
+```
+
+@@ py.typing.optional
+Q: How do I say a value can be None, or one of several types (Optional, Union, |)?
+aka: optional type hint, union type, int or none, x | None, Optional[str], multiple types hint
+A: Write `int | None` (Python 3.10+) or `Optional[int]` for "an int or None"; `int | str` (or `Union[int, str]`) for "either". Functions that may return nothing should say `-> str | None`.
+see: py.none
+```py
+def find_user(users: dict[int, str], uid: int) -> str | None:
+    return users.get(uid)
+
+def to_int(x: int | str | float) -> int:
+    return int(x)
+
+name = find_user({1: "Ada"}, 2)
+if name is not None:          # checkers make you handle the None case
+    print(name.upper())
+print(name, to_int("7") + to_int(2.9))
+```
+```text
+None 9
+```
+
+@@ py.typing.callable
+Q: How do I type-hint a function that takes another function (Callable)?
+aka: callable type hint, function as argument type, callback type, Callable[[int], str]
+A: `Callable[[ArgType1, ArgType2], ReturnType]` from `collections.abc` (or `typing`). `Callable[..., Any]` accepts any arguments.
+see: py.fn.callbacks
+```py
+from collections.abc import Callable
+
+def apply(func: Callable[[int, int], int], a: int, b: int) -> int:
+    return func(a, b)
+
+def on_click(handler: Callable[[], None]) -> None:
+    handler()
+
+print(apply(max, 3, 9), apply(lambda x, y: x * y, 3, 9))
+on_click(lambda: print("clicked"))
+```
+```text
+9 27
+clicked
+```
+
+@@ py.typing.any
+Q: What do Any, object and Literal mean in type hints?
+aka: Any type, object type, Literal type, specific values type, typing Any vs object, Final
+A: `Any` switches checking off for that value. `object` means "any object, but you can only do what all objects can". `Literal["r", "w"]` allows only those exact values. `Final` marks a constant that shouldn't be reassigned.
+see: py.typing.basics
+```py
+from typing import Any, Final, Literal
+
+MAX_PLAYERS: Final = 4
+
+def open_mode(mode: Literal["r", "w", "a"]) -> str:
+    return {"r": "read", "w": "write", "a": "append"}[mode]
+
+def debug(value: Any) -> None:
+    print(repr(value))
+
+print(open_mode("w"))
+debug([1, "two"])
+```
+```text
+write
+[1, 'two']
+```
+
+@@ py.typing.typeddict
+Q: How do I type a dict that has specific keys (TypedDict)?
+aka: TypedDict, dict with known keys, json type hint, typed dictionary, NotRequired
+A: Subclass `TypedDict` listing each key's type. It's still a normal dict at run time; checkers catch missing keys and wrong types. `NotRequired[...]` marks optional keys.
+see: py.typing.collections, py.json
+```py
+from typing import NotRequired, TypedDict
+
+class Movie(TypedDict):
+    title: str
+    year: int
+    rating: NotRequired[float]
+
+def describe(m: Movie) -> str:
+    return f"{m['title']} ({m['year']})"
+
+film: Movie = {"title": "Alien", "year": 1979}
+print(describe(film), type(film).__name__)
+```
+```text
+Alien (1979) dict
+```
+
+@@ py.typing.generic
+Q: How do I write a function or class that works for any type but keeps it consistent (generics, TypeVar)?
+aka: generics python, TypeVar, generic function, generic class, type parameter, def first[T]
+A: A type variable says "whatever type comes in, the same comes out". Python 3.12+ has the short syntax `def first[T](items: list[T]) -> T`; earlier versions use `T = TypeVar("T")`.
+see: py.typing.basics
+```py
+def first[T](items: list[T]) -> T:
+    return items[0]
+
+class Box[T]:
+    def __init__(self, item: T) -> None:
+        self.item = item
+    def get(self) -> T:
+        return self.item
+
+print(first([3, 1, 2]), first(["x", "y"]))
+print(Box("hello").get().upper())
+```
+```text
+3 x
+HELLO
+```
+
+@@ py.typing.alias
+Q: How do I give a long type a short name (type alias)?
+aka: type alias, type statement, name a type, TypeAlias, complex type name
+A: Python 3.12+: `type Point = tuple[float, float]`. Earlier: `Point = tuple[float, float]` (optionally annotated as `TypeAlias`).
+see: py.typing.collections
+```py
+type Point = tuple[float, float]
+type Path = list[Point]
+
+def length(path: Path) -> float:
+    return sum(((b[0] - a[0]) ** 2 + (b[1] - a[1]) ** 2) ** 0.5 for a, b in zip(path, path[1:]))
+
+print(length([(0, 0), (3, 4), (3, 10)]))
+```
+```text
+11.0
+```
+
+@@ py.typing.self
+Q: How do I type-hint a method that returns its own class (Self, forward references)?
+aka: return own class type hint, Self type, forward reference, class not defined yet type hint, from __future__ import annotations
+A: Use `typing.Self` (3.11+) for "an object of this class". To mention a class before it's defined, put the name in quotes (`"Node"`) or add `from __future__ import annotations` at the top of the file.
+see: py.oop.chaining
+```py
+from typing import Self
+
+class Node:
+    def __init__(self, value: int, next: "Node | None" = None) -> None:
+        self.value, self.next = value, next
+    def append(self, value: int) -> Self:
+        self.next = Node(value)
+        return self
+
+n = Node(1).append(2)
+print(n.value, n.next.value)
+```
+```text
+1 2
+```
+
+@@ py.typing.mypy
+Q: How do I check my type hints (mypy, pyright)?
+aka: mypy, run mypy, pyright, type checker, check type hints, static type checking
+A: Install a checker and run it on your files: `pip install mypy` then `mypy myscript.py`. It reports mismatches without running the code. VS Code's Python extension (Pylance) shows the same kind of errors as you type.
+see: py.typing.basics
+```py bad
+def add(a: int, b: int) -> int:
+    return a + b
+
+add("2", 3)        # mypy: Argument 1 to "add" has incompatible type "str"; expected "int"
+```
+```sh
+pip install mypy
+mypy myscript.py
+# myscript.py:4: error: Argument 1 to "add" has incompatible type "str"; expected "int"  [arg-type]
+```
+
+@@ py.typing.runtime
+Q: Can I make Python actually enforce types at run time?
+aka: enforce types runtime, check argument types, validate types, isinstance check types, pydantic
+A: Not built in. Check important inputs yourself with `isinstance` and raise `TypeError`, or use a library like `pydantic` (data models that validate and convert) or `typeguard`.
+see: py.raise
+```py
+def set_age(age: int) -> int:
+    if not isinstance(age, int) or isinstance(age, bool):
+        raise TypeError(f"age must be an int, got {type(age).__name__}")
+    if not 0 <= age <= 150:
+        raise ValueError("age out of range")
+    return age
+
+print(set_age(30))
+try:
+    set_age("30")
+except TypeError as e:
+    print(e)
+```
+```text
+30
+age must be an int, got str
+```
