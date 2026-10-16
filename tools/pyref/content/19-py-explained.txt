@@ -222,7 +222,7 @@ HI
 
 @@ py.z.self
 Q: What is `self`?
-aka: what is self, self meaning, self in python, why self, self parameter, self in class
+aka: what does self mean, what is self, self meaning, self in python, why self, self parameter, self in class
 A: `self` is the **object the method was called on**. When you write `rex.bark()`, Python runs `Dog.bark(rex)`: `rex` arrives as `self`. That's how a method reaches that particular object's data (`self.name`). It's just a naming convention, but always use `self`.
 see: py.z.object, py.z.init, py.err2.self-missing
 ```py
