@@ -1,0 +1,350 @@
+# py-str | String methods A–Z | One answer per str method: what it does, its arguments, what it returns, with examples | python
+
+@@ py.s.capitalize
+Q: str.capitalize(): what does it do?
+aka: capitalize, capitalise first letter, first letter uppercase rest lowercase
+A: Returns a copy with the **first character upper case and the rest lower case**. (Strings never change in place; every method returns a new string.)
+see: py.s.title, py.case
+```py
+print("hELLO wORLD".capitalize(), "123abc".capitalize(), "élan".capitalize())
+```
+```text
+Hello world 123abc Élan
+```
+
+@@ py.s.casefold
+Q: str.casefold(): what does it do (and how is it different from lower)?
+aka: casefold, case insensitive compare, casefold vs lower, german ß
+A: Like `lower()` but more aggressive, for **comparing** text without caring about case in any language (`"ß"` becomes `"ss"`).
+see: py.s.lower
+```py
+print("Straße".lower(), "Straße".casefold(), "STRASSE".casefold() == "Straße".casefold())
+```
+```text
+straße strasse True
+```
+
+@@ py.s.center
+Q: str.center(width, fillchar): what does it do?
+aka: center string, centre text, pad both sides, center with stars
+A: Returns the string centred in a field of `width` characters, padded with spaces (or `fillchar`). If the string is already longer, it's returned unchanged.
+see: py.s.ljust-rjust, py.str-pad
+```py
+print("[" + "hi".center(8) + "]", "hi".center(8, "*"), "toolong".center(3))
+```
+```text
+[   hi   ] ***hi*** toolong
+```
+
+@@ py.s.count
+Q: str.count(sub, start, end): what does it do?
+aka: count substring, count letter in string, how many times appears, count occurrences
+A: Returns how many **non-overlapping** times `sub` appears (optionally only between `start` and `end`).
+see: py.count-words
+```py
+s = "banana"
+print(s.count("a"), s.count("an"), s.count("ana"), s.count("a", 3))
+```
+```text
+3 2 1 2
+```
+
+@@ py.s.encode
+Q: str.encode(encoding, errors): what does it do?
+aka: encode string, string to bytes, utf-8 encode, encode errors ignore replace
+A: Turns text into **bytes** in an encoding (default UTF-8). `errors="replace"`/`"ignore"`/`"xmlcharrefreplace"` decide what happens to characters the encoding can't hold.
+see: py.fmt.bytes
+```py
+print("café".encode(), "café".encode("ascii", errors="replace"), "café".encode("ascii", errors="xmlcharrefreplace"))
+```
+```text
+b'caf\xc3\xa9' b'caf?' b'caf&#233;'
+```
+
+@@ py.s.startswith-endswith
+Q: str.startswith() and str.endswith(): what do they do?
+aka: startswith, endswith, check prefix, check suffix, file extension check, starts with any of
+A: Return `True`/`False`. Both accept a **tuple** to test several options at once, plus optional `start`/`end` positions.
+see: py.s.removeprefix
+```py
+f = "photo.JPG"
+print(f.lower().endswith((".jpg", ".jpeg", ".png")), "https://x.org".startswith(("http://", "https://")))
+print("abcdef".startswith("cd", 2))
+```
+```text
+True True
+True
+```
+
+@@ py.s.expandtabs
+Q: str.expandtabs(tabsize): what does it do?
+aka: expandtabs, tabs to spaces, replace tab characters, tab width
+A: Replaces tab characters with spaces so columns line up at multiples of `tabsize` (default 8).
+see: py.err2.tab-error
+```py
+row = "a\tbb\tccc"
+print(repr(row.expandtabs(4)), len(row.expandtabs(4)))
+```
+```text
+'a   bb  ccc' 11
+```
+
+@@ py.s.find-index
+Q: str.find(), rfind(), index() and rindex(): what's the difference?
+aka: find vs index, rfind, rindex, position of substring, find returns -1, last occurrence
+A: All return the position of `sub`. `find` returns **-1** if missing; `index` raises **ValueError**. The `r` versions search from the **right** (last occurrence).
+see: py.find, py.err2.not-in-list
+```py
+s = "a-b-c"
+print(s.find("-"), s.rfind("-"), s.find("x"), s.index("b"), s.rindex("-"))
+try:
+    s.index("x")
+except ValueError as e:
+    print(e)
+```
+```text
+1 3 -1 2 3
+substring not found
+```
+
+@@ py.s.format-map
+Q: str.format() and str.format_map(): what do they do?
+aka: str format, format method, format_map dict, placeholders braces
+A: Fill `{}` placeholders: `"{} is {}".format(a, b)`, `"{name}".format(name=x)`, with format specs `"{:.2f}"`. `format_map(mapping)` uses a dict directly (and lets a dict subclass supply missing keys).
+see: py.fmt.old-styles, py.fmt.template
+```py
+d = {"name": "Ada", "score": 9.456}
+print("{} scored {:.1f}".format(d["name"], d["score"]), "{name}: {score:.2f}".format_map(d))
+```
+```text
+Ada scored 9.5 Ada: 9.46
+```
+
+@@ py.s.isalnum-isalpha
+Q: str.isalnum(), isalpha() and isascii(): what do they test?
+aka: isalnum, isalpha, isascii, letters only, letters and numbers only, check alphabet
+A: `isalpha` = all letters (any alphabet); `isalnum` = all letters or digits; `isascii` = all characters are basic ASCII (or empty). All return `False` for an empty string except `isascii`.
+see: py.str-checks
+```py
+for s in ("abc", "abc123", "héllo", "a b", ""):
+    print(repr(s), s.isalpha(), s.isalnum(), s.isascii())
+```
+```text
+'abc' True True True
+'abc123' False True True
+'héllo' True True False
+'a b' False False True
+'' False False True
+```
+
+@@ py.s.isdigit-family
+Q: What's the difference between isdecimal(), isdigit() and isnumeric()?
+aka: isdecimal vs isdigit vs isnumeric, check number string, superscript digits, fractions isnumeric
+A: All test for "number characters" but how widely: `isdecimal` = only 0–9 style digits (safest for `int()`); `isdigit` also allows superscripts like `²`; `isnumeric` also allows fractions and numerals like `½`, `Ⅷ`. None accept `-`, `.` or spaces.
+see: py.num.number-words
+```py
+for s in ("123", "²", "½", "Ⅷ", "-1", "3.5"):
+    print(repr(s), s.isdecimal(), s.isdigit(), s.isnumeric())
+```
+```text
+'123' True True True
+'²' False True True
+'½' False False True
+'Ⅷ' False False True
+'-1' False False False
+'3.5' False False False
+```
+
+@@ py.s.isidentifier-isprintable
+Q: str.isidentifier() and isprintable(): what do they test?
+aka: isidentifier, valid variable name, isprintable, non printable characters
+A: `isidentifier` = could be a variable name (letters/digits/_ and not starting with a digit; doesn't check keywords, use `keyword.iskeyword`). `isprintable` = no control characters like `\n` or `\t`.
+see: py.kw.list
+```py
+import keyword
+for name in ("score", "2fast", "my_var", "class"):
+    print(name, name.isidentifier() and not keyword.iskeyword(name))
+print("hi".isprintable(), "hi\n".isprintable())
+```
+```text
+score True
+2fast False
+my_var True
+class False
+True False
+```
+
+@@ py.s.case-tests
+Q: str.islower(), isupper(), istitle() and isspace(): what do they test?
+aka: islower, isupper, istitle, isspace, check uppercase, check whitespace only
+A: `islower`/`isupper` = every cased letter is lower/upper (and there's at least one); `istitle` = Title Case Words; `isspace` = only whitespace (and not empty).
+see: py.str-checks
+```py
+print("abc1".islower(), "ABC!".isupper(), "Hello World".istitle(), "Hello world".istitle())
+print("  \t\n".isspace(), "".isspace(), "123".islower())
+```
+```text
+True True True False
+True False False
+```
+
+@@ py.s.join
+Q: str.join(iterable): how does it work?
+aka: join method, join list into string, separator join, join with comma, join numbers
+A: `sep.join(items)` glues a list (or any iterable) of **strings** together with `sep` between them. Non-strings must be converted first.
+see: py.join, py.err2.join-int
+```py
+print(", ".join(["a", "b", "c"]), "".join(reversed("abc")), "-".join(str(n) for n in range(4)))
+print("\n".join(["line 1", "line 2"]))
+```
+```text
+a, b, c cba 0-1-2-3
+line 1
+line 2
+```
+
+@@ py.s.ljust-rjust
+Q: str.ljust() and str.rjust(): what do they do?
+aka: ljust, rjust, pad right, pad left, align text column
+A: Pad the string to `width` with spaces (or a fill character) on the right (`ljust`: text on the left) or left (`rjust`).
+see: py.str-pad, py.fmt.table
+```py
+for name, n in (("tea", 3), ("coffee", 12)):
+    print(name.ljust(8, ".") + str(n).rjust(4))
+```
+```text
+tea.....   3
+coffee..  12
+```
+
+@@ py.s.lower
+Q: str.lower(), upper() and swapcase(): what do they do?
+aka: lower, upper, swapcase, lowercase, uppercase, invert case
+A: Return a copy in lower case, UPPER CASE, or with every letter's case flipped.
+see: py.case, py.s.casefold
+```py
+s = "Hello World"
+print(s.lower(), s.upper(), s.swapcase())
+```
+```text
+hello world HELLO WORLD hELLO wORLD
+```
+
+@@ py.s.strip
+Q: str.strip(), lstrip() and rstrip(): what do they remove exactly?
+aka: strip, lstrip, rstrip, remove whitespace, strip characters, strip removes set of characters not word
+A: Remove whitespace from both ends / the left / the right. With an argument, they remove **any of those characters** from the ends (a set of characters, not a word): use `removeprefix`/`removesuffix` for a whole word.
+see: py.strip, py.s.removeprefix
+```py
+print(repr("  hi \n".strip()), repr("xxhixx".strip("x")), repr("www.site.com".lstrip("w.")))
+print("readme.md".rstrip(".md"), "readme.md".removesuffix(".md"))      # rstrip eats letters!
+```
+```text
+'hi' 'hi' 'site.com'
+readme readme
+```
+
+@@ py.s.removeprefix
+Q: str.removeprefix() and removesuffix(): what do they do?
+aka: removeprefix, removesuffix, remove start of string, remove end of string, remove extension
+A: Remove an exact text from the start or end **if it's there** (Python 3.9+); otherwise return the string unchanged.
+see: py.s.strip
+```py
+print("v1.2.3".removeprefix("v"), "image.png".removesuffix(".png"), "image.png".removesuffix(".jpg"))
+```
+```text
+1.2.3 image image.png
+```
+
+@@ py.s.maketrans-translate
+Q: str.maketrans() and str.translate(): what do they do?
+aka: maketrans, translate, character mapping, remove characters translate, replace several characters
+A: `str.maketrans(from, to, delete)` builds a table; `s.translate(table)` swaps/removes characters in one pass. A dict `{ord("a"): "x"}` also works as a table.
+see: py.fmt.translate
+```py
+t = str.maketrans("abc", "xyz", "!")
+print("aabbcc!".translate(t), "hello".translate({ord("l"): "L", ord("o"): None}))
+```
+```text
+xxyyzz heLL
+```
+
+@@ py.s.partition
+Q: str.partition() and rpartition(): what do they do?
+aka: partition, rpartition, split once, key value split, split on first occurrence
+A: Split at the **first** (`partition`) or **last** (`rpartition`) occurrence of a separator into exactly three parts: `(before, sep, after)`. If the separator is missing you get the whole string and two empty strings, so unpacking never fails.
+see: py.split, py.err2.not-enough-unpack
+```py
+print("key=value=more".partition("="), "path/to/file.txt".rpartition("/"))
+name, sep, rest = "no separator".partition("=")
+print(repr(name), repr(sep), repr(rest))
+```
+```text
+('key', '=', 'value=more') ('path/to', '/', 'file.txt')
+'no separator' '' ''
+```
+
+@@ py.s.replace
+Q: str.replace(old, new, count): what does it do?
+aka: replace method, replace text, replace first only, replace count, remove substring
+A: Returns a copy with every `old` replaced by `new`, or only the first `count`. Replacing with `""` deletes. It's case-sensitive (use `re.sub(..., flags=re.I)` otherwise).
+see: py.replace
+```py
+s = "one two one two"
+print(s.replace("one", "1"), s.replace("one", "1", 1), s.replace(" ", ""))
+```
+```text
+1 two 1 two 1 two one two onetwoonetwo
+```
+
+@@ py.s.split-rsplit
+Q: str.split(), rsplit() and splitlines(): what do they do?
+aka: split method, rsplit, splitlines, maxsplit, split no argument vs space, split lines
+A: `split()` with no argument splits on any run of whitespace (and drops empties); `split(",")` splits on exactly that separator (keeping empty pieces); `maxsplit=n` stops after n splits (`rsplit` from the right); `splitlines()` splits on line breaks of every kind.
+see: py.split, mod.re.split-tokens
+```py
+print("a  b\tc".split(), "a,,b".split(","), "a b c d".split(" ", 1), "a.b.c".rsplit(".", 1))
+print("one\r\ntwo\nthree".splitlines(), "x\ny\n".splitlines(keepends=True))
+```
+```text
+['a', 'b', 'c'] ['a', '', 'b'] ['a', 'b c d'] ['a.b', 'c']
+['one', 'two', 'three'] ['x\n', 'y\n']
+```
+
+@@ py.s.title
+Q: str.title(): what does it do (and why does it capitalise after apostrophes)?
+aka: title case, title method, capitalise each word, title apostrophe problem
+A: Capitalises the first letter of every word. It treats any non-letter as a word break, so `"it's"` becomes `"It'S"`; use `string.capwords` for normal text.
+see: mod.string-constants
+```py
+import string
+print("hello world".title(), "it's o'neil".title(), string.capwords("it's o'neil"))
+```
+```text
+Hello World It'S O'Neil It's O'neil
+```
+
+@@ py.s.zfill
+Q: str.zfill(width): what does it do?
+aka: zfill, leading zeros, pad with zeros, zero padding number string
+A: Pads with **zeros on the left** to `width`, keeping a leading `+`/`-` sign in front.
+see: py.format-decimals
+```py
+print("7".zfill(3), "-42".zfill(5), "123456".zfill(3), f"{7:03d}")
+```
+```text
+007 -0042 123456 007
+```
+
+@@ py.s.all-index
+Q: Is there a list of every string method on one page?
+aka: all string methods, str methods list, string methods index
+A: Yes: `capitalize casefold center count encode endswith expandtabs find format format_map index isalnum isalpha isascii isdecimal isdigit isidentifier islower isnumeric isprintable isspace istitle isupper join ljust lower lstrip maketrans partition removeprefix removesuffix replace rfind rindex rjust rpartition rsplit rstrip split splitlines startswith strip swapcase title translate upper zfill` (47). Each one has an answer in this section; `help(str.name)` shows the official description.
+see: py.fmt.methods-all
+```py
+methods = [m for m in dir(str) if not m.startswith("_")]
+print(len(methods), methods[:5], methods[-3:])
+```
+```text
+47 ['capitalize', 'casefold', 'center', 'count', 'encode'] ['translate', 'upper', 'zfill']
+```

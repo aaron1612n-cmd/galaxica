@@ -1,0 +1,234 @@
+# py-cm | List, dict and set methods A–Z | One answer per method of list, dict and set, with what it returns and common mistakes | python
+
+@@ py.cm.append
+Q: list.append(x): what does it do (and why does it return None)?
+aka: append, add to list, append returns none, append list to list
+A: Adds **one** item to the end of the list, changing the list itself, and returns `None` (so `x = items.append(3)` gives `None`). Appending a list adds it as a single item; use `extend` to add its items.
+see: py.list-add, py.cm.extend
+```py
+items = [1, 2]
+result = items.append(3)
+items.append([4, 5])
+print(items, result)
+```
+```text
+[1, 2, 3, [4, 5]] None
+```
+
+@@ py.cm.extend
+Q: list.extend(iterable): what does it do?
+aka: extend, add many items, extend vs append, += list, concatenate in place
+A: Adds **each item** of an iterable to the end (same as `items += other`). A string adds each character.
+see: py.cm.append
+```py
+a = [1, 2]
+a.extend([3, 4]); a.extend("hi"); a += (5,)
+print(a)
+```
+```text
+[1, 2, 3, 4, 'h', 'i', 5]
+```
+
+@@ py.cm.insert
+Q: list.insert(i, x): what does it do?
+aka: insert at index, add at start of list, insert at position, prepend list
+A: Puts `x` **before** position `i`. `insert(0, x)` adds to the front; an index past the end just appends. (For lots of front-inserts, `collections.deque` is faster.)
+see: py.list-add
+```py
+a = ["b", "d"]
+a.insert(0, "a"); a.insert(2, "c"); a.insert(99, "e"); a.insert(-1, "x")
+print(a)
+```
+```text
+['a', 'b', 'c', 'd', 'x', 'e']
+```
+
+@@ py.cm.remove-pop
+Q: list.remove(x), pop(i) and clear(): what's the difference?
+aka: remove vs pop, pop returns, remove first occurrence, clear list, delete from list by value or index
+A: `remove(x)` deletes the **first item equal to x** (ValueError if missing) and returns None; `pop(i)` deletes **by position** (default the last) and **returns** the item; `clear()` empties the list.
+see: py.list-remove
+```py
+a = ["x", "y", "x", "z"]
+a.remove("x")
+last = a.pop()
+first = a.pop(0)
+print(a, last, first)
+a.clear(); print(a)
+```
+```text
+['x'] z y
+[]
+```
+
+@@ py.cm.index-count
+Q: list.index(x) and list.count(x): what do they do?
+aka: list index method, list count method, position of item, how many times in list
+A: `index(x, start, end)` returns the position of the first `x` (ValueError if absent); `count(x)` returns how many items equal `x`.
+see: py.list-find
+```py
+a = [3, 1, 4, 1, 5]
+print(a.index(1), a.index(1, 2), a.count(1), a.count(9))
+```
+```text
+1 3 2 0
+```
+
+@@ py.cm.sort-reverse
+Q: list.sort(), list.reverse() and list.copy(): what do they do?
+aka: list sort method, sort in place, reverse in place, list copy method, sort returns none
+A: `sort(key=, reverse=)` sorts the list in place; `reverse()` flips it in place; both return `None`. `copy()` returns a new shallow copy (same as `a[:]` or `list(a)`).
+see: py.sort, py.copy-list
+```py
+a = [3, 1, 2]
+b = a.copy()
+a.sort(); b.reverse()
+print(a, b, a.sort())
+```
+```text
+[1, 2, 3] [2, 1, 3] None
+```
+
+@@ py.cm.dict-get-setdefault
+Q: dict.get() and dict.setdefault(): what's the difference?
+aka: dict get, setdefault, get default, setdefault list append, dict default value
+A: `d.get(k, default)` reads without changing the dict; `d.setdefault(k, default)` returns `d[k]` if present, otherwise **inserts** `default` and returns it (handy: `d.setdefault(k, []).append(x)`).
+see: py.dict-get, mod.collections.defaultdict
+```py
+d = {"a": 1}
+print(d.get("b", 0), d)
+groups = {}
+for word in ("apple", "avocado", "banana"):
+    groups.setdefault(word[0], []).append(word)
+print(groups)
+```
+```text
+0 {'a': 1}
+{'a': ['apple', 'avocado'], 'b': ['banana']}
+```
+
+@@ py.cm.dict-views
+Q: dict.keys(), values() and items(): what do they return?
+aka: dict keys values items, dict views, dict_keys, loop dict items, live view
+A: **Views**: live windows onto the dict (they change when the dict changes). Loop over them, use `in`, or wrap in `list()` for indexing. `keys()` views support set operations like `&` and `-`.
+see: py.dict-loop, py.err2.dict-keys-subscript
+```py
+d = {"a": 1, "b": 2}
+k = d.keys()
+d["c"] = 3
+print(list(k), list(d.values()), list(d.items())[0], "a" in k)
+print(d.keys() & {"b", "z"}, d.keys() - {"a"})
+```
+```text
+['a', 'b', 'c'] [1, 2, 3] ('a', 1) True
+{'b'} {'b', 'c'}
+```
+
+@@ py.cm.dict-update
+Q: dict.update(), dict | other, and dict.fromkeys(): what do they do?
+aka: dict update, merge dicts, dict union operator, fromkeys, update with keyword arguments
+A: `d.update(other)` adds/overwrites keys from another dict (or keyword arguments) in place; `d | other` returns a new merged dict (3.9+), `d |= other` updates in place; `dict.fromkeys(keys, value)` builds a dict with the same value for each key (careful: a list value is shared).
+see: py.dict-merge
+```py
+d = {"a": 1}
+d.update({"b": 2}, c=3)
+print(d, d | {"a": 99})
+print(dict.fromkeys("xy", 0))
+```
+```text
+{'a': 1, 'b': 2, 'c': 3} {'a': 99, 'b': 2, 'c': 3}
+{'x': 0, 'y': 0}
+```
+
+@@ py.cm.dict-pop
+Q: dict.pop(), dict.popitem() and dict.clear(): what do they do?
+aka: dict pop, popitem, remove key return value, last inserted, clear dict
+A: `pop(k, default)` removes a key and returns its value (default if missing, KeyError if no default); `popitem()` removes and returns the **last added** `(key, value)`; `clear()` empties it.
+see: py.dict-remove
+```py
+d = {"a": 1, "b": 2, "c": 3}
+print(d.pop("a"), d.pop("zz", None), d.popitem(), d)
+d.clear(); print(d)
+```
+```text
+1 None ('c', 3) {'b': 2}
+{}
+```
+
+@@ py.cm.dict-copy
+Q: dict.copy(): is it a deep copy?
+aka: dict copy, copy dictionary, shallow copy dict, nested dict copy changes original
+A: No, a **shallow** copy: a new dict, but lists/dicts inside are shared. Use `copy.deepcopy(d)` for nested data.
+see: py.oop.copy
+```py
+import copy
+d = {"tags": ["a"]}
+shallow, deep = d.copy(), copy.deepcopy(d)
+d["tags"].append("b")
+print(shallow, deep)
+```
+```text
+{'tags': ['a', 'b']} {'tags': ['a']}
+```
+
+@@ py.cm.set-add-remove
+Q: set.add(), discard(), remove(), pop() and clear(): what do they do?
+aka: set add, set discard vs remove, set pop, remove from set, add to set
+A: `add(x)` adds one item (no effect if present); `discard(x)` removes it if present; `remove(x)` removes it or raises KeyError; `pop()` removes and returns an arbitrary item; `clear()` empties.
+see: py.set
+```py
+s = {1, 2}
+s.add(2); s.add(3); s.discard(99)
+s.remove(1)
+print(sorted(s))
+try:
+    s.remove(99)
+except KeyError as e:
+    print("KeyError", e)
+```
+```text
+[2, 3]
+KeyError 99
+```
+
+@@ py.cm.set-ops
+Q: set.union(), intersection(), difference(), symmetric_difference() and the update versions: what do they do?
+aka: union, intersection, difference, symmetric difference, intersection_update, difference_update, set operations methods
+A: They combine sets like `|`, `&`, `-`, `^` but accept **any iterable** as the argument. The `_update` versions (`update`, `intersection_update`, `difference_update`, `symmetric_difference_update`) change the set in place.
+see: py.coll.set-methods
+```py
+a = {1, 2, 3}
+print(a.union([3, 4]), a.intersection("123"), a.intersection({2, 3}), a.difference([1]), a.symmetric_difference({3, 4}))
+a.difference_update([1, 2]); print(a)
+```
+```text
+{1, 2, 3, 4} set() {2, 3} {2, 3} {1, 2, 4}
+{3}
+```
+
+@@ py.cm.set-tests
+Q: set.issubset(), issuperset() and isdisjoint(): what do they test?
+aka: issubset, issuperset, isdisjoint, subset check, all items in other set, no common items
+A: `a.issubset(b)` (`a <= b`): every item of `a` is in `b`. `a.issuperset(b)` (`a >= b`): `a` contains all of `b`. `a.isdisjoint(b)`: no items in common.
+see: py.coll.set-methods
+```py
+need = {"flour", "eggs"}
+have = {"flour", "eggs", "milk"}
+print(need.issubset(have), have.issuperset(need), need.isdisjoint({"sugar"}))
+```
+```text
+True True True
+```
+
+@@ py.cm.tuple
+Q: tuple.count() and tuple.index(): are those really the only tuple methods?
+aka: tuple methods, tuple count, tuple index, why tuple has few methods
+A: Yes: tuples can't change, so they only have `count` and `index`. Everything else is done with operators and built-ins (`len`, `in`, `+`, slicing, `sorted`).
+see: py.coll.tuple-methods
+```py
+t = (1, 2, 2, 3)
+print(t.count(2), t.index(3), len(t), sorted(t, reverse=True), t + (4,))
+```
+```text
+2 3 4 [3, 2, 2, 1] (1, 2, 2, 3, 4)
+```
