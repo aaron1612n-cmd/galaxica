@@ -1,0 +1,428 @@
+# tk-ev | Events in depth | Every event type, modifiers, keysyms, bindtags, event_generate, gestures and keyboard tricks | tkinter
+
+@@ tk.ev.types
+Q: What are all the event types I can bind (KeyPress, Motion, Enter, Configure, FocusIn, MouseWheel...)?
+aka: event types list, all events tkinter, bind event list, Destroy event, Map Unmap, Visibility, Expose, Activate
+A: Keyboard: `<KeyPress>`, `<KeyRelease>`. Mouse: `<ButtonPress-n>`, `<ButtonRelease-n>`, `<Motion>`, `<B1-Motion>` (drag), `<Double-Button-1>`, `<Triple-Button-1>`, `<Enter>`, `<Leave>`, `<MouseWheel>` (Linux: `<Button-4>`/`<Button-5>`). Window: `<Configure>` (size/position), `<Map>`/`<Unmap>` (shown/hidden), `<FocusIn>`/`<FocusOut>`, `<Destroy>`, `<Visibility>`, `<Expose>`, `<Activate>`/`<Deactivate>`. Virtual: `<<Copy>>`, `<<Paste>>`, `<<ComboboxSelected>>`, ...
+see: tk.event-names, tk.ev.virtual-list
+```py
+import tkinter as tk
+
+root = tk.Tk()
+log = tk.Listbox(root, width=40, height=10); log.pack(side="right", fill="y")
+pad = tk.Frame(root, width=200, height=180, bg="#ffd27a", takefocus=True); pad.pack(side="left", padx=10, pady=10)
+
+def show(e):
+    log.insert(0, f"{e.type.name:<12} {e.keysym if e.keysym != '??' else ''}")
+    log.delete(12, "end")
+
+for ev in ("<KeyPress>", "<ButtonPress>", "<ButtonRelease>", "<Double-Button-1>", "<Enter>", "<Leave>",
+           "<FocusIn>", "<FocusOut>", "<Configure>", "<MouseWheel>"):
+    pad.bind(ev, show)
+pad.bind("<Enter>", lambda e: (pad.focus_set(), show(e)))
+root.mainloop()
+```
+
+@@ tk.ev.modifiers
+Q: How do I bind Ctrl, Shift, Alt combinations, and check which modifier keys are held?
+aka: modifiers, control shift alt, event.state, check shift held, ctrl click, alt key binding, command key mac
+A: In the event name: `<Control-s>`, `<Control-Shift-S>` (capital letter when Shift is held), `<Alt-x>` (Option on Mac), `<Command-s>` (Mac only), `<Shift-Button-1>`, `<Control-MouseWheel>`. In a handler, test bits of `event.state`: `0x0001` Shift, `0x0004` Control, `0x0008` Alt (on Windows/Linux), `0x0100` mouse button 1 held.
+see: tk.shortcuts
+```py
+import sys
+import tkinter as tk
+
+root = tk.Tk()
+info = tk.Label(root, text="click with modifiers", width=36, height=4, bg="#eee"); info.pack(padx=10, pady=10)
+
+def click(e):
+    held = [name for bit, name in ((0x1, "Shift"), (0x4, "Ctrl"), (0x8, "Alt")) if e.state & bit]
+    info.config(text=f"click at {e.x},{e.y} with {'+'.join(held) or 'nothing'}")
+
+info.bind("<Button-1>", click)
+MOD = "Command" if sys.platform == "darwin" else "Control"      # Cmd on Mac, Ctrl elsewhere
+root.bind(f"<{MOD}-s>", lambda e: print("save"))
+root.bind(f"<{MOD}-Shift-S>", lambda e: print("save as"))      # note the capital S
+root.focus_force(); root.update()                               # fake keys need focus
+root.event_generate(f"<{MOD}-s>")
+root.mainloop()
+```
+```text
+save
+```
+
+@@ tk.ev.keysym-table
+Q: What are the key names (keysyms) for special keys (Enter, Escape, F1, arrows, numpad, space)?
+aka: keysym list, key names, return key name, escape keysym, F keys, numpad keys, space keysym, backspace, delete key, page up, home end, print keysym
+A: Common ones: `Return` (Enter), `KP_Enter` (numpad Enter), `Escape`, `BackSpace`, `Delete`, `Tab`, `space`, `Up` `Down` `Left` `Right`, `Home`, `End`, `Prior` (Page Up), `Next` (Page Down), `Insert`, `F1`–`F12`, `Shift_L`, `Control_L`, `Alt_L`, `KP_0`–`KP_9`, `plus`, `minus`, `comma`, `period`, `slash`. To find any key, print `event.keysym` in a `<Key>` binding.
+see: tk.bind-keys
+```py
+import tkinter as tk
+
+root = tk.Tk()
+l = tk.Label(root, text="press any key", font=("Consolas", 14), width=40, height=3); l.pack(padx=10, pady=10)
+
+def key(e):
+    l.config(text=f"keysym={e.keysym!r}  char={e.char!r}  keycode={e.keycode}")
+root.bind("<Key>", key)
+root.focus_force(); root.update()
+root.event_generate("<KeyPress>", keysym="Prior")      # pretend Page Up was pressed
+print(l.cget("text").split()[0])
+root.mainloop()
+```
+```text
+keysym='Prior'
+```
+
+@@ tk.ev.char-vs-keysym
+Q: What's the difference between event.char, event.keysym and event.keycode?
+aka: event char keysym keycode difference, char empty, typed character, which key pressed
+A: `keysym` = the key's name (`"a"`, `"A"`, `"Return"`, `"Shift_L"`); `char` = the text it types (`"a"`, `"\r"`, `""` for keys that type nothing like arrows or Shift); `keycode` = a hardware number that differs between systems (avoid it). For "did they type a letter", use `char`; for "which key", use `keysym`.
+see: tk.ev.keysym-table
+```py
+import tkinter as tk
+
+root = tk.Tk()
+seen = []
+root.bind("<Key>", lambda e: seen.append((e.keysym, e.char)))
+root.focus_force(); root.update()
+for k in ("a", "A", "Return", "Left", "Shift_L"):
+    root.event_generate("<KeyPress>", keysym=k)
+root.update()
+print(seen)
+root.mainloop()
+```
+```text
+[('a', 'a'), ('A', 'A'), ('Return', '\r'), ('Left', ''), ('Shift_L', '')]
+```
+
+@@ tk.ev.bindtags
+Q: What are bindtags, and why does my key binding see the Entry's old text?
+aka: bindtags, binding order, entry get old value on keypress, event before widget updates, class binding order, keypress lag one character
+A: An event runs bindings in this order: the widget's own, then its class (e.g. `Entry`, which actually inserts the character), then the toplevel, then `all`. So in a `<KeyPress>` binding on an Entry, the new character isn't there yet. Fixes: bind `<KeyRelease>`, use a StringVar trace, or move your tag after the class in `bindtags`.
+see: tk.bind-all, tk.entry-changes
+```py
+import tkinter as tk
+
+root = tk.Tk()
+e = tk.Entry(root); e.pack(padx=20, pady=20)
+print(e.bindtags())         # ('.!entry', 'Entry', '.', 'all')
+
+before, after = [], []
+e.bind("<KeyPress>", lambda ev: before.append(e.get()))            # runs BEFORE Entry inserts
+e.bindtags((e.bindtags()[1], "after_class", *e.bindtags()[2:]))    # Entry class first...
+e.bind_class("after_class", "<KeyPress>", lambda ev: after.append(e.get()))   # ...then ours
+e.focus_force(); root.update()
+for ch in "hi":
+    e.event_generate("<KeyPress>", keysym=ch)
+print(after)                # our handler sees the text WITH the new letter
+root.mainloop()
+```
+```text
+('.!entry', 'Entry', '.', 'all')
+['h', 'hi']
+```
+
+@@ tk.ev.generate
+Q: How do I simulate a click or key press from code (event_generate)?
+aka: event_generate, simulate click, fake key press, trigger event, automate gui, test tkinter events
+A: `widget.event_generate("<Button-1>", x=10, y=5)` or `"<KeyPress>", keysym="a"`. The widget may need focus for keys (`focus_force()` + `update()`). For buttons, `invoke()` is simpler than faking a click.
+see: tk.virtual-event, tk.ev.testing
+```py
+import tkinter as tk
+
+root = tk.Tk()
+clicks = []
+c = tk.Canvas(root, width=200, height=100, bg="white"); c.pack()
+c.bind("<Button-1>", lambda e: clicks.append((e.x, e.y)))
+b = tk.Button(root, text="Go", command=lambda: clicks.append("button"))
+b.pack()
+root.update()
+c.event_generate("<Button-1>", x=30, y=40)
+b.invoke()
+print(clicks)
+root.mainloop()
+```
+```text
+[(30, 40), 'button']
+```
+
+@@ tk.ev.virtual-list
+Q: Which built-in virtual events exist (<<Copy>>, <<Paste>>, <<Undo>>, <<Modified>>, <<ListboxSelect>>...)?
+aka: virtual events list, <<Copy>> <<Paste>> <<Cut>>, <<SelectAll>>, <<Undo>> <<Redo>>, <<ListboxSelect>>, <<TreeviewSelect>>, <<NotebookTabChanged>>, <<Selection>>, event_info
+A: Text/Entry: `<<Cut>>`, `<<Copy>>`, `<<Paste>>`, `<<Clear>>`, `<<SelectAll>>`, `<<Undo>>`, `<<Redo>>`, `<<Modified>>`, `<<Selection>>`. Widgets: `<<ListboxSelect>>`, `<<ComboboxSelected>>`, `<<TreeviewSelect>>`, `<<TreeviewOpen>>`, `<<TreeviewClose>>`, `<<NotebookTabChanged>>`, `<<Increment>>`/`<<Decrement>>` (Spinbox), `<<ThemeChanged>>`. `root.event_info()` lists the virtual events and their keys.
+see: tk.virtual-event
+```py
+import tkinter as tk
+
+root = tk.Tk()
+print(sorted(root.event_info()))
+print(root.event_info("<<Paste>>"))      # which keys trigger it on this system
+t = tk.Text(root, height=3); t.pack()
+t.bind("<<Paste>>", lambda e: print("pasting!"))
+root.mainloop()
+```
+
+@@ tk.ev.custom-virtual
+Q: How do I make my own virtual event with several key shortcuts (event_add)?
+aka: event_add, custom virtual event, several shortcuts same action, define shortcut once
+A: `root.event_add("<<Save>>", "<Control-s>", "<F2>")` maps several real events to one virtual event; then bind your handler to `<<Save>>` once. You can also `event_generate("<<Save>>")` from a menu.
+see: tk.virtual-event
+```py
+import tkinter as tk
+
+root = tk.Tk()
+root.event_add("<<Save>>", "<Control-s>", "<F2>")
+root.bind("<<Save>>", lambda e: print("saved"))
+root.focus_force(); root.update()
+root.event_generate("<F2>")          # a real key mapped to <<Save>>
+root.event_generate("<<Save>>")      # or fire it directly (e.g. from a menu)
+root.mainloop()
+```
+```text
+saved
+saved
+```
+
+@@ tk.ev.data
+Q: Can I send data with a virtual event?
+aka: event_generate data, pass data with event, custom event payload, event.data tkinter
+A: Plain tkinter drops the `data=` field on the way back, so it doesn't arrive in `event`. Simplest: store the data in an attribute or queue just before `event_generate`, and read it in the handler.
+see: tk.ev.custom-virtual, tk.thr.queue
+```py
+import tkinter as tk
+
+root = tk.Tk()
+root.pending = []
+
+def fire(payload):
+    root.pending.append(payload)
+    root.event_generate("<<NewMessage>>", when="tail")
+
+def on_message(event):
+    while root.pending:
+        print("got", root.pending.pop(0))
+
+root.bind("<<NewMessage>>", on_message)
+root.update()                 # events sent before the window first appears are dropped
+fire({"from": "Sam", "text": "hi"})
+root.mainloop()
+```
+```text
+got {'from': 'Sam', 'text': 'hi'}
+```
+
+@@ tk.ev.after-key
+Q: How do I react to a key only once when it's held down (no auto-repeat)?
+aka: key repeat, key held repeats, disable auto repeat, single key press, key pressed once
+A: Holding a key sends repeated KeyPress events (and, on Linux, KeyRelease too). Keep a set of keys that are down: act only when a key **enters** the set, and remove it on release (ignoring a release immediately followed by a press on Linux).
+see: tk.key-held
+```py
+import tkinter as tk
+
+root = tk.Tk()
+down = set()
+presses = []
+
+def press(e):
+    if e.keysym not in down:
+        down.add(e.keysym)
+        presses.append(e.keysym)          # runs once per real press
+
+def release(e):
+    def really():
+        down.discard(e.keysym)
+    root.after(30, really)                # a repeat's press arrives first and cancels nothing
+
+root.bind("<KeyPress>", press)
+root.bind("<KeyRelease>", release)
+root.focus_force(); root.update()
+for _ in range(5):
+    root.event_generate("<KeyPress>", keysym="space")    # auto-repeat
+root.update()
+print(presses)
+root.mainloop()
+```
+```text
+['space']
+```
+
+@@ tk.ev.mouse-buttons
+Q: Which mouse button numbers are left, middle and right (and how do I handle Mac right-click)?
+aka: right click number, button 3, middle click, button 2 mac, mouse buttons tkinter, mac right click control click
+A: `<Button-1>` = left, `<Button-2>` = middle (but **right** on macOS), `<Button-3>` = right (Windows/Linux). To cover all: bind right-click to `<Button-3>`, plus `<Button-2>` and `<Control-Button-1>` on macOS.
+see: tk.right-click-menu
+```py
+import sys
+import tkinter as tk
+
+root = tk.Tk()
+l = tk.Label(root, text="right-click me", width=24, height=4, bg="#eee"); l.pack(padx=20, pady=20)
+
+def right(e):
+    print("right click at", e.x, e.y)
+
+if sys.platform == "darwin":
+    l.bind("<Button-2>", right)
+    l.bind("<Control-Button-1>", right)
+else:
+    l.bind("<Button-3>", right)
+l.bind("<Button-1>", lambda e: print("left"))
+root.mainloop()
+```
+
+@@ tk.ev.long-press
+Q: How do I detect a long press (click and hold) or tell a click from a drag?
+aka: long press, press and hold, click vs drag, hold to activate, tap and hold
+A: On press, start an `after(600, ...)` timer; cancel it on release. If the mouse moves more than a few pixels before release, treat it as a drag instead of a click.
+see: tk.drag
+```py
+import tkinter as tk
+
+root = tk.Tk()
+box = tk.Label(root, text="press, hold, or drag", width=26, height=5, bg="#ffd27a"); box.pack(padx=20, pady=20)
+st = {}
+
+def press(e):
+    st.update(x=e.x, y=e.y, moved=False, long=False)
+    st["job"] = root.after(600, long_press)
+
+def long_press():
+    st["long"] = True; box.config(text="long press!")
+
+def motion(e):
+    if abs(e.x - st["x"]) + abs(e.y - st["y"]) > 6 and not st["moved"]:
+        st["moved"] = True; root.after_cancel(st["job"]); box.config(text="dragging")
+
+def release(e):
+    root.after_cancel(st["job"])
+    if not st["moved"] and not st["long"]:
+        box.config(text="click")
+
+box.bind("<ButtonPress-1>", press); box.bind("<B1-Motion>", motion); box.bind("<ButtonRelease-1>", release)
+root.mainloop()
+```
+
+@@ tk.ev.mouse-position
+Q: How do I get the mouse position at any time (not just in an event)?
+aka: mouse position, cursor position, winfo_pointerxy, pointer position, mouse coordinates without event
+A: `root.winfo_pointerxy()` gives screen coordinates; subtract `widget.winfo_rootx()`/`winfo_rooty()` to get the position inside a widget. Or keep the last `<Motion>` event's `x, y`.
+see: tk.mouse
+```py
+import tkinter as tk
+
+root = tk.Tk()
+c = tk.Canvas(root, width=200, height=100, bg="white"); c.pack()
+l = tk.Label(root, width=28); l.pack()
+
+def track():
+    px, py = root.winfo_pointerxy()
+    l.config(text=f"screen {px},{py} · canvas {px - c.winfo_rootx()},{py - c.winfo_rooty()}")
+    root.after(100, track)
+track()
+root.mainloop()
+```
+
+@@ tk.ev.wheel-zoom-scroll
+Q: How do I make the mouse wheel scroll normally but zoom when Ctrl is held?
+aka: ctrl scroll zoom, wheel with modifier, horizontal scroll shift wheel, mousewheel delta, scroll speed
+A: Bind `<MouseWheel>` and `<Control-MouseWheel>` separately (and `<Shift-MouseWheel>` for sideways). `event.delta` is ±120 per notch on Windows, small values on macOS; on Linux use `<Button-4>` / `<Button-5>` (with `<Control-Button-4>` for zoom).
+see: tk.mousewheel, tk.cv.zoom-pan
+```py
+import tkinter as tk
+
+root = tk.Tk()
+t = tk.Text(root, width=40, height=10, font=("Arial", 12)); t.pack()
+t.insert("1.0", "\n".join(f"line {i}" for i in range(80)))
+size = [12]
+
+def zoom(direction):
+    size[0] = max(6, min(40, size[0] + direction))
+    t.config(font=("Arial", size[0]))
+    return "break"                       # don't also scroll
+
+t.bind("<Control-MouseWheel>", lambda e: zoom(1 if e.delta > 0 else -1))
+t.bind("<Control-Button-4>", lambda e: zoom(1))
+t.bind("<Control-Button-5>", lambda e: zoom(-1))
+t.bind("<Shift-MouseWheel>", lambda e: t.xview_scroll(-1 if e.delta > 0 else 1, "units"))
+root.mainloop()
+```
+
+@@ tk.ev.disable-all
+Q: How do I temporarily block all clicks and keys (while something is loading)?
+aka: block input, disable all widgets, freeze input, ignore clicks while loading, grab busy
+A: Easiest: disable the widgets in a loop (`state="disabled"`), or cover the window with a transparent-looking frame using `place` and `grab_set()` on it. Tk 8.6+/9 also has `tk busy` (`root.tk.call("tk", "busy", "hold", root)`).
+see: tk.thr.busy-cursor
+```py
+import tkinter as tk
+
+def set_enabled(widget, on):
+    for w in widget.winfo_children():
+        try:
+            w.config(state="normal" if on else "disabled")
+        except tk.TclError:
+            pass                      # frames etc. have no state
+        set_enabled(w, on)
+
+root = tk.Tk()
+tk.Entry(root).pack(padx=20, pady=4)
+tk.Button(root, text="Save").pack(pady=4)
+tk.Checkbutton(root, text="Option").pack(pady=4)
+set_enabled(root, False)
+root.after(200, set_enabled, root, True)
+root.mainloop()
+```
+
+@@ tk.ev.focus-traversal
+Q: How do I move focus with arrow keys between buttons (like a game menu)?
+aka: arrow keys menu, keyboard menu navigation, focus next arrow, menu with keyboard, tk_focusNext
+A: Bind `<Down>`/`<Up>` to `event.widget.tk_focusNext().focus_set()` / `tk_focusPrev()`, and `<Return>` to `event.widget.invoke()`. Show the focused one with a `<FocusIn>` colour change.
+see: tk.form.enter-next
+```py
+import tkinter as tk
+
+root = tk.Tk()
+root.configure(bg="#111")
+buttons = []
+for text in ("New game", "Continue", "Options", "Quit"):
+    b = tk.Button(root, text=text, width=16, bg="#111", fg="#888", relief="flat", font=("Arial", 14),
+                  activebackground="#222", highlightthickness=0, command=lambda t=text: print(t))
+    b.pack(padx=40, pady=2)
+    b.bind("<FocusIn>", lambda e: e.widget.config(fg="#ffb000"))
+    b.bind("<FocusOut>", lambda e: e.widget.config(fg="#888"))
+    b.bind("<Down>", lambda e: e.widget.tk_focusNext().focus_set())
+    b.bind("<Up>", lambda e: e.widget.tk_focusPrev().focus_set())
+    b.bind("<Return>", lambda e: e.widget.invoke())
+    buttons.append(b)
+buttons[0].focus_set()
+root.mainloop()
+```
+
+@@ tk.ev.testing
+Q: How do I write automated tests for a tkinter app?
+aka: test tkinter, unittest tkinter, pytest gui, automate gui test, test button click
+A: Create the app in a test, drive it with `invoke()`, `insert`, `event_generate` and `update()`, check widget values, and `destroy()` it afterwards. Keep logic in plain functions so most tests don't need a window at all.
+see: tk.ev.generate, mod.unittest.basics
+```py
+import sys, unittest
+import tkinter as tk
+
+class Counter(tk.Frame):
+    def __init__(self, master):
+        super().__init__(master)
+        self.n = tk.IntVar()
+        self.btn = tk.Button(self, text="+1", command=lambda: self.n.set(self.n.get() + 1))
+        self.btn.pack()
+
+class TestCounter(unittest.TestCase):
+    def setUp(self):
+        self.root = tk.Tk()
+        self.app = Counter(self.root); self.app.pack()
+    def tearDown(self):
+        self.root.destroy()
+    def test_click_adds_one(self):
+        self.app.btn.invoke(); self.app.btn.invoke()
+        self.assertEqual(self.app.n.get(), 2)
+
+unittest.main(argv=["x"], exit=False, testRunner=unittest.TextTestRunner(stream=sys.stdout))
+```

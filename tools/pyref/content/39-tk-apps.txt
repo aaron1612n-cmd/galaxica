@@ -1,0 +1,784 @@
+# tk-apps | More complete apps | Password generator, expense tracker, pomodoro, flashcards, alarm, file renamer, chat, music player and more | tkinter
+
+@@ tk.app.password-gen
+Q: How do I make a password generator app?
+aka: password generator, random password gui, generate secure password, secrets password
+A: Build the alphabet from ticked options, pick characters with `secrets.choice` (safe for passwords, unlike `random`), show it, and copy it to the clipboard.
+see: tk.clipboard, mod.secrets
+```py
+import secrets, string
+import tkinter as tk
+from tkinter import ttk
+
+root = tk.Tk()
+root.title("Password generator")
+f = ttk.Frame(root, padding=14); f.pack()
+length = tk.IntVar(value=16)
+opts = {name: tk.BooleanVar(value=True) for name in ("Lowercase", "Uppercase", "Digits", "Symbols")}
+CHARS = {"Lowercase": string.ascii_lowercase, "Uppercase": string.ascii_uppercase, "Digits": string.digits, "Symbols": "!@#$%^&*-_=+?"}
+out = tk.StringVar()
+
+ttk.Label(f, text="Length").grid(row=0, column=0, sticky="w")
+ttk.Spinbox(f, from_=4, to=64, textvariable=length, width=5).grid(row=0, column=1, sticky="w")
+for i, (name, v) in enumerate(opts.items()):
+    ttk.Checkbutton(f, text=name, variable=v).grid(row=1 + i // 2, column=i % 2, sticky="w")
+ttk.Entry(f, textvariable=out, width=36, font=("Consolas", 12)).grid(row=3, column=0, columnspan=2, pady=8)
+
+def generate():
+    pools = [CHARS[n] for n, v in opts.items() if v.get()]
+    if not pools:
+        out.set("tick at least one box"); return
+    pw = [secrets.choice(p) for p in pools]                 # at least one of each kind
+    pw += [secrets.choice("".join(pools)) for _ in range(length.get() - len(pw))]
+    secrets.SystemRandom().shuffle(pw)
+    out.set("".join(pw))
+
+def copy():
+    root.clipboard_clear(); root.clipboard_append(out.get())
+
+row = ttk.Frame(f); row.grid(row=4, column=0, columnspan=2)
+ttk.Button(row, text="Generate", command=generate).pack(side="left", padx=3)
+ttk.Button(row, text="Copy", command=copy).pack(side="left", padx=3)
+generate()
+print(len(out.get()))
+root.mainloop()
+```
+```text
+16
+```
+
+@@ tk.app.expenses
+Q: How do I make an expense tracker (add expenses, see totals per category, save to file)?
+aka: expense tracker, budget app, money tracker, spending app, personal finance tkinter
+A: A small form (amount, category, note), a Treeview of entries, totals per category computed with a dict, and JSON save/load so it remembers between runs.
+see: tk.data.crud, tk.data.totals, py.json
+```py
+import json, datetime
+import tkinter as tk
+from tkinter import ttk
+
+FILE = "expenses.json"
+try:
+    items = json.load(open(FILE))
+except (OSError, ValueError):
+    items = []
+
+root = tk.Tk()
+root.title("Expenses")
+form = ttk.Frame(root, padding=10); form.pack(fill="x")
+amount, cat, note = tk.StringVar(), tk.StringVar(value="Food"), tk.StringVar()
+ttk.Entry(form, textvariable=amount, width=8).pack(side="left")
+ttk.Combobox(form, textvariable=cat, values=["Food", "Travel", "Fun", "Bills", "Other"], width=8, state="readonly").pack(side="left", padx=4)
+ttk.Entry(form, textvariable=note, width=18).pack(side="left")
+tv = ttk.Treeview(root, columns=("date", "cat", "amount", "note"), show="headings", height=8)
+for c, w in (("date", 90), ("cat", 70), ("amount", 70), ("note", 140)):
+    tv.heading(c, text=c.title()); tv.column(c, width=w)
+tv.pack(padx=10, fill="both", expand=True)
+totals = ttk.Label(root, padding=10); totals.pack(anchor="w")
+
+def refresh():
+    tv.delete(*tv.get_children())
+    sums = {}
+    for it in items:
+        tv.insert("", "end", values=(it["date"], it["cat"], f"{it['amount']:.2f}", it["note"]))
+        sums[it["cat"]] = sums.get(it["cat"], 0) + it["amount"]
+    totals.config(text="   ".join(f"{k}: {v:.2f}" for k, v in sorted(sums.items())) + f"   |   Total: {sum(sums.values()):.2f}")
+    json.dump(items, open(FILE, "w"), indent=1)
+
+def add():
+    try:
+        a = float(amount.get())
+    except ValueError:
+        return root.bell()
+    items.append({"date": datetime.date.today().isoformat(), "cat": cat.get(), "amount": a, "note": note.get()})
+    amount.set(""); note.set(""); refresh()
+
+ttk.Button(form, text="Add", command=add).pack(side="left", padx=4)
+root.bind("<Return>", lambda e: add())
+amount.set("4.50"); note.set("lunch"); add()
+root.mainloop()
+```
+
+@@ tk.app.pomodoro
+Q: How do I make a Pomodoro (work/break) timer?
+aka: pomodoro timer, work break timer, focus timer, 25 minute timer, study timer
+A: A countdown using `after(1000)`, switching between work (25 min) and break (5 min) phases, with Start/Pause/Reset and a bell when a phase ends.
+see: tk.recipe-stopwatch
+```py
+import tkinter as tk
+
+WORK, BREAK = 25 * 60, 5 * 60
+root = tk.Tk()
+root.title("Pomodoro")
+s = {"left": WORK, "phase": "Work", "running": False, "job": None, "done": 0}
+phase_l = tk.Label(root, font=("Arial", 14)); phase_l.pack(pady=(14, 0))
+clock = tk.Label(root, font=("Consolas", 48)); clock.pack(padx=30)
+count_l = tk.Label(root, fg="#666"); count_l.pack()
+
+def draw():
+    m, sec = divmod(s["left"], 60)
+    clock.config(text=f"{m:02d}:{sec:02d}", fg="#c23b22" if s["phase"] == "Work" else "#2e7d4f")
+    phase_l.config(text=s["phase"])
+    count_l.config(text=f"{s['done']} pomodoros done")
+
+def tick():
+    if not s["running"]:
+        return
+    s["left"] -= 1
+    if s["left"] < 0:
+        root.bell()
+        if s["phase"] == "Work":
+            s["done"] += 1; s["phase"], s["left"] = "Break", BREAK
+        else:
+            s["phase"], s["left"] = "Work", WORK
+    draw()
+    s["job"] = root.after(1000, tick)
+
+def start_pause():
+    s["running"] = not s["running"]
+    btn.config(text="Pause" if s["running"] else "Start")
+    if s["running"]:
+        s["job"] = root.after(1000, tick)
+    elif s["job"]:
+        root.after_cancel(s["job"])
+
+def reset():
+    if s["job"]:
+        root.after_cancel(s["job"])
+    s.update(left=WORK, phase="Work", running=False); btn.config(text="Start"); draw()
+
+row = tk.Frame(root); row.pack(pady=12)
+btn = tk.Button(row, text="Start", width=8, command=start_pause); btn.pack(side="left", padx=4)
+tk.Button(row, text="Reset", width=8, command=reset).pack(side="left", padx=4)
+draw()
+root.mainloop()
+```
+
+@@ tk.app.flashcards
+Q: How do I make a flashcards app (flip a card, mark right/wrong)?
+aka: flashcards, study cards, vocabulary trainer, flip card, learn words app, spaced repetition simple
+A: A list of (front, back) pairs; a big label shows the front; Flip shows the back; "Knew it"/"Didn't" moves on, and cards you didn't know go back into the pile.
+see: tk.recipe-quiz
+```py
+import random
+import tkinter as tk
+
+CARDS = [("hola", "hello"), ("gato", "cat"), ("perro", "dog"), ("agua", "water"), ("libro", "book")]
+root = tk.Tk()
+root.title("Flashcards")
+pile = CARDS[:]
+random.shuffle(pile)
+s = {"card": None, "flipped": False, "right": 0}
+card = tk.Label(root, font=("Georgia", 30), width=12, height=3, bg="#fff8e6", relief="ridge", bd=2)
+card.pack(padx=20, pady=16)
+info = tk.Label(root); info.pack()
+
+def next_card():
+    if not pile:
+        card.config(text="Done!", bg="#e8f5e9"); info.config(text=f"{s['right']} known first time"); return
+    s["card"], s["flipped"] = pile.pop(0), False
+    card.config(text=s["card"][0], bg="#fff8e6")
+    info.config(text=f"{len(pile)} left after this")
+
+def flip(event=None):
+    s["flipped"] = not s["flipped"]
+    card.config(text=s["card"][1 if s["flipped"] else 0], bg="#e6f0ff" if s["flipped"] else "#fff8e6")
+
+def answer(knew):
+    if knew:
+        s["right"] += 1
+    else:
+        pile.append(s["card"])          # see it again later
+    next_card()
+
+card.bind("<Button-1>", flip)
+row = tk.Frame(root); row.pack(pady=12)
+tk.Button(row, text="Flip", command=flip).pack(side="left", padx=4)
+tk.Button(row, text="✓ Knew it", command=lambda: answer(True)).pack(side="left", padx=4)
+tk.Button(row, text="✗ Didn't", command=lambda: answer(False)).pack(side="left", padx=4)
+root.bind("<space>", flip)
+next_card()
+root.mainloop()
+```
+
+@@ tk.app.alarm
+Q: How do I make an alarm clock that rings at a set time?
+aka: alarm clock, reminder at time, set alarm gui, wake up alarm, notify at time
+A: Check the time every second with `after`; when `time.strftime("%H:%M")` equals the alarm, ring (bell/sound), flash the window, and bring it to the front.
+see: tk.clock, tk.win.focus-force
+```py
+import time
+import tkinter as tk
+
+root = tk.Tk()
+root.title("Alarm")
+now_l = tk.Label(root, font=("Consolas", 36)); now_l.pack(padx=20, pady=(16, 4))
+alarm = tk.StringVar(value=time.strftime("%H:%M"))
+row = tk.Frame(root); row.pack()
+tk.Label(row, text="Alarm at (HH:MM)").pack(side="left")
+tk.Entry(row, textvariable=alarm, width=6).pack(side="left", padx=4)
+armed = tk.BooleanVar(value=True)
+tk.Checkbutton(root, text="On", variable=armed).pack()
+msg = tk.Label(root, font=("Arial", 16), fg="#c23b22"); msg.pack(pady=(4, 16))
+
+def ring(n=10):
+    if n:
+        root.bell()
+        msg.config(text="⏰ Wake up!" if n % 2 else "")
+        root.after(500, ring, n - 1)
+
+def tick():
+    now = time.strftime("%H:%M:%S")
+    now_l.config(text=now)
+    if armed.get() and now[:5] == alarm.get() and now[6:] == "00":
+        root.deiconify(); root.lift(); ring()
+    root.after(1000, tick)
+tick()
+root.mainloop()
+```
+
+@@ tk.app.renamer
+Q: How do I make a bulk file renamer with a preview?
+aka: bulk rename files, batch rename gui, rename files in folder, file renamer preview, add prefix to files
+A: Pick a folder, list its files, compute new names from a pattern (prefix, find/replace, numbering), show old → new in a Treeview, and only rename when the user clicks Rename (checking for name clashes).
+see: py.listdir, mod.pathlib.basics
+```py
+import os
+import tkinter as tk
+from tkinter import ttk
+
+root = tk.Tk()
+root.title("Renamer")
+folder = tk.StringVar(value=os.getcwd())
+prefix, find, repl = tk.StringVar(value="new_"), tk.StringVar(), tk.StringVar()
+top = ttk.Frame(root, padding=8); top.pack(fill="x")
+for label, v in (("Folder", folder), ("Prefix", prefix), ("Find", find), ("Replace", repl)):
+    ttk.Label(top, text=label).pack(side="left"); ttk.Entry(top, textvariable=v, width=10 if label != "Folder" else 24).pack(side="left", padx=(2, 8))
+tv = ttk.Treeview(root, columns=("old", "new"), show="headings", height=8)
+tv.heading("old", text="Old name"); tv.heading("new", text="New name")
+tv.pack(fill="both", expand=True, padx=8)
+
+def plan():
+    files = sorted(f for f in os.listdir(folder.get()) if os.path.isfile(os.path.join(folder.get(), f)))
+    pairs = []
+    for f in files:
+        new = prefix.get() + (f.replace(find.get(), repl.get()) if find.get() else f)
+        pairs.append((f, new))
+    return pairs
+
+def preview(*_):
+    tv.delete(*tv.get_children())
+    try:
+        for old, new in plan():
+            tv.insert("", "end", values=(old, new))
+    except OSError:
+        pass
+
+def rename():
+    pairs = plan()
+    news = [n for _, n in pairs]
+    if len(set(news)) != len(news):
+        return print("two files would get the same name")
+    for old, new in pairs:
+        os.rename(os.path.join(folder.get(), old), os.path.join(folder.get(), new))
+    preview()
+
+for v in (folder, prefix, find, repl):
+    v.trace_add("write", preview)
+ttk.Button(root, text="Rename", command=rename).pack(pady=8)
+preview()
+print(tv.item(tv.get_children()[0], "values"))
+root.mainloop()
+```
+
+@@ tk.app.contacts
+Q: How do I make an address book (contacts saved to a file, with search)?
+aka: address book, phone book app, contact book, save contacts json, contacts search
+A: The CRUD pattern (form + table) plus a search box and JSON saving. Each contact is a dict; the list is saved after every change.
+see: tk.data.crud, tk.data.filter-table
+```py
+import json
+import tkinter as tk
+from tkinter import ttk
+
+FILE = "contacts.json"
+try:
+    contacts = json.load(open(FILE))
+except (OSError, ValueError):
+    contacts = [{"name": "Ada Lovelace", "phone": "0101"}, {"name": "Alan Turing", "phone": "0202"}]
+
+root = tk.Tk()
+root.title("Contacts")
+q, name, phone = tk.StringVar(), tk.StringVar(), tk.StringVar()
+ttk.Entry(root, textvariable=q).pack(fill="x", padx=8, pady=(8, 4))
+lb = tk.Listbox(root, height=8); lb.pack(fill="both", expand=True, padx=8)
+form = ttk.Frame(root, padding=8); form.pack(fill="x")
+ttk.Entry(form, textvariable=name, width=18).pack(side="left")
+ttk.Entry(form, textvariable=phone, width=12).pack(side="left", padx=4)
+shown = []
+
+def save():
+    json.dump(contacts, open(FILE, "w"), indent=1)
+
+def refresh(*_):
+    lb.delete(0, "end"); shown.clear()
+    for c in sorted(contacts, key=lambda c: c["name"].lower()):
+        if q.get().lower() in (c["name"] + c["phone"]).lower():
+            lb.insert("end", f"{c['name']}  ·  {c['phone']}"); shown.append(c)
+
+def add():
+    if name.get().strip():
+        contacts.append({"name": name.get().strip(), "phone": phone.get().strip()})
+        name.set(""); phone.set(""); save(); refresh()
+
+def delete():
+    for i in lb.curselection():
+        contacts.remove(shown[i])
+    save(); refresh()
+
+ttk.Button(form, text="Add", command=add).pack(side="left")
+ttk.Button(form, text="Delete", command=delete).pack(side="left", padx=4)
+q.trace_add("write", refresh)
+refresh()
+root.mainloop()
+```
+
+@@ tk.app.weather
+Q: How do I make a weather app that calls an online API?
+aka: weather app, api gui, get weather python, open-meteo, json api tkinter, fetch data from internet gui
+A: Call the API in a thread (so the window doesn't freeze), parse the JSON, and show it via the queue pattern. Open-Meteo needs no API key.
+see: tk.thr.queue, py.requests
+```py norun
+import json, queue, threading, urllib.request
+import tkinter as tk
+
+CITIES = {"London": (51.5, -0.12), "Paris": (48.85, 2.35), "Tokyo": (35.68, 139.69)}
+root = tk.Tk()
+root.title("Weather")
+city = tk.StringVar(value="London")
+tk.OptionMenu(root, city, *CITIES).pack(pady=8)
+out = tk.Label(root, font=("Arial", 20), width=18); out.pack(padx=20, pady=10)
+q = queue.Queue()
+
+def fetch(name):
+    lat, lon = CITIES[name]
+    url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current_weather=true"
+    try:
+        with urllib.request.urlopen(url, timeout=10) as r:
+            q.put(json.load(r)["current_weather"])
+    except OSError as e:
+        q.put(e)
+
+def poll():
+    if q.empty():
+        root.after(100, poll); return
+    w = q.get()
+    out.config(text=f"Error: {w}" if isinstance(w, Exception) else f"{w['temperature']} °C, wind {w['windspeed']} km/h")
+
+def go():
+    out.config(text="Loading…")
+    threading.Thread(target=fetch, args=(city.get(),), daemon=True).start()
+    poll()
+
+tk.Button(root, text="Get weather", command=go).pack(pady=(0, 12))
+root.mainloop()
+```
+
+@@ tk.app.music
+Q: How do I make a simple music player (play, pause, next) in tkinter?
+aka: music player, mp3 player gui, play mp3 tkinter, playlist app, pygame mixer music player
+A: tkinter can't play audio itself; use `pygame.mixer.music` (`pip install pygame`) for MP3/OGG: `load`, `play`, `pause`, `unpause`, `stop`, `set_volume`. A Listbox holds the playlist.
+see: tk.gm.sound-game
+```py norun
+import os
+import tkinter as tk
+from tkinter import filedialog
+import pygame
+
+pygame.mixer.init()
+root = tk.Tk()
+root.title("Player")
+songs = tk.Listbox(root, width=40, height=10); songs.pack(padx=8, pady=8)
+paths = []
+state = {"paused": False}
+
+def add_folder():
+    d = filedialog.askdirectory()
+    for f in sorted(os.listdir(d or ".")):
+        if f.lower().endswith((".mp3", ".ogg", ".wav")):
+            paths.append(os.path.join(d, f)); songs.insert("end", f)
+
+def play(i=None):
+    i = songs.curselection()[0] if i is None and songs.curselection() else (i or 0)
+    songs.selection_clear(0, "end"); songs.selection_set(i)
+    pygame.mixer.music.load(paths[i]); pygame.mixer.music.play()
+
+def pause():
+    (pygame.mixer.music.unpause if state["paused"] else pygame.mixer.music.pause)()
+    state["paused"] = not state["paused"]
+
+def step(d):
+    if paths:
+        cur = songs.curselection()[0] if songs.curselection() else 0
+        play((cur + d) % len(paths))
+
+bar = tk.Frame(root); bar.pack(pady=(0, 8))
+for text, cmd in (("Add folder", add_folder), ("⏮", lambda: step(-1)), ("▶", play), ("⏯", pause), ("⏭", lambda: step(1))):
+    tk.Button(bar, text=text, command=cmd).pack(side="left", padx=2)
+tk.Scale(root, from_=0, to=100, orient="horizontal", command=lambda v: pygame.mixer.music.set_volume(int(v) / 100)).pack(fill="x", padx=8)
+root.mainloop()
+```
+
+@@ tk.app.chat-socket
+Q: How do I make a chat app with a server (two windows talking over the network)?
+aka: chat client server, socket chat gui, network chat tkinter, lan chat, multiplayer chat
+A: A small server accepts connections and forwards each message to everyone. Each client has a reader **thread** that receives messages into a queue, and the GUI polls the queue. Run the server once, then several clients.
+see: tk.thr.queue, mod.socket.tcp
+```py norun
+# server.py
+import socket, threading
+
+clients = []
+def handle(conn):
+    with conn:
+        while data := conn.recv(1024):
+            for c in clients:
+                c.sendall(data)
+    clients.remove(conn)
+
+srv = socket.create_server(("0.0.0.0", 5000))
+while True:
+    conn, _ = srv.accept()
+    clients.append(conn)
+    threading.Thread(target=handle, args=(conn,), daemon=True).start()
+```
+```py norun
+# client.py
+import queue, socket, threading
+import tkinter as tk
+
+sock = socket.create_connection(("localhost", 5000))
+inbox = queue.Queue()
+
+def receive():
+    while data := sock.recv(1024):
+        inbox.put(data.decode())
+
+root = tk.Tk()
+log = tk.Text(root, height=15, width=50, state="disabled"); log.pack()
+msg = tk.Entry(root, width=50); msg.pack()
+
+def send(e=None):
+    sock.sendall(msg.get().encode()); msg.delete(0, "end")
+
+def poll():
+    while not inbox.empty():
+        log.config(state="normal"); log.insert("end", inbox.get() + "\n"); log.config(state="disabled"); log.see("end")
+    root.after(100, poll)
+
+msg.bind("<Return>", send)
+threading.Thread(target=receive, daemon=True).start()
+poll()
+root.mainloop()
+```
+
+@@ tk.app.text-adventure
+Q: How do I make a text adventure game with a GUI (rooms and choices)?
+aka: text adventure, choose your own adventure, story game buttons, rooms dictionary game, interactive fiction
+A: Store rooms in a dict: each has a description and a dict of choices → next room. Show the text and make one button per choice.
+see: py.nested-dict
+```py
+import tkinter as tk
+
+ROOMS = {
+    "hall":    ("You are in a dusty hall. Doors lead north and east.", {"Go north": "library", "Go east": "kitchen"}),
+    "library": ("Books everywhere. A key glints on a shelf.", {"Take the key": "key", "Back to hall": "hall"}),
+    "key":     ("You hold an old brass key.", {"Back to hall": "hall_key"}),
+    "hall_key": ("The hall again. The east door has a lock.", {"Unlock east door": "win", "Go north": "library"}),
+    "kitchen": ("The kitchen door is locked from this side. A rat squeaks.", {"Back": "hall"}),
+    "win":     ("The door opens to sunlight. You escaped!", {"Play again": "hall"}),
+}
+root = tk.Tk()
+root.title("Adventure")
+text = tk.Label(root, wraplength=320, justify="left", font=("Georgia", 13), padx=16, pady=16); text.pack()
+choices = tk.Frame(root); choices.pack(pady=(0, 16))
+
+def go(room):
+    desc, opts = ROOMS[room]
+    text.config(text=desc)
+    for w in choices.winfo_children():
+        w.destroy()
+    for label, target in opts.items():
+        tk.Button(choices, text=label, width=20, command=lambda t=target: go(t)).pack(pady=2)
+
+go("hall")
+root.mainloop()
+```
+
+@@ tk.app.bmi
+Q: How do I make a BMI (or any formula) calculator?
+aka: bmi calculator, formula calculator, calculate from inputs, interest calculator, area calculator gui
+A: Entries for the inputs, a Calculate button (or live updates via `trace_add`), `try/except ValueError` around the conversions, and a result label.
+see: tk.entry-number, tk.trace
+```py
+import tkinter as tk
+
+root = tk.Tk()
+root.title("BMI")
+w, h = tk.StringVar(value="70"), tk.StringVar(value="1.75")
+for label, var, unit in (("Weight", w, "kg"), ("Height", h, "m")):
+    row = tk.Frame(root); row.pack(padx=20, pady=4, anchor="w")
+    tk.Label(row, text=label, width=7, anchor="w").pack(side="left")
+    tk.Entry(row, textvariable=var, width=8).pack(side="left")
+    tk.Label(row, text=unit).pack(side="left")
+out = tk.Label(root, font=("Arial", 16)); out.pack(pady=12)
+
+def calc(*_):
+    try:
+        bmi = float(w.get()) / float(h.get()) ** 2
+    except (ValueError, ZeroDivisionError):
+        out.config(text="enter numbers"); return
+    band = "under" if bmi < 18.5 else "healthy" if bmi < 25 else "over" if bmi < 30 else "obese"
+    out.config(text=f"BMI {bmi:.1f} ({band})")
+
+w.trace_add("write", calc); h.trace_add("write", calc)
+calc()
+print(out.cget("text"))
+root.mainloop()
+```
+```text
+BMI 22.9 (healthy)
+```
+
+@@ tk.app.countdown-date
+Q: How do I show a countdown to a date (days, hours, minutes until an event)?
+aka: countdown to date, days until, event countdown, time remaining, new year countdown
+A: Subtract `datetime.now()` from the target `datetime` to get a `timedelta`; split its seconds into days/hours/minutes/seconds every second.
+see: py.date-math
+```py
+from datetime import datetime
+import tkinter as tk
+
+target = datetime(datetime.now().year + 1, 1, 1)
+root = tk.Tk()
+root.title("Countdown")
+tk.Label(root, text=f"Until {target:%d %B %Y}", font=("Arial", 12)).pack(pady=(14, 0))
+out = tk.Label(root, font=("Consolas", 26)); out.pack(padx=20, pady=(4, 16))
+
+def tick():
+    left = target - datetime.now()
+    secs = max(0, int(left.total_seconds()))
+    d, rem = divmod(secs, 86400)
+    h, rem = divmod(rem, 3600)
+    m, s = divmod(rem, 60)
+    out.config(text=f"{d}d {h:02d}h {m:02d}m {s:02d}s")
+    root.after(1000, tick)
+tick()
+root.mainloop()
+```
+
+@@ tk.app.currency
+Q: How do I make a currency converter?
+aka: currency converter, exchange rate app, convert money, dropdown from to convert
+A: Two Comboboxes (from/to), an amount Entry, and a rates table relative to one base currency: `amount / rate[from] * rate[to]`. Live rates need an API call in a thread.
+see: tk.recipe-converter, tk.app.weather
+```py
+import tkinter as tk
+from tkinter import ttk
+
+RATES = {"GBP": 1.0, "USD": 1.27, "EUR": 1.17, "JPY": 190.0, "INR": 106.0}   # example rates per 1 GBP
+root = tk.Tk()
+root.title("Currency")
+amount = tk.StringVar(value="100")
+a = ttk.Combobox(root, values=list(RATES), width=6, state="readonly"); a.set("GBP")
+b = ttk.Combobox(root, values=list(RATES), width=6, state="readonly"); b.set("EUR")
+ttk.Entry(root, textvariable=amount, width=10).grid(row=0, column=0, padx=6, pady=10)
+a.grid(row=0, column=1); ttk.Label(root, text="→").grid(row=0, column=2); b.grid(row=0, column=3, padx=6)
+out = ttk.Label(root, font=("Arial", 16)); out.grid(row=1, column=0, columnspan=4, pady=(0, 12))
+
+def convert(*_):
+    try:
+        v = float(amount.get()) / RATES[a.get()] * RATES[b.get()]
+        out.config(text=f"{v:,.2f} {b.get()}")
+    except ValueError:
+        out.config(text="?")
+
+amount.trace_add("write", convert)
+a.bind("<<ComboboxSelected>>", convert); b.bind("<<ComboboxSelected>>", convert)
+def swap():
+    x, y = a.get(), b.get()
+    a.set(y); b.set(x)
+    convert()
+
+ttk.Button(root, text="⇄", width=3, command=swap).grid(row=0, column=4, padx=(0, 6))
+convert()
+print(out.cget("text"))
+root.mainloop()
+```
+```text
+117.00 EUR
+```
+
+@@ tk.app.habit
+Q: How do I make a habit tracker (tick off days in a grid)?
+aka: habit tracker, streak tracker, checkbox grid days, daily tracker, tick days calendar
+A: A grid of Checkbuttons (habits × days of the week) backed by BooleanVars, saved to JSON keyed by habit and date.
+see: tk.checkbutton-many, tk.save-settings
+```py
+import json, datetime
+import tkinter as tk
+
+HABITS = ["Read", "Exercise", "Water", "Sleep 8h"]
+FILE = "habits.json"
+try:
+    done = json.load(open(FILE))
+except (OSError, ValueError):
+    done = {}
+today = datetime.date.today()
+week = [today - datetime.timedelta(days=today.weekday() - i) for i in range(7)]
+root = tk.Tk()
+root.title("Habits")
+for c, d in enumerate(week, start=1):
+    tk.Label(root, text=d.strftime("%a\n%d"), fg="#c23b22" if d == today else "black").grid(row=0, column=c, padx=4)
+cells = {}
+for r, h in enumerate(HABITS, start=1):
+    tk.Label(root, text=h, anchor="w", width=10).grid(row=r, column=0, padx=8, sticky="w")
+    for c, d in enumerate(week, start=1):
+        v = tk.BooleanVar(value=done.get(f"{h}|{d}", False))
+        v.trace_add("write", lambda *a, h=h, d=d, v=v: (done.__setitem__(f"{h}|{d}", v.get()), json.dump(done, open(FILE, "w"))))
+        tk.Checkbutton(root, variable=v).grid(row=r, column=c)
+        cells[h, d] = v
+root.mainloop()
+```
+
+@@ tk.app.quiz-file
+Q: How do I load quiz questions from a file (CSV or JSON) instead of writing them in the code?
+aka: quiz from file, questions json, load questions csv, quiz app file, editable quiz questions
+A: Keep questions in JSON like `[{"q": ..., "options": [...], "answer": ...}]`, load them at start, shuffle, and run the quiz loop over the list. Then anyone can add questions without touching the code.
+see: tk.recipe-quiz, py.json
+```py
+import json, random
+import tkinter as tk
+
+json.dump([{"q": "2 + 2?", "options": ["3", "4", "5"], "answer": "4"},
+           {"q": "Capital of France?", "options": ["Rome", "Paris", "Oslo"], "answer": "Paris"},
+           {"q": "Python creator?", "options": ["Guido", "Linus", "Ada"], "answer": "Guido"}], open("quiz.json", "w"))
+
+QUESTIONS = json.load(open("quiz.json"))
+random.shuffle(QUESTIONS)
+root = tk.Tk()
+root.title("Quiz")
+q_l = tk.Label(root, font=("Arial", 15), wraplength=300); q_l.pack(padx=20, pady=12)
+opts = tk.Frame(root); opts.pack()
+fb = tk.Label(root); fb.pack(pady=8)
+s = {"i": 0, "score": 0}
+
+def show():
+    for w in opts.winfo_children():
+        w.destroy()
+    if s["i"] == len(QUESTIONS):
+        q_l.config(text=f"Score: {s['score']} / {len(QUESTIONS)}"); return
+    item = QUESTIONS[s["i"]]
+    q_l.config(text=item["q"])
+    for o in item["options"]:
+        tk.Button(opts, text=o, width=16, command=lambda o=o: pick(o)).pack(pady=2)
+
+def pick(o):
+    right = QUESTIONS[s["i"]]["answer"]
+    s["score"] += o == right
+    fb.config(text="Correct!" if o == right else f"No, it was {right}", fg="#2e7d4f" if o == right else "#c23b22")
+    s["i"] += 1
+    show()
+
+show()
+root.mainloop()
+```
+
+@@ tk.app.image-editor
+Q: How do I make a simple image editor (open, rotate, grayscale, blur, save)?
+aka: image editor, photo editor tkinter, pillow filters gui, rotate image button, grayscale image, save edited image
+A: Keep the Pillow `Image` as the source of truth; each button creates a new image (`rotate`, `ImageOps.grayscale`, `filter(ImageFilter.BLUR)`), then you re-display it with `ImageTk.PhotoImage`. Save with `img.save(path)`.
+see: tk.pillow, tk.recipe-image-viewer
+```py
+import tkinter as tk
+from PIL import Image, ImageFilter, ImageOps, ImageTk
+
+root = tk.Tk()
+root.title("Editor")
+state = {"img": Image.open("photo.png").convert("RGB").resize((240, 180))}
+view = tk.Label(root); view.pack(padx=10, pady=10)
+
+def show():
+    state["tk"] = ImageTk.PhotoImage(state["img"])       # keep a reference
+    view.config(image=state["tk"])
+
+def apply(fn):
+    state["img"] = fn(state["img"]); show()
+
+bar = tk.Frame(root); bar.pack(pady=(0, 10))
+ACTIONS = {"Rotate": lambda im: im.rotate(90, expand=True), "Grey": lambda im: ImageOps.grayscale(im).convert("RGB"),
+           "Blur": lambda im: im.filter(ImageFilter.GaussianBlur(3)), "Mirror": ImageOps.mirror,
+           "Brighter": lambda im: im.point(lambda p: min(255, int(p * 1.2)))}
+for name, fn in ACTIONS.items():
+    tk.Button(bar, text=name, command=lambda fn=fn: apply(fn)).pack(side="left", padx=2)
+tk.Button(bar, text="Save", command=lambda: state["img"].save("edited.png")).pack(side="left", padx=2)
+show(); apply(ACTIONS["Grey"])
+root.mainloop()
+```
+
+@@ tk.app.tray
+Q: Can my tkinter app live in the system tray (notification area)?
+aka: system tray, tray icon, minimize to tray, taskbar notification area, pystray
+A: Not with tkinter alone. Use `pystray` (`pip install pystray pillow`): run the tray icon in a thread, hide the window with `withdraw()`, and show it again from a tray menu item via `root.after(0, root.deiconify)`.
+see: tk.withdraw, tk.app.notify
+```py norun
+import threading
+import tkinter as tk
+from PIL import Image
+import pystray
+
+root = tk.Tk()
+tk.Label(root, text="Close me: I go to the tray").pack(padx=40, pady=30)
+
+def show(icon, item):
+    root.after(0, root.deiconify)
+
+def quit_all(icon, item):
+    icon.stop()
+    root.after(0, root.destroy)
+
+icon = pystray.Icon("myapp", Image.new("RGB", (64, 64), "#c23b22"), "My app",
+                    menu=pystray.Menu(pystray.MenuItem("Show", show, default=True), pystray.MenuItem("Quit", quit_all)))
+threading.Thread(target=icon.run, daemon=True).start()
+root.protocol("WM_DELETE_WINDOW", root.withdraw)     # X hides instead of quitting
+root.mainloop()
+```
+
+@@ tk.app.notify
+Q: How do I show a desktop notification (toast) from my app?
+aka: desktop notification, toast notification, windows notification, notify user popup, plyer notification
+A: Cross-platform: `plyer` (`pip install plyer`): `notification.notify(title=..., message=...)`. Without extras, make your own toast: a small borderless topmost Toplevel in the corner that closes itself after a few seconds (shown below).
+see: tk.no-titlebar, tk.topmost
+```py
+import tkinter as tk
+
+def toast(root, text, ms=2500):
+    t = tk.Toplevel(root, bg="#1b1a17")
+    t.overrideredirect(True)
+    t.attributes("-topmost", True)
+    tk.Label(t, text=text, fg="#f2ede3", bg="#1b1a17", font=("Arial", 11), padx=16, pady=10).pack()
+    t.update_idletasks()
+    x = t.winfo_screenwidth() - t.winfo_reqwidth() - 20
+    y = t.winfo_screenheight() - t.winfo_reqheight() - 60
+    t.geometry(f"+{x}+{y}")
+    t.after(ms, t.destroy)
+
+root = tk.Tk()
+tk.Button(root, text="Notify", command=lambda: toast(root, "Saved ✓")).pack(padx=40, pady=30)
+toast(root, "Hello from the corner")
+root.mainloop()
+```
+```py norun
+from plyer import notification          # pip install plyer
+notification.notify(title="Reminder", message="Time for a break", timeout=5)
+```

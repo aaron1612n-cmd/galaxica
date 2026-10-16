@@ -308,7 +308,7 @@ see: tk.canvas-scroll, tk.cv.zoom-pan
 import tkinter as tk
 
 root = tk.Tk()
-c = tk.Canvas(root, width=300, height=200, bg="white", scrollregion=(0, 0, 1000, 1000)); c.pack()
+c = tk.Canvas(root, width=300, height=200, bg="white", highlightthickness=0, scrollregion=(0, 0, 1000, 1000)); c.pack()
 c.yview_moveto(0.5)            # scrolled down 500 px
 
 def click(e):
@@ -317,8 +317,12 @@ def click(e):
     c.create_oval(x - 4, y - 4, x + 4, y + 4, fill="red")
 
 c.bind("<Button-1>", click)
-c.event_generate("<Button-1>", x=10, y=10)
+root.update()
+c.event_generate("<Button-1>", x=10, y=10)      # a pretend click near the top-left
 root.mainloop()
+```
+```text
+window (10, 10) canvas (10.0, 510.0)
 ```
 
 @@ tk.cv.find
