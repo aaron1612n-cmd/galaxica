@@ -1,0 +1,259 @@
+# mod-pop | Popular packages | requests, numpy, pandas, matplotlib, Pillow, openpyxl, BeautifulSoup, Flask, pygame: the first things to know | modules
+
+@@ mod.pop.which
+Q: Which third-party packages should I know about, and what are they for?
+aka: popular python packages, best libraries, what to pip install, useful packages, python libraries list
+A: Web requests: **requests**/httpx. Numbers and arrays: **numpy**. Tables of data: **pandas**. Charts: **matplotlib**. Images: **Pillow**. Excel: **openpyxl**. Web pages: **BeautifulSoup**. Websites/APIs: **Flask**, FastAPI, Django. Games: **pygame**. GUIs beyond tkinter: CustomTkinter, PySide6. Install with `pip install name` inside a virtual environment.
+see: py.pip, py.venv
+```py
+import importlib.util
+for pkg in ("requests", "numpy", "pandas", "matplotlib", "PIL", "openpyxl", "bs4", "flask", "pygame"):
+    print(f"{pkg:<11} {'installed' if importlib.util.find_spec(pkg) else 'pip install ' + {'PIL': 'pillow', 'bs4': 'beautifulsoup4'}.get(pkg, pkg)}")
+```
+
+@@ mod.pop.requests
+Q: How do I use requests (GET, POST, JSON, headers, timeouts, errors)?
+aka: requests library, requests get, requests post json, requests headers, requests timeout, raise_for_status, requests session, download file requests
+A: `r = requests.get(url, params={...}, headers={...}, timeout=10)`; `r.status_code`, `r.text`, `r.json()`; `r.raise_for_status()` turns 4xx/5xx into an exception. POST JSON with `requests.post(url, json=data)`. Download big files with `stream=True` and `iter_content`.
+see: py.requests, mod.urllib.get
+```py norun
+import requests
+
+r = requests.get("https://api.github.com/search/repositories",
+                 params={"q": "tkinter", "sort": "stars"}, timeout=10,
+                 headers={"Accept": "application/vnd.github+json"})
+r.raise_for_status()
+for repo in r.json()["items"][:3]:
+    print(repo["full_name"], repo["stargazers_count"])
+
+resp = requests.post("https://httpbin.org/post", json={"name": "Ada"}, timeout=10)
+print(resp.status_code, resp.json()["json"])
+
+with requests.get("https://www.python.org/static/img/python-logo.png", stream=True, timeout=10) as r:
+    with open("logo.png", "wb") as f:
+        for chunk in r.iter_content(8192):
+            f.write(chunk)
+```
+
+@@ mod.pop.numpy
+Q: What is numpy and how do I start (arrays, maths on whole arrays)?
+aka: numpy, numpy array, np.array, vectorized, numpy basics, arange linspace, numpy mean, numpy reshape
+A: `numpy` stores numbers in fast arrays and does maths on **whole arrays at once** (no loops): `a * 2`, `a + b`, `a.mean()`, `a[a > 5]`. Create with `np.array`, `np.arange`, `np.linspace`, `np.zeros`; reshape with `.reshape`.
+see: py.coll.matrix
+```py
+import numpy as np
+a = np.array([3, 8, 1, 9, 4])
+print(a * 2, a.mean(), a.max(), a[a > 3])
+grid = np.arange(12).reshape(3, 4)
+print(grid)
+print(grid.sum(axis=0), grid.T.shape, np.linspace(0, 1, 5))
+```
+```text
+[ 6 16  2 18  8] 5.0 9 [8 9 4]
+[[ 0  1  2  3]
+ [ 4  5  6  7]
+ [ 8  9 10 11]]
+[12 15 18 21] (4, 3) [0.   0.25 0.5  0.75 1.  ]
+```
+
+@@ mod.pop.pandas
+Q: What is pandas and how do I start (read CSV, filter, group, sort)?
+aka: pandas, dataframe, read_csv, pandas filter rows, groupby pandas, pandas sort, pandas mean, pandas basics
+A: A `DataFrame` is a table. `pd.read_csv(path)`; look with `df.head()`; pick columns `df["col"]`; filter rows `df[df["score"] > 50]`; `df.sort_values("col")`; `df.groupby("team")["score"].mean()`; save with `df.to_csv(path, index=False)`.
+see: mod.csv.dict, tk.data.pandas
+```py
+import io
+import pandas as pd
+csv_text = "name,team,score\nAda,red,90\nSam,blue,72\nKai,red,85\nBo,blue,60\n"
+df = pd.read_csv(io.StringIO(csv_text))
+print(df[df["score"] > 70]["name"].tolist())
+print(df.groupby("team")["score"].mean().to_dict())
+print(df.sort_values("score", ascending=False).iloc[0]["name"], len(df), df["score"].describe()["max"])
+df["passed"] = df["score"] >= 70
+print(df.to_csv(index=False).splitlines()[1])
+```
+```text
+['Ada', 'Sam', 'Kai']
+{'blue': 66.0, 'red': 87.5}
+Ada 4 90.0
+Ada,red,90,True
+```
+
+@@ mod.pop.matplotlib
+Q: How do I draw a chart with matplotlib (line, bar, save to PNG)?
+aka: matplotlib, plot graph, pyplot, line chart, bar chart, save figure png, plt.show, scatter plot, chart labels title
+A: `import matplotlib.pyplot as plt`; `plt.plot(xs, ys)`, `plt.bar(names, values)`, `plt.scatter`; add `plt.title`, `plt.xlabel`, `plt.legend()`; then `plt.savefig("chart.png")` and/or `plt.show()` (opens a window). Inside tkinter, embed a `Figure` instead.
+see: tk.data.matplotlib
+```py
+import matplotlib
+matplotlib.use("Agg")                    # draw to files only (no window needed)
+import matplotlib.pyplot as plt
+
+months = ["Jan", "Feb", "Mar", "Apr"]
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(8, 3))
+ax1.plot(months, [3, 5, 4, 7], marker="o", label="2026")
+ax1.plot(months, [2, 4, 4, 5], linestyle="--", label="2025")
+ax1.set_title("Sales"); ax1.legend()
+ax2.bar(months, [10, 7, 12, 9], color="#c23b22")
+ax2.set_ylabel("Visitors")
+fig.tight_layout()
+fig.savefig("charts.png", dpi=100)
+print(open("charts.png", "rb").read(4) == b"\x89PNG")
+```
+```text
+True
+```
+
+@@ mod.pop.pillow
+Q: What can Pillow do with images (open, resize, crop, rotate, filter, draw text, convert)?
+aka: pillow, PIL, image processing python, resize image, crop image, thumbnail, convert png to jpg, draw on image, ImageDraw
+A: `Image.open(path)`; `.size`; `.resize((w, h))` or `.thumbnail((max_w, max_h))` (keeps proportions); `.crop((l, t, r, b))`; `.rotate(deg, expand=True)`; `.convert("L")` (grey) / `"RGB"` (before saving JPG); `ImageFilter`; `ImageDraw.Draw(img).text(...)`; `.save(path)`.
+see: tk.pillow, tk.app.image-editor
+```py
+from PIL import Image, ImageDraw, ImageFilter
+
+img = Image.new("RGB", (400, 300), "#f2ede3")
+d = ImageDraw.Draw(img)
+d.rectangle((40, 40, 200, 160), fill="#c23b22")
+d.ellipse((220, 80, 360, 220), outline="black", width=4)
+d.text((50, 250), "Made with Pillow", fill="black")
+thumb = img.copy(); thumb.thumbnail((100, 100))
+grey = img.convert("L").filter(ImageFilter.BLUR)
+img.crop((40, 40, 200, 160)).rotate(45, expand=True).save("crop.png")
+img.save("picture.jpg", quality=85)
+print(img.size, thumb.size, grey.mode, Image.open("crop.png").size)
+```
+```text
+(400, 300) (100, 75) L (198, 198)
+```
+
+@@ mod.pop.openpyxl
+Q: How do I read and write Excel files with openpyxl (cells, rows, formulas, styles)?
+aka: openpyxl, excel python, write xlsx, read xlsx, excel cell value, excel formula python, bold cell excel
+A: `wb = Workbook(); ws = wb.active; ws["A1"] = "Name"; ws.append([...]); wb.save("file.xlsx")`. Read with `load_workbook(path)` (`data_only=True` gives formula results calculated by Excel), loop with `ws.iter_rows(values_only=True)`. Styles via `openpyxl.styles.Font`.
+see: tk.data.excel
+```py
+from openpyxl import Workbook, load_workbook
+from openpyxl.styles import Font
+
+wb = Workbook()
+ws = wb.active
+ws.title = "Scores"
+ws.append(["Name", "Score"])
+for row in [("Ada", 90), ("Sam", 72), ("Kai", 85)]:
+    ws.append(row)
+ws["A5"], ws["B5"] = "Total", "=SUM(B2:B4)"
+ws["A1"].font = ws["B1"].font = Font(bold=True)
+ws.column_dimensions["A"].width = 14
+wb.save("scores.xlsx")
+
+ws2 = load_workbook("scores.xlsx").active
+print([r for r in ws2.iter_rows(min_row=2, max_row=4, values_only=True)])
+print(ws2["B5"].value, ws2["A1"].font.b)
+```
+```text
+[('Ada', 90), ('Sam', 72), ('Kai', 85)]
+=SUM(B2:B4) True
+```
+
+@@ mod.pop.bs4
+Q: How do I scrape a web page with BeautifulSoup (find, select, get text and links)?
+aka: beautifulsoup, bs4, web scraping, soup find_all, css select, get text from html, scrape table
+A: `soup = BeautifulSoup(html, "html.parser")`; `soup.find("h1")`, `soup.find_all("a")`, CSS selectors `soup.select("div.item > a")`; `.get_text(strip=True)`, `tag["href"]` / `tag.get("href")`. Fetch the HTML with requests first.
+see: mod.html-parse
+```py
+from bs4 import BeautifulSoup
+html = """<html><body><h1>Shop</h1>
+<div class="item"><a href="/tea">Tea</a><span class="price">£2.50</span></div>
+<div class="item"><a href="/cake">Cake</a><span class="price">£3.10</span></div>
+<table><tr><td>Mon</td><td>9-5</td></tr><tr><td>Sat</td><td>10-4</td></tr></table></body></html>"""
+soup = BeautifulSoup(html, "html.parser")
+print(soup.h1.get_text())
+for item in soup.select("div.item"):
+    print(item.a.get_text(), item.a["href"], float(item.select_one(".price").get_text()[1:]))
+print([[td.get_text() for td in tr.find_all("td")] for tr in soup.find_all("tr")])
+```
+```text
+Shop
+Tea /tea 2.5
+Cake /cake 3.1
+[['Mon', '9-5'], ['Sat', '10-4']]
+```
+
+@@ mod.pop.flask
+Q: How do I make a small website or JSON API with Flask?
+aka: flask, web app python, flask route, flask json api, flask template, flask form, run flask
+A: `app = Flask(__name__)`, decorate functions with `@app.route("/path")`, return text/HTML or a dict (sent as JSON); read form/query data from `request`. Run with `flask --app app run` or `app.run(debug=True)`. The test client lets you try routes without a browser.
+see: mod.http.server
+```py
+from flask import Flask, jsonify, request
+
+app = Flask(__name__)
+TODOS = ["write tests"]
+
+@app.route("/")
+def home():
+    return "<h1>Hello from Flask</h1>"
+
+@app.route("/todos", methods=["GET", "POST"])
+def todos():
+    if request.method == "POST":
+        TODOS.append(request.json["text"])
+        return jsonify(ok=True), 201
+    return {"todos": TODOS}
+
+client = app.test_client()
+print(client.get("/").data.decode())
+print(client.post("/todos", json={"text": "deploy"}).status_code, client.get("/todos").json)
+# app.run(debug=True)   # then open http://127.0.0.1:5000
+```
+```text
+<h1>Hello from Flask</h1>
+201 {'todos': ['write tests', 'deploy']}
+```
+
+@@ mod.pop.pygame
+Q: How do I start a game with pygame (window, loop, keys, drawing)?
+aka: pygame, pygame tutorial, game loop pygame, pygame keys, pygame draw, pygame window, pygame clock fps
+A: `pygame.init()`, `screen = pygame.display.set_mode((w, h))`, then a loop: handle `pygame.event.get()` (QUIT), read held keys with `pygame.key.get_pressed()`, update positions, draw (`screen.fill`, `pygame.draw.rect`), `pygame.display.flip()`, and `clock.tick(60)` for 60 fps.
+see: tk.gm.structure
+```py norun
+import pygame
+
+pygame.init()
+screen = pygame.display.set_mode((640, 400))
+pygame.display.set_caption("Move the square")
+clock = pygame.time.Clock()
+player = pygame.Rect(300, 180, 40, 40)
+running = True
+while running:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+    keys = pygame.key.get_pressed()
+    player.x += 5 * (keys[pygame.K_RIGHT] - keys[pygame.K_LEFT])
+    player.y += 5 * (keys[pygame.K_DOWN] - keys[pygame.K_UP])
+    player.clamp_ip(screen.get_rect())
+    screen.fill((27, 26, 23))
+    pygame.draw.rect(screen, (255, 176, 0), player)
+    pygame.display.flip()
+    clock.tick(60)
+pygame.quit()
+```
+
+@@ mod.pop.install-trouble
+Q: pip install worked but I still get ModuleNotFoundError (wrong Python / environment)
+aka: installed but module not found, pip installed wrong python, multiple pythons, pip vs python -m pip, vscode wrong interpreter, which pip
+err: No module named '*'
+A: You have more than one Python, and pip installed into a different one than the one running your script. Install with the **same** Python: `python -m pip install name` (on Windows `py -m pip install name`), and in VS Code/Thonny pick that interpreter (or activate your venv). Check with `import sys; print(sys.executable)`.
+see: py.err.modulenotfound, py.venv
+```py
+import sys, subprocess
+print(sys.executable != "")
+r = subprocess.run([sys.executable, "-m", "pip", "--version"], capture_output=True, text=True)
+print(r.returncode == 0 or "No module named pip" in r.stderr)
+```
+```text
+True
+True
+```
