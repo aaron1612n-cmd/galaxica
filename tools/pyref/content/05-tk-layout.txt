@@ -1,0 +1,377 @@
+# tk-layout | Layout | pack, grid, place, frames, spacing, resizing and scrolling | tkinter
+
+@@ tk.layout-which
+Q: pack, grid or place: which should I use?
+aka: geometry manager, layout manager, pack vs grid, how to position widgets, arrange widgets
+A: **grid** for forms and anything in rows/columns, **pack** for simple stacks (top-to-bottom or side by side), **place** only for exact pixel positions. Group widgets in Frames and you can use a different one inside each Frame.
+see: tk.pack, tk.grid, tk.place, tk.err.pack-grid
+```py
+import tkinter as tk
+
+root = tk.Tk()
+top = tk.Frame(root, bg="#ddd"); top.pack(fill="x")          # pack in root
+tk.Label(top, text="Toolbar", bg="#ddd").pack(side="left", padx=6)
+
+form = tk.Frame(root); form.pack(padx=10, pady=10)            # grid inside this frame
+tk.Label(form, text="Name").grid(row=0, column=0, sticky="e")
+tk.Entry(form).grid(row=0, column=1)
+tk.Label(form, text="Email").grid(row=1, column=0, sticky="e")
+tk.Entry(form).grid(row=1, column=1)
+root.mainloop()
+```
+
+@@ tk.pack
+Q: How does pack() work? How do I put widgets side by side?
+aka: pack side left, widgets next to each other, horizontal layout, stack widgets, pack order
+A: Each `pack()` takes space from the remaining area, from the `side` you say (default `"top"`). Use `side="left"` to place widgets in a row.
+see: tk.pack-fill, tk.padding
+```py
+import tkinter as tk
+
+root = tk.Tk()
+for t in ("one", "two", "three"):
+    tk.Button(root, text=t).pack(side="left", padx=4, pady=10)
+root.mainloop()
+```
+Mixing sides in one container gets confusing fast. Put each row in its own Frame instead.
+
+@@ tk.pack-fill
+Q: How do I make a widget fill the window or stretch when it's resized?
+aka: fill expand, stretch widget, fill both, expand true, widget resize with window, full width
+A: With pack: `fill="x"`/`"y"`/`"both"` stretches it across its slot; `expand=True` makes its slot grow with the window. Usually you want both: `pack(fill="both", expand=True)`.
+see: tk.grid-weight
+```py
+import tkinter as tk
+
+root = tk.Tk()
+root.geometry("300x220")
+tk.Label(root, text="fill x", bg="#fc6").pack(fill="x")
+tk.Text(root, bg="#eee").pack(fill="both", expand=True, padx=6, pady=6)
+tk.Label(root, text="status bar", bg="#ccc", anchor="w").pack(fill="x", side="bottom")
+root.mainloop()
+```
+
+@@ tk.grid
+Q: How does grid() work?
+aka: grid row column, table layout, form layout, rows and columns, grid tutorial
+A: `widget.grid(row=r, column=c)`. Rows and columns start at 0, are only as big as their widest widget, and empty rows/columns take no space.
+see: tk.grid-sticky, tk.grid-span, tk.grid-weight
+```py
+import tkinter as tk
+
+root = tk.Tk()
+tk.Label(root, text="Username").grid(row=0, column=0, padx=5, pady=5, sticky="w")
+tk.Entry(root).grid(row=0, column=1, padx=5, pady=5)
+tk.Label(root, text="Password").grid(row=1, column=0, padx=5, pady=5, sticky="w")
+tk.Entry(root, show="*").grid(row=1, column=1, padx=5, pady=5)
+tk.Button(root, text="Log in").grid(row=2, column=1, sticky="e", padx=5, pady=5)
+root.mainloop()
+```
+Skipping to `column=10` won't leave a gap: empty columns have no width. Use `padx` or `minsize` for gaps.
+
+@@ tk.grid-sticky
+Q: How do I align or stretch a widget inside its grid cell (sticky)?
+aka: sticky, grid align left, grid stretch, nsew, sticky w e, align in grid cell
+A: `sticky` uses compass letters: `"w"` left, `"e"` right, `"n"` top, `"s"` bottom. `"ew"` stretches across, `"nsew"` fills the cell.
+see: tk.grid-weight
+```py
+import tkinter as tk
+
+root = tk.Tk()
+tk.Label(root, text="a long label in column 0").grid(row=0, column=0)
+tk.Button(root, text="w").grid(row=1, column=0, sticky="w")
+tk.Button(root, text="e").grid(row=2, column=0, sticky="e")
+tk.Button(root, text="ew").grid(row=3, column=0, sticky="ew")
+root.mainloop()
+```
+
+@@ tk.grid-span
+Q: How do I make a widget span several columns or rows?
+aka: columnspan, rowspan, merge cells, widget across two columns, full width button grid
+A: `grid(row=2, column=0, columnspan=2)`; same with `rowspan`. Add `sticky="ew"` to stretch it over the whole span.
+```py
+import tkinter as tk
+
+root = tk.Tk()
+tk.Entry(root).grid(row=0, column=0, padx=4, pady=4)
+tk.Entry(root).grid(row=0, column=1, padx=4, pady=4)
+tk.Button(root, text="Wide button").grid(row=1, column=0, columnspan=2, sticky="ew", padx=4, pady=4)
+root.mainloop()
+```
+
+@@ tk.grid-weight
+Q: Why don't my grid widgets stretch when the window is resized?
+aka: grid resize, columnconfigure weight, rowconfigure, grid expand, responsive grid, grid fill window
+A: Give the row/column a weight: `root.columnconfigure(0, weight=1)` and `root.rowconfigure(0, weight=1)`, **and** use `sticky="nsew"` on the widget.
+see: tk.grid-sticky, tk.pack-fill
+```py
+import tkinter as tk
+
+root = tk.Tk()
+root.geometry("320x200")
+root.columnconfigure(0, weight=1)        # column 0 takes extra width
+root.rowconfigure(0, weight=1)           # row 0 takes extra height
+tk.Text(root).grid(row=0, column=0, columnspan=2, sticky="nsew", padx=5, pady=5)
+tk.Entry(root).grid(row=1, column=0, sticky="ew", padx=5, pady=5)
+tk.Button(root, text="Send").grid(row=1, column=1, padx=5, pady=5)
+root.mainloop()
+```
+Weights share extra space: weight 2 gets twice as much as weight 1. `uniform="x"` keeps columns the same size.
+
+@@ tk.place
+Q: How do I put a widget at an exact position (x, y)?
+aka: place, absolute position, x y coordinates widget, relx rely, position widget pixel
+A: `widget.place(x=50, y=20)`. Relative: `place(relx=0.5, rely=0.5, anchor="center")` centres it whatever the window size.
+see: tk.center-widget
+```py
+import tkinter as tk
+
+root = tk.Tk()
+root.geometry("300x200")
+tk.Label(root, text="at 10,10", bg="#fc6").place(x=10, y=10)
+tk.Button(root, text="center").place(relx=0.5, rely=0.5, anchor="center")
+tk.Label(root, text="bottom right", bg="#ccc").place(relx=1, rely=1, anchor="se")
+root.mainloop()
+```
+`place` doesn't make the window grow to fit, so set a size with `geometry()`.
+
+@@ tk.center-widget
+Q: How do I centre a widget in the window?
+aka: center button, centre label, middle of window, center widget, align center
+A: Quickest: `place(relx=.5, rely=.5, anchor="center")`. With pack: `pack(expand=True)`. With grid: give the row and column weight and no sticky.
+```py
+import tkinter as tk
+
+root = tk.Tk()
+root.geometry("300x200")
+tk.Button(root, text="I'm in the middle").pack(expand=True)
+root.mainloop()
+```
+
+@@ tk.padding
+Q: How do I add space between widgets?
+aka: padding, margin, padx pady, space between buttons, gap, ipadx, spacing
+A: `padx`/`pady` in `pack()`/`grid()` add space **outside** the widget; give a pair for different sides: `pady=(10, 0)`. `ipadx`/`ipady` add space **inside** it.
+```py
+import tkinter as tk
+
+root = tk.Tk()
+tk.Button(root, text="padx=20").pack(padx=20, pady=5)
+tk.Button(root, text="pady=(20, 0): only above").pack(pady=(20, 0))
+tk.Button(root, text="ipadx=20 ipady=10: bigger inside").pack(ipadx=20, ipady=10, pady=10)
+root.mainloop()
+```
+
+@@ tk.err.pack-grid
+Q: TclError: cannot use geometry manager grid inside . which already has slaves managed by pack
+aka: cannot use geometry manager, mixing pack and grid, pack and grid together, already has slaves managed by, content managed by
+err: cannot use geometry manager*inside*which already has*managed by
+A: In one container (window or Frame) every child must use the **same** manager. Use `pack` for everything in `root`, or `grid` for everything; put a Frame in between if you need both.
+see: tk.layout-which
+```py bad
+tk.Label(root, text="Title").pack()
+tk.Entry(root).grid(row=0, column=0)       # TclError: root already uses pack
+```
+```py
+import tkinter as tk
+
+root = tk.Tk()
+tk.Label(root, text="Title").pack()
+form = tk.Frame(root)
+form.pack()
+tk.Entry(form).grid(row=0, column=0)        # fine: grid is inside the frame
+root.mainloop()
+```
+The message says `.` because that's Tk's name for the root window. A name like `.!frame` means a Frame.
+
+@@ tk.err.none-grid
+Q: AttributeError: 'NoneType' object has no attribute 'get' (or 'config', 'insert'...)
+aka: nonetype has no attribute get, entry get none, label config none, grid returns none, pack returns none
+err: 'NoneType' object has no attribute 'get'|'NoneType' object has no attribute 'config'|'NoneType' object has no attribute 'insert'|'NoneType' object has no attribute 'delete'|'NoneType' object has no attribute 'configure'|'NoneType' object has no attribute
+A: You did `x = tk.Entry(root).grid(...)`. `grid()`/`pack()`/`place()` return `None`, so `x` is `None`. Create the widget first, then lay it out on a **separate line**.
+see: py.err.nonetype
+```py bad
+name = tk.Entry(root).pack()
+name.get()          # AttributeError: 'NoneType' object has no attribute 'get'
+```
+```py
+import tkinter as tk
+
+root = tk.Tk()
+name = tk.Entry(root)
+name.pack()
+print(repr(name.get()))
+root.mainloop()
+```
+Chaining is fine when you never need the widget again: `tk.Label(root, text="Hi").pack()`.
+
+@@ tk.frame
+Q: What is a Frame and how do I use it to group widgets?
+aka: frame, container, group widgets, panel, sections in window, labelframe, border around widgets
+A: A `Frame` is an invisible box that holds other widgets. Lay out the Frame in the window, then the widgets inside the Frame. `LabelFrame` adds a border with a title.
+see: tk.layout-which
+```py
+import tkinter as tk
+
+root = tk.Tk()
+left = tk.Frame(root, bg="#eee", padx=10, pady=10)
+left.pack(side="left", fill="y")
+for t in ("Home", "Files", "Settings"):
+    tk.Button(left, text=t, width=10).pack(pady=2)
+
+box = tk.LabelFrame(root, text="Details", padx=10, pady=10)
+box.pack(side="left", padx=10, pady=10, fill="both", expand=True)
+tk.Label(box, text="Name:").grid(row=0, column=0, sticky="w")
+tk.Entry(box).grid(row=0, column=1)
+root.mainloop()
+```
+An empty Frame shrinks to nothing. To keep a set size: `Frame(root, width=200, height=100)` plus `frame.pack_propagate(False)` (or `grid_propagate(False)`).
+
+@@ tk.frame-size
+Q: Why does my Frame ignore its width and height?
+aka: frame size ignored, pack_propagate, grid_propagate, frame shrinks, fixed size frame
+A: A Frame shrinks or grows to fit its children. Turn that off with `frame.pack_propagate(False)` (if children use pack) or `grid_propagate(False)` (if they use grid).
+```py
+import tkinter as tk
+
+root = tk.Tk()
+f = tk.Frame(root, width=250, height=120, bg="#fc6")
+f.pack_propagate(False)
+f.pack(padx=10, pady=10)
+tk.Label(f, text="fixed 250x120 frame", bg="#fc6").pack(expand=True)
+root.mainloop()
+```
+
+@@ tk.scrollbar
+Q: How do I connect a Scrollbar to a widget?
+aka: scrollbar, add scrollbar, scroll, yscrollcommand, xscrollcommand, horizontal scrollbar
+A: Two links: the widget gets `yscrollcommand=scrollbar.set`, the scrollbar gets `command=widget.yview`. Works for Text, Listbox, Canvas, Treeview (use `x` versions for horizontal).
+see: tk.scroll-frame, tk.text-scroll, tk.listbox-scroll
+```py
+import tkinter as tk
+
+root = tk.Tk()
+t = tk.Text(root, wrap="none", width=30, height=8)
+ys = tk.Scrollbar(root, orient="vertical", command=t.yview)
+xs = tk.Scrollbar(root, orient="horizontal", command=t.xview)
+t.config(yscrollcommand=ys.set, xscrollcommand=xs.set)
+t.grid(row=0, column=0, sticky="nsew")
+ys.grid(row=0, column=1, sticky="ns")
+xs.grid(row=1, column=0, sticky="ew")
+root.rowconfigure(0, weight=1); root.columnconfigure(0, weight=1)
+t.insert("1.0", "\n".join("long line " * 8 + str(i) for i in range(60)))
+root.mainloop()
+```
+
+@@ tk.scroll-frame
+Q: How do I make a scrollable Frame (scroll a whole page of widgets)?
+aka: scrollable frame, scroll many widgets, scroll window, scrolling frame canvas, frame with scrollbar, mousewheel scroll frame
+A: Frames can't scroll. Put a Frame inside a Canvas with `create_window`, update the canvas `scrollregion` when the frame changes size, and attach a Scrollbar to the canvas.
+see: tk.mousewheel
+```py
+import tkinter as tk
+
+class ScrollFrame(tk.Frame):
+    def __init__(self, master, **kw):
+        super().__init__(master, **kw)
+        self.canvas = tk.Canvas(self, highlightthickness=0)
+        sb = tk.Scrollbar(self, orient="vertical", command=self.canvas.yview)
+        self.inner = tk.Frame(self.canvas)
+        self.inner.bind("<Configure>", lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all")))
+        win = self.canvas.create_window((0, 0), window=self.inner, anchor="nw")
+        self.canvas.bind("<Configure>", lambda e: self.canvas.itemconfigure(win, width=e.width))
+        self.canvas.configure(yscrollcommand=sb.set)
+        self.canvas.pack(side="left", fill="both", expand=True)
+        sb.pack(side="right", fill="y")
+        self.inner.bind("<Enter>", lambda e: self.canvas.bind_all("<MouseWheel>", self._wheel))
+        self.inner.bind("<Leave>", lambda e: self.canvas.unbind_all("<MouseWheel>"))
+
+    def _wheel(self, e):
+        self.canvas.yview_scroll(int(-e.delta / 120) or (-1 if e.delta > 0 else 1), "units")
+
+root = tk.Tk()
+root.geometry("300x250")
+sf = ScrollFrame(root)
+sf.pack(fill="both", expand=True)
+for i in range(40):
+    tk.Checkbutton(sf.inner, text=f"Option {i}").pack(anchor="w")
+root.mainloop()
+```
+Put your widgets in `sf.inner`, not `sf`. On Linux the wheel sends `<Button-4>`/`<Button-5>` instead; see [[tk.mousewheel]].
+
+@@ tk.paned
+Q: How do I make a split view with a draggable divider?
+aka: panedwindow, splitter, resizable panels, split pane, draggable divider
+A: Use `ttk.PanedWindow` (or `tk.PanedWindow`) and `add()` each side.
+```py
+import tkinter as tk
+from tkinter import ttk
+
+root = tk.Tk()
+root.geometry("400x200")
+pw = ttk.PanedWindow(root, orient="horizontal")
+pw.pack(fill="both", expand=True)
+pw.add(tk.Listbox(pw), weight=1)
+pw.add(tk.Text(pw), weight=3)
+root.mainloop()
+```
+
+@@ tk.separator
+Q: How do I draw a dividing line between widgets?
+aka: separator, horizontal line, divider, hr, vertical line between widgets
+A: `ttk.Separator(root, orient="horizontal").pack(fill="x")`, or a 1-pixel-high Frame with a background colour.
+```py
+import tkinter as tk
+from tkinter import ttk
+
+root = tk.Tk()
+tk.Label(root, text="Above").pack(padx=40, pady=5)
+ttk.Separator(root, orient="horizontal").pack(fill="x", padx=10, pady=5)
+tk.Label(root, text="Below").pack(pady=5)
+tk.Frame(root, height=2, bg="#c23b22").pack(fill="x", padx=10, pady=5)
+root.mainloop()
+```
+
+@@ tk.responsive
+Q: How do I make my layout adapt when the window is resized?
+aka: responsive layout, resize widgets with window, window resize event, scale widgets, adaptive layout
+A: Use `fill`/`expand` (pack) or `weight` + `sticky` (grid) so widgets stretch. For bigger changes (e.g. switch to one column when narrow), bind `<Configure>` and re-grid.
+see: tk.pack-fill, tk.grid-weight
+```py
+import tkinter as tk
+
+root = tk.Tk()
+root.geometry("500x200")
+boxes = [tk.Label(root, text=f"Panel {i}", bg="#fc6", relief="solid", bd=1) for i in range(3)]
+mode = {"cols": None}
+
+def relayout(event=None):
+    cols = 3 if root.winfo_width() > 400 else 1
+    if cols == mode["cols"]:
+        return
+    mode["cols"] = cols
+    for i, b in enumerate(boxes):
+        b.grid(row=i // cols, column=i % cols, sticky="nsew", padx=4, pady=4)
+    for c in range(3):
+        root.columnconfigure(c, weight=1 if c < cols else 0)
+
+root.bind("<Configure>", relayout)
+relayout()
+root.mainloop()
+```
+
+@@ tk.grid-info
+Q: How do I find which row/column a widget is in, or which widget is at a cell?
+aka: grid_info, grid_slaves, widget at row column, get widget position grid
+A: `widget.grid_info()` returns a dict with `"row"` and `"column"`. `parent.grid_slaves(row=r, column=c)` returns the widgets at that cell.
+```py
+import tkinter as tk
+
+root = tk.Tk()
+for r in range(2):
+    for c in range(2):
+        tk.Label(root, text=f"{r},{c}", width=6).grid(row=r, column=c)
+w = root.grid_slaves(row=1, column=0)[0]
+print(w["text"], w.grid_info()["row"], w.grid_info()["column"])
+root.mainloop()
+```
