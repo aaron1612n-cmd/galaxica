@@ -1,0 +1,170 @@
+# mod-rand | random, secrets, uuid, hashlib, base64 | Random choices and shuffles, secure tokens, unique ids, hashes and checksums, encoding data as text | modules
+
+@@ mod.random.all
+Q: What can the random module do (choice, sample, shuffle, choices with weights)?
+aka: random module functions, random choice, random sample, random shuffle, weighted random, random choices k
+A: `random.random()` 0–1; `randint(a, b)`; `uniform(a, b)`; `choice(seq)` one item; `choices(seq, weights=, k=)` several **with** repeats (weighted); `sample(seq, k)` several **without** repeats; `shuffle(list)` in place; `seed(n)` repeatable results. Not for passwords: use `secrets`.
+see: py.random-choice, py.num.random-ranges
+```py
+import random
+random.seed(7)
+colours = ["red", "green", "blue", "gold"]
+print(random.choice(colours), random.sample(colours, 2))
+print(random.choices(colours, weights=[70, 20, 9, 1], k=6))
+deck = list(range(1, 11)); random.shuffle(deck)
+print(deck)
+```
+```text
+blue ['green', 'gold']
+['red', 'red', 'red', 'red', 'red', 'red']
+[8, 5, 3, 6, 9, 10, 4, 7, 2, 1]
+```
+
+@@ mod.random.instance
+Q: How do I have several independent random generators (e.g. one per game level)?
+aka: random.Random instance, separate random generator, seeded generator, reproducible level generation
+A: Create `random.Random(seed)` objects: each has its own sequence and the same methods, so seeding one doesn't affect the others.
+see: mod.random.all
+```py
+import random
+level1 = random.Random(1)
+level2 = random.Random(1)
+print([level1.randint(1, 9) for _ in range(5)])
+print([level2.randint(1, 9) for _ in range(5)])        # same seed, same "map"
+```
+```text
+[3, 2, 5, 2, 8]
+[3, 2, 5, 2, 8]
+```
+
+@@ mod.secrets
+Q: How do I make secure random passwords, tokens or PINs (secrets)?
+aka: secrets module, secure random, token_hex, token_urlsafe, random password secure, generate api key, otp code
+A: `secrets.choice(alphabet)`, `secrets.randbelow(n)`, `secrets.token_hex(16)`, `secrets.token_urlsafe(16)` use the operating system's secure randomness, unlike `random` (which is predictable).
+see: tk.app.password-gen, py.hash-password
+```py
+import secrets, string
+alphabet = string.ascii_letters + string.digits
+password = "".join(secrets.choice(alphabet) for _ in range(12))
+pin = f"{secrets.randbelow(10**6):06d}"
+token = secrets.token_urlsafe(16)
+print(len(password), len(pin), len(secrets.token_hex(16)), len(token) >= 20)
+print(secrets.compare_digest("abc", "abc"))      # safe comparison of secrets
+```
+```text
+12 6 32 True
+True
+```
+
+@@ mod.uuid
+Q: How do I generate a unique ID (UUID)?
+aka: uuid, unique id, guid, uuid4, random id, unique identifier
+A: `uuid.uuid4()` gives a random 128-bit ID that's practically never repeated; `str(...)` for text, `.hex` without dashes.
+see: mod.secrets
+```py
+import uuid
+u = uuid.uuid4()
+print(len(str(u)), len(u.hex), u.version, str(u).count("-"))
+print(uuid.uuid5(uuid.NAMESPACE_URL, "https://python.org"))     # same input, same id
+```
+```text
+36 32 4 4
+54456a86-ff7a-507c-ab55-c4d535450fb7
+```
+
+@@ mod.hashlib
+Q: How do I get the MD5 or SHA-256 hash (checksum) of a string or file?
+aka: hashlib, sha256, md5, checksum, file hash, hash string, verify download, fingerprint
+A: `hashlib.sha256(data_bytes).hexdigest()`. For files, read in chunks and `update()` (or `hashlib.file_digest` in 3.11+). MD5/SHA-1 are fine for spotting changed files but not for security.
+see: py.hash-password
+```py
+import hashlib
+print(hashlib.sha256("hello".encode()).hexdigest()[:16])
+print(hashlib.md5(b"hello").hexdigest())
+with open("data.txt", "rb") as f:
+    print(hashlib.file_digest(f, "sha256").hexdigest()[:16])
+h = hashlib.sha256()
+for chunk in (b"hel", b"lo"):
+    h.update(chunk)
+print(h.hexdigest()[:16])
+```
+```text
+2cf24dba5fb0a30e
+5d41402abc4b2a76b9719d911017c592
+9abafa0639f1e151
+2cf24dba5fb0a30e
+```
+
+@@ mod.base64
+Q: How do I encode bytes as text (base64) and back?
+aka: base64, encode base64, decode base64, image to base64, data uri, b64encode
+A: `base64.b64encode(data)` turns bytes into safe ASCII bytes; `.decode()` makes it a str; `base64.b64decode(text)` reverses it. Use `urlsafe_b64encode` for URLs. Base64 is **not** encryption: anyone can decode it.
+see: py.fmt.bytes
+```py
+import base64
+data = "Hello, Python ✓".encode("utf-8")
+text = base64.b64encode(data).decode("ascii")
+print(text)
+print(base64.b64decode(text).decode("utf-8"))
+png_header = bytes([137, 80, 78, 71])
+print("data:image/png;base64," + base64.b64encode(png_header).decode())
+```
+```text
+SGVsbG8sIFB5dGhvbiDinJM=
+Hello, Python ✓
+data:image/png;base64,iVBORw==
+```
+
+@@ mod.hmac
+Q: How do I check that a message wasn't tampered with (HMAC signature)?
+aka: hmac, sign message, verify signature, webhook signature, message authentication
+A: `hmac.new(secret_key, message, "sha256").hexdigest()` makes a signature only someone with the key can produce; verify with `hmac.compare_digest`.
+see: mod.hashlib
+```py
+import hmac
+key = b"server-secret"
+msg = b'{"amount": 50}'
+sig = hmac.new(key, msg, "sha256").hexdigest()
+def valid(message, signature):
+    return hmac.compare_digest(hmac.new(key, message, "sha256").hexdigest(), signature)
+print(valid(msg, sig), valid(b'{"amount": 5000}', sig))
+```
+```text
+True False
+```
+
+@@ mod.random.weighted-pick
+Q: How do I pick a random item based on rarity (loot table, weighted chance)?
+aka: weighted random choice, loot table, rarity chance, probability pick, drop rates
+A: `random.choices(items, weights=chances)[0]`. Weights don't need to add to 100. Check your table by simulating many picks with `Counter`.
+see: mod.random.all, py.counter
+```py
+import random
+from collections import Counter
+random.seed(0)
+loot = {"common": 70, "rare": 25, "legendary": 5}
+picks = Counter(random.choices(list(loot), weights=loot.values(), k=10_000))
+print({k: round(picks[k] / 100) for k in loot})          # % of picks
+```
+```text
+{'common': 70, 'rare': 25, 'legendary': 5}
+```
+
+@@ mod.random.shuffle-copy
+Q: How do I shuffle without changing the original list?
+aka: shuffled copy, random order copy, shuffle returns none, random sample all
+A: `random.shuffle` changes the list in place and returns `None`. For a shuffled copy use `random.sample(items, k=len(items))`.
+see: py.random-choice
+```py
+import random
+random.seed(2)
+cards = ["A", "K", "Q", "J"]
+mixed = random.sample(cards, k=len(cards))
+print(cards, mixed)                      # original unchanged
+result = random.shuffle(cards)
+print(cards, result)                     # now shuffled in place; returns None
+```
+```text
+['A', 'K', 'Q', 'J'] ['A', 'J', 'Q', 'K']
+['A', 'J', 'Q', 'K'] None
+```
