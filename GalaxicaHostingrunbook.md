@@ -4,7 +4,7 @@ Purpose: resume this chat with full context. Cap ~1,500 tokens; condense, don't 
 ## Hosting
 - Repo `aaron1612n-cmd/galaxica`. Static arcade in `public/`, served by Cloudflare Worker `play` (wrangler.jsonc assets ./public).
 - LIVE: https://play.galaxica.workers.dev. Deploy: `npx wrangler deploy` (user approved deploys 2026-10-15; edge cache lags ~1 min). Pushing alone does not publish.
-- Branch this session: `claude/determined-brown-9f1py4`, draft PR aaron1612n-cmd/galaxica#2 (no CI). Commit + push + deploy after each finished game.
+- Branches: work landed on `claude/determined-brown-9f1py4` (draft PR aaron1612n-cmd/galaxica#2, open, unmerged; main still at d27943c). Session 2026-10-16 branch `claude/keen-johnson-dabr2d` fast-forwarded to it (9d2fb0a). Live site = that state (25 games). Commit + push + deploy after each finished game.
 
 ## Structure
 - Hub `public/index.html` reads `public/games.json` ({id,title,blurb,thumb}). Game = `public/games/<id>/index.html` + `thumb.jpg` (469x352).
@@ -28,7 +28,7 @@ galaxica, squeeze, pinprick, hairline, gravity-garden (challenges + #w= share li
 - User is learning Python and will use the real Python shell/IDLE on their computer; help there with explanations, not a web tool.
 
 ## NEXT
-1. User is continuing in a new chat. Ask what they want next (arcade work, or Python help in their own shell).
+1. 2026-10-16: new chat resumed, synced to latest branch, asked user what's next (arcade work, merge PR #2 to main, or Python help in their own shell). Awaiting answer.
 2. Game ideas still open (dig- and hedge-like, user favourites Deepdig + Hedgerow).
 3. Later: leaderboards, real-phone playtest, balance (Cauldron hard, Deepdig economy). Keep runbook under cap.
 
