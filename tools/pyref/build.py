@@ -42,6 +42,15 @@ try:
         root.after(int(os.environ.get('TK_MS', '350')), root.destroy)
         _ml(self, n)
     tkinter.Misc.mainloop = mainloop
+    def _module_mainloop(n=0):               # turtle.done() calls tkinter.mainloop()
+        if tkinter._default_root is not None:
+            mainloop(tkinter._default_root, n)
+    tkinter.mainloop = _module_mainloop
+    try:
+        import turtle                        # turtle.done() runs Tcl's loop directly
+        turtle.TurtleScreenBase.mainloop = lambda self: _module_mainloop()
+    except ImportError:
+        pass
     for name in dir(messagebox):
         if name.startswith(('show', 'ask')):
             setattr(messagebox, name, lambda *a, **k: True)
@@ -290,7 +299,7 @@ def run_block(py, mode, src, expect, idx, eid):
         Image.new('RGB', (64, 48), (40, 80, 200)).save(os.path.join(d, 'photo.jpg'))
         Image.new('RGB', (64, 48), (40, 200, 80)).save(os.path.join(d, 'icon.png'))
         cmd = [py, r, f]
-        if 'tkinter' in src:
+        if 'tkinter' in src or 'turtle' in src:
             cmd = ['xvfb-run', '-a'] + cmd
         try:
             p = subprocess.run(cmd, cwd=d, capture_output=True, text=True, timeout=20)
