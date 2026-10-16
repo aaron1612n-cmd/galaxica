@@ -1,0 +1,218 @@
+# tk-extras | Sharing and extras | Making an .exe, sound, clipboard, links, keyboard and system tricks | tkinter
+
+@@ tk.pyinstaller
+Q: How do I turn my tkinter program into an .exe (or app) to share?
+aka: exe, executable, pyinstaller, compile python, share program, standalone app, no console window, auto-py-to-exe, py to exe
+A: Install PyInstaller and run `pyinstaller --onefile --windowed app.py`. The program appears in the `dist` folder. `--windowed` (`-w`) hides the black console window.
+see: tk.resource-path
+```sh
+pip install pyinstaller
+pyinstaller --onefile --windowed --icon=app.ico app.py
+```
+- Build on the same system you're targeting: a Windows `.exe` must be built on Windows, a Mac app on a Mac.
+- Antivirus programs sometimes flag one-file exes; `--onedir` (the default) is flagged less.
+- Images and data files must be added with `--add-data` and found with [[tk.resource-path]].
+- `auto-py-to-exe` (`pip install auto-py-to-exe`) is a GUI for the same thing.
+
+@@ tk.resource-path
+Q: My images/files are missing after building with PyInstaller. How do I find them?
+aka: pyinstaller images not found, add-data, sys._MEIPASS, resource path, bundle files pyinstaller
+A: Add them with `--add-data "photo.png:."` (on Windows use `;` instead of `:` in older versions), and build paths with a helper that checks `sys._MEIPASS`.
+```py
+import sys
+from pathlib import Path
+
+def resource(name):
+    base = Path(getattr(sys, "_MEIPASS", Path(__file__).parent))
+    return base / name
+
+print(resource("photo.png"))
+```
+```sh
+pyinstaller --onefile --windowed --add-data "photo.png:." app.py
+```
+
+@@ tk.sound
+Q: How do I play a sound or beep in a tkinter app?
+aka: play sound, beep, audio, music, winsound, playsound, pygame mixer, sound effect
+A: A beep: `root.bell()`. Wav files on Windows: `winsound.PlaySound(path, winsound.SND_ASYNC)`. Cross-platform and for mp3: `pygame.mixer` (`pip install pygame`).
+```py
+import tkinter as tk
+import sys
+
+root = tk.Tk()
+tk.Button(root, text="Beep", command=root.bell).pack(padx=40, pady=20)
+
+def play_wav(path):
+    if sys.platform == "win32":
+        import winsound
+        winsound.PlaySound(path, winsound.SND_FILENAME | winsound.SND_ASYNC)
+
+root.mainloop()
+```
+```py norun
+import pygame          # pip install pygame
+pygame.mixer.init()
+pygame.mixer.Sound("click.wav").play()          # sound effect
+pygame.mixer.music.load("song.mp3")             # background music
+pygame.mixer.music.play(-1)                     # -1 = loop forever
+```
+Use `SND_ASYNC` (or pygame) so the window doesn't freeze while the sound plays.
+
+@@ tk.clipboard
+Q: How do I copy text to the clipboard (or read it)?
+aka: clipboard, copy to clipboard, paste from clipboard, clipboard_append, clipboard_get
+A: `root.clipboard_clear()`, then `root.clipboard_append(text)`. Read with `root.clipboard_get()` (raises `TclError` if the clipboard is empty or not text).
+```py
+import tkinter as tk
+
+root = tk.Tk()
+e = tk.Entry(root, width=30)
+e.insert(0, "copy me")
+e.pack(padx=20, pady=10)
+
+def copy():
+    root.clipboard_clear()
+    root.clipboard_append(e.get())
+    root.update()                  # keeps it on the clipboard after the app closes
+
+def paste():
+    try:
+        e.delete(0, "end")
+        e.insert(0, root.clipboard_get())
+    except tk.TclError:
+        pass
+
+tk.Button(root, text="Copy", command=copy).pack(side="left", padx=20, pady=(0, 10))
+tk.Button(root, text="Paste", command=paste).pack(side="left", pady=(0, 10))
+root.mainloop()
+```
+
+@@ tk.open-link
+Q: How do I open a website link from my app?
+aka: hyperlink, open url, webbrowser, clickable link label, open browser
+A: `import webbrowser; webbrowser.open("https://...")`. Make a Label look like a link and bind a click to it.
+```py
+import tkinter as tk
+import webbrowser
+
+root = tk.Tk()
+link = tk.Label(root, text="python.org", fg="blue", cursor="hand2", font=("Helvetica", 12, "underline"))
+link.pack(padx=40, pady=30)
+link.bind("<Button-1>", lambda e: webbrowser.open("https://www.python.org"))
+root.mainloop()
+```
+
+@@ tk.open-file-default-app
+Q: How do I open a file with its normal program (PDF reader, Notepad...)?
+aka: open file default program, os.startfile, open pdf, xdg-open, launch file
+A: Windows: `os.startfile(path)`. macOS: `subprocess.run(["open", path])`. Linux: `subprocess.run(["xdg-open", path])`.
+```py norun
+import os, sys, subprocess
+
+def open_with_default_app(path):
+    if sys.platform == "win32":
+        os.startfile(path)
+    elif sys.platform == "darwin":
+        subprocess.run(["open", path])
+    else:
+        subprocess.run(["xdg-open", path])
+
+open_with_default_app("notes.txt")
+```
+
+@@ tk.run-command
+Q: How do I run another program or command from a button and show its output?
+aka: subprocess tkinter, run command, run script from gui, terminal output in gui, os.system
+A: Use `subprocess.run([...], capture_output=True, text=True)` and put `result.stdout` in a Text widget. For long commands, run it in a thread.
+see: tk.thread
+```py
+import tkinter as tk
+import subprocess, sys
+
+root = tk.Tk()
+out = tk.Text(root, width=60, height=10)
+out.pack(padx=10, pady=10)
+
+def run():
+    r = subprocess.run([sys.executable, "--version"], capture_output=True, text=True)
+    out.insert("end", r.stdout + r.stderr)
+
+tk.Button(root, text="Run python --version", command=run).pack(pady=(0, 10))
+root.mainloop()
+```
+
+@@ tk.tk-version
+Q: Which version of tkinter / Tk do I have?
+aka: tkinter version, tk version, TkVersion, tcl version, check tkinter installed
+A: `tkinter.TkVersion` (e.g. 8.6 or 9.0). `python -m tkinter` opens a test window showing it.
+```py
+import tkinter
+print("Tk", tkinter.TkVersion, "Tcl", tkinter.TclVersion)
+```
+```sh
+python -m tkinter
+```
+
+@@ tk.fullscreen-game-scale
+Q: How do I make my game/canvas scale to any window size?
+aka: scale canvas, resize canvas content, zoom canvas, fit game to window, responsive canvas
+A: Draw everything in your own fixed "world" units, and on `<Configure>` compute a scale factor and use `canvas.scale("all", 0, 0, sx, sy)`, or redraw using `x * scale`.
+```py
+import tkinter as tk
+
+W, H = 400, 300                                   # world size
+root = tk.Tk()
+c = tk.Canvas(root, width=W, height=H, bg="white", highlightthickness=0)
+c.pack(fill="both", expand=True)
+current = {"s": 1.0}
+
+def draw():
+    c.delete("all")
+    s = current["s"]
+    c.create_rectangle(50 * s, 50 * s, 150 * s, 120 * s, fill="#fc6")
+    c.create_oval(250 * s, 150 * s, 350 * s, 250 * s, fill="#c23b22")
+    c.create_text(200 * s, 20 * s, text="scales with the window", font=("Helvetica", max(6, int(12 * s))))
+
+def resized(e):
+    current["s"] = min(e.width / W, e.height / H)
+    draw()
+
+c.bind("<Configure>", resized)
+draw()
+root.mainloop()
+```
+
+@@ tk.screenshot
+Q: How do I take a screenshot of my window?
+aka: screenshot, capture window, save window as image, ImageGrab
+A: With Pillow: `ImageGrab.grab(bbox=(x, y, x + w, y + h))` using the window's `winfo_rootx/rooty/width/height`. Works on Windows and macOS (Linux needs X11).
+```py norun
+import tkinter as tk
+from PIL import ImageGrab
+
+root = tk.Tk()
+tk.Label(root, text="Snap me", font=("Helvetica", 24), padx=40, pady=40).pack()
+
+def snap():
+    root.update()
+    x, y = root.winfo_rootx(), root.winfo_rooty()
+    w, h = root.winfo_width(), root.winfo_height()
+    ImageGrab.grab(bbox=(x, y, x + w, y + h)).save("window.png")
+
+root.after(500, snap)
+root.mainloop()
+```
+
+@@ tk.other-gui
+Q: Should I use tkinter or something else (PyQt, Kivy, CustomTkinter)?
+aka: tkinter alternatives, pyqt vs tkinter, kivy, pyside, customtkinter vs tkinter, best python gui, flet, dearpygui
+A: tkinter is built in, simple, and fine for tools, forms and small games. Pick something else when you need: a modern look with little effort (CustomTkinter), very large professional apps (PySide6/PyQt6), phones (Kivy, BeeWare), or 2D games with sound and sprites (pygame).
+```text
+tkinter        built in, simplest, older look (ttk helps)
+customtkinter  tkinter with modern rounded widgets       pip install customtkinter
+PySide6/PyQt6  big, powerful, professional desktop apps   pip install pyside6
+Kivy           touch apps, also Android/iOS              pip install kivy
+pygame         games: sprites, sound, joystick           pip install pygame
+Flet           Flutter-style apps in Python              pip install flet
+```
