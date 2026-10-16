@@ -1,0 +1,474 @@
+# tk-more | More tkinter how-tos | Clickable labels, login-then-main window, spreadsheet grids, dark title bar, hotkeys, auto-closing windows, partial bold text and other frequent questions | tkinter
+
+@@ tk.h.clickable-label
+Q: How do I make a Label clickable (like a link or an icon button)?
+aka: clickable label, label click event, label as link, label hyperlink, label onclick, label bind click
+A: Labels have no `command`, so `bind("<Button-1>", func)` on them; change the cursor to `"hand2"` and underline the font so it looks clickable.
+see: tk.open-link, tk.tx.links
+```py
+import webbrowser
+import tkinter as tk
+from tkinter import font
+
+root = tk.Tk()
+link_font = font.Font(family="Arial", size=12, underline=True)
+link = tk.Label(root, text="Open python.org", fg="#1a57c4", cursor="hand2", font=link_font)
+link.pack(padx=30, pady=20)
+clicks = []
+link.bind("<Button-1>", lambda e: clicks.append("open"))      # webbrowser.open("https://python.org")
+link.bind("<Enter>", lambda e: link.config(fg="#c23b22"))
+link.bind("<Leave>", lambda e: link.config(fg="#1a57c4"))
+root.update()
+link.event_generate("<Button-1>")
+print(clicks)
+root.mainloop()
+```
+```text
+['open']
+```
+
+@@ tk.h.login-then-main
+Q: How do I show a login window first, then close it and open the main window?
+aka: login then main window, close window open another, switch windows tkinter, after login open app, destroy login show main
+A: Use **one** `Tk()`. Either build the login screen in a Frame and replace it with the main Frame after a successful login, or hide the root (`withdraw`) while a login Toplevel is shown and `deiconify` it afterwards. Don't create a second `Tk()`.
+see: tk.pages, tk.withdraw
+```py
+import tkinter as tk
+
+root = tk.Tk()
+root.title("App")
+
+def show_login():
+    frame = tk.Frame(root, padx=20, pady=20); frame.pack()
+    tk.Label(frame, text="Password").pack()
+    pw = tk.Entry(frame, show="•"); pw.pack()
+    msg = tk.Label(frame, fg="red"); msg.pack()
+    def check():
+        if pw.get() == "letmein":
+            frame.destroy()
+            show_main()
+        else:
+            msg.config(text="Wrong password")
+    tk.Button(frame, text="Log in", command=check).pack(pady=(6, 0))
+    pw.bind("<Return>", lambda e: check())
+    return pw, check
+
+def show_main():
+    root.title("App – main")
+    tk.Label(root, text="Welcome! This is the main screen.", padx=40, pady=40).pack()
+
+pw, check = show_login()
+pw.insert(0, "letmein"); check()
+print(root.title())
+root.mainloop()
+```
+```text
+App – main
+```
+
+@@ tk.h.entry-grid
+Q: How do I make a grid of Entry boxes (like a spreadsheet) and read all the values?
+aka: spreadsheet tkinter, grid of entries, table of entry widgets, editable table grid, matrix input, sudoku grid entries
+A: Create Entries in nested loops with `grid(row=r, column=c)` and keep them in a 2D list; reading the values is a nested comprehension. Arrow-key navigation is a few `bind`s.
+see: tk.grid, py.2d-list
+```py
+import tkinter as tk
+
+ROWS, COLS = 3, 4
+root = tk.Tk()
+cells = [[tk.Entry(root, width=8, justify="right") for c in range(COLS)] for r in range(ROWS)]
+for r in range(ROWS):
+    for c in range(COLS):
+        cells[r][c].grid(row=r, column=c, padx=1, pady=1)
+        cells[r][c].insert(0, str(r * COLS + c))
+
+def move(event, r, c):
+    dr, dc = {"Up": (-1, 0), "Down": (1, 0), "Left": (0, -1), "Right": (0, 1)}[event.keysym]
+    cells[(r + dr) % ROWS][(c + dc) % COLS].focus_set()
+
+for r in range(ROWS):
+    for c in range(COLS):
+        for key in ("<Up>", "<Down>", "<Left>", "<Right>"):
+            cells[r][c].bind(key, lambda e, r=r, c=c: move(e, r, c))
+
+def values():
+    return [[float(e.get() or 0) for e in row] for row in cells]
+
+total = tk.Label(root); total.grid(row=ROWS, column=0, columnspan=COLS, sticky="e")
+total.config(text=f"Sum: {sum(map(sum, values())):g}")
+print(total.cget("text"), values()[1])
+root.mainloop()
+```
+```text
+Sum: 66 [4.0, 5.0, 6.0, 7.0]
+```
+
+@@ tk.h.dark-titlebar
+Q: How do I make the window's title bar dark on Windows 10/11?
+aka: dark title bar, title bar color, dark mode title bar windows, change title bar colour, DwmSetWindowAttribute
+A: tkinter can't style the title bar (the OS draws it). On Windows 10 (build 1809+)/11 you can ask for a dark one through `ctypes` and `DwmSetWindowAttribute` (attribute 20, or 19 on older builds). On other systems it follows the system theme. For full control, remove the title bar (`overrideredirect`) and draw your own.
+see: tk.dark-mode, tk.no-titlebar
+```py
+import sys
+import tkinter as tk
+
+def dark_title_bar(window):
+    if sys.platform != "win32":
+        return False
+    import ctypes
+    window.update()
+    hwnd = ctypes.windll.user32.GetParent(window.winfo_id())
+    value = ctypes.c_int(1)
+    for attr in (20, 19):                         # DWMWA_USE_IMMERSIVE_DARK_MODE
+        if ctypes.windll.dwmapi.DwmSetWindowAttribute(hwnd, attr, ctypes.byref(value), ctypes.sizeof(value)) == 0:
+            return True
+    return False
+
+root = tk.Tk()
+root.configure(bg="#1b1a17")
+tk.Label(root, text="Dark window", bg="#1b1a17", fg="#eee").pack(padx=60, pady=40)
+dark_title_bar(root)
+root.mainloop()
+```
+
+@@ tk.h.auto-close
+Q: How do I close a window (or a message) automatically after a few seconds?
+aka: close window after seconds, auto close popup, self destroying message, timed popup, destroy after delay
+A: `win.after(3000, win.destroy)` closes it after 3 seconds. For a messagebox (which blocks), make your own small Toplevel instead, since `messagebox` can't be closed from code.
+see: tk.app.notify, tk.after
+```py
+import tkinter as tk
+
+root = tk.Tk()
+def flash_message(text, ms=1500):
+    win = tk.Toplevel(root, padx=20, pady=15)
+    win.title("Note")
+    tk.Label(win, text=text).pack()
+    win.after(ms, win.destroy)
+    return win
+
+w = flash_message("Saved!", 100)
+root.after(300, lambda: print("popup still open?", bool(w.winfo_exists())))
+root.mainloop()
+```
+```text
+popup still open? False
+```
+
+@@ tk.h.partial-bold
+Q: How do I make only part of a Label's text bold or a different colour?
+aka: label part bold, mixed fonts label, label two colours, bold word in label, rich text label
+A: A Label has one font and colour. Either put several Labels side by side in a Frame, or use a read-only Text widget with tags (it can mix anything).
+see: tk.tx.tag-options
+```py
+import tkinter as tk
+
+root = tk.Tk()
+row = tk.Frame(root); row.pack(padx=20, pady=10)
+tk.Label(row, text="Status:").pack(side="left")
+tk.Label(row, text="ONLINE", fg="#2e7d4f", font=("Arial", 10, "bold")).pack(side="left")
+
+t = tk.Text(root, height=1, width=34, bd=0, bg=root.cget("bg"), font=("Arial", 11))
+t.tag_config("b", font=("Arial", 11, "bold")); t.tag_config("red", foreground="#c23b22")
+t.insert("1.0", "You have ", (), "3", ("b", "red"), " new ", (), "messages", "b")
+t.config(state="disabled")
+t.pack(padx=20, pady=(0, 10))
+root.mainloop()
+```
+
+@@ tk.h.entry-multiline
+Q: Can an Entry have several lines? How do I make a multi-line input box?
+aka: entry multiple lines, multiline entry, textarea tkinter, entry height lines, entry wrap text
+A: No: Entry is always one line (`height` isn't an option). Use a **Text** widget for multiple lines; read it with `t.get("1.0", "end-1c")`.
+see: tk.text, tk.text-get
+```py
+import tkinter as tk
+root = tk.Tk()
+box = tk.Text(root, width=30, height=4, wrap="word"); box.pack(padx=10, pady=10)
+box.insert("1.0", "line one\nline two")
+print(box.get("1.0", "end-1c").splitlines())
+root.mainloop()
+```
+```text
+['line one', 'line two']
+```
+
+@@ tk.h.optionmenu-style
+Q: How do I change the look of an OptionMenu (width, colours, font, the drop-down)?
+aka: optionmenu style, optionmenu width, optionmenu colour, optionmenu font, style dropdown menu
+A: `OptionMenu` returns a Menubutton you can `config` (`width`, `bg`, `font`, `relief`, `highlightthickness`); its drop-down list is `om["menu"]`, a Menu you can also `config`.
+see: tk.optionmenu
+```py
+import tkinter as tk
+root = tk.Tk()
+v = tk.StringVar(value="Medium")
+om = tk.OptionMenu(root, v, "Small", "Medium", "Large")
+om.config(width=12, bg="#ffd27a", activebackground="#ffb000", font=("Arial", 11), relief="flat", highlightthickness=0)
+om["menu"].config(bg="white", font=("Arial", 11), activebackground="#c23b22")
+om.pack(padx=30, pady=20)
+print(om.cget("width"), om["menu"].index("end"))
+root.mainloop()
+```
+```text
+12 2
+```
+
+@@ tk.h.global-hotkey
+Q: How do I react to a key press even when my window isn't focused (global hotkey)?
+aka: global hotkey, keyboard listener background, key press without focus, pynput, keyboard module, system wide shortcut
+A: tkinter only sees keys while its window has focus. For system-wide hotkeys use a library like `pynput` (`pip install pynput`): its listener runs in a thread, so pass events to tkinter with a queue or `root.after`.
+see: tk.thr.queue
+```py norun
+import queue
+import tkinter as tk
+from pynput import keyboard
+
+events = queue.Queue()
+hotkeys = keyboard.GlobalHotKeys({"<ctrl>+<alt>+h": lambda: events.put("show")})
+hotkeys.start()                                    # runs in its own thread
+
+root = tk.Tk()
+def poll():
+    while not events.empty():
+        if events.get() == "show":
+            root.deiconify(); root.lift(); root.focus_force()
+    root.after(100, poll)
+poll()
+root.mainloop()
+```
+
+@@ tk.h.canvas-pixel
+Q: How do I get the colour of a pixel on a Canvas (or on the screen)?
+aka: canvas pixel colour, get pixel color, colour picker screen, read canvas pixel, ImageGrab pixel
+A: A Canvas stores shapes, not pixels. Either keep your own data (which item/colour is where, via `find_overlapping`), or grab the screen with Pillow's `ImageGrab` and read a pixel (Windows/macOS; Linux needs extra setup).
+see: tk.cv.find, tk.screenshot
+```py
+import tkinter as tk
+root = tk.Tk()
+c = tk.Canvas(root, width=200, height=100, bg="white", highlightthickness=0); c.pack()
+c.create_rectangle(20, 20, 80, 80, fill="#c23b22", outline="")
+
+def colour_at(x, y):
+    hits = c.find_overlapping(x, y, x, y)
+    return c.itemcget(hits[-1], "fill") if hits else c.cget("bg")     # topmost item's colour
+
+print(colour_at(50, 50), colour_at(150, 50))
+root.mainloop()
+```
+```text
+#c23b22 white
+```
+```py norun
+from PIL import ImageGrab
+def screen_pixel(widget, x, y):
+    return ImageGrab.grab().getpixel((widget.winfo_rootx() + x, widget.winfo_rooty() + y))
+```
+
+@@ tk.h.loop-progress
+Q: How do I show progress while a for loop runs, without threads?
+aka: progress during loop, update label inside for loop, progressbar for loop no thread, update_idletasks loop
+A: For a quick loop, call `update_idletasks()` after changing the bar so it redraws (the window still won't respond to clicks). For anything longer than a second or two, use `after`-chunks or a thread instead.
+see: tk.thr.chunks, tk.thr.progress
+```py
+import time
+import tkinter as tk
+from tkinter import ttk
+
+root = tk.Tk()
+bar = ttk.Progressbar(root, length=250, maximum=20); bar.pack(padx=20, pady=20)
+for i in range(20):
+    time.sleep(0.005)                  # a short piece of work
+    bar["value"] = i + 1
+    root.update_idletasks()            # redraw now
+print(bar["value"])
+root.mainloop()
+```
+```text
+20
+```
+
+@@ tk.h.image-from-url
+Q: How do I show an image from a web address (URL) in tkinter?
+aka: image from url, load image from internet, show online image, download image tkinter
+A: Download the bytes (urllib/requests), open them with Pillow from a `BytesIO`, then `ImageTk.PhotoImage`. Do the download in a thread for big images.
+see: tk.pillow, mod.urllib.get
+```py norun
+import io, urllib.request
+import tkinter as tk
+from PIL import Image, ImageTk
+
+URL = "https://www.python.org/static/img/python-logo.png"
+root = tk.Tk()
+with urllib.request.urlopen(URL, timeout=10) as r:
+    img = Image.open(io.BytesIO(r.read()))
+photo = ImageTk.PhotoImage(img)
+tk.Label(root, image=photo).pack()
+root.photo = photo                     # keep a reference
+root.mainloop()
+```
+
+@@ tk.h.font-scale
+Q: How do I make the text size grow and shrink with the window?
+aka: font size resize window, responsive font, scale text with window, auto font size
+A: Use a shared `font.Font` and change its size in a `<Configure>` handler based on the window's width or height.
+see: tk.font-object, tk.configure-event
+```py
+import tkinter as tk
+from tkinter import font
+
+root = tk.Tk()
+root.geometry("300x150")
+f = font.Font(family="Arial", size=12)
+tk.Label(root, text="I scale", font=f).pack(expand=True)
+
+def resize(event):
+    if event.widget is root:
+        f.configure(size=max(8, event.height // 8))
+
+root.bind("<Configure>", resize)
+root.update()
+print(f.cget("size"))
+root.mainloop()
+```
+```text
+18
+```
+
+@@ tk.h.window-corner
+Q: How do I put the window in a corner of the screen (top-right, bottom-right)?
+aka: window top right corner, position window corner, bottom right window, place window screen edge
+A: Work out x and y from the screen size and the window's size: right edge `x = screen_width - window_width - margin`, bottom `y = screen_height - window_height - margin` (leave room for the taskbar).
+see: tk.center, tk.geometry
+```py
+import tkinter as tk
+
+root = tk.Tk()
+w, h, margin = 260, 120, 20
+x = root.winfo_screenwidth() - w - margin
+y = margin
+root.geometry(f"{w}x{h}+{x}+{y}")          # top-right
+tk.Label(root, text="Top-right corner").pack(expand=True)
+root.update()
+print(root.winfo_x() >= 0, root.geometry().startswith("260x120"))
+root.mainloop()
+```
+```text
+True True
+```
+
+@@ tk.h.confirm-delete
+Q: How do I ask "Are you sure?" before deleting something?
+aka: confirm delete, are you sure dialog, askyesno delete, confirmation before action
+A: `messagebox.askyesno(title, question)` returns True/False; only delete when it's True. Name the thing being deleted in the question.
+see: tk.messagebox-ask
+```py
+import tkinter as tk
+from tkinter import messagebox
+
+root = tk.Tk()
+lb = tk.Listbox(root); lb.pack(padx=20, pady=10)
+for x in ("notes.txt", "photo.png"):
+    lb.insert("end", x)
+
+def delete_selected():
+    sel = lb.curselection()
+    if not sel:
+        return
+    name = lb.get(sel[0])
+    if messagebox.askyesno("Delete", f"Delete {name}? This can't be undone."):
+        lb.delete(sel[0])
+
+tk.Button(root, text="Delete", command=delete_selected).pack(pady=(0, 10))
+lb.selection_set(0); delete_selected()
+print(lb.get(0, "end"))
+root.mainloop()
+```
+```text
+('photo.png',)
+```
+
+@@ tk.h.attention
+Q: How do I get the user's attention (flash the taskbar, bring forward, bell)?
+aka: flash taskbar, get attention, notify user window, flash window, blink title
+A: Simple: `root.bell()`, `root.lift()` + `root.attributes("-topmost", True)` briefly, or blink the title with `after`. On Windows, `FlashWindow` via `ctypes` flashes the taskbar button.
+see: tk.win.focus-force
+```py
+import sys
+import tkinter as tk
+
+root = tk.Tk()
+root.title("Chat")
+def blink_title(times=6, on=True):
+    root.title("★ New message ★" if on else "Chat")
+    if times:
+        root.after(30, blink_title, times - 1, not on)
+def flash_taskbar():
+    if sys.platform == "win32":
+        import ctypes
+        ctypes.windll.user32.FlashWindow(ctypes.windll.user32.GetParent(root.winfo_id()), True)
+root.bell(); blink_title(); flash_taskbar()
+root.after(250, lambda: print(root.title()))
+root.mainloop()
+```
+```text
+Chat
+```
+
+@@ tk.h.entry-selection
+Q: How do I get, set or check the selected text in an Entry?
+aka: entry selected text, selection_present, select_range, entry selection get, highlighted text entry
+A: `e.selection_present()` tells you if something is selected; `e.select_range(a, b)` selects; `e.index("sel.first")`/`e.index("sel.last")` give the range, so the text is `e.get()[first:last]`.
+see: tk.ref.entry
+```py
+import tkinter as tk
+root = tk.Tk()
+e = tk.Entry(root); e.pack(padx=20, pady=20)
+e.insert(0, "hello wonderful world")
+e.select_range(6, 15)
+if e.selection_present():
+    a, b = e.index("sel.first"), e.index("sel.last")
+    print(a, b, e.get()[a:b])
+root.mainloop()
+```
+```text
+6 15 wonderful
+```
+
+@@ tk.h.web-browser
+Q: Can I show a web page inside a tkinter window?
+aka: web browser in tkinter, html page in tkinter, embed browser, tkinterweb, show website in app
+A: Not with plain tkinter. `tkinterweb` (`pip install tkinterweb`) shows simple HTML pages inside a frame; for full modern websites, open the system browser (`webbrowser.open`) or use `pywebview` for a separate web window.
+see: mod.webbrowser, tk.tx.html-like
+```py norun
+import tkinter as tk
+from tkinterweb import HtmlFrame          # pip install tkinterweb
+
+root = tk.Tk()
+page = HtmlFrame(root)
+page.load_html("<h1>Hello</h1><p>Simple HTML inside tkinter.</p>")
+page.pack(fill="both", expand=True)
+root.mainloop()
+```
+
+@@ tk.h.cycle-label
+Q: How do I show messages from a list one after another (rotating text, slideshow of quotes)?
+aka: cycle text label, rotate messages, change label every few seconds, slideshow text, ticker
+A: Keep an index, show `items[i % len(items)]`, and schedule the next change with `after`.
+see: tk.after, tk.img-change
+```py
+import tkinter as tk
+QUOTES = ["Simple is better than complex.", "Readability counts.", "Now is better than never."]
+root = tk.Tk()
+label = tk.Label(root, font=("Georgia", 13), width=34); label.pack(padx=20, pady=20)
+shown = []
+def show(i=0):
+    label.config(text=QUOTES[i % len(QUOTES)])
+    shown.append(i % len(QUOTES))
+    root.after(60, show, i + 1)
+show()
+root.after(300, lambda: print(shown[:4]))
+root.mainloop()
+```
+```text
+[0, 1, 2, 0]
+```
