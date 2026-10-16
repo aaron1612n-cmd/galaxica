@@ -1,0 +1,122 @@
+# mod-zip | zipfile, tarfile, gzip, shutil archives, filecmp, difflib | Zipping and unzipping, compressed files, comparing files and text | modules
+
+@@ mod.zip.basics
+Q: How do I create, read and extract zip files (zipfile)?
+aka: zipfile, create zip, unzip, extract zip, list zip contents, add files to zip, compress files
+A: `with zipfile.ZipFile("x.zip", "w", zipfile.ZIP_DEFLATED) as z: z.write(path, arcname)` creates one (`writestr(name, text)` adds data directly); `"r"` mode to read: `namelist()`, `read(name)`, `extractall(folder)`. `"a"` appends.
+see: mod.shutil.disk
+```py
+import os, zipfile
+os.makedirs("pack", exist_ok=True)
+open("pack/a.txt", "w").write("alpha " * 100)
+with zipfile.ZipFile("pack.zip", "w", zipfile.ZIP_DEFLATED) as z:
+    z.write("pack/a.txt", arcname="a.txt")
+    z.writestr("notes/readme.txt", "hello zip")
+with zipfile.ZipFile("pack.zip") as z:
+    print(z.namelist())
+    print(z.read("notes/readme.txt").decode())
+    info = z.getinfo("a.txt")
+    print(info.file_size, info.compress_size < info.file_size)
+    z.extractall("unpacked")
+print(sorted(os.listdir("unpacked")))
+```
+```text
+['a.txt', 'notes/readme.txt']
+hello zip
+600 True
+['a.txt', 'notes']
+```
+
+@@ mod.zip.folder
+Q: How do I zip a whole folder (keeping subfolders), or unzip safely?
+aka: zip folder recursively, zip directory, make_archive, unpack_archive, zip with subfolders
+A: Easiest: `shutil.make_archive("backup", "zip", folder)` and `shutil.unpack_archive("backup.zip", dest)`. For control (skipping files), walk the folder and `z.write(path, arcname=relative_path)`. Only extract zips you trust: names like `../../x` could write outside the folder (Python warns and cleans these up, but be careful with old versions).
+see: mod.zip.basics, mod.os.walk
+```py
+import os, shutil, zipfile
+from pathlib import Path
+src = Path("site2"); (src / "css").mkdir(parents=True, exist_ok=True)
+(src / "index.html").write_text("<h1>hi</h1>"); (src / "css" / "a.css").write_text("h1{}"); (src / "secret.env").write_text("KEY=1")
+with zipfile.ZipFile("site2.zip", "w", zipfile.ZIP_DEFLATED) as z:
+    for p in src.rglob("*"):
+        if p.is_file() and p.suffix != ".env":
+            z.write(p, p.relative_to(src))
+print(sorted(zipfile.ZipFile("site2.zip").namelist()))
+shutil.unpack_archive("site2.zip", "site2_copy")
+print(sorted(str(p.relative_to("site2_copy").as_posix()) for p in Path("site2_copy").rglob("*") if p.is_file()))
+```
+```text
+['css/a.css', 'index.html']
+['css/a.css', 'index.html']
+```
+
+@@ mod.tarfile-gzip
+Q: How do I work with .tar.gz and .gz files?
+aka: tarfile, tar gz, gzip, gunzip, compress single file, read gz file, extract tar
+A: `tarfile.open("x.tar.gz", "w:gz")` + `add(path)` creates one; `"r:gz"` + `extractall(dest, filter="data")` extracts safely. A single `.gz` file opens like a normal file with `gzip.open(path, "rt")`.
+see: mod.zip.basics
+```py
+import gzip, os, tarfile
+with gzip.open("log.txt.gz", "wt", encoding="utf-8") as f:
+    f.write("line 1\nline 2\n")
+with gzip.open("log.txt.gz", "rt", encoding="utf-8") as f:
+    print(f.read().splitlines())
+os.makedirs("tdir", exist_ok=True); open("tdir/x.txt", "w").write("x")
+with tarfile.open("tdir.tar.gz", "w:gz") as t:
+    t.add("tdir")
+with tarfile.open("tdir.tar.gz", "r:gz") as t:
+    print(t.getnames())
+    t.extractall("untarred", filter="data")
+print(os.path.exists("untarred/tdir/x.txt"))
+```
+```text
+['line 1', 'line 2']
+['tdir', 'tdir/x.txt']
+True
+```
+
+@@ mod.filecmp
+Q: How do I check if two files (or folders) are the same?
+aka: compare files, filecmp, files identical, compare folders, dircmp, find changed files
+A: `filecmp.cmp(a, b, shallow=False)` compares contents; `filecmp.dircmp(dir1, dir2)` lists files only in one side (`left_only`, `right_only`) and different files (`diff_files`). Comparing hashes works for many files too.
+see: mod.hashlib
+```py
+import filecmp, os
+for d, files in (("v1", {"a.txt": "same", "b.txt": "old"}), ("v2", {"a.txt": "same", "b.txt": "new", "c.txt": "added"})):
+    os.makedirs(d, exist_ok=True)
+    for name, text in files.items():
+        open(os.path.join(d, name), "w").write(text)
+print(filecmp.cmp("v1/a.txt", "v2/a.txt", shallow=False), filecmp.cmp("v1/b.txt", "v2/b.txt", shallow=False))
+c = filecmp.dircmp("v1", "v2")
+print(c.left_only, c.right_only, c.diff_files, c.same_files)
+```
+```text
+True False
+[] ['c.txt'] ['b.txt'] ['a.txt']
+```
+
+@@ mod.difflib
+Q: How do I show the differences between two texts, or find the closest match to a word (difflib)?
+aka: difflib, diff two strings, unified diff, compare text, similar words, get_close_matches, did you mean, fuzzy match, similarity ratio
+A: `difflib.unified_diff(a_lines, b_lines)` gives a git-style diff; `SequenceMatcher(None, a, b).ratio()` gives a 0–1 similarity; `get_close_matches(word, options)` suggests "did you mean...?".
+see: mod.re.functions
+```py
+import difflib
+old = ["apples", "bread", "milk"]
+new = ["apples", "brown bread", "milk", "eggs"]
+print("".join(difflib.unified_diff([l + "\n" for l in old], [l + "\n" for l in new], "before", "after", n=0)))
+print(round(difflib.SequenceMatcher(None, "colour", "color").ratio(), 2))
+print(difflib.get_close_matches("pyhton", ["python", "pylon", "java", "typhoon"]))
+```
+```text
+--- before
++++ after
+@@ -2 +2 @@
+-bread
++brown bread
+@@ -3,0 +4 @@
++eggs
+
+0.91
+['python', 'pylon']
+```
