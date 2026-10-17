@@ -36,9 +36,8 @@ Build: `python3 tools/pyref/build.py [--only idprefix]` (~90 s full). FAILS if a
 Env: `uv venv --managed-python -p 3.12 /home/user/pyenv` + pillow matplotlib numpy pandas openpyxl beautifulsoup4 flask requests (system python has no tk).
 Search check: scratchpad search.js / q.js. Tune by adding phrases to `aka:`. Set outputs of strings are hash-order dependent: sort them (verify with PYTHONHASHSEED=1..3).
 
-## NEXT
-1. Ask user which Answer Book answers are missing (ideas: lazy-load bodies if data.js grows past 2.4 MB, struct/io, email parsing, pygame section).
-2. Game ideas (Deepdig/Hedgerow-like). 3. Leaderboards, phone playtest, balance.
+## NEXT: BIG IDEAS (proposed 2026-10-17, user: "lots of usage to burn", awaiting pick)
+A Bot Arena (write your own AUTO bot in JS/Python, ranked) | B Galaxica Online (Worker+D1 global daily leaderboards, ghost replays) | C Party mode (phones as controllers, Durable Object rooms, 4-6 new party games) | D Deepdig full roguelite campaign | E Cabinet galaxy metagame (cross-game stars/quests/trophy room) | F Level editor + shared, solver-verified levels | G Answer Book "Run it" (Pyodide) + tkinter visual previews | H Attract/TV mode (AUTO plays all games). Older: more answers, phone playtest, balance.
 
 ## Test kit (scratchpad, ephemeral)
 http-server public -p 8080; bot.mjs (AUTO stats), waitshot.mjs, tutshot.mjs, thumb.mjs + crop.py, audit.mjs (overflow/oval/clip/pad checks + screenshots), addgame.py (games.json).
