@@ -203,7 +203,16 @@ var B=GK.controls(document.getElementById('bar'),{bar:'bottom',onHelp:function()
 function setMode(m){if(tut.active)return;MODE=m;GK.ls.set('mode',m);paint();load(m,m==='parade'?curLevel():0)}
 function paint(){['parade','endless','daily'].forEach(function(k){B['m_'+k].classList.toggle('on',MODE===k)})}
 GK.goals.setup({metrics:function(){return ST},defs:{levels:{ic:'flag',t:[1,5,10,20,30]},saved:{ic:'duck',t:[25,250,1000,5000]},bridges:{ic:'build',t:[5,50,200]},dug:{ic:'dig',t:[5,50,200]},perfect:{ic:'star',t:[1,5,15]},endless:{ic:'infinity',t:[5,15,30]},daily:{ic:'sun',t:[1,3,7,14,30]}}});
-GK.goals.mount(B);GK.online.mount(B,{game:'duckling-parade',boards:[{key:'levels',m:'levels',ic:'flag'},{key:'perfect',m:'perfect',ic:'star'},{key:'endless',m:'endless',ic:'infinity'},{daily:{}}]});
+GK.goals.mount(B);
+function dpic(fn){return function(c,s){c.fillStyle=CREAM;c.fillRect(0,0,s,s);c.translate(s/2,s-8);c.scale(1.7,1.7);fn(c)}}
+function dduck(extra){return dpic(function(c){var d={x:0,y:-1,dir:1,st:'walk',t:0,job:null,float:false,climber:false};Object.assign(d,extra||{});duck(c,d)})}
+GK.guide({title:'Duckling Parade',goal:'Get enough ducklings into Mother Duck\'s pond. The number you need is at the top.',
+ how:['Ducklings hatch from the basket and waddle forward on their own. They turn around at walls.','Pick a job on the pad, then tap a duckling to give it that job. The pad shows how many of each you have.','Water, thorns and long falls are deadly. A fall of more than about five duckling heights is too far without a leaf.','Ducklings that meet a builder, basher or stopper turn back, so the parade waits safely while the work gets done.','The egg button sets how fast new ducklings hatch.'],
+ keys:[['Click a duckling','give the chosen job'],['Drag','look along the level']],touch:[['Tap a duckling','give the chosen job'],['Drag','look along the level']],
+ legend:[{pic:dduck({st:'stop'}),name:'Stopper',note:'stands still and turns the others back'},{pic:dduck({st:'build'}),name:'Builder',note:'lays a 12-step twig staircase'},{pic:dduck({job:'dig'}),name:'Digger',note:'digs straight down'},{pic:dduck({job:'bash'}),name:'Basher',note:'tunnels through the next wall'},
+  {pic:dduck({float:true,st:'fall'}),name:'Floater',note:'leaf umbrella: survives any fall'},{pic:dduck({climber:true}),name:'Climber',note:'climbs walls instead of turning'},
+  {sw:WATER,name:'Water',note:'deadly'},{sw:THORN,name:'Thorns',note:'deadly'},{sw:STEEL,name:'Stone',note:'cannot be dug or bashed'},{sw:TWIG,name:'Twigs',note:'builder steps; can be dug'},{sw:EARTH,name:'Earth',note:'diggable'},{ic:'pond',name:'Pond',note:'home: Mother Duck waits here'}],
+ tips:['Give jobs to the leading duckling so the rest follow its path.','Running out of time ends the level, so plan the first few jobs quickly.']});GK.online.mount(B,{game:'duckling-parade',boards:[{key:'levels',m:'levels',ic:'flag'},{key:'perfect',m:'perfect',ic:'star'},{key:'endless',m:'endless',ic:'infinity'},{daily:{}}]});
 function fit(){GK.fit(cv,stage)}addEventListener('resize',fit);addEventListener('orientationchange',fit);fit();
 save();paint();load(MODE,MODE==='parade'?curLevel():0);GK.loop(step,render);tut.maybe();
 window.__g={tut:tut,G:function(){return G},levelFor:levelFor,trial:trial,load:load,prog:PROG,st:ST,

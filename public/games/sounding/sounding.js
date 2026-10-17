@@ -146,7 +146,16 @@ var B=GK.controls(document.getElementById('bar'),{bar:'left',onHelp:function(){t
 function setMode(m){if(tut.active)return;MODE=m;GK.ls.set('mode',m);paint();load(m,m==='survey'?curChart():0)}
 function paint(){['survey','free','daily'].forEach(function(k){B['m_'+k].classList.toggle('on',MODE===k)})}
 GK.goals.setup({metrics:function(){return ST},defs:{charts:{ic:'chart',t:[1,8,16,24,40]},cells:{ic:'compass',t:[500,5000,20000,100000]},buoys:{ic:'buoy',t:[50,500,2000]},hex:{ic:'hexgrid',t:[1,8,16]},free:{ic:'infinity',t:[5,25,100]},daily:{ic:'sun',t:[1,3,7,14,30]},fast:{ic:'clock',t:[1]}}});
-GK.goals.mount(B);GK.online.mount(B,{game:'sounding',boards:[{key:'charts',m:'charts',ic:'chart'},{key:'cells',m:'cells',ic:'compass'},{daily:{inv:10000,low:1},fmt:'time'}]});
+GK.goals.mount(B);
+function spic(fn){return function(c,s){c.fillStyle=CHART;c.fillRect(0,0,s,s);fn(c,s)}}
+GK.guide({title:'Sounding',goal:'Chart every safe square of the reef without sounding a wreck.',
+ how:['A number counts the wrecks touching that square: up to 8 on square charts, 6 on hex charts.','Tap a square to take a sounding. Blank water opens up around it.','Mark a wreck you are sure of with a buoy: hold the square, right-click it, or switch on the buoy button (phones).','Tap a number whose wrecks are all buoyed to sound everything around it at once.','Every chart can be solved by reasoning alone. You never have to guess.'],
+ keys:[['Click','sound'],['Right-click / hold','buoy'],['Click a finished number','sound its neighbours']],touch:[['Tap','sound'],['Hold','buoy'],['Buoy button','taps place buoys']],
+ legend:[{pic:spic(function(c,s){c.strokeStyle='rgba(31,42,51,.4)';c.lineWidth=1;for(var x=-s;x<s;x+=6){c.beginPath();c.moveTo(x,0);c.lineTo(x+s,s);c.stroke()}}),name:'Unsurveyed',note:'not sounded yet'},
+  {pic:spic(function(c,s){c.fillStyle=SHOAL;c.fillRect(4,4,s-8,s-8);c.fillStyle=NAVY;c.font='italic 700 24px "Libre Caslon Text",serif';c.textAlign='center';c.textBaseline='middle';c.fillText('2',s/2,s/2+1)}),name:'Sounding',note:'2 wrecks touch this square'},
+  {pic:spic(function(c,s){buoy(c,s/2,s/2,false)}),name:'Buoy',note:'your mark for a wreck'},{pic:spic(function(c,s){c.save();c.translate(0,0);wreck(c,s/2,s/2,false);c.restore()}),name:'Wreck',note:'sound it and you run aground'},
+  {pic:spic(function(c,s){hexPath(c,s/2,s/2,18);c.strokeStyle=NAVY;c.lineWidth=1.5;c.stroke()}),name:'Hex chart',note:'six neighbours, not eight'}],
+ tips:['Start where a 1 touches only one unsurveyed square.','Free charts come in three sizes; the Daily chart is the same for everyone.']});GK.online.mount(B,{game:'sounding',boards:[{key:'charts',m:'charts',ic:'chart'},{key:'cells',m:'cells',ic:'compass'},{daily:{inv:10000,low:1},fmt:'time'}]});
 addEventListener('resize',fit);addEventListener('orientationchange',fit);
 save();paint();load(MODE,MODE==='survey'?curChart():0);GK.loop(step,render);tut.maybe();
 window.__g={tut:tut,G:function(){return G},boardFor:boardFor,deduce:deduce,provable:provable,load:load,prog:PROG,st:ST,

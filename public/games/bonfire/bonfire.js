@@ -508,7 +508,21 @@ var B=GK.controls(document.getElementById('bar'),{bar:'left',onHelp:function(){h
   {id:'rs',html:GK.icon('restart'),title:'Restart',fn:function(){if(!tut.active&&G)newRun({mode:G.mode})}}]});
 GK.goals.setup({metrics:function(){return ST},defs:{kills:{ic:'skull',t:[100,1000,5000,20000,100000]},lvl:{ic:'up',t:[10,20,30,40,50]},mins:{ic:'clock',t:[1,3,5,10,15]},wins:{ic:'flag',t:[1,3,10]},
   evos:{ic:'crown',t:[1,3,10,25]},bosses:{ic:'sword',t:[1,5,15,40]},gold:{ic:'coin',t:[100,1000,5000,20000]},heroes:{ic:'heart',t:[3,5,7,10]},stages:{ic:'tree',t:[2,3]},daily:{ic:'sun',t:[1,3,7,14,30]},endless:{ic:'infinity',t:[10,20,30]},maxk:{ic:'fire',t:[500,1500,3000,6000]}}});
-GK.goals.mount(B);GK.online.mount(B,{game:'bonfire',boards:[{key:'kills',m:'maxk',ic:'skull'},{key:'level',m:'lvl',ic:'up'},{key:'endless',m:'endless',ic:'infinity'},{daily:{}}]});
+GK.goals.mount(B);
+/* how-to-play card: pictures come from the game's own drawing code */
+function gpic(fn){return function(c,s){var o=ctx,oh=HOLE;ctx=c;HOLE='#10140f';c.fillStyle='#10140f';c.fillRect(0,0,s,s);c.translate(s/2,s/2+4);try{fn(c)}finally{ctx=o;HOLE=oh}}}
+function gen(t,sc,el){return gpic(function(c){c.scale(sc||1,sc||1);drawEnemy({t:t,d:ET[t],x:0,y:0,r:ET[t].r*(el?1.5:1),el:el?1:0,ph:1,face:1,fl:0,frz:0,st:''})})}
+GK.guide({title:'Bonfire',goal:'Survive the night: last 15 minutes, then beat the Erlking at dawn.',
+ how:['Walk around. Your weapons attack on their own.','Monsters drop embers. Gather them to level up, then pick a weapon or charm from the hanging tags. You can hold six of each.','A weapon at level 8 plus its paired charm becomes a stronger form when you open a chest. Elites (dashed ring) drop chests.','Gold buys permanent upgrades and new heroes at the Hearth (house button in camp). Surviving 10 minutes unlocks the next place.'],
+ keys:[['W A S D / Arrows','walk'],['Hold mouse','walk toward the pointer'],['P / Esc','pause']],touch:[['Drag anywhere','walk (a thumbstick appears where you touch)'],['Tap a tag','choose an upgrade']],
+ legend:[{pic:gen('bat',1.6),name:'Bat',note:'fast, weak, wobbles'},{pic:gen('hob',1.4),name:'Hob',note:'slow walker'},{pic:gen('wolf',1.3),name:'Wolf',note:'lunges when close'},{pic:gen('ghoul',1.1),name:'Ghoul',note:'tough'},
+  {pic:gen('wisp',1.4),name:'Wisp',note:'keeps away and shoots'},{pic:gen('shroom',1.3),name:'Shroom',note:'splits in two'},{pic:gen('treant',.8),name:'Treant',note:'very tough, hard hits'},{pic:gen('witch',1.2),name:'Witch',note:'summons bats'},
+  {pic:gen('frog',1.3),name:'Frog',note:'Marsh: hops at you'},{pic:gen('ghost',1.3),name:'Ghost',note:'Barrow: drifts in lines'},{pic:gen('skel',1.3),name:'Skeleton',note:'Barrow'},{pic:gen('hob',1,1),name:'Elite',note:'any kind, ember eyes; drops a chest'},
+  {pic:gen('stag',.42),name:'Stag King',note:'5:00; lowers antlers, then charges'},{pic:gen('hag',.55),name:'Hag',note:'10:00; rings of shots, teleports'},{pic:gen('erl',.38),name:'Erlking',note:'15:00; beat him for dawn'},
+  {pic:gpic(function(c){c.fillStyle=EMB;c.beginPath();c.moveTo(0,-8);c.lineTo(6,0);c.lineTo(0,8);c.lineTo(-6,0);c.fill()}),name:'Ember',note:'experience'},{ic:'chest',name:'Chest',note:'upgrade or evolve'},{ic:'bread',name:'Bread',note:'heals 30'},{ic:'magnet',name:'Magnet',note:'pulls in every ember'},{ic:'flask',name:'Lamp oil',note:'clears the screen'},{ic:'coin',name:'Gold',note:'spend at the Hearth'}]
+  .concat(Object.keys(WD).map(function(k){return{ic:WD[k].ic,name:WD[k].nm,note:'pairs with '+CH[WD[k].pair].nm+' → '+EVN[k]}}))
+  .concat(Object.keys(CH).map(function(k){return{ic:CH[k].ic,name:CH[k].nm,note:{might:'+damage',haste:'faster attacks',reach:'bigger area',boots:'walk faster',heart:'+max health',mend:'regenerate',magnet:'gather from further',luck:'crits, chests, 4th tag',echo:'+1 projectile',growth:'+experience',armor:'less damage taken',greed:'+gold'}[k]}})),
+ tips:['Keep moving in wide circles so the horde trails behind you.','The Night, Hurry, Endless and Daily buttons in camp change the rules.','Names mode (i in the More panel) labels every button.']});GK.online.mount(B,{game:'bonfire',boards:[{key:'kills',m:'maxk',ic:'skull'},{key:'level',m:'lvl',ic:'up'},{key:'endless',m:'endless',ic:'infinity'},{daily:{}}]});
 function fit(){var v=GK.fit(cv,stage);Z=GK.clamp(Math.sqrt(v.w*v.h/(620*620)),.62,1.9);VW=v.w/Z;VH=v.h/Z}
 addEventListener('resize',fit);addEventListener('orientationchange',fit);fit();
 toCamp();GK.loop(step,render);tut.maybe();if(document.fonts)document.fonts.ready.then(function(){if(mode==='camp')paintCamp()});

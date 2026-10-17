@@ -191,7 +191,15 @@ var B=GK.controls(document.getElementById('bar'),{bar:'top',onHelp:function(){tu
 function setMode(m){if(tut.active)return;MODE=m;GK.ls.set('mode',m);paint();load(m,m==='voyage'?curLevel():0);if(m==='watch')G.streak=0}
 function paint(){['voyage','watch','daily'].forEach(function(k){B['m_'+k].classList.toggle('on',MODE===k)})}
 GK.goals.setup({metrics:function(){return ST},defs:{solved:{ic:'grid',t:[1,10,25,40,60]},stars:{ic:'star',t:[10,50,100,150,180]},perfect:{ic:'crown',t:[5,20,40,60]},watch:{ic:'moon',t:[5,15,30]},daily:{ic:'sun',t:[1,3,7,14,30]},ships:{ic:'ship',t:[10,100,300,1000]}}});
-GK.goals.mount(B);GK.online.mount(B,{game:'lamplight',boards:[{key:'stars',m:'stars',ic:'star'},{key:'watch',m:'watch',ic:'moon'},{daily:{}}]});
+GK.goals.mount(B);
+function lpic(fn){return function(c,s){c.fillStyle=SEA;c.fillRect(0,0,s,s);c.translate(s/2,s/2);c.scale(s/TS*.9,s/TS*.9);fn(c)}}
+GK.guide({title:'Lamplight',goal:'Light every ship at the same time. Then they sail home.',
+ how:['The lighthouse throws a beam in a straight line.','Tap open water to set a mirror /. Tap again to flip it to \\, and once more to take it back.','Ringed mirrors are bolted down: tap to turn them, but they cannot move.','You only have the mirrors in the crate (top right). Use as few as possible: the three diamonds show your stars.'],
+ keys:[['Click','set, flip or turn a mirror'],['Undo button','take back a move']],touch:[['Tap','set, flip or turn a mirror']],
+ legend:[{pic:lpic(function(c){light(c,0)}),name:'Lighthouse',note:'shines one way'},{pic:lpic(function(c){ship(c,0,0)}),name:'Ship',note:'waiting for light'},{pic:lpic(function(c){ship(c,1,0)}),name:'Lit ship',note:'yellow sails'},
+  {pic:lpic(function(c){rock(c,3)}),name:'Rock',note:'blocks the beam'},{pic:lpic(function(c){mirror(c,0,'mine')}),name:'Your mirror',note:'tap to flip or remove'},{pic:lpic(function(c){mirror(c,1,'fix')}),name:'Fixed mirror',note:'cannot change'},
+  {pic:lpic(function(c){mirror(c,0,'rot')}),name:'Bolted mirror',note:'tap to turn only'},{pic:lpic(function(c){mirror(c,0,'split')}),name:'Half-mirror',note:'beam goes through and bounces'}],
+ tips:['Follow the moving dashes: they show which way the light runs.','From chapter four there are two lighthouses.','Night watch is an endless run of fresh puzzles.']});GK.online.mount(B,{game:'lamplight',boards:[{key:'stars',m:'stars',ic:'star'},{key:'watch',m:'watch',ic:'moon'},{daily:{}}]});
 addEventListener('resize',fit);addEventListener('orientationchange',fit);
 save();paint();load(MODE,MODE==='voyage'?curLevel():0);if(MODE==='watch')G.streak=0;GK.loop(step,render);tut.maybe();
 window.__g={tut:tut,G:function(){return G},prog:PROG,st:ST,load:load,levelDef:levelDef,par:par,solve:solve,trace:trace,

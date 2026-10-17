@@ -348,7 +348,17 @@ setInterval(function(){if(G&&B.bt){var ic=BAITS.filter(function(b){return b.id==
 cv.addEventListener('pointerdown',function(){if(G&&G.st==='over'&&G.overT>40)newGame(G.mode)});
 GK.goals.setup({metrics:function(){return ST},defs:{species:{ic:'book',t:[5,15,30,45,60]},kg:{ic:'weight',t:[10,100,1000,10000]},big:{ic:'fish',t:[1,10,50,200,500]},legends:{ic:'crown',t:[1,3,5]},
   earned:{ic:'coin',t:[500,5000,50000,200000]},catches:{ic:'hook',t:[10,100,500,2000]},locs:{ic:'map',t:[2,3,4,5]},derby:{ic:'clock',t:[20,80,200]},daily:{ic:'sun',t:[1,3,7,14,30]},snaps:{ic:'snap',t:[1,10]}}});
-GK.goals.mount(B);GK.online.mount(B,{game:'angler',boards:[{key:'big',m:'big',ic:'fish',fmt:'kg'},{key:'derby',m:'derby',ic:'clock',fmt:'kg'},{daily:{scale:.01},fmt:'kg'}]});
+GK.goals.mount(B);
+GK.guide({title:'Angler',goal:'Catch all 60 fish across five waters and press each into your journal.',
+ how:['Hold to swing the power arc, release to cast.','Hold to reel the lure up and in, release to let it sink. A moving lure gets noticed.','When the lure trembles a fish is nibbling: wait. When it jerks and a red ring flashes, tap to strike.','Fighting: hold to reel, release to give line. The needle in the dial must stay out of the red, or the line snaps. Too slack for too long and the fish slips off.','Fish sell as you land them. Spend money in the tackle shop and unlock new waters on the map. Each bait attracts different fish, and some only come out at night.'],
+ keys:[['Space / hold mouse','cast, reel, fight'],['Space / click','strike on the bite']],touch:[['Hold anywhere','cast, reel, fight'],['Tap','strike on the bite']],
+ legend:[{pic:function(c,s){c.fillStyle=RED;c.beginPath();c.arc(s/2,s/2,6,0,TAU);c.fill();c.strokeStyle=RED;c.lineWidth=2;c.beginPath();c.arc(s/2,s/2,14,0,TAU);c.stroke()},name:'Bite',note:'red ring: strike now'},
+  {pic:function(c,s){c.strokeStyle=INK;c.lineWidth=4;c.globalAlpha=.25;c.beginPath();c.arc(s/2,s-8,18,Math.PI,0);c.stroke();c.globalAlpha=1;c.strokeStyle=RED;c.beginPath();c.arc(s/2,s-8,18,-Math.PI*.15,0);c.stroke();c.strokeStyle=INK;c.lineWidth=2;c.beginPath();c.moveTo(s/2,s-8);c.lineTo(s/2-10,s-22);c.stroke()},name:'Tension dial',note:'keep the needle out of the red'},
+  {pic:function(c,s){c.translate(s/2,s/2);drawFish(c,2,34,0,INK,PAPER,1)},name:'Fish',note:'bigger ones fight harder'},{pic:function(c,s){c.translate(s/2,s/2);drawFish(c,11,40,0,INK,PAPER,1);c.strokeStyle=RED;c.lineWidth=2;c.strokeRect(-22,-18,44,36)},name:'Legends',note:'one per water, needs top gear'},
+  {ic:'rod',name:'Rod',note:'strength and casting distance'},{ic:'reel',name:'Reel',note:'reels in faster'},{ic:'spool',name:'Line',note:'longer line, deeper water'},{ic:'hook',name:'Hook',note:'longer bite window, more slack allowed'}]
+  .concat(BAITS.map(function(b){var who=SP.filter(function(s){return s[7].indexOf(b.id)>=0}).length;return{ic:b.ic,name:b.nm,note:'liked by '+who+' kinds'}}))
+  .concat(LOCS.map(function(L){return{ic:L.ic,name:L.nm,note:'up to '+Math.round(L.deep/10)+' m deep'}})),
+ tips:['Look at the journal: grey outlines are fish you have not caught yet.','Derby and Daily give you three minutes and fixed gear; heaviest bag wins.']});GK.online.mount(B,{game:'angler',boards:[{key:'big',m:'big',ic:'fish',fmt:'kg'},{key:'derby',m:'derby',ic:'clock',fmt:'kg'},{daily:{scale:.01},fmt:'kg'}]});
 function fit(){var v=GK.fit(cv,stage);Z=GK.clamp(Math.min(v.w/380,v.h/500),.62,2.1);VW=v.w/Z;VH=v.h/Z}
 addEventListener('resize',fit);addEventListener('orientationchange',fit);fit();
 paint();newGame();GK.loop(step,render);tut.maybe();

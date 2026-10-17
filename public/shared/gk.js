@@ -56,7 +56,7 @@ GK.controls=function(el,o){o=o||{};var R={};GK._snd=[];
     var fmtT=function(){var s=Math.floor(Speed.ticks/60),h=Math.floor(s/3600),m=Math.floor(s%3600/60),z=s%60;tm.lastChild.textContent=(h?h+':'+String(m).padStart(2,'0'):m)+':'+String(z).padStart(2,'0')};setInterval(function(){if(!more.hidden)fmtT()},500);R.more.addEventListener('click',fmtT)}
   R.snd=b('snd',GK.icon('snd'),'Sound',function(){GK.audio.ac();GK.audio.setMute(!GK.audio.mute)});GK._snd.push(R.snd);R.snd.classList.toggle('off',mute);g3.appendChild(R.snd);
   R.names=b('names',GK.icon('info'),'Names',function(){GK.setNames(!GK.names)});g3.appendChild(R.names);R.names.classList.toggle('on',GK.names);
-  if(o.help!==false){R.help=b('help',GK.icon('help'),'Tutorial',function(){o.onHelp&&o.onHelp()});g3.appendChild(R.help)}
+  if(o.help!==false){R.help=b('help',GK.icon('help'),'How to play',function(){if(window.Guide&&Guide.has()){Guide.onTut=o.onHelp;Guide.open(o.onHelp);if(more)more.hidden=true}else o.onHelp&&o.onHelp()});R.help.setAttribute('data-guide','');g3.appendChild(R.help);GK._onHelp=o.onHelp}
   el.classList.add('gk-bar');el.append(g1,g2);if(!drawer)el.appendChild(g3);else el.appendChild(more);setTimeout(function(){dispatchEvent(new Event('resize'))},30);return R};
 /* names mode: a caption under every button (title text) */
 GK.names=false;try{GK.names=localStorage.galaxicaNames==='1'}catch(e){}
@@ -108,7 +108,7 @@ GK.tutorial=function(o){
   var pips=wrap.querySelector('.gk-pips');T.steps.forEach(function(){pips.appendChild(document.createElement('i'))});
   function paint(){[].forEach.call(pips.children,function(p,j){p.className=j<T.i?'done':j===T.i?'now':''})}
   T.start=function(){T.i=0;T.active=true;T.t=0;wrap.hidden=false;o.onStart&&o.onStart();T.steps[0].init&&T.steps[0].init();paint()};
-  T.end=function(){T.active=false;wrap.hidden=true;T.i=-1;GK.ls.set('tut',1);T.seen=1;o.onEnd&&o.onEnd()};
+  T.end=function(){T.active=false;wrap.hidden=true;T.i=-1;GK.ls.set('tut',1);T.seen=1;o.onEnd&&o.onEnd();if(window.Guide){Guide.onTut=Guide.onTut||GK._onHelp;Guide.afterTutorial()}};
   wrap.querySelector('.gk-skip').onclick=T.end;
   T.tick=function(){if(!T.active)return;T.t++;var s=T.steps[T.i];s.update&&s.update(T.t);
     if(s.done&&s.done(T.t)){T.i++;T.t=0;if(T.i>=T.steps.length){T.end();return}T.steps[T.i].init&&T.steps[T.i].init();paint()}};

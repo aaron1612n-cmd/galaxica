@@ -127,6 +127,8 @@ GK.daily={key:function(){var d=new Date();return d.getFullYear()*10000+(d.getMon
    GK.online.post(key,score,{low,ghost}) for games that post at the end of a run. */
 (function(){var GK=window.GK,src=document.currentScript&&document.currentScript.src||'';
   if(!window.Online){var s=document.createElement('script');s.src=src.replace(/gk2\.js.*$/,'online.js');(document.head||document.documentElement).appendChild(s)}
+  if(!window.Guide){var s2=document.createElement('script');s2.src=src.replace(/gk2\.js.*$/,'guide.js');s2.onload=function(){if(GK._gcfg)Guide.set(GK._gcfg);Guide.onTut=GK._onHelp};(document.head||document.documentElement).appendChild(s2)}
+  GK.guide=function(c){GK._gcfg=c;if(window.Guide)Guide.set(c)};
   var ON=GK.online={game:null,boards:[],
     key:function(b){return b.daily?'daily:'+GK.daily.key():b.key},
     val:function(b){if(b.daily){var d=GK.ls.get('dstreak',{});if(d.last!==GK.daily.key()||d.best==null)return null;var v=d.best;if(b.daily.inv!=null)v=b.daily.inv-v;if(b.daily.scale)v*=b.daily.scale;return v}
