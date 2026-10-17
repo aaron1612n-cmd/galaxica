@@ -135,6 +135,11 @@ function setMode(m){if(tut.active)return;MODE=m;GK.ls.set('mode',m);paint();if(m
 function paint(){['garden','endless','daily'].forEach(function(k){R['m_'+k].classList.toggle('on',MODE===k)})}paint();
 GK.goals.setup({metrics:function(){return ST},defs:{cleared:{ic:'flag',t:[1,5,10,20,35,50]},stars:{ic:'flower',t:[3,15,45,90,150]},turns:{ic:'restart',t:[100,1000,5000]},par:{ic:'target',t:[1,10,25,50]},roses:{ic:'heart',t:[10,100,500,2000]},big:{ic:'tree',t:[1,10,30]},endless:{ic:'infinity',t:[3,10,25]},daily:{ic:'sun',t:[1,3,7,14,30]}}});
 GK.goals.mount(R);GK.online.mount(R,{game:'hedgerow',boards:[{key:'cleared',m:'cleared',ic:'flag'},{key:'stars',m:'stars',ic:'flower'},{daily:{inv:1000,low:1}}]});
+GK.guide({title:'Hedgerow',goal:'Turn the hedge tiles until every gravel path joins the gate. Then the hedgehog walks the whole maze.',
+ how:['Tap a tile to turn it a quarter turn.','Paths that connect to the gate light up. The level is done when every path is connected and nothing leads into a hedge.','Fewer turns earn more flowers. The number to beat is at the top.'],
+ keys:[['Click','turn a tile'],['R','restart']],touch:[['Tap','turn a tile']],
+ legend:[{ic:'house',name:'Gate',note:'where the paths start'},{ic:'flower',name:'Flowers',note:'stars for few turns'},{ic:'heart',name:'Rose',note:'a garden in bloom'},{ic:'paw',name:'Hedgehog',note:'walks the maze when you finish'}],
+ tips:['Corners and dead ends have the fewest ways to fit; start with them.','Endless makes a new garden every time.']});
 addEventListener('resize',fit);addEventListener('orientationchange',fit);
 eseed=(Math.random()*1e6)|0;load(MODE==='garden'?Math.min(NLV,Math.max(1,prog.done+1)):1);GK.loop(step,render);tut.maybe();
 window.__g={st:ST,setMode:setMode,load:load,gen:gen,tut:tut,stats:function(){return{MODE:MODE,lv:lvN,tut:inTut,size:L.w+'x'+L.h,par:L.par,turns:turns,won:won,lit:lit.n,done:prog.done}}};

@@ -146,6 +146,11 @@ function setMode(m){if(tut.active)return;MODE=m;GK.ls.set('mode',m);paint();S=nu
 function paint(){['career','max','daily'].forEach(function(k){R['m_'+k].classList.toggle('on',MODE===k)})}paint();
 GK.goals.setup({metrics:function(){return ST},defs:{dist:{ic:'flag',t:[50,150,400,800,1500,2500]},lettuce:{ic:'leaf',t:[25,250,1000,4000]},launches:{ic:'up',t:[1,10,50,200]},ups:{ic:'wrench',t:[1,10,20,30]},birds:{ic:'bat',t:[1,10,50]},height:{ic:'cloud',t:[30,80,150,250]},drops:{ic:'drop',t:[5,50,250]},moon:{ic:'moon',t:[1]},daily:{ic:'sun',t:[1,3,7,14,30]}}});
 GK.goals.mount(R);GK.online.mount(R,{game:'snail-rocket',boards:[{key:'distance',m:'dist',ic:'flag'},{key:'height',m:'height',ic:'cloud'},{daily:{}}]});
+GK.guide({title:'Snail Rocket',goal:'Launch the snail as far as it can go, then spend lettuce on upgrades and go further.',
+ how:['Hold to fire the rocket. The nose follows your speed, and holding tips it upward.','Fuel runs out. Dew drops refill it a little.','Bounce off mushrooms and balloons to keep flying. Birds knock you down.','Lettuce you collect buys upgrades in the garden shed between launches.'],
+ keys:[['Space / Up / W','boost'],['Enter','launch from the shed']],touch:[['Hold anywhere','boost']],
+ legend:[{ic:'leaf',name:'Lettuce',note:'money for upgrades'},{ic:'drop',name:'Dew',note:'more fuel'},{ic:'mushroom',name:'Mushroom',note:'bounce'},{ic:'ball',name:'Balloon',note:'bounce higher'},{ic:'bat',name:'Bird',note:'knocks you down'},{ic:'drop',name:'Fuel tank',note:'upgrade'},{ic:'flame',name:'Thrust',note:'upgrade'},{ic:'leaf',name:'Wings',note:'upgrade: glide'},{ic:'shield',name:'Shell',note:'upgrade: bounce better'},{ic:'up',name:'Ramp',note:'upgrade: higher launch'},{ic:'target',name:'Magnet',note:'upgrade: pull lettuce'}],
+ tips:['Short bursts go further than holding all the way.','Reach the moon for a special goal.']});
 function dims(){var port=innerHeight>innerWidth*1.1,g0=GROUND;W=port?400:720;H=port?700:480;GROUND=H-60;var d=GROUND-g0;if(d){items.forEach(function(it){it.y+=d});if(S)S.y+=d}}
 function fit(){dims();GK.fit(cv,stage,W,H,1.6)}addEventListener('resize',fit);addEventListener('orientationchange',fit);fit();
 GK.loop(step,render);if(!GK.ls.get('tut',0)&&!Auto.on)tut.start();else openGarage();

@@ -38,6 +38,10 @@
       var cb=document.createElement('button');cb.textContent='OK';cb.onclick=function(){m.remove()};f.appendChild(cb);s.appendChild(f);
       m.addEventListener('pointerdown',function(e){if(e.target===m)m.remove()});['keydown','keyup'].forEach(function(n){m.addEventListener(n,function(e){if(e.key==='Escape')m.remove();e.stopPropagation()})});
       document.body.appendChild(m);s.scrollTop=0;try{cb.focus({preventScroll:true})}catch(e){}},
+    /* games with their own ? button: the card opens first; its Tutorial button runs the original handler */
+    attach:function(sel){var tries=0;(function go(){var b=document.querySelector(sel);if(!b){if(++tries<40)setTimeout(go,250);return}b.setAttribute('data-guide','');
+      b.addEventListener('click',function(e){if(b._pass){b._pass=false;return}e.stopImmediatePropagation();e.preventDefault();G.open(function(){b._pass=true;b.click()})},true);G.hint()})()},
+    letter:function(ch,col,bg){return function(c,s){c.fillStyle=bg||'#0b1016';c.fillRect(0,0,s,s);c.strokeStyle=col;c.lineWidth=2;c.strokeRect(9,9,s-18,s-18);c.fillStyle=col;c.font='700 18px monospace';c.textAlign='center';c.textBaseline='middle';c.fillText(ch,s/2,s/2+1)}},
     afterTutorial:function(){if(G.cfg&&!seen()&&!(window.Auto&&Auto.on))setTimeout(function(){G.open()},400)}};
   function esc(t){var d=document.createElement('span');d.textContent=String(t);return d.innerHTML}
 })();

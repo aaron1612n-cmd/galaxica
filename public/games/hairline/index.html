@@ -134,5 +134,11 @@ Kit.run(tick,draw,function(){K.pad.style.visibility=state==='play'?'visible':'hi
 <script src="../../shared/stars.js"></script>
 <script src="../../shared/online.js"></script>
 <script>(function(){var B=[0,1,2].map(function(d){return{key:'tier'+d,label:String(d+1),read:function(r){return r('hairBest'+d)}}});Online.watch('hairline',B);function mount(){var h=document.querySelectorAll('.cl')[document.querySelectorAll('.cl').length-1];if(!h){var bs=document.querySelectorAll('button');for(var i=bs.length-1;i>=0;i--){if(bs[i].offsetParent&&bs[i].parentNode&&bs[i].parentNode.querySelectorAll('button').length>2){h=bs[i].parentNode;break}}}Online.button('hairline',B,h)}if(document.readyState==='complete')setTimeout(mount,300);else addEventListener('load',function(){setTimeout(mount,300)})})();</script>
+<script src="../../shared/guide.js"></script>
+<script>Guide.set({title:'Hairline',goal:'Land on all 40 platforms in a row. The jump is always the same, so only timing matters.',
+ how:['You run right on your own. Jump with one button.','Every jump has the same arc, with no mid-air control.','Miss a platform and you restart instantly. The level is the same every try, so you can learn it.','Higher tiers have thinner platforms: 22, 10, then just 4 pixels wide.'],
+ keys:[['Space','jump']],touch:[['Tap','jump']],
+ legend:[{pic:Guide.letter('▬','#ffb000'),name:'Platform',note:'land on it'},{pic:Guide.letter('1','#efe6d2'),name:'Tier 1',note:'wide platforms'},{pic:Guide.letter('3','#ff5a36'),name:'Tier 3',note:'four pixels wide'}],
+ tips:['Count the rhythm out loud; the gaps repeat.']});Guide.attach('button[title="Replay tutorial"]');</script>
 </body>
 </html>

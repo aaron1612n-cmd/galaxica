@@ -130,6 +130,11 @@ function setMode(m){if(tut.active)return;MODE=m;GK.ls.set('mode',m);paint();mode
 function paint(){['brew','apprentice','daily'].forEach(function(k){R['m_'+k].classList.toggle('on',MODE===k)})}paint();
 GK.goals.setup({metrics:function(){return ST},defs:{potions:{ic:'flame',t:[1,10,50,200,600]},score:{ic:'crown',t:[2000,10000,40000,100000,250000]},combo:{ic:'bolt',t:[3,6,10,15]},caught:{ic:'mushroom',t:[50,500,2500]},gold:{ic:'star',t:[1,10,50]},clean:{ic:'shield',t:[5,25,100]},longest:{ic:'book',t:[3,4,5,6]},apprentice:{ic:'leaf',t:[10,50]},games:{ic:'skull',t:[1,10,50]},daily:{ic:'sun',t:[1,3,7,14,30]}}});
 GK.goals.mount(R);GK.online.mount(R,{game:'cauldron',boards:[{key:'score',m:'score',ic:'crown'},{key:'potions',m:'potions',ic:'flame'},{daily:{}}]});
+GK.guide({title:'Cauldron',goal:'Brew potions: catch the ingredients the recipe asks for, in order.',
+ how:['Move the cauldron left and right to catch falling ingredients.','The recipe at the top shows what is needed next. Catching the wrong thing breaks the brew and costs a heart.','Each finished potion gives a power: slow time, a magnet, a wider cauldron, or a heart.','Recipes get longer as you brew more.'],
+ keys:[['Mouse','move the cauldron']],touch:[['Drag','move (it follows your movement)']],
+ legend:[{ic:'mushroom',name:'Mushroom'},{ic:'eye',name:'Eye'},{ic:'bone',name:'Bone'},{ic:'leaf',name:'Leaf'},{ic:'moth',name:'Moth'},{ic:'gem',name:'Gem'},{ic:'flame',name:'Flame'},{ic:'egg',name:'Egg'},{ic:'clock',name:'Slow potion',note:'everything falls slower'},{ic:'target',name:'Magnet potion',note:'pulls the right item in'},{ic:'up',name:'Wide potion',note:'bigger cauldron'},{ic:'heart',name:'Heart potion',note:'+1 heart'}],
+ tips:['Let wrong items fall past; only catching them hurts.','Apprentice mode gives endless hearts.']});
 function fit(){GK.fit(cv,stage,W,H,1.5)}addEventListener('resize',fit);addEventListener('orientationchange',fit);fit();
 GK.loop(function(){step();if(mode==='title'&&Auto.on&&!tut.active)newGame()},render);tut.maybe();
 window.__g={st:ST,setMode:setMode,tut:tut,newGame:newGame,stats:function(){return G?{MODE:MODE,score:G.score,hearts:G.hearts,brewed:G.brewed,len:G.recipe.length,pos:G.pos,combo:G.combo,over:G.over,items:items.length}:{mode:mode}}};

@@ -274,5 +274,11 @@ if(!seen)startTut();
 <script src="../../shared/names.js"></script>
 <script src="../../shared/online.js"></script>
 <script>(function(){var B=[{key:'levels',read:function(r){var p=r('squeezeProg');return p&&p.best},label:'1-8'},{key:'stars',read:function(r){var p=r('squeezeProg');if(!p||!p.stars)return null;var n=0;for(var k in p.stars)n+=p.stars[k]?1:0;return n},label:'★'}];Online.watch('squeeze',B);function mount(){var h=document.querySelectorAll('.cl')[document.querySelectorAll('.cl').length-1];if(!h){var bs=document.querySelectorAll('button');for(var i=bs.length-1;i>=0;i--){if(bs[i].offsetParent&&bs[i].parentNode&&bs[i].parentNode.querySelectorAll('button').length>2){h=bs[i].parentNode;break}}}Online.button('squeeze',B,h)}if(document.readyState==='complete')setTimeout(mount,300);else addEventListener('load',function(){setTimeout(mount,300)})})();</script>
+<script src="../../shared/guide.js"></script>
+<script>Guide.set({title:'Squeeze',goal:'Reach the exit of each room. Swap between big and small to get there.',
+ how:['Big jumps high, smashes cracked blocks by walking into them, and is heavy enough to press plates.','Small fits through one-tile gaps but jumps low and is too light for plates.','A pressed plate opens its door for good.','You cannot grow where there is no room above you. Spikes are deadly. Each room has an optional star.'],
+ keys:[['A D / Arrows','walk'],['Space / W / Up','jump'],['X / Shift / Z / Down','big or small'],['R','restart the room']],touch:[['L R buttons','walk'],['JUMP','jump'],['SIZE','big or small']],
+ legend:[{pic:Guide.letter('B','#ffb000'),name:'Big',note:'high jump, heavy'},{pic:Guide.letter('s','#efe6d2'),name:'Small',note:'fits tunnels'},{pic:Guide.letter('#','#8d9aa5'),name:'Cracked block',note:'big walks through it'},{pic:Guide.letter('_','#ffb000'),name:'Plate',note:'press it while big'},{pic:Guide.letter('|','#ff5a36'),name:'Door',note:'opens with its plate'},{pic:Guide.letter('^','#ff5a36'),name:'Spikes',note:'deadly'},{pic:Guide.letter('*','#ffb000'),name:'Star',note:'optional'}],
+ tips:['Try each room both ways: most need you to swap sizes mid-jump.']});Guide.attach('#tutb');</script>
 </body>
 </html>

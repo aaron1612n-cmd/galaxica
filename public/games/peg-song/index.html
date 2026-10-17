@@ -184,6 +184,11 @@ function setMode(m){if(tut.active)return;if(sand)R.sd.onclick();MODE=m;GK.ls.set
 function paintModes(){['board','zen','daily'].forEach(function(m){R['m_'+m].classList.toggle('on',MODE===m)})}paintModes();
 GK.goals.setup({metrics:function(){return ST},defs:{cleared:{ic:'flag',t:[1,5,10,20,40,60]},stars:{ic:'star',t:[3,15,45,90,150]},pegs:{ic:'note',t:[100,1000,5000,20000,60000]},fevers:{ic:'flame',t:[1,10,40,100]},score:{ic:'crown',t:[50000,100000,200000,300000]},free:{ic:'ball',t:[1,10,40]},longs:{ic:'target',t:[1,10,50,200]},catches:{ic:'cart',t:[1,10,50,200]},zen:{ic:'infinity',t:[1,10,30]},composed:{ic:'wrench',t:[10,100,500]},daily:{ic:'sun',t:[1,3,7,14,30]}}});
 GK.goals.mount(R);GK.online.mount(R,{game:'peg-song',boards:[{key:'score',m:'score',ic:'crown'},{key:'stars',m:'stars',ic:'star'},{daily:{}}]});
+GK.guide({title:'Peg Song',goal:'Clear every brass target peg with ten balls. Every peg you hit plays a note.',
+ how:['Aim the cannon at the top and shoot one ball at a time.','Hitting a peg lights it; lit pegs vanish when the ball leaves the board.','Clear all the brass target pegs to finish the board. Catch the ball in the moving bucket to get it back.','Power pegs split the ball into several. Bumpers kick it away hard.'],
+ keys:[['Mouse','aim'],['Click / Space','shoot']],touch:[['Drag','aim'],['Let go','shoot']],
+ legend:[{ic:'note',name:'Peg',note:'plays a note'},{ic:'target',name:'Target peg',note:'clear all of these'},{ic:'bolt',name:'Power peg',note:'multiball'},{ic:'ball',name:'Bumper',note:'kicks the ball'},{ic:'cart',name:'Bucket',note:'catch the ball: free shot'},{ic:'flame',name:'Fever',note:'last target: bonus slow-motion'}],
+ tips:['Long shots that hit many pegs score a multiplier.','Compose mode lets you place your own pegs and play them.']});
 function sel(){R.sp.classList.toggle('on',sandTool==='peg');R.sb.classList.toggle('on',sandTool==='bumper');R.se.classList.toggle('on',sandTool==='erase')}
 R.sp.hidden=R.sb.hidden=R.se.hidden=true;sel();
 function fit(){GK.fit(cv,stage,W,H,1.4)}addEventListener('resize',fit);addEventListener('orientationchange',fit);fit();

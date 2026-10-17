@@ -173,5 +173,11 @@ document.addEventListener('visibilitychange',function(){});
 <script src="../../shared/stars.js"></script>
 <script src="../../shared/online.js"></script>
 <script>(function(){var B=[0,1,2].map(function(d){return{key:'time'+d,fmt:'time',label:String(d+1),read:function(r){var t=r('pinBest'+d);return t?t/60:null}}});Online.watch('pinprick',B);function mount(){var h=document.querySelectorAll('.cl')[document.querySelectorAll('.cl').length-1];if(!h){var bs=document.querySelectorAll('button');for(var i=bs.length-1;i>=0;i--){if(bs[i].offsetParent&&bs[i].parentNode&&bs[i].parentNode.querySelectorAll('button').length>2){h=bs[i].parentNode;break}}}Online.button('pinprick',B,h)}if(document.readyState==='complete')setTimeout(mount,300);else addEventListener('load',function(){setTimeout(mount,300)})})();</script>
+<script src="../../shared/guide.js"></script>
+<script>Guide.set({title:'Pinprick',goal:'Dodge every bullet for five minutes.',
+ how:['Only the tiny square at your centre can be hit. Everything around it is safe.','Hold slow to move precisely through tight gaps.','Brushing past bullets (grazing) adds to your graze count.','The patterns get harder every 15 seconds. Easy gives three lives, the other two levels give one.'],
+ keys:[['Arrows / W A S D','move'],['Shift','slow']],touch:[['Drag anywhere','move (your finger stays off the ship)'],['SLOW button','slow']],
+ legend:[{pic:Guide.letter('■','#ffb000'),name:'Your core',note:'the only part that can be hit'},{pic:Guide.letter('●','#ff5a36'),name:'Bullet',note:'square hitbox, as drawn'},{pic:Guide.letter('~','#efe6d2'),name:'Graze',note:'near miss: points'}],
+ tips:['Small movements beat big ones; watch the gaps, not the bullets.']});Guide.attach('button[title="Replay tutorial"]');</script>
 </body>
 </html>

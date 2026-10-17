@@ -173,6 +173,11 @@ function setMode(m){if(tut.active)return;MODE=m;GK.ls.set('mode',m);paint();if(m
 function paint(){['heist','endless','daily'].forEach(function(k){R['m_'+k].classList.toggle('on',MODE===k)})}paint();
 GK.goals.setup({metrics:function(){return ST},defs:{cleared:{ic:'flag',t:[1,5,10,20,30]},stars:{ic:'star',t:[3,15,45,90]},loot:{ic:'gem',t:[3,30,150,500]},ghost:{ic:'eye',t:[1,10,30]},sneezes:{ic:'cloud',t:[1,25,100]},lured:{ic:'target',t:[1,10,40]},caught:{ic:'lock',t:[1,10]},endless:{ic:'infinity',t:[3,10,20]},daily:{ic:'sun',t:[1,3,7,14,30]}}});
 GK.goals.mount(R);GK.online.mount(R,{game:'sneeze-heist',boards:[{key:'cleared',m:'cleared',ic:'flag'},{key:'loot',m:'loot',ic:'gem'},{daily:{}}]});
+GK.guide({title:'Sneeze Heist',goal:'Sneak past the guards, grab the three gems and get out.',
+ how:['Tap where you want to go and the thief walks there.','Guards see along their torch beams. Get caught and the vault restarts.','Your nose itches more over time, and pollen vases make it worse. Hold your breath to keep a sneeze in.','A sneeze draws every guard nearby. Do it on purpose to lure them away.'],
+ keys:[['Click','walk there'],['Shift / Q','hold your breath'],['E','sneeze on purpose'],['R','restart']],touch:[['Tap','walk there'],['Nose button','hold your breath'],['Sneeze button','sneeze on purpose']],
+ legend:[{ic:'gem',name:'Gem',note:'three per vault'},{ic:'eye',name:'Guard',note:'patrols a loop'},{ic:'sun',name:'Torch beam',note:'what the guard sees'},{ic:'flower',name:'Pollen vase',note:'itchier nose'},{ic:'box',name:'Crate',note:'hide behind it'},{ic:'cloud',name:'Sneeze',note:'loud: guards come running'},{ic:'flag',name:'Exit',note:'leave with the gems'}],
+ tips:['Lure a guard with a sneeze, then slip past while he checks the spot.']});
 function fit(){GK.fit(cv,stage,W,H,1.4)}addEventListener('resize',fit);addEventListener('orientationchange',fit);fit();
 eseed=(Math.random()*1e6)|0;load(MODE==='heist'?Math.min(NLV,Math.max(1,prog.done+1)):1);GK.loop(step,render);tut.maybe();
 window.__g={st:ST,setMode:setMode,load:load,gen:gen,tut:tut,stats:function(){return{MODE:MODE,lv:lvN,tut:inTut,loot:P.loot+'/'+L.loot.length,guards:L.guards.length,won:won,caught:caught,nose:Math.round(P.nose),sus:P.sus,par:L.par,t:T0,done:prog.done}}};

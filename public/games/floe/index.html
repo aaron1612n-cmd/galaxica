@@ -188,6 +188,11 @@ function setMode(m,noload){if(tut.active)return;MODE=m;GK.ls.set('mode',m);paint
 function paint(){['chart','endless','daily'].forEach(function(k){R['m_'+k].classList.toggle('on',MODE===k)})}paint();
 GK.goals.setup({metrics:function(){return ST},defs:{cleared:{ic:'flag',t:[1,5,10,20,40,60]},stars:{ic:'star',t:[3,15,45,90,150,180]},fish:{ic:'fish',t:[1,10,50,150,400]},par:{ic:'target',t:[1,10,30,60]},endless:{ic:'infinity',t:[3,10,25,50]},nohint:{ic:'eye',t:[5,20,50]},splash:{ic:'drop',t:[1,10,50]},moves:{ic:'snow',t:[100,1000,5000]},daily:{ic:'sun',t:[1,3,7,14,30]}}});
 GK.goals.mount(R);GK.online.mount(R,{game:'floe',boards:[{key:'cleared',m:'cleared',ic:'flag'},{key:'stars',m:'stars',ic:'star'},{daily:{inv:100,low:1}}]});
+GK.guide({title:'Floe',goal:'Slide the penguin to the igloo, catching every fish on the way.',
+ how:['A push sends the penguin sliding in a straight line. It only stops at a rock, on snow, or at the igloo.','Open water and broken ice are deadly.','Cracked ice breaks after you slide over it once.','Fewer pushes earn more stars. Endless gives you a fresh floe each time.'],
+ keys:[['Arrows / W A S D','push'],['Z','undo'],['R','restart'],['H','hint']],touch:[['Swipe','push that way'],['Tap beside the penguin','push toward the tap']],
+ legend:[{ic:'fish',name:'Fish',note:'collect every one'},{ic:'house',name:'Igloo',note:'the goal'},{sw:'#5d6b79',name:'Rock',note:'stops you beside it'},{sw:'#ffffff',name:'Snow',note:'stops you on it'},{sw:'#c8d8e6',name:'Ice',note:'you keep sliding'},{sw:'#9db3c7',name:'Cracked ice',note:'breaks after one slide'},{sw:'#1f3a5a',name:'Water',note:'you sink'}],
+ tips:['Plan backwards from the igloo: which rock would stop you next to it?']});
 addEventListener('resize',fit);addEventListener('orientationchange',fit);
 S.eseed=(Math.random()*1e6)|0;load(MODE==='chart'?Math.min(NLV,Math.max(1,prog.done+1)):1);
 GK.loop(step,render);tut.maybe();

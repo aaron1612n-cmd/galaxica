@@ -148,6 +148,11 @@ function setMode(m){if(tut.active)return;MODE=m;GK.ls.set('mode',m);paint();if(m
 function paint(){['glass','endless','daily'].forEach(function(k){R['m_'+k].classList.toggle('on',MODE===k)})}paint();
 GK.goals.setup({metrics:function(){return ST},defs:{cleared:{ic:'flag',t:[1,5,10,20,30,40]},stars:{ic:'flower',t:[3,15,45,90,120]},seeds:{ic:'leaf',t:[1,10,40,100]},placed:{ic:'wrench',t:[10,100,500]},springs:{ic:'up',t:[1,10,40]},par:{ic:'target',t:[1,10,25,40]},runs:{ic:'drop',t:[10,100,500]},endless:{ic:'infinity',t:[3,10,25]},daily:{ic:'sun',t:[1,3,7,14,30]}}});
 GK.goals.mount(R);GK.online.mount(R,{game:'rube-garden',boards:[{key:'cleared',m:'cleared',ic:'flag'},{key:'stars',m:'stars',ic:'flower'},{daily:{}}]});
+GK.guide({title:'Rube Garden',goal:'Place pieces so one drop of water from the tap reaches the flowerpot.',
+ how:['Pick a piece from the tray below, then tap an empty cell to place it. Tap a placed piece to remove it.','Press play to release the drop. It falls one cell at a time and follows the pieces.','Ramps roll it sideways, planks stop it, springs bounce it up and fans blow it along.','Thorns burst the drop. Collect seeds on the way for extra flowers.'],
+ keys:[['Click','place or remove a piece'],['Space','play'],['R','clear']],touch:[['Tap the tray','choose a piece'],['Tap a cell','place or remove'],['Play button','release the drop']],
+ legend:[{ic:'drop',name:'Drop',note:'falls from the tap'},{ic:'flower',name:'Pot',note:'the goal'},{ic:'up',name:'Ramp',note:'rolls the drop sideways'},{ic:'box',name:'Plank',note:'a floor to roll along'},{ic:'up',name:'Spring',note:'bounces it up'},{ic:'cloud',name:'Fan',note:'blows it along'},{ic:'x',name:'Thorns',note:'burst the drop'},{ic:'leaf',name:'Seed',note:'bonus flower'},{sw:'#2e3a33',name:'Iron beam',note:'fixed'}],
+ tips:['Fewer pieces earn more flowers.','Play as often as you like: it only shows the path.']});
 addEventListener('resize',fit);addEventListener('orientationchange',fit);
 eseed=(Math.random()*1e6)|0;load(MODE==='glass'?Math.min(NLV,Math.max(1,prog.done+1)):1);GK.loop(step,render);tut.maybe();
 window.__g={st:ST,setMode:setMode,load:load,gen:gen,run:run,tut:tut,stats:function(){return{MODE:MODE,lv:lvN,tut:inTut,size:L.w+'x'+L.h,par:L.par,inv:JSON.stringify(L.inv),placed:Object.keys(P).length,won:won,seeds:L.seeds.length,done:prog.done}}};

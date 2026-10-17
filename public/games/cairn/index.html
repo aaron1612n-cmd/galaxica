@@ -186,6 +186,11 @@ var R=GK.controls(document.getElementById('bar'),{bar:'bottom',onHelp:function()
   {id:'m_daily',cls:'md',html:GK.icoSvg('sun'),title:'Daily',fn:function(){setMode('daily')}},
   {id:'rs',html:GK.icon('restart'),title:'Restart',fn:function(){if(!tut.active)newRun()}}]});
 GK.goals.mount(R);GK.online.mount(R,{game:'cairn',boards:[{key:'height',m:'cm',ic:'up'},{key:'reach',m:'reach',ic:'hand'},{daily:{}}]});
+GK.guide({title:'Cairn',goal:'Stack river stones as high as you can without the cairn falling, even in wind.',
+ how:['Move to choose where the next stone drops, turn it, then let go.','Wind grows stronger the higher you build. Watch the flag at the top.','Stones that fall off cost a strike. Three strikes ends the run.','Every sixth stone lets you pick a relic: glue, heavy stones, a net, calm air or a wider base.'],
+ keys:[['Mouse / Arrows','aim'],['Q / E / mouse wheel','turn the stone'],['Click / Space','drop']],touch:[['Drag','aim'],['Turn buttons','turn the stone'],['Let go','drop']],
+ legend:[{ic:'ball',name:'Stone',note:'every shape settles differently'},{ic:'flag',name:'Wind',note:'gusts grow with height'},{ic:'skull',name:'Strike',note:'a stone fell; three and out'},{ic:'star',name:'Relic',note:'every sixth stone'},{ic:'gem',name:'Gold stone',note:'bonus points'}],
+ tips:['Flat sides down, big stones low.','Tower is height, Reach is overhang, Zen has no wind and no limit.']});
 function paintModes(){['tower','reach','zen','daily'].forEach(function(m){R['m_'+m].classList.toggle('on',MODE===m)})}
 function setMode(m){if(tut.active)return;MODE=m;GK.ls.set('mode',m);paintModes();newRun()}
 paintModes();

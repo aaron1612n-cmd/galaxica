@@ -241,6 +241,11 @@ GK.goals.setup({metrics:function(){return{nights:best.nights,letters:META.letter
 var R=GK.controls(document.getElementById('bar'),{bar:'left',onHelp:function(){tut.start()},extra:[
   {id:'sh',html:GK.icoSvg('cart'),title:'Post office',fn:function(){openShop()}},
   {id:'rs',html:GK.icon('restart'),title:'New run',fn:function(){if(!tut.active){newRun();mode='play'}}}]});GK.goals.mount(R);GK.online.mount(R,{game:'moth-mail',boards:[{key:'nights',m:'nights',ic:'moon'},{key:'letters',m:'letters',ic:'book'}]});
+GK.guide({title:'Moth Mail',goal:'Lead your moth swarm through the night city and deliver each night\'s quota of letters.',
+ how:['Your moths follow your pointer or finger.','Fly through a postbox to pick up a letter, then fly to a lit window to deliver it.','Street lamps recruit new moths to your swarm.','Zappers, bats, owls, cats and storms pick moths off. Lose every moth and the run ends.','After each night, choose one upgrade card.'],
+ keys:[['Mouse / Arrows / W A S D','lead the swarm'],['Click / Space','dash']],touch:[['Drag','lead the swarm (it follows your movement)'],['Tap','dash']],
+ legend:[{ic:'moth',name:'Moths',note:'your swarm'},{ic:'book',name:'Letter',note:'from a postbox'},{ic:'house',name:'Lit window',note:'deliver here'},{ic:'sun',name:'Street lamp',note:'recruits moths'},{ic:'bolt',name:'Zapper',note:'deadly glow'},{ic:'bat',name:'Bat',note:'swoops through'},{ic:'eye',name:'Owl',note:'hunts from roofs'},{ic:'cat',name:'Cat',note:'leaps from below'},{ic:'cloud',name:'Storm',note:'rain pushes you down'}],
+ tips:['Keep the swarm tight around corners.','Shield and umbrella upgrades save moths from hits and rain.']});
 function fit(){GK.fit(cv,stage,W,H,1.8)}addEventListener('resize',fit);addEventListener('orientationchange',fit);fit();
 GK.loop(step,render);tut.maybe();
 window.__g={stats:function(){return G?{mode:mode,night:G.night,moths:G.moths.length,delivered:G.delivered,total:G.total,quota:G.quota,best:best.nights,tut:tut.active,carry:G.carry,kills:G.kills,cx:Math.round(centroid().x),cy:Math.round(centroid().y)}:{mode:mode}},tut:tut,begin:begin};
