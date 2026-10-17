@@ -18,6 +18,7 @@ Purpose: resume this chat with full context. Cap ~1,500 tokens; condense, don't 
 - AUDIT before done: screenshots 1280x800 + 390x800 of tutorial, menus, overlays, toasts; no clipped words; real keyboard/mouse/CDP-touch input test; long headless AUTO run with no errors.
 - Mobile = app feel; fingers never cover what they steer (relative drag, GK.stick, pad below canvas).
 - Bots: exact sims/BFS beat heuristics; add watchdogs.
+- (2026-10-17) EVERY game keeps running when the tab is hidden or the phone sleeps: no auto-pause; on return, catch up the missed real time (fast-forward, time-budgeted). DEPLOY REGULARLY (after each playable step) so the user can test.
 
 ## Games (26 live)
 galaxica, squeeze, pinprick, hairline, gravity-garden, powder-lab, tidewater, loom, moth-mail, cairn, tantrum, ant-kingdom, peg-song, switchyard, chirp, floe, brass-pinball, ripple, cauldron, snail-rocket, deepdig, hedgerow, sneeze-heist, bramble, rube-garden, bonfire. Favourites: Deepdig, Hedgerow.

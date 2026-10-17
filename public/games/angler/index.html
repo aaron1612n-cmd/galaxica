@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#f1ebdd">
+<title>Angler</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@500;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../shared/gk.css">
+<script src="../../shared/device.js"></script>
+<script src="../../shared/auto.js"></script>
+<script src="../../shared/speed.js"></script>
+<script src="../../shared/gk.js"></script>
+<script src="../../shared/gk2.js"></script>
+<style>
+/* Angler: a gyotaku print. Rice paper, sumi ink, one crimson seal. */
+:root{--gk-ty:96;--gk-toy:150;--gk-bg:#f1ebdd;--gk-ink:#1d1b19;--gk-acc:#b3202a;--gk-font:"Shippori Mincho B1",Georgia,serif;--gk-bw:2px;--gk-r:0;--gk-sh:none;--gk-h:42px;--gk-pr:3px;--paper:#f1ebdd;--ink:#1d1b19;--seal:#b3202a}
+body{background:#f1ebdd}
+#stage{background:#f1ebdd}
+canvas#c{touch-action:none}
+/* bar skin: brush-cut paper squares, uneven ink edges; crimson seal when on */
+.gk-bar{background:#e8e0cf;border-top:3px solid var(--ink)}
+@media(min-width:760px) and (min-aspect-ratio:1/1){[data-bar=right] .gk-bar{border-top:0;border-left:3px solid var(--ink)}}
+.gk-bar .gk-b{border:2.5px solid var(--ink);border-radius:3px 9px 4px 10px/10px 3px 9px 4px;background:var(--paper);font:800 15px "Shippori Mincho B1",serif}
+.gk-bar .gk-b.gk-auto:not(.ghost),.gk-bar .gk-b.on,.gk-bar .gk-b.names.on{background:var(--seal);border-color:var(--seal);color:var(--paper)}
+.gk-more{background:#e8e0cf}
+/* paper sheets */
+.gk-sheet{background:var(--paper);border:3px solid var(--ink);border-radius:4px 12px 5px 14px/14px 4px 12px 5px}
+.gk-mh{font:800 24px "Shippori Mincho B1",serif}
+.seal{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;background:var(--seal);color:var(--paper);border-radius:3px}
+.seal svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tab{display:inline-flex;align-items:center;gap:6px;height:40px;padding:0 10px;border:2px solid var(--ink);border-radius:3px 8px 4px 9px/9px 3px 8px 4px;background:transparent;color:var(--ink);font:800 15px "Shippori Mincho B1",serif;cursor:pointer}
+.tab svg,.row svg,.chip svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.tab.on{background:var(--ink);color:var(--paper)}
+.tab.lock{opacity:.45}
+.jgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:8px}
+.jc{position:relative;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 4px;border:1.5px dashed rgba(29,27,25,.35);font:800 14px "Shippori Mincho B1",serif}
+.jc canvas{width:96px;height:52px}
+.jc.got{border:1.5px solid var(--ink)}
+.jc.leg{border-color:var(--seal);border-width:2px}
+.jc small{font-weight:500;opacity:.7}
+.gk-names .jc[data-cap]::after{content:attr(data-cap);font:500 11px "Shippori Mincho B1",serif;text-align:center}
+.rows{display:flex;flex-direction:column;gap:8px}
+.row{display:grid;grid-template-columns:34px 1fr auto;gap:10px;align-items:center;border-bottom:1px solid rgba(29,27,25,.2);padding:4px 0}
+.pp{display:flex;gap:4px}.pp i{width:12px;height:12px;border:1.5px solid var(--ink);border-radius:2px}.pp i.on{background:var(--ink)}
+.buy{display:inline-flex;align-items:center;gap:5px;height:38px;padding:0 12px;border:2px solid var(--ink);border-radius:3px 8px 4px 9px/9px 3px 8px 4px;background:var(--paper);color:var(--ink);font:800 16px "Shippori Mincho B1",serif;cursor:pointer}
+.buy svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8}
+.buy:disabled{opacity:.35;cursor:default}.buy.max{visibility:hidden}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:inline-flex;align-items:center;gap:6px;height:46px;padding:0 12px;border:2px solid var(--ink);border-radius:3px 8px 4px 9px/9px 3px 8px 4px;background:transparent;color:var(--ink);font:800 15px "Shippori Mincho B1",serif;cursor:pointer}
+.chip.on{background:var(--seal);border-color:var(--seal);color:var(--paper)}
+.chip.lock{border-style:dashed}
+.chip:disabled{opacity:.4;cursor:default}
+.gk-names .chip[data-cap]::after,.gk-names .tab[data-cap]::after{content:attr(data-cap);font:500 11px "Shippori Mincho B1",serif}
+.lab{display:flex;align-items:center;gap:8px;font:800 14px "Shippori Mincho B1",serif;opacity:.75;margin-top:4px}
+.lab svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.7}
+</style>
+</head>
+<body>
+<div id="app"><div id="stage"><canvas id="c"></canvas></div><div id="bar"></div></div>
+<script src="angler.js"></script>
+</body>
+</html>

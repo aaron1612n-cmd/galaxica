@@ -180,5 +180,12 @@
     "blurb": "Survive one night in the woods. Your weapons swing on their own while you walk, gather embers and choose upgrades until dawn.",
     "added": "2026-10-17",
     "thumb": "games/bonfire/thumb.jpg"
+  },
+  {
+    "id": "angler",
+    "title": "Angler",
+    "blurb": "Cast, hold the depth, strike on the bite and play the line. Sixty fish in five waters, each one pressed into your journal as an ink print.",
+    "added": "2026-10-17",
+    "thumb": "games/angler/thumb.jpg"
   }
 ]
