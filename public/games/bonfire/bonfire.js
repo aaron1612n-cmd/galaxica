@@ -505,8 +505,8 @@ var tut=GK.tutorial({parent:stage,onStart:function(){newRun({tut:true,mode:'run'
 function tutDraw(){var v=GK.view,c=ctx,t=tut.t;c.setTransform(v.dpr,0,0,v.dpr,0,0);var hx=v.w/2,hy=v.h/2;
   if(tut.i===0){GK.swipe(c,hx,hy+70,hx+80,hy+70,t,EMB);GK.swipe(c,hx,hy-70,hx-80,hy-70,t+55,EMB)}
   else if(tut.i===1&&G){var g=GEM[0];if(g)GK.pulse(c,v.w/2+(g.x-G.cam.x)*Z,v.h/2+(g.y-G.cam.y)*Z,t,EMB,8)}
-  else if(tut.i>=5&&tut.i<=8&&G){var d0=DR[0];if(d0)GK.pulse(c,v.w/2+(d0.x-G.cam.x)*Z,v.h/2+(d0.y-G.cam.y)*Z,t,EMB,12)}
-  else if(tut.i===9&&G){var e9=null;EN.forEach(function(q){if(!q.dead&&!e9)e9=q});if(e9)GK.pulse(c,v.w/2+(e9.x-G.cam.x)*Z,v.h/2+(e9.y-G.cam.y)*Z,t,EMB,16)}
+  else if(tut.i>=4&&tut.i<=7&&G){var d0=DR[0];if(d0)GK.pulse(c,v.w/2+(d0.x-G.cam.x)*Z,v.h/2+(d0.y-G.cam.y)*Z,t,EMB,12)}
+  else if(tut.i===8&&G){var e9=null;EN.forEach(function(q){if(!q.dead&&!e9)e9=q});if(e9)GK.pulse(c,v.w/2+(e9.x-G.cam.x)*Z,v.h/2+(e9.y-G.cam.y)*Z,t,EMB,16)}
   else if(tut.i===3&&G){var e=null;EN.forEach(function(q){if(!q.dead&&!e)e=q});if(e)GK.pulse(c,v.w/2+(e.x-G.cam.x)*Z,v.h/2+(e.y-G.cam.y)*Z,t,EMB,12)}}
 
 /* ---------- boot ---------- */
@@ -533,6 +533,6 @@ GK.guide({title:'Bonfire',goal:'Survive the night: last 15 minutes, then beat th
 function fit(){var v=GK.fit(cv,stage);Z=GK.clamp(Math.sqrt(v.w*v.h/(620*620)),.62,1.9);VW=v.w/Z;VH=v.h/Z}
 addEventListener('resize',fit);addEventListener('orientationchange',fit);fit();
 toCamp();GK.loop(step,render);tut.maybe();if(document.fonts)document.fonts.ready.then(function(){if(mode==='camp')paintCamp()});
-window.__g={tut:tut,chest:function(){openChest()},G:function(){return G},S:function(){return S},meta:META,st:ST,start:function(o){newRun(o)},toCamp:toCamp,
+window.__g={tut:tut,DR:function(){return DR},EN:function(){return EN},mode:function(){return mode},chest:function(){openChest()},G:function(){return G},S:function(){return S},meta:META,st:ST,start:function(o){newRun(o)},toCamp:toCamp,
   stats:function(){if(!G)return{mode:mode,gold:META.gold,wins:ST.wins,runs:ST.runs};return{mode:mode,t:Math.floor(G.t/60),lvl:G.lvl,kills:G.kills,hp:Math.round(G.h.hp)+'/'+Math.round(G.h.max),en:EN.length,gems:GEM.length,w:G.w.map(function(w){return w.id+w.lv+(w.evo?'*':'')}).join(','),ch:JSON.stringify(G.ch),gold:G.gold,won:G.won,rev:G.rev,wins:ST.wins,runs:ST.runs,boss:G.boss?G.boss.t+':'+Math.round(G.boss.hp):''}}};
 })();
