@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#10140f">
+<title>Bonfire</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Pirata+One&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../shared/gk.css">
+<script src="../../shared/device.js"></script>
+<script src="../../shared/auto.js"></script>
+<script src="../../shared/speed.js"></script>
+<script src="../../shared/gk.js"></script>
+<script src="../../shared/gk2.js"></script>
+<style>
+/* Bonfire: a papercut night. Pine-black ground, everything cut from bone paper, one ember. */
+:root{--gk-ty:58;--gk-toy:96;--gk-bg:#10140f;--gk-ink:#e7dcc4;--gk-acc:#ff6a1f;--gk-font:"Pirata One",Georgia,serif;--gk-bw:2px;--gk-r:0;--gk-sh:none;--gk-h:40px;--gk-pr:0;--bone:#e7dcc4;--night:#10140f;--ember:#ff6a1f}
+body{background:#10140f}
+#stage{background:#10140f}
+canvas#c{touch-action:none}
+/* bar skin: hanging luggage tags, filled bone, a punched hole at the point */
+.gk-bar{background:#0a0d09;border-top:2px solid var(--bone)}
+@media(min-width:760px) and (min-aspect-ratio:1/1){[data-bar=left] .gk-bar{border-top:0;border-right:2px solid var(--bone)}}
+.gk-bar .gk-b{position:relative;background:var(--bone);color:var(--night);border:0;clip-path:polygon(10px 0,100% 0,100% 100%,10px 100%,0 50%);padding:0 10px 0 17px;font:20px "Pirata One",serif}
+.gk-bar .gk-b::before{content:"";position:absolute;left:7px;top:50%;width:5px;height:5px;margin-top:-2.5px;border-radius:50%;background:var(--night)}
+.gk-bar .gk-b.gk-auto:not(.ghost),.gk-bar .gk-b.on,.gk-bar .gk-b.names.on{background:var(--ember);color:var(--night)}
+.gk-bar .gk-more .gk-b{border:0}
+.gk-more{background:#0a0d09}
+.gk-names .gk-bar .gk-b[data-cap]{padding:3px 8px 3px 16px}
+/* overlays */
+.ov{position:absolute;inset:0;z-index:20;color:var(--bone)}
+.tg{position:relative;display:inline-flex;align-items:center;gap:10px;min-height:48px;padding:6px 14px 6px 24px;border:0;background:var(--bone);color:var(--night);clip-path:polygon(14px 0,100% 0,100% 100%,14px 100%,0 50%);font:22px/1 "Pirata One",serif;cursor:pointer;text-align:left}
+.tg::before{content:"";position:absolute;left:9px;top:50%;width:6px;height:6px;margin-top:-3px;border-radius:50%;background:var(--night)}
+.tg svg{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.tg.on{background:var(--ember)}
+.tg.lock{background:#5d594e;color:#17150f}
+.tg:focus-visible{outline:2px dashed var(--ember);outline-offset:3px}
+.tg canvas{width:40px;height:40px;flex:none}
+.gk-names .tg[data-cap]::after{content:attr(data-cap);font:14px "Pirata One",serif;opacity:.8}
+/* camp: roster down the left, the night's choices on the right */
+#camp{display:grid;grid-template-columns:minmax(220px,300px) 1fr;grid-template-rows:auto 1fr;gap:12px 28px;padding:18px 22px;overflow:auto}
+#camp .gold{grid-column:1/3;display:flex;gap:18px;align-items:center;font:30px/1 "Pirata One",serif}
+#camp .gold svg{width:28px;height:28px;fill:none;stroke:var(--ember);stroke-width:1.7}
+#camp .roster{display:flex;flex-direction:column;gap:6px;align-self:start}
+#camp .side{display:flex;flex-direction:column;gap:16px;align-items:flex-start;justify-self:end;align-self:end}
+#camp .row{display:flex;flex-wrap:wrap;gap:6px}
+#camp .go{min-height:72px;padding:6px 28px 6px 34px;background:var(--ember);font-size:34px}
+#camp .go svg{width:44px;height:44px}
+@media(max-width:700px),(max-aspect-ratio:1/1){
+  #camp{grid-template-columns:1fr;grid-template-rows:auto auto auto;padding:12px;gap:10px;align-content:start}
+  #camp .gold{grid-column:1}
+  #camp .roster{flex-direction:row;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
+  #camp .roster .tg{flex:none}
+  #camp .side{justify-self:stretch;align-self:end;align-items:stretch;margin-top:auto}
+  #camp .go{justify-content:center}
+}
+/* level-up: tags swing down on strings (the motion moment) */
+#pick{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;background:rgba(10,13,9,.72)}
+#pick .cards{display:flex;gap:12px;justify-content:center;flex-wrap:nowrap;padding:0 8px;max-width:100%}
+.card{position:relative;width:132px;padding:52px 8px 14px;border:0;background:transparent;color:var(--night);cursor:pointer;transform-origin:50% 0;animation:swing .9s cubic-bezier(.3,1.6,.5,1) both}
+.card::before{content:"";position:absolute;left:50%;top:0;width:2px;height:40px;background:var(--bone);margin-left:-1px}
+.card .tag{position:relative;display:flex;flex-direction:column;align-items:center;gap:8px;padding:22px 6px 12px;background:var(--bone);clip-path:polygon(50% 0,100% 16px,100% 100%,0 100%,0 16px)}
+.card .tag::before{content:"";position:absolute;left:50%;top:9px;width:7px;height:7px;margin-left:-3.5px;border-radius:50%;background:var(--night)}
+.card svg{width:54px;height:54px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.card .pips{display:flex;gap:3px}.card .pips i{width:9px;height:9px;border:1.5px solid var(--night)}.card .pips i.on{background:var(--night)}.card .pips i.nw{background:var(--ember);border-color:var(--ember)}
+.card .bd{position:absolute;right:6px;top:18px;width:20px;height:20px;color:var(--ember)}
+.card .bd svg{width:20px;height:20px;stroke-width:2}
+.card.evo .tag{background:var(--ember)}
+.card:nth-child(2){animation-delay:.08s}.card:nth-child(3){animation-delay:.16s}.card:nth-child(4){animation-delay:.24s}
+.card:focus-visible .tag{outline:3px dashed var(--ember);outline-offset:2px}
+.card.hint .tag{outline:3px solid var(--ember);outline-offset:3px;animation:blink .8s steps(1) infinite}
+#pick.banish .card .tag{background:#5d594e}
+@keyframes swing{0%{transform:translateY(-120%) rotate(-14deg)}55%{transform:translateY(0) rotate(7deg)}75%{transform:rotate(-3deg)}100%{transform:rotate(0)}}
+@keyframes blink{50%{outline-color:transparent}}
+#pick .tools{display:flex;gap:10px}
+.gk-names .card[data-cap]::after{content:attr(data-cap);display:block;margin-top:6px;color:var(--bone);font:16px/1 "Pirata One",serif;text-align:center}
+@media(max-width:560px){.card{width:min(96px,23vw);padding:40px 4px 10px}.card::before{height:30px}.card svg{width:40px;height:40px}.card .pips{gap:2px}.card .pips i{width:5px;height:5px;border-width:1px}#pick .cards{gap:4px}}
+/* chest + summary */
+#chest{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:rgba(10,13,9,.78)}
+#chest .got{display:flex;gap:14px}
+#chest .got span{display:flex;flex-direction:column;align-items:center;gap:6px;width:76px;padding:12px 4px;background:var(--bone);color:var(--night);opacity:0;animation:pop .35s ease-out forwards}
+#chest .got span.evo{background:var(--ember)}
+#chest .got svg{width:44px;height:44px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+@keyframes pop{0%{opacity:0;transform:translateY(30px) scale(.6)}100%{opacity:1;transform:none}}
+#over{display:grid;place-items:center;background:rgba(10,13,9,.82)}
+#over.dawn{background:rgba(231,220,196,.92);color:var(--night)}
+#over .sheet{display:grid;grid-template-columns:auto 1fr;gap:6px 18px;align-items:center;min-width:min(420px,92vw);padding:18px}
+#over .big{grid-column:1/3;font:64px/1 "Pirata One",serif;display:flex;align-items:center;gap:14px}
+#over .big svg{width:54px;height:54px}
+#over svg{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+#over .v{font:28px/1 "Pirata One",serif}
+#over .bar{height:10px;border:1.5px solid currentColor}#over .bar i{display:block;height:100%;background:var(--ember)}
+#over .acts{grid-column:1/3;display:flex;gap:10px;margin-top:10px}
+#over.dawn .tg{background:var(--night);color:var(--bone)}#over.dawn .tg::before{background:var(--bone)}
+/* hearth shop */
+.hearth{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.hearth button{display:grid;grid-template-columns:30px 1fr;grid-template-rows:auto auto;gap:4px 8px;align-items:center;padding:8px;border:2px solid var(--bone);background:transparent;color:var(--bone);font:18px "Pirata One",serif;cursor:pointer;text-align:left}
+.hearth button svg{grid-row:1/3;width:28px;height:28px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.hearth .pp{display:flex;gap:3px}.hearth .pp i{width:8px;height:8px;border:1.5px solid var(--bone)}.hearth .pp i.on{background:var(--ember);border-color:var(--ember)}
+.hearth .c{display:flex;align-items:center;gap:4px}.hearth .c svg{width:16px;height:16px;grid-row:auto}
+.hearth button:disabled{opacity:.4;cursor:default}
+.hearth button.max .c{visibility:hidden}
+</style>
+</head>
+<body>
+<div id="app"><div id="stage"><canvas id="c"></canvas></div><div id="bar"></div></div>
+<script src="bonfire.js"></script>
+</body>
+</html>
