@@ -36,8 +36,8 @@ Build: `python3 tools/pyref/build.py [--only idprefix]` (~90 s full). FAILS if a
 Env: `uv venv --managed-python -p 3.12 /home/user/pyenv` + pillow matplotlib numpy pandas openpyxl beautifulsoup4 flask requests (system python has no tk).
 Search check: scratchpad search.js / q.js. Tune by adding phrases to `aka:`. Set outputs of strings are hash-order dependent: sort them (verify with PYTHONHASHSEED=1..3).
 
-## NEXT: BIG IDEAS (2026-10-17, user: "lots of usage to burn"). User picked, in order: more NEW GAMES, A+B (pending explanation), D Deepdig roguelite. REJECTED: C Party mode, E-H platform.
-A Bot Arena (write your own AUTO bot in JS/Python, ranked) | B Galaxica Online (Worker+D1 global daily leaderboards, ghost replays) | D Deepdig full roguelite campaign. Older: more answers, phone playtest, balance.
+## NEXT: BIG IDEAS (2026-10-17, user: "lots of usage to burn"). User picked, in order: more NEW GAMES, A+B, D Deepdig roguelite. REJECTED: C Party mode, E-H platform.
+A Bot Workshop: NO coding. Create menu to build bots by editing stats (reaction, aim, caution, greed, aggression, mistakes...) + LOTS of quick presets; bots play any game, scored | B Galaxica Online (Worker+D1 global daily leaderboards, ghost replays) | D Deepdig full roguelite campaign. Older: more answers, phone playtest, balance.
 
 ## Test kit (scratchpad, ephemeral)
 http-server public -p 8080; bot.mjs (AUTO stats), waitshot.mjs, tutshot.mjs, thumb.mjs + crop.py, audit.mjs (overflow/oval/clip/pad checks + screenshots), addgame.py (games.json).
