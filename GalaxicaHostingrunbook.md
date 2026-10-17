@@ -36,6 +36,9 @@ Build: `python3 tools/pyref/build.py [--only idprefix]` (~90 s full). FAILS if a
 Env: `uv venv --managed-python -p 3.12 /home/user/pyenv` + pillow matplotlib numpy pandas openpyxl beautifulsoup4 flask requests (system python has no tk).
 Search check: scratchpad search.js / q.js. Tune by adding phrases to `aka:`. Set outputs of strings are hash-order dependent: sort them (verify with PYTHONHASHSEED=1..3).
 
+## Session 2026-10-17 (branch `claude/epic-babbage-dtojge`)
+Fast-forwarded to nice-lovelace-x5im31 (f7311d6) = latest state of all work. Continue here.
+
 ## NEXT
 1. Ask user which Answer Book answers are missing (ideas: lazy-load bodies if data.js grows past 2.4 MB, struct/io, email parsing, pygame section).
 2. Game ideas (Deepdig/Hedgerow-like). 3. Leaderboards, phone playtest, balance.
