@@ -67,14 +67,14 @@ function step(){T++;GK.goals.tick();if(mode==='title'){if(Auto.on&&!tut.active)n
   /* crashes */ for(i=0;i<trains.length;i++)for(var j=i+1;j<trains.length;j++){var a=posOf(trains[i]),b=posOf(trains[j]);if(Math.hypot(a.x-b.x,a.y-b.y)<17){crash(a,trains[i],trains[j]);i=trains.length;break}}
   for(i=boom.length-1;i>=0;i--){if(++boom[i].t>40)boom.splice(i,1)}for(i=pops.length-1;i>=0;i--){if(++pops[i].t>34)pops.splice(i,1)}nodes.forEach(function(n){if(n.flash>0)n.flash--});
   tut.tick()}
-function deliver(ok,nd,t){if(ok){G.delivered++;G.combo++;var pts=10*Math.min(8,1+Math.floor(G.combo/4))*(t.k==='exp'?2:t.k==='frt'?3:1)*(G.rush>0?2:1);G.score+=pts;if(!G.tut){ST.delivered++;if(G.combo>ST.combo)ST.combo=G.combo;if(t.k!=='n')ST[t.k]++;if(MODE==='wide')ST.wide=Math.max(ST.wide,G.delivered);if(t.k==='mail'&&G.strikes>0){G.strikes--;GK.fx.text(nd.x,nd.y-90,'-1',RED,30)}}GK.fx.text(nd.x,nd.y-30,'+'+pts,INK,20);GK.fx.burst(nd.x,nd.y,10,{col:t.col===0?RED:t.col===1?WHITE:INK,speed:3,life:22,size:4,up:1.5,grav:.1});GK.audio.tone(660+nd.col*110,.14,'triangle',.06);pops.push({x:nd.x,y:nd.y,t:0,ok:1});if(G.tut)tutFlag.ok=1}
+function deliver(ok,nd,t){if(ok){G.delivered++;G.combo++;var pts=10*Math.min(8,1+Math.floor(G.combo/4))*(t.k==='exp'?2:t.k==='frt'?3:1)*(G.rush>0?2:1);G.score+=pts;if(!G.tut){ST.delivered++;if(G.combo>ST.combo)ST.combo=G.combo;if(t.k!=='n')ST[t.k]++;if(MODE==='wide')ST.wide=Math.max(ST.wide,G.delivered);if(t.k==='mail'&&G.strikes>0){G.strikes--;GK.fx.text(nd.x,nd.y-90,'-1',RED,30)}}GK.fx.text(nd.x,nd.y-30,'+'+pts,INK,20);GK.fx.burst(nd.x,nd.y,10,{col:t.col===0?RED:t.col===1?WHITE:INK,speed:3,life:22,size:4,up:1.5,grav:.1});GK.audio.tone(660+nd.col*110,.14,'triangle',.06);pops.push({x:nd.x,y:nd.y,t:0,ok:1});if(G.tut)tutFlag.ok++}
   else{G.combo=0;strike(nd.x,nd.y);pops.push({x:nd.x,y:nd.y,t:0,ok:0})}}
 function strike(x,y){G.strikes++;G.combo=0;GK.fx.shake(8,16);GK.fx.burst(x,y,20,{col:RED,speed:5,life:26,size:4});GK.audio.tone(120,.4,'sawtooth',.07,.5);boom.push({x:x,y:y,t:0});if(G.tut){G.strikes=0;return}if(G.strikes>=3){mode='over';G.deadT=0;endRun();if(G.score>best.score){best.score=G.score;best.stage=Math.max(best.stage,G.stage);GK.ls.set('best',best)}}}
 function endRun(){ST.score=Math.max(ST.score,G.score);if(MODE==='daily')ST.daily=GK.daily.claim(G.score).n;var bm=BM[MODE]||{score:0,d:0};if(G.score>bm.score){bm.score=G.score;bm.d=G.delivered;BM[MODE]=bm;GK.ls.set('bm',BM)}saveST()}
 function crash(p,a,b){trains=trains.filter(function(t){return t!==a&&t!==b});strike(p.x,p.y);GK.audio.noise(.4,.15)}
 /* ============ input: tap a switch to throw it, tap a train to hold/release ============ */
 GK.pointer(cv,{down:function(x,y){if(mode==='title'||mode==='over'){if(mode==='over'&&G.deadT<45)return;if(!tut.active)newRun();return}
-    var bt=null,bd=26;trains.forEach(function(t){var p=posOf(t),d=Math.hypot(p.x-x,p.y-y);if(d<bd){bd=d;bt=t}});if(bt){bt.hold=!bt.hold;GK.audio.tone(300,.05,'square',.03);return}
+    var bt=null,bd=26;trains.forEach(function(t){var p=posOf(t),d=Math.hypot(p.x-x,p.y-y);if(d<bd){bd=d;bt=t}});if(bt){bt.hold=!bt.hold;if(G.tut){if(bt.hold)tutFlag.held=1;else if(tutFlag.held)tutFlag.rel=1}GK.audio.tone(300,.05,'square',.03);return}
     var bn=null,nd=34;nodes.forEach(function(n){if(n.depot)return;var d=Math.hypot(n.x-x,n.y-y);if(d<nd){nd=d;bn=n}});if(bn){flip(bn)}},
   key:function(c,d){if(!d)return}});
 function flip(n){n.state=1-n.state;n.flash=10;G.flip++;if(!G.tut)ST.flips++;GK.audio.tone(400+n.state*100,.05,'square',.04);if(tut.active)tutFlag.flip=1}
@@ -123,9 +123,13 @@ function drawTitle(){build(YARD[MODE][0],YARD[MODE][1],3);ctx.fillStyle='rgba(17
 /* ============ tutorial: tiny yard, one train at a time ============ */
 var tutFlag={flip:0,ok:0};
 var tut=GK.tutorial({parent:document.getElementById('stage'),onStart:function(){build(1,2,1);var m0=MODE;MODE='classic';newRun();MODE=m0;build(1,2,1);G.tut=true;G.entries=1;tutFlag={flip:0,ok:0};trains=[];tutSpawn()},onEnd:function(){mode='title';G=null;trains=[]},
-  steps:[{done:function(){return tutFlag.ok>=1},update:function(){if(!trains.length&&G&&G.tut)tutSpawn()}},{init:function(){tutFlag.ok=0},done:function(){return tutFlag.ok>=2},update:function(){if(!trains.length&&G&&G.tut)tutSpawn()}},{init:function(){tutFlag.ok=0;G.speed=95},done:function(){return tutFlag.ok>=3},update:function(){if(trains.length<2&&G&&G.tut&&G.t%140===0)tutSpawn()}}]});
-function tutSpawn(){var n=nodes.filter(function(n){return n.i===0})[0];trains.push({e:n.lead,d:0,col:Math.floor(Math.random()*3),hold:false,k:'n',v:G.speed*.8,id:Math.random()})}
-function tutDraw(){var t=tut.t;if(!trains.length)return;var tr=trains[0];var node=tr.e.b;if(node&&!node.depot){var want=planChoice(node,tr),idx=node.out.indexOf(want);if(node.state!==idx)GK.pulse(ctx,node.x,node.y,t,RED,16)}
+  steps:[{done:function(){return tutFlag.ok>=1},update:function(){if(!trains.length&&G&&G.tut)tutSpawn()}},{init:function(){tutFlag.ok=0},done:function(){return tutFlag.ok>=2},update:function(){if(!trains.length&&G&&G.tut)tutSpawn()}},{init:function(){tutFlag.ok=0;G.speed=95},done:function(){return tutFlag.ok>=3},update:function(){if(trains.length<2&&G&&G.tut&&G.t%140===0)tutSpawn()}},
+   {init:function(){tutFlag.held=0;tutFlag.rel=0;trains=[];G.speed=40;tutSpawn()},done:function(){return tutFlag.rel},update:function(){if(!trains.length&&!tutFlag.rel)tutSpawn()}},
+   {init:function(){tutFlag.ok=0;trains=[];G.speed=60;tutSpawn('exp')},done:function(){return tutFlag.ok>=1},update:function(){if(!trains.length&&!tutFlag.ok)tutSpawn('exp')}},
+   {init:function(){tutFlag.ok=0;trains=[];G.speed=60;tutSpawn('frt')},done:function(){return tutFlag.ok>=1},update:function(){if(!trains.length&&!tutFlag.ok)tutSpawn('frt')}},
+   {init:function(){tutFlag.ok=0;trains=[];G.speed=60;tutSpawn('mail')},done:function(){return tutFlag.ok>=1},update:function(){if(!trains.length&&!tutFlag.ok)tutSpawn('mail')}}]});
+function tutSpawn(k){k=k||'n';var n=nodes.filter(function(n){return n.i===0})[0];trains.push({e:n.lead,d:0,col:Math.floor(Math.random()*3),hold:false,k:k,v:G.speed*.8*(k==='exp'?1.45:k==='frt'?.62:1),id:Math.random()})}
+function tutDraw(){var t=tut.t;if(!trains.length)return;var tr=trains[0];if(tut.i===3){var hp=posOf(tr);GK.pulse(ctx,hp.x,hp.y,t,RED,tr.hold?10:18);if(tr.hold)return}var node=tr.e.b;if(node&&!node.depot){var want=planChoice(node,tr),idx=node.out.indexOf(want);if(node.state!==idx)GK.pulse(ctx,node.x,node.y,t,RED,16)}
   else if(node&&node.i>0){/* next node */}
   /* also check the next node on path */ if(node&&!node.depot){var nn=planChoice(node,tr).b;if(nn&&!nn.depot){var w2=planChoice(nn,tr),i2=nn.out.indexOf(w2);if(nn.state!==i2)GK.pulse(ctx,nn.x,nn.y,t+20,RED,12)}}}
 /* ============ bar ============ */
