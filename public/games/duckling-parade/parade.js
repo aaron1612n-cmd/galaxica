@@ -2,7 +2,7 @@
    Levels are built section by section, each with a planned answer; the whole parade is simulated with that plan and a level
    is only kept when enough ducklings get home. AUTO follows the same plan. */
 (function(){
-GK.id('parade');
+GK.id('parade');Auto.deep=true;
 var cv=document.getElementById('c'),ctx=cv.getContext('2d'),stage=document.getElementById('stage'),padEl=document.getElementById('pad');
 var CREAM='#f3ead2',INK='#2b2622',YOLK='#ffcf33',BEAK='#e8892b',EARTH='#8a5a3b',EARTH2='#7a4e33',GRASS='#6a8f3a',STEEL='#7d8089',STEEL2='#5f626a',TWIG='#c9a26b',TWIG2='#8f6b3c',WATER='#4a7d96',THORN='#5b3a2e';
 var CELL=4,LH=90,HUDH=40,T=0,TAU=Math.PI*2;
@@ -124,7 +124,9 @@ function paintPad(){padEl.innerHTML='';SK.forEach(function(s){var b=document.cre
   r.onclick=function(e){if(!G)return;var rc=r.getBoundingClientRect(),left=e.clientX<rc.left+rc.width/2;G.W.rate=GK.clamp(G.W.rate+(left?6:-6),10,90);paintPad()};padEl.appendChild(r)}
 
 /* ---------- AUTO ---------- */
-function botTick(){if(G.st!=='play'){if(G.end>100)after();return}var a=planStep(G.W,G.P);if(a){G.skills[a.sk]=Math.max(0,(G.skills[a.sk]||0)-1);paintPad();G.flash={d:a.d,t:20}}}
+function botTick(){if(G.st!=='play'){if(G.end>100)after();return}if(!Auto.think())return;if(G.blag==null)G.blag=Auto.react();if(G.blag>0){G.blag--;return}
+  if(Auto.slip()&&G.W.t%30===0){var ws=G.W.ducks.filter(function(d){return d.st==='walk'}),sk=SK.filter(function(s){return G.skills[s]>0});if(ws.length&&sk.length){var dk=ws[Math.floor(Math.random()*ws.length)],s2=sk[Math.floor(Math.random()*sk.length)];if(assign(G.W,dk,s2)){G.skills[s2]--;paintPad()}}}
+  var a=planStep(G.W,G.P);if(a)G.blag=null;if(a){G.skills[a.sk]=Math.max(0,(G.skills[a.sk]||0)-1);paintPad();G.flash={d:a.d,t:20}}}
 function after(){if(G.st==='won'&&G.m==='parade')load('parade',Math.min(29,G.i+1));else if(G.st==='won'&&G.m==='endless')load('endless',G.i+1);else load(G.m,G.i,G.m==='tut'?G.L:null)}
 
 /* ---------- tick ---------- */
@@ -201,7 +203,7 @@ var B=GK.controls(document.getElementById('bar'),{bar:'bottom',onHelp:function()
 function setMode(m){if(tut.active)return;MODE=m;GK.ls.set('mode',m);paint();load(m,m==='parade'?curLevel():0)}
 function paint(){['parade','endless','daily'].forEach(function(k){B['m_'+k].classList.toggle('on',MODE===k)})}
 GK.goals.setup({metrics:function(){return ST},defs:{levels:{ic:'flag',t:[1,5,10,20,30]},saved:{ic:'duck',t:[25,250,1000,5000]},bridges:{ic:'build',t:[5,50,200]},dug:{ic:'dig',t:[5,50,200]},perfect:{ic:'star',t:[1,5,15]},endless:{ic:'infinity',t:[5,15,30]},daily:{ic:'sun',t:[1,3,7,14,30]}}});
-GK.goals.mount(B);
+GK.goals.mount(B);GK.online.mount(B,{game:'duckling-parade',boards:[{key:'levels',m:'levels',ic:'flag'},{key:'perfect',m:'perfect',ic:'star'},{key:'endless',m:'endless',ic:'infinity'},{daily:{}}]});
 function fit(){GK.fit(cv,stage)}addEventListener('resize',fit);addEventListener('orientationchange',fit);fit();
 save();paint();load(MODE,MODE==='parade'?curLevel():0);GK.loop(step,render);tut.maybe();
 window.__g={tut:tut,G:function(){return G},levelFor:levelFor,trial:trial,load:load,prog:PROG,st:ST,

@@ -123,7 +123,7 @@ var R=GK.controls(document.getElementById('bar'),{bar:'right',onHelp:function(){
 function setMode(m){if(tut.active)return;MODE=m;GK.ls.set('mode',m);paint();mode='title';G=null}
 function paint(){['garden','calm','daily'].forEach(function(k){R['m_'+k].classList.toggle('on',MODE===k)})}paint();
 GK.goals.setup({metrics:function(){return ST},defs:{score:{ic:'crown',t:[500,2500,10000,30000,80000]},flowers:{ic:'flower',t:[10,100,500,2000]},bigloop:{ic:'target',t:[3,5,8,12]},loops:{ic:'spiral',t:[1,25,150]},dew:{ic:'drop',t:[5,50,250]},berries:{ic:'heart',t:[1,10,50]},length:{ic:'leaf',t:[80,120,180]},calm:{ic:'leaf',t:[50,300]},games:{ic:'restart',t:[1,10,50]},daily:{ic:'sun',t:[1,3,7,14,30]}}});
-GK.goals.mount(R);
+GK.goals.mount(R);GK.online.mount(R,{game:'bramble',boards:[{key:'score',m:'score',ic:'crown'},{daily:{}}]});
 function fit(){GK.fit(cv,stage,W,H,1.5)}addEventListener('resize',fit);addEventListener('orientationchange',fit);fit();
 GK.loop(function(){step();if(mode==='title'&&Auto.on&&!tut.active)newGame()},render);tut.maybe();
 window.__g={st:ST,setMode:setMode,tut:tut,newGame:newGame,stats:function(){return G?{MODE:MODE,score:G.score,loops:G.loops,len:Math.round(G.len),pts:G.pts.length,over:G.over,shears:shears.length,items:items.length,t:G.t}:{mode:mode}}};

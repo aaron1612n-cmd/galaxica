@@ -272,5 +272,7 @@ if(!seen)startTut();
 </script>
 <script src="../../shared/stars.js"></script>
 <script src="../../shared/names.js"></script>
+<script src="../../shared/online.js"></script>
+<script>(function(){var B=[{key:'levels',read:function(r){var p=r('squeezeProg');return p&&p.best},label:'1-8'},{key:'stars',read:function(r){var p=r('squeezeProg');if(!p||!p.stars)return null;var n=0;for(var k in p.stars)n+=p.stars[k]?1:0;return n},label:'★'}];Online.watch('squeeze',B);function mount(){var h=document.querySelectorAll('.cl')[document.querySelectorAll('.cl').length-1];if(!h){var bs=document.querySelectorAll('button');for(var i=bs.length-1;i>=0;i--){if(bs[i].offsetParent&&bs[i].parentNode&&bs[i].parentNode.querySelectorAll('button').length>2){h=bs[i].parentNode;break}}}Online.button('squeeze',B,h)}if(document.readyState==='complete')setTimeout(mount,300);else addEventListener('load',function(){setTimeout(mount,300)})})();</script>
 </body>
 </html>

@@ -137,7 +137,7 @@ var R=GK.controls(document.getElementById('bar'),{bar:'top',onHelp:function(){tu
 function setMode(m){if(tut.active)return;MODE=m;GK.ls.set('mode',m);paintModes();mode='title';G=null;trains=[];GK.fx.clear()}
 function paintModes(){['classic','wide','express','daily'].forEach(function(m){R['m_'+m].classList.toggle('on',MODE===m)})}paintModes();
 GK.goals.setup({metrics:function(){return ST},defs:{delivered:{ic:'flag',t:[10,50,200,1000,5000]},score:{ic:'crown',t:[500,2000,5000,10000,25000]},combo:{ic:'flame',t:[10,25,50,100]},exp:{ic:'bolt',t:[1,10,50]},frt:{ic:'box',t:[1,10,50]},mail:{ic:'heart',t:[1,5,25]},rush:{ic:'clock',t:[1,5,20]},flips:{ic:'gear',t:[50,500,5000]},wide:{ic:'cart',t:[20,60,150]},clean:{ic:'shield',t:[2,4,6,8]},daily:{ic:'sun',t:[1,3,7,14,30]}}});
-GK.goals.mount(R);
+GK.goals.mount(R);GK.online.mount(R,{game:'switchyard',boards:[{key:'score',m:'score',ic:'crown'},{key:'delivered',m:'delivered',ic:'flag'},{daily:{}}]});
 function fit(){GK.fit(cv,stage,W,H,1.4)}addEventListener('resize',fit);addEventListener('orientationchange',fit);fit();
 GK.loop(step,render);tut.maybe();
 window.__g={st:ST,setMode:function(m){setMode(m)},stats:function(){return G?{MODE:MODE,rush:G.rush,combo:G.combo,sw:nodes.map(function(n){return n.state}).join(''),mode:mode,score:G.score,delivered:G.delivered,strikes:G.strikes,stage:G.stage,trains:trains.length,best:best.score,tut:tut.active}:{mode:mode}},tut:tut,newRun:function(){newRun()}};

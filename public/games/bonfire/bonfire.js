@@ -1,7 +1,7 @@
 /* Bonfire: survive the night in the woods until dawn. Weapons fire on their own; you walk, gather embers and choose.
    Papercut look: pine-black ground, bone-paper silhouettes, ember is the only colour. */
 (function(){
-GK.id('bonfire');
+GK.id('bonfire');Auto.deep=true;
 var cv=document.getElementById('c'),ctx=cv.getContext('2d'),stage=document.getElementById('stage');
 var BONE='#e7dcc4',EMB='#ff6a1f',NIGHT='#10140f',MID='#1c2319',MID2='#262f23',TAU=Math.PI*2;
 var Z=1,VW=600,VH=600,T=0,mode='camp',modeT=0;
@@ -287,20 +287,21 @@ function inputVec(){var K=GK.keys,x=(K.ArrowRight||K.KeyD?1:0)-(K.ArrowLeft||K.K
 
 /* ---------- AUTO: a cautious walker ---------- */
 var bot={px:0,py:0};
-function botVec(){var h=G.h,sp=1.7*S.speed,th=[];query(h.x,h.y,280,function(e){th.push(e)});
+function botVec(){if(bot.wild>0){bot.wild--;return{x:bot.px,y:bot.py}}if(!Auto.think())return{x:bot.px,y:bot.py};if(Auto.slip()){var wa=Math.random()*TAU;bot.px=Math.cos(wa);bot.py=Math.sin(wa);bot.wild=20;return{x:bot.px,y:bot.py}}
+  var h=G.h,sp=1.7*S.speed,th=[],CAU=Auto.w('cau'),GRE=Auto.w('gre');query(h.x,h.y,280,function(e){th.push(e)});
   var tg=null,tv=-1;if(h.hp<h.max*.55)DR.forEach(function(p){if(p.k==='bread'){var v=1e6/(sq(p.x-h.x)+sq(p.y-h.y)+1);if(v>tv){tv=v;tg=p}}});
   if(!tg)DR.forEach(function(p){if(p.k==='chest'||p.k==='flask'&&th.length>40||p.k==='magnet'){var v=5e5/(sq(p.x-h.x)+sq(p.y-h.y)+1);if(v>tv){tv=v;tg=p}}});
   if(!tg){GEM.forEach(function(g){var d2=sq(g.x-h.x)+sq(g.y-h.y);if(d2<sq(380)){var v=(g.v+1)/(d2+400);if(v>tv){tv=v;tg=g}}})}
   var best=null,bs=-1e18;for(var k=0;k<=16;k++){var dx=k<16?Math.cos(k/16*TAU):0,dy=k<16?Math.sin(k/16*TAU):0,sc=0;
     for(var q=0;q<3;q++){var st=[8,20,34][q],wq=[1.6,1,.6][q],px=h.x+dx*sp*st,py=h.y+dy*sp*st;
       for(var i=0;i<th.length;i++){var e=th[i],ex=e.x,ey=e.y,ddx=px-ex,ddy=py-ey,dd=Math.sqrt(ddx*ddx+ddy*ddy)||1,mv=Math.min(dd,(e.s>0&&e.t==='wolf'?2.8:e.d.boss&&e.st==='ch'?5:e.sp)*st);
-        if(e.d.boss&&e.st==='ch'){ex+=e.vx*5*st;ey+=e.vy*5*st}else{ex+=ddx/dd*mv;ey+=ddy/dd*mv}var dist=Math.sqrt(sq(px-ex)+sq(py-ey))-e.r-10;sc-=wq*(e.d.boss?4:1)*(e.dm+4)*60/sq(Math.max(3,dist))}
+        if(e.d.boss&&e.st==='ch'){ex+=e.vx*5*st;ey+=e.vy*5*st}else{ex+=ddx/dd*mv;ey+=ddy/dd*mv}var dist=Math.sqrt(sq(px-ex)+sq(py-ey))-e.r-10;sc-=CAU*wq*(e.d.boss?4:1)*(e.dm+4)*60/sq(Math.max(3,dist))}
       for(var j=0;j<EO.length;j++){var o=EO[j],ox=o.x+o.vx*st,oy=o.y+o.vy*st,od=Math.sqrt(sq(px-ox)+sq(py-oy))-o.r-9;if(od<60)sc-=wq*900/sq(Math.max(2,od))}}
-    if(tg){var d0=Math.sqrt(sq(tg.x-h.x)+sq(tg.y-h.y)),d1=Math.sqrt(sq(tg.x-h.x-dx*sp*20)+sq(tg.y-h.y-dy*sp*20));sc+=(d0-d1)*(tg.k==='bread'||tg.k==='chest'?1.2:.5)}
+    if(tg){var d0=Math.sqrt(sq(tg.x-h.x)+sq(tg.y-h.y)),d1=Math.sqrt(sq(tg.x-h.x-dx*sp*20)+sq(tg.y-h.y-dy*sp*20));sc+=GRE*(d0-d1)*(tg.k==='bread'||tg.k==='chest'?1.2:.5)}
     if(k===16)sc-=2;sc+=(dx*bot.px+dy*bot.py)*.8;
     if(sc>bs){bs=sc;best=[dx,dy]}}
   bot.px=best[0];bot.py=best[1];return{x:best[0],y:best[1]}}
-function botPick(){var best=0,bs=-1e9;G.opts.forEach(function(o,i){var s=0;
+function botPick(){if(Auto.slip())return Math.floor(Math.random()*G.opts.length);var best=0,bs=-1e9;G.opts.forEach(function(o,i){var s=0;
     if(o.k==='w'){var w=hasW(o.id);if(w){s=30+(8-w.lv)+(w.lv>=6&&G.ch[WD[o.id].pair]?20:0)}else s=G.w.length<4?26:9;if(['darts','lantern','scythe','axe','thunder','sickle'].indexOf(o.id)>=0)s+=4}
     else if(o.k==='c'){s={might:28,haste:26,echo:27,heart:20,armor:19,magnet:21,reach:18,growth:15,luck:11,boots:13,mend:12,greed:4}[o.id]||5;if(G.w.some(function(w){return WD[w.id].pair===o.id}))s+=14;if(G.ch[o.id])s+=4}else s=1;
     if(s>bs){bs=s;best=i}});return best}
@@ -507,7 +508,7 @@ var B=GK.controls(document.getElementById('bar'),{bar:'left',onHelp:function(){h
   {id:'rs',html:GK.icon('restart'),title:'Restart',fn:function(){if(!tut.active&&G)newRun({mode:G.mode})}}]});
 GK.goals.setup({metrics:function(){return ST},defs:{kills:{ic:'skull',t:[100,1000,5000,20000,100000]},lvl:{ic:'up',t:[10,20,30,40,50]},mins:{ic:'clock',t:[1,3,5,10,15]},wins:{ic:'flag',t:[1,3,10]},
   evos:{ic:'crown',t:[1,3,10,25]},bosses:{ic:'sword',t:[1,5,15,40]},gold:{ic:'coin',t:[100,1000,5000,20000]},heroes:{ic:'heart',t:[3,5,7,10]},stages:{ic:'tree',t:[2,3]},daily:{ic:'sun',t:[1,3,7,14,30]},endless:{ic:'infinity',t:[10,20,30]},maxk:{ic:'fire',t:[500,1500,3000,6000]}}});
-GK.goals.mount(B);
+GK.goals.mount(B);GK.online.mount(B,{game:'bonfire',boards:[{key:'kills',m:'maxk',ic:'skull'},{key:'level',m:'lvl',ic:'up'},{key:'endless',m:'endless',ic:'infinity'},{daily:{}}]});
 function fit(){var v=GK.fit(cv,stage);Z=GK.clamp(Math.sqrt(v.w*v.h/(620*620)),.62,1.9);VW=v.w/Z;VH=v.h/Z}
 addEventListener('resize',fit);addEventListener('orientationchange',fit);fit();
 toCamp();GK.loop(step,render);tut.maybe();if(document.fonts)document.fonts.ready.then(function(){if(mode==='camp')paintCamp()});

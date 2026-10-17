@@ -491,5 +491,7 @@ function draw(){
   draw();requestAnimationFrame(loop)})();
 </script>
 <script src="../../shared/names.js"></script>
+<script src="../../shared/online.js"></script>
+<script>(function(){var B=[{key:'best',read:function(r){return r('galaxicaBest')}}];Online.watch('galaxica',B);function mount(){var h=document.querySelectorAll('.cl')[document.querySelectorAll('.cl').length-1];if(!h){var bs=document.querySelectorAll('button');for(var i=bs.length-1;i>=0;i--){if(bs[i].offsetParent&&bs[i].parentNode&&bs[i].parentNode.querySelectorAll('button').length>2){h=bs[i].parentNode;break}}}Online.button('galaxica',B,h)}if(document.readyState==='complete')setTimeout(mount,300);else addEventListener('load',function(){setTimeout(mount,300)})})();</script>
 </body>
 </html>

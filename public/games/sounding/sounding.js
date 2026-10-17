@@ -1,7 +1,7 @@
 /* Sounding: survey a reef. Each sounding shows how many hazards lie next to it; buoy the hazards, sound the rest.
    Every chart is generated so a logical surveyor can finish it from the first opening without a single guess. */
 (function(){
-GK.id('sounding');
+GK.id('sounding');Auto.deep=true;
 var cv=document.getElementById('c'),ctx=cv.getContext('2d'),stage=document.getElementById('stage');
 var CHART='#f7f5ee',SHOAL='#cde3e6',NAVY='#1f2a33',MAG='#c0267c',TAU=Math.PI*2;
 var CS=40,PAD=16,HUD=100,T=0;
@@ -74,8 +74,8 @@ cv.addEventListener('contextmenu',function(e){e.preventDefault();if(!G||G.st!=='
 function holdCheck(){if(press&&!press.done&&performance.now()-press.t>380){press.done=true;if(G.mark)sound(press.i);else mark(press.i);if(navigator.vibrate)try{navigator.vibrate(12)}catch(e){}}}
 
 /* ---------- AUTO: the same surveyor that proved the chart ---------- */
-var bot={t:0,plan:null};
-function botTick(){if(G.st!=='play'){if(G.end>100)after();return}if(++bot.t<7)return;bot.t=0;var d=deduce(G.B,G.rev,G.flag,G.B.m);
+var bot={t:0,plan:null,lag:0};
+function botTick(){if(G.st!=='play'){if(G.end>100)after();return}if(!Auto.think())return;if(++bot.t<7+bot.lag)return;bot.t=0;bot.lag=Auto.react();if(Auto.slip()){var u=[];for(var z=0;z<G.B.n;z++)if(!G.rev[z]&&!G.flag[z])u.push(z);if(u.length){sound(u[Math.floor(Math.random()*u.length)]);return}}var d=deduce(G.B,G.rev,G.flag,G.B.m);
   if(d.safe.length){var s=d.safe[0];sound(s);return}if(d.mine.length){mark(d.mine[0]);return}
   var c=[];for(var i=0;i<G.B.n;i++)if(!G.rev[i]&&!G.flag[i])c.push(i);if(c.length)sound(c[Math.floor(Math.random()*c.length)])}
 function after(){if(G.m==='survey'){if(G.st==='won')load('survey',Math.min(39,G.i+1));else load('survey',G.i)}else if(G.m==='free')load('free',G.i+1);else load('daily',0)}
@@ -146,7 +146,7 @@ var B=GK.controls(document.getElementById('bar'),{bar:'left',onHelp:function(){t
 function setMode(m){if(tut.active)return;MODE=m;GK.ls.set('mode',m);paint();load(m,m==='survey'?curChart():0)}
 function paint(){['survey','free','daily'].forEach(function(k){B['m_'+k].classList.toggle('on',MODE===k)})}
 GK.goals.setup({metrics:function(){return ST},defs:{charts:{ic:'chart',t:[1,8,16,24,40]},cells:{ic:'compass',t:[500,5000,20000,100000]},buoys:{ic:'buoy',t:[50,500,2000]},hex:{ic:'hexgrid',t:[1,8,16]},free:{ic:'infinity',t:[5,25,100]},daily:{ic:'sun',t:[1,3,7,14,30]},fast:{ic:'clock',t:[1]}}});
-GK.goals.mount(B);
+GK.goals.mount(B);GK.online.mount(B,{game:'sounding',boards:[{key:'charts',m:'charts',ic:'chart'},{key:'cells',m:'cells',ic:'compass'},{daily:{inv:10000,low:1},fmt:'time'}]});
 addEventListener('resize',fit);addEventListener('orientationchange',fit);
 save();paint();load(MODE,MODE==='survey'?curChart():0);GK.loop(step,render);tut.maybe();
 window.__g={tut:tut,G:function(){return G},boardFor:boardFor,deduce:deduce,provable:provable,load:load,prog:PROG,st:ST,

@@ -121,3 +121,20 @@ GK.daily={key:function(){var d=new Date();return d.getFullYear()*10000+(d.getMon
   claim:function(score){var s=GK.ls.get('dstreak',{n:0,last:0,best:0}),k=GK.daily.key();if(s.last===k){if(score>(s.best||0)){s.best=score;GK.ls.set('dstreak',s)}return s}
     var y=new Date(Date.now()-864e5),yk=y.getFullYear()*10000+(y.getMonth()+1)*100+y.getDate();s.n=s.last===yk?s.n+1:1;s.last=k;s.best=score;GK.ls.set('dstreak',s);return s}};
 })();
+/* ---------- online boards (Galaxica Online) ----------
+   GK.online.mount(R,{game,boards:[{key,m,ic,low,fmt,daily:{inv,scale}}]}): a Scores button in the More panel; metric boards
+   (m = a goals metric name) post whenever this player's best improves; daily boards read today's claimed score.
+   GK.online.post(key,score,{low,ghost}) for games that post at the end of a run. */
+(function(){var GK=window.GK,src=document.currentScript&&document.currentScript.src||'';
+  if(!window.Online){var s=document.createElement('script');s.src=src.replace(/gk2\.js.*$/,'online.js');(document.head||document.documentElement).appendChild(s)}
+  var ON=GK.online={game:null,boards:[],
+    key:function(b){return b.daily?'daily:'+GK.daily.key():b.key},
+    val:function(b){if(b.daily){var d=GK.ls.get('dstreak',{});if(d.last!==GK.daily.key()||d.best==null)return null;var v=d.best;if(b.daily.inv!=null)v=b.daily.inv-v;if(b.daily.scale)v*=b.daily.scale;return v}
+      if(b.m&&GK.goals.metricFn){var m=GK.goals.metricFn();return m?m[b.m]:null}return null},
+    mount:function(R,o){ON.game=o.game;ON.boards=o.boards;if(!R||!R.panel)return;var b=document.createElement('button');b.className='gk-b scores';b.title='Scores';b.setAttribute('aria-label','Scores');
+      b.innerHTML='<svg viewBox="0 0 22 22" aria-hidden="true"><path d="M2 19h18M3 19v-6h5v6M8 19V7h6v12M14 19v-9h5v9"/></svg>';b.onclick=function(){ON.open()};var g=R.goals||R.snd;g.parentNode.insertBefore(b,g);R.scores=b;
+      setInterval(ON.poll,4000);setTimeout(ON.poll,2500)},
+    open:function(){if(!window.Online)return;Online.open(ON.game,ON.boards.map(function(b){return{key:ON.key(b),ic:GK.icoSvg(b.daily?'sun':b.ic),low:b.low||b.daily&&b.daily.low,fmt:b.fmt,title:b.title}}),{onGhost:ON.onGhost})},
+    poll:function(){if(!window.Online)return;ON.boards.forEach(function(b){var v=ON.val(b),low=b.low||b.daily&&b.daily.low;if(v==null||!isFinite(v)||(!low&&v<=0)||(low&&v<=0))return;if(b.last===v)return;b.last=v;Online.post(ON.game,ON.key(b),v,{low:low})})},
+    post:function(key,score,o){if(window.Online)return Online.post(ON.game,key,score,o)}};
+})();

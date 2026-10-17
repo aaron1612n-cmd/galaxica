@@ -1,7 +1,7 @@
 /* Lamplight: set mirrors so the lighthouse beam reaches every ship. All ships lit at once and they sail home.
    Levels are generated from fixed seeds along a planned beam path, then checked by a beam-tracing solver that also finds par. */
 (function(){
-GK.id('lamplight');
+GK.id('lamplight');Auto.deep=true;
 var cv=document.getElementById('c'),ctx=cv.getContext('2d'),stage=document.getElementById('stage');
 var SEA='#0f3b3a',SEA2='#0c3433',DEEP='#082524',CREAM='#efe3c8',LAMP='#f2b705',TAU=Math.PI*2;
 var TS=64,PAD=18,HUD=84,T=0;
@@ -102,7 +102,7 @@ GK.pointer(cv,{down:function(x,y){if(!G)return;if(G.won){if(G.wt>60&&G.m!=='tut'
 
 /* ---------- AUTO: replay the solver's answer one tap at a time ---------- */
 var bot={q:null,t:0};
-function botTick(){if(!G)return;if(G.won){if(G.wt>110)next();return}if(++bot.t<16)return;bot.t=0;
+function botTick(){if(!G)return;if(G.won){if(G.wt>110)next();return}if(!Auto.think())return;if(++bot.t<16+(bot.lag||0))return;bot.t=0;bot.lag=Auto.react();if(bot.q&&Auto.slip()){var w=[];for(var z=0;z<G.L.w*G.L.h;z++)if(G.L.T[z]===W_)w.push(z);if(w.length){tap(w[Math.floor(Math.random()*w.length)]);bot.q=null;return}}
   if(!bot.q){/* start from a clean board, then lay the solution */ var n=G.L.w*G.L.h;G.pl=new Int8Array(n);G.left=G.L.K;for(var a=0;a<n;a++)if(G.L.T[a]===ROT)G.rot[a]=G.L.O[a];apply();
     var s=G.L.sol,q=[];s.pl.forEach(function(p){q.push(p[0]);if(p[1]===2)q.push(p[0])});Object.keys(s.rot).forEach(function(c){if(s.rot[c]!==G.rot[c])q.push(+c)});bot.q=q;return}
   if(bot.q.length)tap(bot.q.shift())}
@@ -191,7 +191,7 @@ var B=GK.controls(document.getElementById('bar'),{bar:'top',onHelp:function(){tu
 function setMode(m){if(tut.active)return;MODE=m;GK.ls.set('mode',m);paint();load(m,m==='voyage'?curLevel():0);if(m==='watch')G.streak=0}
 function paint(){['voyage','watch','daily'].forEach(function(k){B['m_'+k].classList.toggle('on',MODE===k)})}
 GK.goals.setup({metrics:function(){return ST},defs:{solved:{ic:'grid',t:[1,10,25,40,60]},stars:{ic:'star',t:[10,50,100,150,180]},perfect:{ic:'crown',t:[5,20,40,60]},watch:{ic:'moon',t:[5,15,30]},daily:{ic:'sun',t:[1,3,7,14,30]},ships:{ic:'ship',t:[10,100,300,1000]}}});
-GK.goals.mount(B);
+GK.goals.mount(B);GK.online.mount(B,{game:'lamplight',boards:[{key:'stars',m:'stars',ic:'star'},{key:'watch',m:'watch',ic:'moon'},{daily:{}}]});
 addEventListener('resize',fit);addEventListener('orientationchange',fit);
 save();paint();load(MODE,MODE==='voyage'?curLevel():0);if(MODE==='watch')G.streak=0;GK.loop(step,render);tut.maybe();
 window.__g={tut:tut,G:function(){return G},prog:PROG,st:ST,load:load,levelDef:levelDef,par:par,solve:solve,trace:trace,

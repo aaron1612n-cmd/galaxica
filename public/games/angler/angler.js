@@ -1,7 +1,7 @@
 /* Angler: cast, hold the depth, strike on the bite, fight the line. Every catch is pressed into the journal as an ink print.
    Look: gyotaku. Rice paper water in stepped depth bands, sumi-ink fish, a crimson seal. Night inverts the print. */
 (function(){
-GK.id('angler');
+GK.id('angler');Auto.deep=true;
 var cv=document.getElementById('c'),ctx=cv.getContext('2d'),stage=document.getElementById('stage');
 var PAPER='#f1ebdd',INK='#1d1b19',RED='#b3202a',TAU=Math.PI*2;
 var Z=1,VW=600,VH=600,T=0;
@@ -97,12 +97,12 @@ function botPlan(){var best=null,bv=0,RS=gear('rod'),cm=castMax(),lm=gear('line'
     var v=f.kg*s[11]*like*(CAR.jr[f.sp]?1:3)/(1+Math.abs(f.x-200)*.002);if(v>bv){bv=v;best=f}});return best}
 function botCmd(){/* returns {hold:bool, press:bool} */
   var st=G.st,o={hold:false,press:false};
-  if(st==='idle'){bot.wait++;if(bot.wait<25)return o;bot.tg=botPlan();bot.c=bot.tg?GK.clamp((bot.tg.x-90)/castMax(),.05,1):.45;o.hold=true;bot.wait=0;return o}
+  if(st==='idle'){bot.wait++;if(bot.wait<25)return o;bot.tg=botPlan();bot.c=GK.clamp((bot.tg?(bot.tg.x-90)/castMax():.45)+Auto.noise(.25),.05,1);o.hold=true;bot.wait=0;return o}
   if(st==='charge'){o.hold=Math.abs(G.charge-bot.c)>.02;if(G.charge>.99&&bot.c>.97)o.hold=false;return o}
-  if(st==='sink'){var f=G.eng;if(f&&f.st==='bite'){o.press=true;return o}if(f&&f.st==='nibble')return o;
+  if(st==='sink'){var f=G.eng;if(f&&f.st==='bite'){if(bot.bl==null)bot.bl=Auto.react();if(bot.bl-->0)return o;bot.bl=null;o.press=!Auto.slip();return o}bot.bl=null;if(f&&f.st==='nibble'&&Auto.slip()&&Math.random()<.05){o.press=true;return o}if(f&&f.st==='nibble')return o;
     var tg=bot.tg&&bot.tg.st==='swim'?bot.tg:null,ty=tg?tg.y:Math.min(bottom(G.lure.x)-20,gear('line')*.5);
     bot.jt=(bot.jt||0)+1;o.hold=G.lure.y>ty+6||(bot.jt%60<6);if(G.idleT>1500||G.lure.x<130&&G.lure.y<40){o.hold=true;bot.reelAll=1}if(bot.reelAll)o.hold=true;return o}
-  if(st==='fight'){var fi=G.fish,RS2=gear('rod'),Fp=G.F;if(fi.jump>0){o.hold=true;return o}o.hold=Fp/RS2+.3<.93&&G.tens<.88;if(G.slack>25)o.hold=true;if(G.tens>.95)o.hold=false;if(G.L>gear('line')*.92&&G.tens<.97)o.hold=true;return o}
+  if(st==='fight'){var fi=G.fish,RS2=gear('rod'),Fp=G.F;if(fi.jump>0){o.hold=true;return o}var lim=.93-(Auto.st('cau')-50)/250;o.hold=Fp/RS2+.3<lim&&G.tens<lim-.05;if(G.slack>25)o.hold=true;if(G.tens>.95)o.hold=false;if(G.L>gear('line')*.92&&G.tens<.97)o.hold=true;return o}
   return o}
 function botShop(){if(G.mode!=='career')return;var order=['rod','line','reel','hook'],k;for(var n=0;n<8;n++){var did=false;
     for(var i=0;i<order.length;i++){k=order[i];var l=CAR.up[k];if(l<5&&CAR.money>=UP[k].cost[l]*1.1){CAR.money-=UP[k].cost[l];CAR.up[k]++;did=true;break}}
@@ -348,7 +348,7 @@ setInterval(function(){if(G&&B.bt){var ic=BAITS.filter(function(b){return b.id==
 cv.addEventListener('pointerdown',function(){if(G&&G.st==='over'&&G.overT>40)newGame(G.mode)});
 GK.goals.setup({metrics:function(){return ST},defs:{species:{ic:'book',t:[5,15,30,45,60]},kg:{ic:'weight',t:[10,100,1000,10000]},big:{ic:'fish',t:[1,10,50,200,500]},legends:{ic:'crown',t:[1,3,5]},
   earned:{ic:'coin',t:[500,5000,50000,200000]},catches:{ic:'hook',t:[10,100,500,2000]},locs:{ic:'map',t:[2,3,4,5]},derby:{ic:'clock',t:[20,80,200]},daily:{ic:'sun',t:[1,3,7,14,30]},snaps:{ic:'snap',t:[1,10]}}});
-GK.goals.mount(B);
+GK.goals.mount(B);GK.online.mount(B,{game:'angler',boards:[{key:'big',m:'big',ic:'fish',fmt:'kg'},{key:'derby',m:'derby',ic:'clock',fmt:'kg'},{daily:{scale:.01},fmt:'kg'}]});
 function fit(){var v=GK.fit(cv,stage);Z=GK.clamp(Math.min(v.w/380,v.h/500),.62,2.1);VW=v.w/Z;VH=v.h/Z}
 addEventListener('resize',fit);addEventListener('orientationchange',fit);fit();
 paint();newGame();GK.loop(step,render);tut.maybe();

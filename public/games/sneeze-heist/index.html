@@ -172,7 +172,7 @@ var R=GK.controls(document.getElementById('bar'),{bar:'top',onHelp:function(){tu
 function setMode(m){if(tut.active)return;MODE=m;GK.ls.set('mode',m);paint();if(m==='endless')eseed=(Math.random()*1e6)|0;load(m==='heist'?Math.min(NLV,Math.max(1,prog.done+1)):1)}
 function paint(){['heist','endless','daily'].forEach(function(k){R['m_'+k].classList.toggle('on',MODE===k)})}paint();
 GK.goals.setup({metrics:function(){return ST},defs:{cleared:{ic:'flag',t:[1,5,10,20,30]},stars:{ic:'star',t:[3,15,45,90]},loot:{ic:'gem',t:[3,30,150,500]},ghost:{ic:'eye',t:[1,10,30]},sneezes:{ic:'cloud',t:[1,25,100]},lured:{ic:'target',t:[1,10,40]},caught:{ic:'lock',t:[1,10]},endless:{ic:'infinity',t:[3,10,20]},daily:{ic:'sun',t:[1,3,7,14,30]}}});
-GK.goals.mount(R);
+GK.goals.mount(R);GK.online.mount(R,{game:'sneeze-heist',boards:[{key:'cleared',m:'cleared',ic:'flag'},{key:'loot',m:'loot',ic:'gem'},{daily:{}}]});
 function fit(){GK.fit(cv,stage,W,H,1.4)}addEventListener('resize',fit);addEventListener('orientationchange',fit);fit();
 eseed=(Math.random()*1e6)|0;load(MODE==='heist'?Math.min(NLV,Math.max(1,prog.done+1)):1);GK.loop(step,render);tut.maybe();
 window.__g={st:ST,setMode:setMode,load:load,gen:gen,tut:tut,stats:function(){return{MODE:MODE,lv:lvN,tut:inTut,loot:P.loot+'/'+L.loot.length,guards:L.guards.length,won:won,caught:caught,nose:Math.round(P.nose),sus:P.sus,par:L.par,t:T0,done:prog.done}}};

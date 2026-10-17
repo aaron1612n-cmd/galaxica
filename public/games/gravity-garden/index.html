@@ -171,5 +171,7 @@ textarea{width:100%;height:70px;background:transparent;color:var(--ink);border:1
 <script src="gg-core.js"></script>
 <script src="gg-view.js"></script>
 <script src="gg-ui.js"></script>
+<script src="../../shared/online.js"></script>
+<script>(function(){var B=[{key:'score',read:function(r){return r('ggBest')}}];Online.watch('gravity-garden',B);function mount(){var g=document.querySelector('button[title=Goals]'),h=g&&g.parentNode;if(!h){var bs=document.querySelectorAll('button');for(var i=bs.length-1;i>=0;i--){if(bs[i].offsetParent&&bs[i].parentNode&&bs[i].parentNode.querySelectorAll('button').length>2){h=bs[i].parentNode;break}}}Online.button('gravity-garden',B,h)}if(document.readyState==='complete')setTimeout(mount,300);else addEventListener('load',function(){setTimeout(mount,300)})})();</script>
 </body>
 </html>

@@ -185,7 +185,7 @@ var R=GK.controls(document.getElementById('bar'),{bar:'bottom',onHelp:function()
   {id:'m_zen',cls:'md',html:GK.icoSvg('leaf'),title:'Zen',fn:function(){setMode('zen')}},
   {id:'m_daily',cls:'md',html:GK.icoSvg('sun'),title:'Daily',fn:function(){setMode('daily')}},
   {id:'rs',html:GK.icon('restart'),title:'Restart',fn:function(){if(!tut.active)newRun()}}]});
-GK.goals.mount(R);
+GK.goals.mount(R);GK.online.mount(R,{game:'cairn',boards:[{key:'height',m:'cm',ic:'up'},{key:'reach',m:'reach',ic:'hand'},{daily:{}}]});
 function paintModes(){['tower','reach','zen','daily'].forEach(function(m){R['m_'+m].classList.toggle('on',MODE===m)})}
 function setMode(m){if(tut.active)return;MODE=m;GK.ls.set('mode',m);paintModes();newRun()}
 paintModes();

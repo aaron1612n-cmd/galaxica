@@ -32,7 +32,7 @@
     var sec=Math.ceil(owe/60),h=Math.floor(sec/3600),m=Math.floor(sec%3600/60),z=sec%60;ff.lastChild.textContent=(h?h+':'+String(m).padStart(2,'0'):m)+':'+String(z).padStart(2,'0');ff.hidden=false}
   S.ff=false;
   S.ticks=0;
-  S.run=function(tick0,paused){var now=Date.now(),tick=function(){tick0();S.ticks++};drv={tick:tick0,paused:paused};
+  S.run=function(tick0,paused){var now=Date.now(),tick=function(){var A=window.Auto;if(A&&A.on&&!A.deep&&A.isAce&&!A.isAce()&&!A.think()){A.on=false;try{tick0()}finally{A.on=true}}else tick0();S.ticks++};drv={tick:tick0,paused:paused};
     if(paused){last=now;S.acc=0;if(ff)ff.hidden=true;return 0}
     if(last){var gap=now-last;if(gap>250)owe=Math.min(CAP*S.v,owe+gap/1000*60*S.v)}last=now;
     var n=S.steps(),t0=performance.now(),i=0;
