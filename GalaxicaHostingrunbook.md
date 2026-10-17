@@ -42,7 +42,16 @@ galaxica, squeeze, pinprick, hairline, gravity-garden, powder-lab, tidewater, lo
 - GUIDES DONE (all 31): shared/guide.js card (Guide.set cfg {title,goal,how,keys,touch,legend[{pic|ic|sw,name,note}],tips}); GK games call GK.guide(cfg); old-bar games inline Guide.set + Guide.attach(helpBtnSelector) (card first, its Tutorial button runs the old handler).
 - BOT RACE (user "let multiple bots run"): Workshop > Race: lineup of up to 9 lanes (4 on phone), each {bot, game}; Start race = grid of iframes `games/<id>/?bot=<profile json>&lane=n&x=speed`. auto.js lane mode: Proxy in-memory localStorage (copies pid/name/tut flags only), muted AudioContext, hides .gk-bar, posts {t:'score'|'tick'} to parent; parent sets speed via postMessage {pin:'speed'}. Ranks lanes when all play the same game.
 
+- No 'Rotate your phone' overlays (removed from kit.js, galaxica, squeeze 2026-10-17; they fired in race lanes). Games just scale.
+
+## STATE (wrap-up 2026-10-17)
+- Deeper tutorials: brief at scratchpad brief.md (ephemeral) = each game's wordless tutorial must teach EVERY item in its guide card by doing (staged step per mechanic, hint by device, re-stage on fail, watchdog, no saves/scores during tut, ≤1 word/step), test with real input desktop+mobile. 8 parallel agents were launched (groups: galaxica/squeeze/pinprick/hairline; gravity-garden/powder-lab/tidewater/loom; moth-mail/cairn/tantrum/ant-kingdom; peg-song/switchyard/chirp/floe; brass-pinball/ripple/cauldron/snail-rocket; hedgerow/sneeze-heist/bramble; rube-garden/bonfire/angler/lamplight; putt/sounding/duckling-parade) but ALL hit the usage limit before editing anything -> redo from scratch.
+- Deepdig: code moved from inline index.html to games/deepdig/deepdig.js (pure move). Roguelite 'Expedition' plan: new mode, 5 biomes (topsoil+boulders/worms, flooded+water CA/oxygen/eels, crystal+stalactites/gem rock, fungal+darkness/spore puffs, magma+spreading lava/heat), boss per biome (Great Worm: drill glowing tail+boulders; Drowned Eel: charges, drill while stunned; Crystal Heart: regrowing shell, shard lines; Spore Mother: drill 3 roots; The Kiln: close 4 vents vs rising lava, take relic). Camps between biomes: sell cargo, pick 1 of 3 relics (16, e.g. magnet, heatsink, lamp, ballast, prospector, twin drill, bombs, reserve tank, plating, lucky, scavenger, lungs, thorns, hover, pickaxe, regen), shop. Meta 'Hall': shards (fossils+bosses) for permanent perks + relic unlocks. Wordless story plates (seed carried down, sealed, brought back, tree blooms). Bombs (B / pad). Bot must handle it. Deepdig tutorial deepening goes with this.
+- Local servers die on worker restart: `cd public && npx http-server -p 8080 -s .` and `npx wrangler dev --port 8787` (for /api).
+- Open question (unanswered): close PRs aaron1612n-cmd/galaxica#3/#4 (content already on main).
+
 ## NEXT
-1. Deeper wordless tutorials covering every mechanic, all games.
+1. Redo deeper tutorials for all games (as above).
+2. Build Deepdig Expedition.
 2. D Deepdig full roguelite campaign.
 REJECTED: party mode, cabinet galaxy/level editor/Run-it/attract mode.

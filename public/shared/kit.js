@@ -40,7 +40,7 @@
         +'<div class="bar"><div class="cl"><a class="btn ghost" href="../../">← Arcade</a>'+nav+'</div>'
         +'<div class="cl"><button class="btn ghost" id="bot" title="Auto-play: the game plays itself">AUTO</button><span data-speed></span></div>'
         +'<div class="cl"><button class="btn ghost ic" id="snd" title="Sound on/off" aria-label="Sound">'+SND+'</button><button class="btn ghost ic" id="nmb" title="Names" aria-label="Names"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M8 7v5"/><circle cx="8" cy="4.6" r=".6" fill="currentColor"/></svg></button><button class="btn ghost ic" id="tutb" title="Replay tutorial" aria-label="Tutorial">?</button><button class="btn" id="skip" hidden>Skip</button></div></div>'
-        +'<div id="rot">Rotate your phone</div>');
+        );
       var cv=Kit.cv=document.getElementById('c'),ctx=Kit.ctx=cv.getContext('2d'),W=Kit.W=o.W,H=Kit.H=o.H,pad=Kit.pad=document.getElementById('pad'),dpr=Math.min(devicePixelRatio||1,2);
       Speed.mountAll();Auto.bind(document.getElementById('bot'));
       (o.nav||[]).forEach(function(n,i){document.getElementById('nav'+i).onclick=n.fn});
@@ -55,7 +55,7 @@
       function fit(){var bar=document.querySelector('.bar').offsetHeight+30+(Device.mobile?pad.offsetHeight+28:0);
         var sc=Math.min(innerWidth*.98/W,(innerHeight-bar)/H);sc=Kit.scale=Math.max(.3,Math.min(sc,Device.mobile?3:(o.maxScale||2)));
         pad.style.width=W*sc+'px';cv.style.width=W*sc+'px';cv.style.height=H*sc+'px';cv.width=W*sc*dpr;cv.height=H*sc*dpr;Kit.dpr=dpr;
-        document.getElementById('rot').style.display=(Device.mobile&&!Device.portrait()&&innerHeight<(o.minH||320))?'flex':'none'}
+        void 0}
       fit();Device.onChange(fit);addEventListener('load',fit);if(document.fonts&&document.fonts.ready)document.fonts.ready.then(fit);
       addEventListener('keydown',function(e){Kit.ac();var c=e.code;if(!e.repeat&&Kit.onPress)Kit.onPress(c);Kit.keys[c]=true;
         if(['Space','ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].indexOf(c)>-1)e.preventDefault();if(c==='KeyM')Kit.toggleSnd()});
