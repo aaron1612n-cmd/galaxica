@@ -21,7 +21,7 @@ Purpose: resume this chat with full context. Cap ~1,500 tokens; condense, don't 
 
 ## TASK IN PROGRESS: deeper tutorials (2026-10-17 pm session, one commit per game, all pushed)
 - DONE (extra stages added + tested with real input): galaxica, squeeze, pinprick, hairline, gravity-garden, powder-lab, tidewater, loom, moth-mail, cairn, tantrum, ant-kingdom, peg-song, switchyard, chirp, floe, brass-pinball, ripple, cauldron, snail-rocket, hedgerow, sneeze-heist, bramble. Several tutorials had real bugs fixed on the way (switchyard counter, snail landing, ant dig hint, floe/ripple/hedgerow needed tap after win -> now auto-advance).
-- rube-garden: code written (TUTG levels spring/fan/thorns via gen seeds, tray hint, auto-advance); real-input test running (rg2.mjs) - verify then commit.
-- TODO (same method): bonfire, angler, lamplight, putt, sounding, duckling-parade, deepdig. Method: read tutorial + `Guide.set/GK.guide` card, add stages per uncovered item (stage hazards relative to player path, re-stage on fail, watchdogs), test with Playwright real input, commit+push.
+- Also done: rube-garden, bonfire, angler, lamplight, putt, sounding. duckling-parade: dig/bash/float/stop/egg stages added, levels load OK but only checked by loading (not played); NO climb stage (the forced 'wallc' level was unwinnable by the bot plan and fell back to the pit level - fix build() if wanted).
+- TODO: deepdig (tutorial deepening + Expedition). Not yet done anywhere: 390px mobile screenshot audit of the new stages; deploy. Method: read tutorial + `Guide.set/GK.guide` card, add stages per uncovered item (stage hazards relative to player path, re-stage on fail, watchdogs), test with Playwright real input, commit+push.
 - Then: Deepdig 'Expedition' roguelite (5 biomes + bosses, camps/relics, Hall meta, story plates, bombs, bot support; code already moved to games/deepdig/deepdig.js).
 - Open question: close PRs #3/#4 (content already on main).
