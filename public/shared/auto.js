@@ -1,3 +1,29 @@
+/* Bot race lane: a game opened with ?bot=<profile json>&lane=<n>&x=<speed> runs that bot on its own: auto on, muted, and with
+   throwaway storage so lanes never touch each other's saves or the player's (the player's id, name and tutorial flags are copied in).
+   It reports its scores and progress to the page around it (the Workshop's race view). */
+(function(){
+  var q;try{q=new URLSearchParams(location.search)}catch(e){return}var raw=q.get('bot');if(!raw)return;try{JSON.parse(raw)}catch(e){return}
+  var mem={},lane=q.get('lane');
+  try{var real=window.localStorage;for(var i=0;i<real.length;i++){var k=real.key(i);if(/^galaxica(Pid|Name|Names)$|tut|guideSeen/i.test(k))mem[k]=real.getItem(k)}}catch(e){}
+  mem.galaxicaAuto='1';mem.galaxicaMute='true';mem.galaxicaBot=raw;mem.galaxicaSpeed=q.get('x')||'1';
+  var api={getItem:function(k){k=String(k);return Object.prototype.hasOwnProperty.call(mem,k)?mem[k]:null},setItem:function(k,v){mem[String(k)]=String(v)},
+    removeItem:function(k){delete mem[String(k)]},clear:function(){for(var k in mem)delete mem[k]},key:function(i){return Object.keys(mem)[i]||null}};
+  var fake=new Proxy(api,{get:function(t,k){if(k==='length')return Object.keys(mem).length;if(k in api)return api[k];return typeof k==='string'&&Object.prototype.hasOwnProperty.call(mem,k)?mem[k]:undefined},
+    set:function(t,k,v){mem[k]=String(v);return true},deleteProperty:function(t,k){delete mem[k];return true},has:function(t,k){return k in mem||k in api},
+    ownKeys:function(){return Object.keys(mem)},getOwnPropertyDescriptor:function(t,k){if(Object.prototype.hasOwnProperty.call(mem,k))return{value:mem[k],enumerable:true,configurable:true,writable:true}}});
+  try{Object.defineProperty(window,'localStorage',{value:fake,configurable:true})}catch(e){}
+  var AC=window.AudioContext||window.webkitAudioContext;
+  if(AC){var Q=function(o){var c=new AC(o),g=c.createGain();g.gain.value=0;g.connect(c.destination);Object.defineProperty(c,'destination',{value:g});return c};Q.prototype=AC.prototype;window.AudioContext=window.webkitAudioContext=Q}
+  if(window.HTMLMediaElement){var pl=HTMLMediaElement.prototype.play;HTMLMediaElement.prototype.play=function(){this.muted=true;return pl.apply(this,arguments)}}
+  /* the lane is small and the race view has the controls, so the game's own button bar goes */
+  var hs=document.createElement('style');hs.textContent='.gk-bar{display:none!important}';(document.head||document.documentElement).appendChild(hs);
+  addEventListener('load',function(){setTimeout(function(){dispatchEvent(new Event('resize'))},50)});
+  window.__lane=lane;var send=function(m){m.lane=lane;try{parent.postMessage(m,'*')}catch(e){}};
+  setInterval(function(){var O=window.Online;if(O&&O.post&&!O.post._lane){var p=O.post;O.post=function(g,b,v,o){var bs=window.GK&&GK.online&&GK.online.boards||[],f=null,lb=b;
+      var ic=null;bs.forEach(function(x){if(b===x.key||(x.daily&&/^daily:/.test(b))){f=x.fmt;lb=x.daily?'daily':(x.m||x.key);ic=x.daily?'sun':x.ic}});send({t:'score',board:lb,ic:ic,score:v,fmt:f,low:!!(o&&o.low)});return p.apply(this,arguments)};O.post._lane=1}
+    send({t:'tick',ticks:window.Speed?Speed.ticks:0,auto:!!(window.Auto&&Auto.on)})},1000);
+  addEventListener('message',function(e){var d=e.data;if(!d||e.source!==parent)return;if(d.pin==='speed'&&window.Speed)Speed.set(d.v)});
+})();
 /* Launcher-level AUTO mode flag shared by every game. Games read Auto.on and run their own bot/replay.
    Toggle from the hub or from any game; stored in localStorage and synced across tabs. */
 (function(){

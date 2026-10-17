@@ -68,6 +68,27 @@
   .sec{margin-top:40px}
   .arena{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px}
   .arena select{height:44px;min-width:220px;background:var(--ink);color:var(--paper);border:2px solid var(--paper);font:700 13px var(--mono);padding:0 8px}
+  /* race: several bots at once, each in its own live lane */
+  .lineup{display:flex;flex-direction:column;border-top:1px solid var(--line);margin-bottom:12px}
+  .ln{display:grid;grid-template-columns:30px 1fr auto 40px;gap:10px;align-items:center;padding:6px;border-bottom:1px solid var(--line);font-size:13px}
+  .ln .av{width:30px;height:30px}.ln .av svg{width:18px;height:18px}.ln b{font:700 12px var(--px);text-transform:uppercase}.ln small{color:var(--dim)}
+  .ln button{width:36px;height:36px;background:transparent;color:var(--paper);border:2px solid var(--line);font:16px/1 var(--mono);cursor:pointer}
+  .ln button:hover,.ln button:focus-visible{border-color:var(--red);color:var(--red);outline:none}
+  .race{position:fixed;inset:0;z-index:50;background:var(--ink);display:flex;flex-direction:column}
+  .rbar{display:flex;align-items:center;gap:8px;padding:8px max(10px,env(safe-area-inset-left));border-bottom:2px solid var(--paper);flex:none;flex-wrap:wrap}
+  .rbar .btn{min-height:36px;padding:0 12px;font-size:11px}.rbar .x{margin-left:auto;font:700 13px var(--mono);color:var(--dim)}
+  .rbar .sp{display:flex}.rbar .sp button{height:36px;min-width:44px;background:transparent;color:var(--paper);border:2px solid var(--line);margin-left:-2px;font:700 12px var(--mono);cursor:pointer}
+  .rbar .sp button.on{background:var(--amber);color:var(--ink);border-color:var(--amber);position:relative}
+  .lanes{flex:1;display:grid;gap:2px;background:var(--line);min-height:0}
+  .lane{display:flex;flex-direction:column;background:var(--ink);min-height:0;min-width:0}
+  .lh{display:grid;grid-template-columns:auto 26px minmax(0,1fr) auto 32px;gap:8px;align-items:center;padding:4px 6px;flex:none;border-bottom:1px solid var(--line)}
+  .lh .av{width:26px;height:26px}.lh .av svg{width:16px;height:16px}
+  .lh .nm{overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:12px}.lh .nm b{font:700 11px var(--px);text-transform:uppercase}.lh .nm small{color:var(--dim)}
+  .lh .sc{display:flex;align-items:center;gap:5px;font:700 14px var(--mono);color:var(--amber);white-space:nowrap}.lh .sc .bi svg{width:16px;height:16px;fill:none;stroke:var(--dim);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;display:block}
+  .lh .rk{font:700 11px var(--px);min-width:26px;height:22px;display:grid;place-items:center;background:var(--line);color:var(--paper);padding:0 4px}.lh .rk.one{background:var(--amber);color:var(--ink)}
+  .lh a{width:32px;height:28px;display:grid;place-items:center;color:var(--paper);border:2px solid var(--line);text-decoration:none}
+  .lh a:hover,.lh a:focus-visible{border-color:var(--amber);color:var(--amber);outline:none}
+  .lane iframe{flex:1;width:100%;min-height:0;border:0;display:block;background:#000}
   table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line)}th{font:700 10px var(--px);text-transform:uppercase;color:var(--dim)}
   td.r{color:var(--amber);font-weight:700}
   .empty{color:var(--dim);padding:14px 0}
@@ -84,6 +105,8 @@
   </div>
   <div class="sec"><h2>Quick presets</h2><div class="presets" id="presets"></div></div>
   <div class="sec"><h2>Arena</h2><div class="arena"><select id="game" aria-label="Game"></select><button class="btn" id="go">Run bot ▸</button></div></div>
+  <div class="sec"><h2>Race</h2><div class="lineup" id="lineup"></div>
+    <div class="arena"><select id="rbot" aria-label="Bot"></select><select id="rgame" aria-label="Game"></select><button class="btn ghost" id="radd">+ Lane</button><button class="btn ghost" id="rall">All my bots</button><button class="btn" id="rgo">Start race ▸</button></div></div>
   <div class="sec"><h2>Results online</h2><div id="res"><div class="empty">…</div></div></div>
 </div>
 <script src="../shared/stars.js"></script>
@@ -126,16 +149,59 @@ function radar(svg,s){var N=STATS.length,from=shown?Object.assign({},shown):Obje
     pg.setAttribute('points',pts.join(' '));shown=cur2;if(k<1)requestAnimationFrame(f)})()}
 function presets(){var el=document.getElementById('presets');A.PRESETS.forEach(function(p){var b=document.createElement('button');b.className='pre';b.innerHTML=GK.icoSvg(p.i)+'<span>'+p.n+'</span>';
   b.onclick=function(){var bot=bots[cur],keepName=!A.PRESETS.some(function(q){return q.n===bot.n});bot.s=Object.assign({},p.s);bot.p=p.id;bot.i=p.i;if(!keepName){var was=bot.n;bot.n=uniq(p.n,cur);if(A.profile.n===was)A.setProfile(bot)}save();draw();document.getElementById('ed').scrollIntoView({behavior:'smooth',block:'nearest'})};el.appendChild(b)})}
-function draw(){roster();editor()}
+function draw(){roster();editor();if(document.getElementById('rbot'))botOpts()}
 document.getElementById('newb').onclick=function(){if(bots.length>=24)return;var p=A.PRESETS[1+Math.floor(Math.random()*(A.PRESETS.length-1))],b=mk(p.id);b.n=uniq(p.n);bots.push(b);cur=bots.length-1;save();draw()};
 /* arena: run the active bot in any game */
-fetch('../games.json').then(function(r){return r.json()}).then(function(list){var sel=document.getElementById('game');list.forEach(function(g){var o=document.createElement('option');o.value=g.id;o.textContent=g.title;sel.appendChild(o)});try{var l=localStorage.getItem('galaxicaArena');if(l)sel.value=l}catch(e){}});
+fetch('../games.json').then(function(r){return r.json()}).then(function(list){GAMES=list;var rg=document.getElementById('rgame');list.forEach(function(g){var o=document.createElement('option');o.value=g.id;o.textContent=g.title;rg.appendChild(o)});lineupDraw();var sel=document.getElementById('game');list.forEach(function(g){var o=document.createElement('option');o.value=g.id;o.textContent=g.title;sel.appendChild(o)});try{var l=localStorage.getItem('galaxicaArena');if(l)sel.value=l}catch(e){}});
 document.getElementById('go').onclick=function(){var g=document.getElementById('game').value;try{localStorage.setItem('galaxicaArena',g)}catch(e){}A.setProfile(bots[cur]);A.set(true);location.href='../games/'+g+'/'};
+/* race: several bots at once. Each lane is the game in an iframe with ?bot=, which gives it its own profile, muted sound and
+   throwaway saves (see auto.js); lanes report scores back here by postMessage. */
+var GAMES=[],MAXL=Device.mobile?4:9,lineup=[];try{lineup=JSON.parse(localStorage.getItem('galaxicaRace')||'[]')}catch(e){}
+function rsave(){try{localStorage.setItem('galaxicaRace',JSON.stringify(lineup))}catch(e){}}
+function gname(id){var g=GAMES.filter(function(x){return x.id===id})[0];return g?g.title:id}
+function lineupDraw(){var el=document.getElementById('lineup');el.innerHTML='';if(!lineup.length)el.innerHTML='<div class="empty">0 / '+MAXL+'</div>';
+  lineup.forEach(function(l,i){var r=document.createElement('div');r.className='ln';r.innerHTML='<span class="av" style="background:'+l.b.c+'">'+GK.icoSvg(l.b.i)+'</span><span><b>'+esc(l.b.n)+'</b> <small>'+esc(gname(l.g))+'</small></span><span></span>';
+    var x=document.createElement('button');x.textContent='×';x.title='Remove';x.onclick=function(){lineup.splice(i,1);rsave();lineupDraw()};r.appendChild(x);el.appendChild(r)});
+  document.getElementById('radd').disabled=document.getElementById('rall').disabled=lineup.length>=MAXL;document.getElementById('rgo').disabled=!lineup.length}
+function botOpts(){var el=document.getElementById('rbot'),v=el.value;el.innerHTML='';var g1=document.createElement('optgroup');g1.label='Your bots';bots.forEach(function(b,i){var o=document.createElement('option');o.value='b'+i;o.textContent=b.n;g1.appendChild(o)});el.appendChild(g1);
+  var g2=document.createElement('optgroup');g2.label='Presets';A.PRESETS.forEach(function(p){var o=document.createElement('option');o.value='p'+p.id;o.textContent=p.n;g2.appendChild(o)});el.appendChild(g2);if(v)el.value=v;if(!el.value)el.value='b'+cur}
+function pickBot(v){if(v[0]==='b')return JSON.parse(JSON.stringify(bots[+v.slice(1)]||bots[0]));var b=mk(v.slice(1));b.n=b.n.slice(0,12);return b}
+function addLane(b){if(lineup.length>=MAXL)return;lineup.push({b:b,g:document.getElementById('rgame').value});rsave();lineupDraw()}
+document.getElementById('radd').onclick=function(){addLane(pickBot(document.getElementById('rbot').value))};
+document.getElementById('rall').onclick=function(){bots.forEach(function(b){addLane(JSON.parse(JSON.stringify(b)))})};
+var race=null;
+function startRace(){if(!lineup.length)return;var sp=1,t0=Date.now(),n=lineup.length,wide=innerWidth>innerHeight;
+  var cols=n<2?1:n<=2?(wide?2:1):n<=4?2:3,rows=Math.ceil(n/cols);var R=document.createElement('div');R.className='race';
+  R.innerHTML='<div class="rbar px"><button class="btn ghost" id="rstop">← Stop</button><span class="sp"></span><span class="x" id="rclock">0:00</span></div><div class="lanes" style="grid-template-columns:repeat('+cols+',minmax(0,1fr));grid-template-rows:repeat('+rows+',minmax(0,1fr))"></div>';
+  var L=R.querySelector('.lanes'),SP=R.querySelector('.sp'),lanes=[];
+  [1,2,5,10,20].forEach(function(v){var b=document.createElement('button');b.textContent=v+'×';b.className=v===1?'on':'';b.onclick=function(){sp=v;SP.querySelectorAll('button').forEach(function(x){x.className=x===b?'on':''});lanes.forEach(function(l){try{l.f.contentWindow.postMessage({pin:'speed',v:v},'*')}catch(e){}})};SP.appendChild(b)});
+  lineup.forEach(function(l,i){var d=document.createElement('div');d.className='lane';var h=document.createElement('div');h.className='lh';
+    h.innerHTML='<span class="rk">–</span><span class="av" style="background:'+l.b.c+'">'+GK.icoSvg(l.b.i)+'</span><span class="nm"><b>'+esc(l.b.n)+'</b> <small>'+esc(gname(l.g))+'</small></span><span class="sc">–</span>';
+    var a=document.createElement('a');a.href='../games/'+l.g+'/';a.title='Watch full size';a.innerHTML='<svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 3h6v6M17 3l-8 8M8 4H3v13h13v-5"/></svg>';
+    a.onclick=function(){A.setProfile(l.b);A.set(true)};h.appendChild(a);
+    var f=document.createElement('iframe');f.title=l.b.n+' plays '+gname(l.g);f.src='../games/'+l.g+'/?bot='+encodeURIComponent(JSON.stringify(l.b))+'&lane='+i+'&x=1';
+    d.append(h,f);L.appendChild(d);lanes.push({l:l,f:f,h:h,boards:{},first:null,ticks:0})});
+  document.body.appendChild(R);document.body.style.overflow='hidden';
+  function rank(){var same=lanes.every(function(x){return x.l.g===lanes[0].l.g});lanes.forEach(function(x){x.h.querySelector('.rk').className='rk'});if(!same)return;
+    var key=null;lanes.some(function(x){key=x.first;return key});if(!key)return;
+    var low=lanes.some(function(x){return x.boards[key]&&x.boards[key].low});
+    var sorted=lanes.filter(function(x){return x.boards[key]}).sort(function(p,q){return low?p.boards[key].score-q.boards[key].score:q.boards[key].score-p.boards[key].score});
+    lanes.forEach(function(x){var k=sorted.indexOf(x),el=x.h.querySelector('.rk');el.textContent=k<0?'–':(k+1);el.className='rk'+(k===0?' one':'')})}
+  function onMsg(e){var d=e.data;if(!d||d.lane==null)return;var x=lanes[+d.lane];if(!x||e.source!==x.f.contentWindow)return;
+    if(d.t==='tick'){x.ticks=d.ticks;return}
+    if(d.t==='score'){x.boards[d.board]={score:d.score,fmt:d.fmt,low:d.low,ic:d.ic};if(!x.first)x.first=d.board;var sc=x.h.querySelector('.sc'),b=x.boards[x.first];
+      sc.innerHTML=(b.ic?'<span class="bi" title="'+esc(x.first)+'">'+GK.icoSvg(b.ic)+'</span>':'')+Online.fmt(b.score,b.fmt);rank()}}
+  addEventListener('message',onMsg);
+  var clk=setInterval(function(){var s=Math.floor((Date.now()-t0)/1000);document.getElementById('rclock').textContent=Math.floor(s/60)+':'+String(s%60).padStart(2,'0')},1000);
+  function stop(){clearInterval(clk);removeEventListener('message',onMsg);removeEventListener('keydown',key);R.remove();document.body.style.overflow='';race=null;results()}
+  function key(e){if(e.key==='Escape')stop()}addEventListener('keydown',key);
+  R.querySelector('#rstop').onclick=stop;race={stop:stop}}
+document.getElementById('rgo').onclick=startRace;
 /* results: where my bots rank on the online boards */
 function results(){var el=document.getElementById('res');if(!window.Online){setTimeout(results,300);return}
   fetch('/api/mine?kind=bot&pid='+Online.pid()).then(function(r){return r.json()}).then(function(j){if(!j.rows||!j.rows.length){el.innerHTML='<div class="empty">0</div>';return}
     var t='<table><tr><th></th><th>Bot</th><th>Game</th><th>Board</th><th>Score</th><th>Rank</th></tr>';j.rows.forEach(function(r){t+='<tr><td><span class="av" style="width:24px;height:24px;background:'+(r.bot&&r.bot.c||'#ffb000')+'">'+GK.icoSvg(r.bot&&r.bot.i||'gear')+'</span></td><td>'+esc(r.name)+'</td><td>'+esc(r.game)+'</td><td>'+esc(r.board)+'</td><td>'+(Math.round(r.score*100)/100)+'</td><td class="r">'+r.rank+' / '+r.total+'</td></tr>'});el.innerHTML=t+'</table>'}).catch(function(){el.innerHTML='<div class="empty">offline</div>'})}
-presets();draw();results();
+presets();draw();botOpts();lineupDraw();results();
 })();
 </script>
 </body>

@@ -39,7 +39,10 @@ galaxica, squeeze, pinprick, hairline, gravity-garden, powder-lab, tidewater, lo
 - shared/online.js (Online.post/top/open/watch/button; pid+name in localStorage). gk2.js auto-loads it; GK.online.mount(R,{game,boards}) in all 26 GK games (metric boards poll goals metrics; daily boards read dstreak best with inv/scale). Old-bar games: Online.watch+button injected before </body>. Putt posts course totals with shot-log ghosts and races them.
 - Bot profiles in auto.js: Auto.profile {n,p,i,c,s{rea,acc,cau,gre,agg,pat,mis,foc,tem}}, 30 PRESETS, helpers think/react/slip/noise/w/st. Games with Auto.deep=true use stats directly (bonfire, angler, lamplight, putt, sounding, duckling-parade); others get the tempo/focus gate in Speed.run. AUTO runs post to the 'bot' boards. Page `public/workshop/` (hub look, linked from hub top bar).
 
+- GUIDES DONE (all 31): shared/guide.js card (Guide.set cfg {title,goal,how,keys,touch,legend[{pic|ic|sw,name,note}],tips}); GK games call GK.guide(cfg); old-bar games inline Guide.set + Guide.attach(helpBtnSelector) (card first, its Tutorial button runs the old handler).
+- BOT RACE (user "let multiple bots run"): Workshop > Race: lineup of up to 9 lanes (4 on phone), each {bot, game}; Start race = grid of iframes `games/<id>/?bot=<profile json>&lane=n&x=speed`. auto.js lane mode: Proxy in-memory localStorage (copies pid/name/tut flags only), muted AudioContext, hides .gk-bar, posts {t:'score'|'tick'} to parent; parent sets speed via postMessage {pin:'speed'}. Ranks lanes when all play the same game.
+
 ## NEXT
-1. Guides + deeper tutorials for ALL games (see RULE CHANGE).
+1. Deeper wordless tutorials covering every mechanic, all games.
 2. D Deepdig full roguelite campaign.
 REJECTED: party mode, cabinet galaxy/level editor/Run-it/attract mode.
