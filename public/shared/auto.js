@@ -16,7 +16,7 @@
   if(AC){var Q=function(o){var c=new AC(o),g=c.createGain();g.gain.value=0;g.connect(c.destination);Object.defineProperty(c,'destination',{value:g});return c};Q.prototype=AC.prototype;window.AudioContext=window.webkitAudioContext=Q}
   if(window.HTMLMediaElement){var pl=HTMLMediaElement.prototype.play;HTMLMediaElement.prototype.play=function(){this.muted=true;return pl.apply(this,arguments)}}
   /* the lane is small and the race view has the controls, so the game's own button bar goes */
-  var hs=document.createElement('style');hs.textContent='.gk-bar{display:none!important}';(document.head||document.documentElement).appendChild(hs);
+  var hs=document.createElement('style');hs.textContent='.gk-bar,body>.bar,#pad{display:none!important}body{gap:0!important}';(document.head||document.documentElement).appendChild(hs);
   addEventListener('load',function(){setTimeout(function(){dispatchEvent(new Event('resize'))},50)});
   window.__lane=lane;var send=function(m){m.lane=lane;try{parent.postMessage(m,'*')}catch(e){}};
   setInterval(function(){var O=window.Online;if(O&&O.post&&!O.post._lane){var p=O.post;O.post=function(g,b,v,o){var bs=window.GK&&GK.online&&GK.online.boards||[],f=null,lb=b;

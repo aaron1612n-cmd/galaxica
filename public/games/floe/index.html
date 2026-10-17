@@ -83,7 +83,8 @@ function gen(n,seed){var rn=GK.rng(seed),w=6+Math.min(4,Math.floor(n/12)),h=8+Ma
 function mk(rows){var h=rows.length,w=rows[0].length,g=new Uint8Array(w*h),L={w:w,h:h,g:g,start:0,goal:0,cracks:[],fish:[]};
   rows.forEach(function(r,y){for(var x=0;x<w;x++){var ch=r[x],i=y*w+x;g[i]=ch==='#'?1:ch==='*'?2:ch==='~'?3:ch==='%'?4:0;if(ch==='S')L.start=i;if(ch==='G')L.goal=i;if(ch==='f')L.fish.push(i);if(ch==='%')L.cracks.push(i)}});
   index(L);L.par=solve(L,L.start,false).length;L.parAll=solve(L,L.start,true).length;L.n=0;L.tut=1;return L}
-var TUT=[['~~~~~','S...G','~~~~~'],['S...#','~~~.~','~~~.~','~~~G~'],['S..*G','..~.~','..f.#','#~~~~']];
+var TUT=[['~~~~~','S...G','~~~~~'],['S...#','~~~.~','~~~.~','~~~G~'],['S..*G','..~.~','..f.#','#~~~~'],['S.%.%.G','~~~~~~~'],['#####','#S..#','#...#','#..G#','#####'],['#S...#','#.#.##','#f..G#','######']];
+var tutFlag={undone:0};
 /* ============ state ============ */
 var L=null,S={},lvN=1,endN=0,inTut=-1;
 function seedFor(n){return MODE==='daily'?GK.daily.seed()*7+3:MODE==='endless'?(S.eseed||1)*131+n:n*977+13}
@@ -101,7 +102,7 @@ function finishMove(){var a=S.anim,r=a.r;S.anim=null;
   r.path.forEach(function(x){if(L.fi[x]>=0&&!((S.f>>L.fi[x])&1)){GK.fx.burst(cx(x),cy(x),12,{col:ORG,speed:2.5,life:22,shape:'ci',size:2.5});GK.fx.text(cx(x),cy(x)-18,'+1',ORG,20);GK.audio.tone(1175,.12,'sine',.05);if(inTut<0)ST.fish++}});
   S.p=r.p;S.f=r.f;S.c=r.c;S.route.push(S.p);GK.fx.burst(cx(S.p)+DX[a.d]*T*.3,cy(S.p)+DY[a.d]*T*.3,7,{col:ICE,speed:1.6,life:16,size:3});GK.audio.tone(170,.07,'triangle',.05);
   if(S.p===L.goal){win()}else if(S.q>=0){var q=S.q;S.q=-1;move(q)}}
-function undo(){if(S.anim||S.won||!S.hist.length)return;var h=S.hist.pop();S.p=h.p;S.f=h.f;S.c=h.c;S.moves=h.moves;S.route=h.route;S.drownT=0;GK.audio.tone(330,.05,'sine',.03)}
+function undo(){if(S.anim||S.won||!S.hist.length)return;if(inTut===4)tutFlag.undone=1;var h=S.hist.pop();S.p=h.p;S.f=h.f;S.c=h.c;S.moves=h.moves;S.route=h.route;S.drownT=0;GK.audio.tone(330,.05,'sine',.03)}
 function stars(){var all=L.fish.length===0||S.f===(1<<L.fish.length)-1;return 1+(all?1:0)+(all&&S.moves<=L.parAll?1:0)}
 function win(){S.won=1;S.winT=0;S.st=stars();var f=[523,659,784,1047];f.forEach(function(x,i){GK.audio.tone(x,.3,'triangle',.05,1,GK.audio.ctx&&GK.audio.ctx.currentTime+i*.09)});
   for(var k=0;k<3;k++)GK.fx.burst(cx(L.goal),cy(L.goal)-10,16,{col:[ORG,INK,ICE][k],speed:4,life:40,size:3,up:2.5,grav:.12});
@@ -109,7 +110,7 @@ function win(){S.won=1;S.winT=0;S.st=stars();var f=[523,659,784,1047];f.forEach(
   if(MODE==='chart'){var k0=prog.stars[lvN]||0;if(S.st>k0){ST.stars+=S.st-k0;prog.stars[lvN]=S.st}if(lvN>prog.done){prog.done=lvN;ST.cleared=Math.max(ST.cleared,lvN)}saveProg()}
   else if(MODE==='endless'){ST.endless=Math.max(ST.endless,lvN)}else if(MODE==='daily'){ST.daily=GK.daily.claim(100-S.moves).n}
   saveST()}
-function next(){if(inTut>=0){if(inTut<2)loadTut(inTut+1);else tut.end();return}if(MODE==='daily'){load(1);return}load(MODE==='chart'?Math.min(NLV,lvN+1):lvN+1)}
+function next(){if(inTut>=0){if(inTut<5)loadTut(inTut+1);else tut.end();return}if(MODE==='daily'){load(1);return}load(MODE==='chart'?Math.min(NLV,lvN+1):lvN+1)}
 function hint(){if(S.anim||S.won)return;var all=L.fish.length&&solve(L,S.p,true,S.f,S.c),sol=all||solve(L,S.p,false,S.f,S.c);if(sol&&sol.length){S.hint=sol[0];S.hints++}else{restart()}}
 function restart(){if(S.anim)return;reset();GK.audio.tone(260,.08,'sine',.03)}
 /* ============ input: swipe, tap beside the penguin, arrows / WASD ============ */
@@ -173,8 +174,12 @@ function openLevels(){var m=document.createElement('div');m.className='gk-modal'
   var g=document.createElement('div');g.className='lvls';for(var n=1;n<=NLV;n++)(function(n){var b=document.createElement('button'),s=prog.stars[n]||0;b.className='lv'+(n>prog.done+1?' lock':'')+(n===lvN&&MODE==='chart'?' cur':'');b.innerHTML=n+'<i>'+[0,1,2].map(function(k){return'<s class="'+(k<s?'on':'')+'"></s>'}).join('')+'</i>';b.onclick=function(){m.remove();if(tut.active)tut.end();if(MODE!=='chart')setMode('chart',true);load(n)};g.appendChild(b)})(n);
   sh.appendChild(g);m.appendChild(sh);m.onpointerdown=function(e){if(e.target===m)m.remove()};document.body.appendChild(m)}
 /* ============ tutorial: three tiny floes, learn by sliding ============ */
-var tut=GK.tutorial({parent:stage,onStart:function(){loadTut(0)},onEnd:function(){inTut=-1;load(MODE==='chart'?Math.min(NLV,Math.max(1,prog.done+1)):1)},
-  steps:[{done:function(){return inTut===1||inTut===2}},{done:function(){return inTut===2}},{done:function(){return S.won&&S.winT>40&&inTut===2&&S.st>=2}}]});
+var tut=GK.tutorial({parent:stage,onStart:function(){loadTut(0)},onEnd:function(){R.un.classList.remove('pulse');R.hi.classList.remove('pulse');inTut=-1;load(MODE==='chart'?Math.min(NLV,Math.max(1,prog.done+1)):1)},
+  steps:[{done:function(){return inTut>=1}},{done:function(){return inTut>=2}},{done:function(){return inTut>=3}},{done:function(){return inTut>=4}},
+   {init:function(){tutFlag.undone=0},update:function(){if(S.moves&&!tutFlag.undone)R.un.classList.add('pulse')},done:function(){if(inTut>=5||tutFlag.undone){R.un.classList.remove('pulse');if(inTut<5)loadTut(5);return true}return false}},
+   {init:function(){R.hi.classList.add('pulse')},done:function(){if(S.hints>0){R.hi.classList.remove('pulse');return true}return false}}]});
+tut.steps.forEach(function(st){var u=st.update;st.update=function(t){if(S.won&&S.winT>45&&inTut>=0)next();if(u)u(t)}});
+(function(){var st=document.createElement('style');st.textContent='.gk-b.pulse{outline:3px solid #e8742c;outline-offset:2px;animation:flp .8s steps(1) infinite}@keyframes flp{50%{outline-color:transparent}}';document.head.appendChild(st)})();
 /* ============ bar ============ */
 var R=GK.controls(document.getElementById('bar'),{bar:'right',onHelp:function(){tut.start()},extra:[
   {id:'un',html:GK.icoSvg('up').replace('<svg','<svg style="transform:rotate(-90deg)"'),title:'Undo (Z)',fn:undo},

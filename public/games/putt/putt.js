@@ -170,12 +170,29 @@ function sfx(k,p){var A=GK.audio,t=A.ctx&&A.ctx.currentTime;if(!A.ctx)return;if(
   else if(k==='ace')[523,659,784,1047,1319].forEach(function(f,i){A.tone(f,.3,'square',.035,1,t+i*.08)})}
 
 /* ---------- tutorial: pull back, sink it ---------- */
-function tutHole(){var C=3,Rw=4,grid=new Uint8Array(C*Rw);grid[1]=grid[4]=grid[7]=grid[10]=1;var ox=(W-C*CS)/2,oy=HUD+(H-HUD-Rw*CS)/2;
+function tutHole(k){k=k||0;var C=3,Rw=4,grid=new Uint8Array(C*Rw);grid[1]=grid[4]=grid[7]=grid[10]=1;var ox=(W-C*CS)/2,oy=HUD+(H-HUD-Rw*CS)/2;
   var Hl={C:C,R:Rw,grid:grid,ox:ox,oy:oy,path:[10,7,4,1],segs:[],posts:[],sand:[],water:[],slopes:[],mills:[],bars:[],tunnels:[],par:2};for(var y=0;y<Rw;y++){var X=ox+CS,Y=oy+y*CS;Hl.segs.push([X,Y,X,Y+CS],[X+CS,Y,X+CS,Y+CS])}Hl.segs.push([ox+CS,oy,ox+2*CS,oy],[ox+CS,oy+Rw*CS,ox+2*CS,oy+Rw*CS]);
-  Hl.tee={x:ox+CS*1.5,y:oy+Rw*CS-40};Hl.cup={x:ox+CS*1.5,y:oy+50};Hl.dist=new Int16Array(C*Rw);return Hl}
+  Hl.tee={x:ox+CS*1.5,y:oy+Rw*CS-40};Hl.cup={x:ox+CS*1.5,y:oy+50};Hl.dist=new Int16Array(C*Rw);var cx0=ox+CS*1.5;
+  if(k===1)Hl.sand.push({x:ox+CS+6,y:oy+1.6*CS,w:CS-12,h:56});
+  else if(k===2)Hl.water.push({x:ox+CS+26,y:oy+2*CS,rx:24,ry:18});
+  else if(k===3)Hl.slopes.push({x:ox+CS,y:oy+1.2*CS,w:CS,h:CS*1.4,fx:.06,fy:0});
+  else if(k===4){Hl.posts.push({x:cx0-24,y:oy+2.3*CS,r:12,bump:false});Hl.posts.push({x:cx0+22,y:oy+1.5*CS,r:12,bump:true})}
+  else if(k===5)Hl.mills.push({x:cx0,y:oy+2*CS,R:38,n:4,sp:.03,ph:0});
+  else if(k===6)Hl.bars.push({x:cx0,y:oy+2*CS,len:40,amp:26,sp:.03,ph:0});
+  return Hl}
+function tutPlace(k){var Hl=tutHole(k);G.H=Hl;G.ball={x:Hl.tee.x,y:Hl.tee.y,vx:0,vy:0,tc:0,s:1};G.st='aim';G.strokes=0;G.t=0;G.last={x:Hl.tee.x,y:Hl.tee.y};G.rt=0;G.aim={a:-Math.PI/2,p:6}}
 var tut=GK.tutorial({parent:stage,onStart:function(){G={m:'tut',hole:0,cards:[],total:0};var Hl=tutHole();G.H=Hl;G.ball={x:Hl.tee.x,y:Hl.tee.y,vx:0,vy:0,tc:0,s:1};G.st='aim';G.strokes=0;G.t=0;G.last={x:Hl.tee.x,y:Hl.tee.y};G.rt=0;G.aim={a:-Math.PI/2,p:6}},
-  onEnd:function(){newRound(MODE)},steps:[{done:function(){return G&&G.strokes>0}},{done:function(){return G&&G.st==='done'&&G.rt>60}}]});
-function tutDraw(c){if(!G)return;if(tut.i===0||tut.i===1&&G.st==='aim')GK.swipe(c,G.ball.x+40,G.ball.y-60,G.ball.x+40,G.ball.y+40,tut.t,PINK)}
+  onEnd:function(){newRound(MODE)},steps:[{done:function(){return G&&G.strokes>0}},{done:function(){return G&&G.st==='done'&&G.rt>60}},
+   {init:function(){tutPlace(1)},done:function(){return G&&G.st==='done'&&G.rt>60}},
+   {init:function(){tutPlace(2)},done:function(){return G&&G.st==='done'&&G.rt>60}},
+   {init:function(){tutPlace(3)},done:function(){return G&&G.st==='done'&&G.rt>60}},
+   {init:function(){tutPlace(4)},done:function(){return G&&G.st==='done'&&G.rt>60}},
+   {init:function(){tutPlace(5)},done:function(){return G&&G.st==='done'&&G.rt>60}},
+   {init:function(){tutPlace(6)},done:function(){return G&&G.st==='done'&&G.rt>60}}]});
+function tutDraw(c){if(!G)return;var H0=G.H;
+  if(tut.i===0||tut.i===1&&G.st==='aim')GK.swipe(c,G.ball.x+40,G.ball.y-60,G.ball.x+40,G.ball.y+40,tut.t,PINK);
+  else if(tut.i>=2){var f=H0.sand[0]||H0.water[0]||H0.slopes[0]||H0.posts[1]||H0.mills[0]||H0.bars[0];if(f){var fx=f.w?f.x+f.w/2:f.x,fy=f.h?f.y+f.h/2:f.y;GK.pulse(c,fx,fy,tut.t,PINK,16)}
+    if(G.st==='aim'&&G.strokes===0)GK.swipe(c,G.ball.x+40,G.ball.y-60,G.ball.x+40,G.ball.y+40,tut.t,PINK)}}
 
 /* ---------- bar ---------- */
 var B=GK.controls(document.getElementById('bar'),{bar:'bottom',onHelp:function(){closeCard();tut.start()},extra:[
@@ -202,6 +219,6 @@ GK.guide({title:'Putt',goal:'Sink the ball in as few strokes as you can. Par is 
  tips:['Bank shots off the walls are often the shortest way round.','Daily nine is the same nine holes for everyone today.']});GK.online.onGhost=function(gj,b){if(!gj||!gj.ghost||!gj.ghost.h)return;var c=gj.ghost.c|0;if(c<PROG.open){COURSE=c;GK.ls.set('course',c)}MODE='course';GK.ls.set('mode',MODE);paint();closeCard();newRound('course',gj.ghost)};GK.online.mount(B,{game:'putt',boards:[{key:'course:sea',ic:'wave',low:1},{key:'course:pier',ic:'pier',low:1},{key:'course:fair',ic:'tent',low:1},{key:'aces',m:'aces',ic:'star'},{daily:{inv:1000,low:1}}]});
 function fit(){GK.fit(cv,stage,W,H,1.6)}addEventListener('resize',fit);addEventListener('orientationchange',fit);fit();
 paint();newRound(MODE);GK.loop(step,render);tut.maybe();
-window.__g={tut:tut,G:function(){return G},holeFor:holeFor,bestShot:bestShot,newRound:newRound,prog:PROG,st:ST,
+window.__g={tut:tut,shoot:shoot,G:function(){return G},holeFor:holeFor,bestShot:bestShot,newRound:newRound,prog:PROG,st:ST,
   stats:function(){return{m:G.m,hole:G.hole+1,st:G.st,strokes:G.strokes,par:G.H.par,botPar:G.H.botPar,total:G.total,cards:G.cards.join(','),holes:ST.holes,aces:ST.aces}}};
 })();

@@ -60,7 +60,7 @@ function step(){T++;GK.goals.tick();bubbles.forEach(function(b){b.y-=b.v;b.l--})
   for(var i=items.length-1;i>=0;i--){var it=items[i];it.y+=it.vy*slow;it.x=it.x0+Math.sin(it.ph+it.y*.02)*it.amp;it.rot+=.03;
     if(G.potT.magnet>0&&(it.k===G.recipe[G.pos]||it.k===-1)){it.x0+=GK.clamp(cx-it.x,-2,2)}
     if(it.y>CY-18&&it.y<CY+6&&Math.abs(it.x-cx)<width()/2-6){items.splice(i,1);catchIt(it);continue}
-    if(it.y>H+20){items.splice(i,1);if(it.k===G.recipe[G.pos]&&MODE!=='apprentice'){G.combo=0}}}
+    if(it.y>H+20){items.splice(i,1);if(G.tut&&it.k!==G.recipe[G.pos]&&it.k!==-1)tutF.dodged=1;if(it.k===G.recipe[G.pos]&&MODE!=='apprentice'){G.combo=0}}}
   if(Math.random()<.3)bubbles.push({x:cx+(Math.random()-.5)*width()*.6,y:CY-6,v:.5+Math.random(),l:30+Math.random()*20,r:2+Math.random()*4});
   tut.tick()}
 function catchIt(it){var need=G.recipe[G.pos],ok=it.k===need||it.k===-1;
@@ -72,7 +72,7 @@ function catchIt(it){var need=G.recipe[G.pos],ok=it.k===need||it.k===-1;
 function brew(){G.brewed++;G.combo++;var pts=G.recipe.length*100*G.combo;G.score+=pts;if(!G.tut){ST.potions++;ST.combo=Math.max(ST.combo,G.combo);ST.longest=Math.max(ST.longest,G.recipe.length);if(G.cleanR)ST.clean++;if(MODE==='apprentice')ST.apprentice++}
   GK.fx.text(cx,CY-60,'+'+pts,INK,30);for(var k=0;k<3;k++)GK.fx.burst(cx,CY-20,22,{col:[ACID,INK,PAR][k],speed:5,life:40,shape:k?'sq':'ci',size:4,up:4,grav:.12});GK.fx.shake(5,12);
   [392,494,587,784].forEach(function(f,i){GK.audio.tone(f,.3,'triangle',.05,1,GK.audio.ctx&&GK.audio.ctx.currentTime+i*.07)});
-  var p=G.potion;if(p==='heart'){if(MODE!=='apprentice')G.hearts=Math.min(5,G.hearts+1)}else G.potT[p]=420;if(G.tut)tutF.brewed=1;
+  var p=G.potion;if(p==='heart'){if(MODE!=='apprentice')G.hearts=Math.min(5,G.hearts+1)}else G.potT[p]=420;if(G.tut){tutF.brewed=1;tutF.brews=(tutF.brews||0)+1}
   if(G.brewed%2===0)G.len++;G.speed=Math.min(4.2,1.6+G.brewed*.12);newRecipe();saveST()}
 function end(){G.over=1;G.deadT=0;ST.games++;ST.score=Math.max(ST.score,G.score);if(MODE==='daily')ST.daily=GK.daily.claim(G.score).n;if(G.score>(BEST[MODE]||0)){BEST[MODE]=G.score;GK.ls.set('best',BEST)}saveST();GK.audio.tone(98,.8,'sawtooth',.06,.5)}
 /* ============ AUTO: weighs every landing ============ */
@@ -118,8 +118,10 @@ function drawCard(sc){ctx.fillStyle='rgba(233,220,188,.86)';ctx.fillRect(60,300,
 var tutF={moved:0,caught:0,brewed:0};
 var tut=GK.tutorial({parent:stage,onStart:function(){var m0=MODE;MODE='apprentice';newGame();MODE=m0;G.tut=true;G.recipe=[0,1];G.pos=0;items=[];tutF={moved:0,caught:0,brewed:0};tutF.x0=cx},onEnd:function(){mode='title';G=null;items=[]},
   steps:[{done:function(){return Math.abs(cx-tutF.x0)>90}},{init:function(){items.push({k:G.recipe[G.pos],x:120,x0:120,y:90,vy:1.6,ph:0,amp:0,rot:0})},update:function(){if(!items.length)items.push({k:G.recipe[G.pos],x:120,x0:120,y:90,vy:1.6,ph:0,amp:0,rot:0})},done:function(){return tutF.caught}},
-    {init:function(){items=[]},update:function(){if(!items.length&&G.pos<G.recipe.length)items.push({k:G.recipe[G.pos],x:360,x0:360,y:90,vy:1.6,ph:0,amp:0,rot:0})},done:function(){return tutF.brewed}}]});
-function tutDraw(){var t=tut.t;if(tut.i===0)GK.swipe(ctx,cx,CY+20,cx+(cx<W/2?140:-140),CY+20,t,ACID);else{var it=items[0];if(it){GK.pulse(ctx,it.x,CY-10,t,ACID,12)}}}
+    {init:function(){items=[]},update:function(){if(!items.length&&G.pos<G.recipe.length)items.push({k:G.recipe[G.pos],x:360,x0:360,y:90,vy:1.6,ph:0,amp:0,rot:0})},done:function(){return tutF.brewed}},
+    {init:function(){items=[];tutF.dodged=0;G.pos=0;G.mix=[]},update:function(){if(!items.length&&!tutF.dodged)items.push({k:(G.recipe[G.pos]+3)%8,x:cx,x0:cx,y:90,vy:1.6,ph:0,amp:0,rot:0})},done:function(){return tutF.dodged}},
+    {init:function(){items=[];tutF.b0=tutF.brews||0;G.pos=0;G.mix=[]},update:function(){if(!items.length&&G.pos<G.recipe.length){var x=80+Math.random()*320;items.push({k:G.recipe[G.pos],x:x,x0:x,y:90,vy:1.6,ph:0,amp:0,rot:0})}},done:function(){return (tutF.brews||0)>tutF.b0}}]});
+function tutDraw(){var t=tut.t;if(tut.i===0)GK.swipe(ctx,cx,CY+20,cx+(cx<W/2?140:-140),CY+20,t,ACID);else if(tut.i===3){var it3=items[0];if(it3)GK.pulse(ctx,it3.x,CY-10,t,'#c0392b',14)}else{var it=items[0];if(it){GK.pulse(ctx,it.x,CY-10,t,ACID,12)}}}
 /* ============ bar ============ */
 var R=GK.controls(document.getElementById('bar'),{bar:'top',onHelp:function(){tut.start()},extra:[
   {id:'rs',html:GK.icon('restart'),title:'New brew',fn:function(){if(!tut.active)newGame()}},

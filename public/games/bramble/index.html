@@ -65,7 +65,7 @@ function step(){T++;GK.goals.tick();if(mode!=='play')return;if(G.over){G.deadT++
   G.speed=Math.min(3,1.6+G.t/6000);G.wither.forEach(function(w){w.t++});G.wither=G.wither.filter(function(w){return w.t<40});
   if(G.tut)tutF.turned+=Math.abs(turn);tut.tick()}
 function eat(it){if(it.k==='dew'){G.len+=40;if(!G.tut)ST.dew++;GK.audio.tone(1320,.1,'sine',.04);GK.fx.burst(it.x,it.y,8,{col:'#9db8b0',speed:2,life:16,shape:'ci',size:2.5});if(G.tut)tutF.dew=1}
-  else if(it.k==='berry'){G.score+=50;if(!G.tut)ST.berries++;GK.audio.tone(660,.15,'triangle',.05);GK.fx.burst(it.x,it.y,12,{col:BERRY,speed:2.6,life:22,shape:'ci',size:3});GK.fx.text(it.x,it.y-14,'+50',BERRY,20)}
+  else if(it.k==='berry'){if(G.tut)tutF.berry=1;G.score+=50;if(!G.tut)ST.berries++;GK.audio.tone(660,.15,'triangle',.05);GK.fx.burst(it.x,it.y,12,{col:BERRY,speed:2.6,life:22,shape:'ci',size:3});GK.fx.text(it.x,it.y-14,'+50',BERRY,20)}
   else{/* running over a flower crushes it */ GK.fx.burst(it.x,it.y,6,{col:PALE,speed:1.5,life:14,size:2});GK.audio.tone(200,.06,'triangle',.03)}
   if(G.len/SEG>ST.length&&!G.tut)ST.length=Math.round(G.len/SEG)}
 function loop(k,hit){var P=G.pts,poly=P.slice(k).concat([[G.hx,G.hy],hit]);if(area(poly)<300)return;var got=[];items=items.filter(function(it){if(inPoly(it.x,it.y,poly)){got.push(it);return false}return true});
@@ -112,8 +112,11 @@ var MODEIC={garden:'flower',calm:'leaf',daily:'sun'};
 /* ============ tutorial: turn, drink, loop ============ */
 var tutF={turned:0,dew:0,loop:0};
 var tut=GK.tutorial({parent:stage,onStart:function(){var m0=MODE;MODE='calm';newGame();MODE=m0;G.tut=true;shears=[];rocks=[];items=[];G.len=260;tutF={turned:0,dew:0,loop:0}},onEnd:function(){mode='title';G=null},
-  steps:[{done:function(){return tutF.turned>40}},{init:function(){items=[{k:'dew',x:W/2+90,y:H/2,t:30,ph:0}]},done:function(){return tutF.dew}},{init:function(){items=[{k:'flower',x:W/2,y:H/2-60,t:30,ph:0}]},update:function(){if(!items.length)items.push({k:'flower',x:W/2,y:H/2-60,t:30,ph:0})},done:function(){return tutF.loop}}]});
-function tutDraw(){if(!G)return;var t=tut.t;if(tut.i===0){GK.swipe(ctx,G.hx,G.hy,G.hx+60,G.hy-40,t,BERRY)}else if(tut.i===1&&items[0])GK.pulse(ctx,items[0].x,items[0].y,t,BERRY,12);else if(items[0]){var c=items[0],a=t*.05;ctx.strokeStyle=BERRY;ctx.setLineDash([5,6]);ctx.lineWidth=2;ctx.beginPath();ctx.arc(c.x,c.y,50,a,a+5.5);ctx.stroke();ctx.setLineDash([])}}
+  steps:[{done:function(){return tutF.turned>40}},{init:function(){items=[{k:'dew',x:W/2+90,y:H/2,t:30,ph:0}]},done:function(){return tutF.dew}},{init:function(){items=[{k:'flower',x:W/2,y:H/2-60,t:30,ph:0}]},update:function(){if(!items.length)items.push({k:'flower',x:W/2,y:H/2-60,t:30,ph:0})},done:function(){return tutF.loop}},
+   {init:function(){items=[{k:'berry',x:W/2-90,y:H/2-40,t:30,ph:0}]},update:function(){if(!items.length&&!tutF.berry)items.push({k:'berry',x:W/2-90,y:H/2-40,t:30,ph:0})},done:function(){return tutF.berry}},
+   {init:function(){rocks=[{x:W/2,y:H/2-20,r:30}];items=[{k:'dew',x:W/2,y:H/2-110,t:30,ph:0}];tutF.dew=0},update:function(){if(!items.length&&!tutF.dew)items.push({k:'dew',x:W/2,y:H/2-110,t:30,ph:0})},done:function(){return tutF.dew}},
+   {init:function(){rocks=[];items=[];shears=[newShear()];tut.t=0},done:function(){return tut.t>600}}]});
+function tutDraw(){if(!G)return;var t=tut.t;if(tut.i===0){GK.swipe(ctx,G.hx,G.hy,G.hx+60,G.hy-40,t,BERRY)}else if(tut.i===1&&items[0])GK.pulse(ctx,items[0].x,items[0].y,t,BERRY,12);else if(tut.i===3&&items[0])GK.pulse(ctx,items[0].x,items[0].y,t,BERRY,12);else if(tut.i===4){if(rocks[0])GK.pulse(ctx,rocks[0].x,rocks[0].y,t,'#7a6a52',rocks[0].r);if(items[0])GK.pulse(ctx,items[0].x,items[0].y,t+20,BERRY,12)}else if(tut.i===5){if(shears[0])GK.pulse(ctx,shears[0].x,shears[0].y,t,'#7a6a52',16)}else if(items[0]){var c=items[0],a=t*.05;ctx.strokeStyle=BERRY;ctx.setLineDash([5,6]);ctx.lineWidth=2;ctx.beginPath();ctx.arc(c.x,c.y,50,a,a+5.5);ctx.stroke();ctx.setLineDash([])}}
 /* ============ bar ============ */
 var R=GK.controls(document.getElementById('bar'),{bar:'right',onHelp:function(){tut.start()},extra:[
   {id:'rs',html:GK.icon('restart'),title:'New vine',fn:function(){if(!tut.active)newGame()}},

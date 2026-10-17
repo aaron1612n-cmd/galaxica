@@ -172,12 +172,21 @@ function sfx(k){var A=GK.audio,t=A.ctx&&A.ctx.currentTime;if(!A.ctx)return;if(k=
 function step(){T++;GK.goals.tick();tut.tick();if(!G)return;if(G.shk&&--G.shk.t<=0)G.shk=null;if(G.won)G.wt++;if(Auto.on&&!tut.active)botTick()}
 
 /* ---------- tutorial: set a mirror, then flip one ---------- */
-function tutBoard(k){var w=5,h=5,n=w*h,T2=new Uint8Array(n),O=new Uint8Array(n),D=new Uint8Array(n);T2[2*w]=LIGHT;D[2*w]=0;if(k===0)T2[0*w+3]=SHIP;else T2[4*w+3]=SHIP;var L={w:w,h:h,T:T2,O:O,D:D,K:1,par:1};L.sol=solve(L,1);return L}
+function tutBoard(k){var w=5,h=5,n=w*h,T2=new Uint8Array(n),O=new Uint8Array(n),D=new Uint8Array(n),K=1;T2[2*w]=LIGHT;D[2*w]=0;
+  if(k===0)T2[0*w+3]=SHIP;else if(k===1)T2[4*w+3]=SHIP;
+  else if(k===2){T2[2*w+3]=ROT;O[2*w+3]=1;T2[0*w+3]=SHIP;K=0}
+  else if(k===3){T2[2*w+2]=SPLIT;O[2*w+2]=0;T2[0*w+2]=SHIP;T2[0*w+3]=SHIP}
+  else{T2[2*w+3]=ROCK;T2[0*w+4]=SHIP;K=2}
+  var L={w:w,h:h,T:T2,O:O,D:D,K:K,par:K||1};L.sol=solve(L,K);return L}
 var tut=GK.tutorial({parent:stage,onStart:function(){tutLoad(0)},onEnd:function(){load(MODE,MODE==='voyage'?curLevel():0)},steps:[
   {done:function(){return G&&G.won&&G.wt>70}},
-  {init:function(){tutLoad(1)},done:function(){return G&&G.won&&G.wt>70}}]});
-function tutLoad(k){var L=tutBoard(k),n=L.w*L.h;G={m:'tut',i:0,L:L,pl:new Int8Array(n),rot:new Uint8Array(n),left:1,won:0,wt:0,moves:0,hist:[],sail:[],flash:{}};G.tr=trace(L,G.pl,G.rot);fit()}
-function tutDraw(c){if(!G||G.won)return;var x=PAD+3*TS+TS/2,y=HUD+2*TS+TS/2;GK.pulse(c,x,y,tut.t,LAMP,14)}
+  {init:function(){tutLoad(1)},done:function(){return G&&G.won&&G.wt>70}},
+  {init:function(){tutLoad(2)},done:function(){return G&&G.won&&G.wt>70}},
+  {init:function(){tutLoad(3)},done:function(){return G&&G.won&&G.wt>70}},
+  {init:function(){tutLoad(4)},done:function(){return G&&G.won&&G.wt>70}}]});
+function tutLoad(k){var L=tutBoard(k),n=L.w*L.h;G={m:'tut',i:0,L:L,pl:new Int8Array(n),rot:new Uint8Array(L.O),left:L.K,won:0,wt:0,moves:0,hist:[],sail:[],flash:{}};G.tr=trace(L,G.pl,G.rot);fit()}
+function tutDraw(c){if(!G||G.won)return;var s0=G.L.sol,cell=-1;if(s0){s0.pl.forEach(function(q){if(cell<0&&G.pl[q[0]]!==q[1])cell=q[0]});if(cell<0)for(var rc in s0.rot){if(cell<0&&G.rot[rc]!==s0.rot[rc])cell=+rc}}
+  if(cell<0)return;var x=PAD+(cell%G.L.w)*TS+TS/2,y=HUD+((cell/G.L.w)|0)*TS+TS/2;GK.pulse(c,x,y,tut.t,LAMP,14)}
 
 /* ---------- bar ---------- */
 var B=GK.controls(document.getElementById('bar'),{bar:'top',onHelp:function(){tut.start()},extra:[

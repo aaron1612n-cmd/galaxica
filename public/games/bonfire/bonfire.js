@@ -241,7 +241,7 @@ function pickups(){var h=G.h,M2=S.magnet*S.magnet;
   if(gemSnd>0)gemSnd--;if(G.t%30===0)gemCombo=Math.max(0,gemCombo-2)}
 function gain(v){G.xp+=v*S.growth;if(gemSnd<=0){gemSnd=3;gemCombo=Math.min(14,gemCombo+1);var P=[0,2,4,7,9];GK.audio.tone(523*Math.pow(2,(P[gemCombo%5]+12*Math.floor(gemCombo/5))/12),.06,'triangle',.022)}
   while(G.xp>=G.next){G.xp-=G.next;G.lvl++;G.next=G.tut?6:need(G.lvl);G.pending++}}
-function take(p){var h=G.h;sfx('pick');if(p.k==='bread'){h.hp=Math.min(h.max,h.hp+30);GK.fx.text(h.x,h.y-26,'+30',EMB,18)}else if(p.k==='magnet'){GEM.forEach(function(g){g.pull=1})}
+function take(p){var h=G.h;sfx('pick');if(tut.active)tutS['got_'+p.k]=1;if(p.k==='bread'){h.hp=Math.min(h.max,h.hp+30);GK.fx.text(h.x,h.y-26,'+30',EMB,18)}else if(p.k==='magnet'){GEM.forEach(function(g){g.pull=1})}
   else if(p.k==='flask')bomb();else if(p.k==='coin'){G.gold+=Math.round(p.v*S.greed)}else if(p.k==='chest'){openChest()}}
 
 /* ---------- level up ---------- */
@@ -496,10 +496,17 @@ var tut=GK.tutorial({parent:stage,onStart:function(){newRun({tut:true,mode:'run'
   {done:function(){return G&&Math.sqrt(sq(G.h.x-tutS.x)+sq(G.h.y-tutS.y))>140}},
   {init:function(){var h=G.h,a=Math.atan2(h.fy,h.fx);for(var i=0;i<8;i++)gem(h.x+Math.cos(a)*(90+i*14),h.y+Math.sin(a)*(90+i*14),1)},done:function(){return G&&G.lvl>=2&&mode==='pick'}},
   {done:function(){return G&&G.picks>=1&&mode==='play'}},
-  {init:function(){for(var i=0;i<6;i++){var a=i/6*TAU;spawn('bat',G.h.x+Math.cos(a)*230,G.h.y+Math.sin(a)*230)}tutS.k=G.kills},done:function(){return G&&G.kills-tutS.k>=6}}]});
+  {init:function(){for(var i=0;i<6;i++){var a=i/6*TAU;spawn('bat',G.h.x+Math.cos(a)*230,G.h.y+Math.sin(a)*230)}tutS.k=G.kills},done:function(){return G&&G.kills-tutS.k>=6}},
+  {init:function(){var h=G.h;drop('chest',h.x+80,h.y-20,0)},done:function(){return tutS.got_chest&&mode==='play'}},
+  {init:function(){var h=G.h;h.hp=h.max*.45;drop('bread',h.x-90,h.y+30,0)},done:function(){return tutS.got_bread}},
+  {init:function(){var h=G.h;for(var i=0;i<14;i++){var a=i/14*TAU;gem(h.x+Math.cos(a)*260,h.y+Math.sin(a)*260,1)}drop('magnet',h.x+70,h.y+40,0)},done:function(){return tutS.got_magnet}},
+  {init:function(){var h=G.h;for(var i=0;i<10;i++){var a=i/10*TAU;spawn('bat',h.x+Math.cos(a)*210,h.y+Math.sin(a)*210)}drop('flask',h.x-70,h.y-40,0)},done:function(){return tutS.got_flask}},
+  {init:function(){var h=G.h;tutS.k=G.kills;spawn('wolf',h.x+200,h.y,true)},update:function(){if(G&&mode==='play'&&G.t%240===0&&!EN.some(function(q){return!q.dead})&&G.kills<=tutS.k)spawn('wolf',G.h.x+200,G.h.y,true)},done:function(){return G&&G.kills>tutS.k&&!EN.some(function(q){return!q.dead})}}]});
 function tutDraw(){var v=GK.view,c=ctx,t=tut.t;c.setTransform(v.dpr,0,0,v.dpr,0,0);var hx=v.w/2,hy=v.h/2;
   if(tut.i===0){GK.swipe(c,hx,hy+70,hx+80,hy+70,t,EMB);GK.swipe(c,hx,hy-70,hx-80,hy-70,t+55,EMB)}
   else if(tut.i===1&&G){var g=GEM[0];if(g)GK.pulse(c,v.w/2+(g.x-G.cam.x)*Z,v.h/2+(g.y-G.cam.y)*Z,t,EMB,8)}
+  else if(tut.i>=4&&tut.i<=7&&G){var d0=DR[0];if(d0)GK.pulse(c,v.w/2+(d0.x-G.cam.x)*Z,v.h/2+(d0.y-G.cam.y)*Z,t,EMB,12)}
+  else if(tut.i===8&&G){var e9=null;EN.forEach(function(q){if(!q.dead&&!e9)e9=q});if(e9)GK.pulse(c,v.w/2+(e9.x-G.cam.x)*Z,v.h/2+(e9.y-G.cam.y)*Z,t,EMB,16)}
   else if(tut.i===3&&G){var e=null;EN.forEach(function(q){if(!q.dead&&!e)e=q});if(e)GK.pulse(c,v.w/2+(e.x-G.cam.x)*Z,v.h/2+(e.y-G.cam.y)*Z,t,EMB,12)}}
 
 /* ---------- boot ---------- */
@@ -526,6 +533,6 @@ GK.guide({title:'Bonfire',goal:'Survive the night: last 15 minutes, then beat th
 function fit(){var v=GK.fit(cv,stage);Z=GK.clamp(Math.sqrt(v.w*v.h/(620*620)),.62,1.9);VW=v.w/Z;VH=v.h/Z}
 addEventListener('resize',fit);addEventListener('orientationchange',fit);fit();
 toCamp();GK.loop(step,render);tut.maybe();if(document.fonts)document.fonts.ready.then(function(){if(mode==='camp')paintCamp()});
-window.__g={tut:tut,chest:function(){openChest()},G:function(){return G},S:function(){return S},meta:META,st:ST,start:function(o){newRun(o)},toCamp:toCamp,
+window.__g={tut:tut,DR:function(){return DR},EN:function(){return EN},mode:function(){return mode},chest:function(){openChest()},G:function(){return G},S:function(){return S},meta:META,st:ST,start:function(o){newRun(o)},toCamp:toCamp,
   stats:function(){if(!G)return{mode:mode,gold:META.gold,wins:ST.wins,runs:ST.runs};return{mode:mode,t:Math.floor(G.t/60),lvl:G.lvl,kills:G.kills,hp:Math.round(G.h.hp)+'/'+Math.round(G.h.max),en:EN.length,gems:GEM.length,w:G.w.map(function(w){return w.id+w.lv+(w.evo?'*':'')}).join(','),ch:JSON.stringify(G.ch),gold:G.gold,won:G.won,rev:G.rev,wins:ST.wins,runs:ST.runs,boss:G.boss?G.boss.t+':'+Math.round(G.boss.hp):''}}};
 })();

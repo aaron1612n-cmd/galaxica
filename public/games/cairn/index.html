@@ -145,9 +145,12 @@ function drawTitle(){drawBackdrop();ctx.fillStyle=INK;for(var i=0;i<4;i++){var v
 function drawOver(){ctx.fillStyle='rgba(232,215,176,'+Math.min(.8,run.deadT/30)+')';ctx.fillRect(0,0,W,H);ctx.fillStyle=INK;ctx.font='90px Gloock';ctx.textAlign='center';ctx.fillText(String(run.sc),W/2,H/2);ctx.fillStyle=ORANGE;ctx.font='28px Gloock';ctx.fillText(String(run.count),W/2,H/2+50)}
 /* ============ tutorial ============ */
 var tutFlag={dropped:0,rot:0};
-var tut=GK.tutorial({parent:document.getElementById('stage'),onStart:function(){newRun(77);tutFlag={dropped:0,rot:0};run.windMul=0},onEnd:function(){mode='title';run=null;eng=null},
-  steps:[{init:function(){tutFlag.dropped=0},done:function(){return tutFlag.dropped>=1&&run&&run.settle>40}},{init:function(){tutFlag.dropped=0;tutFlag.rot=0},done:function(){return tutFlag.dropped>=1&&tutFlag.rot>0&&run&&run.settle>40}},{init:function(){tutFlag.dropped=0;if(run)run.windMul=1},done:function(){return tutFlag.dropped>=2&&run&&run.settle>40}}]});
-function tutDraw(){if(!run||!run.held||run.dropped)return;var t=tut.t,h=run.held;
+var tut=GK.tutorial({parent:document.getElementById('stage'),onStart:function(){newRun(77);tutFlag={dropped:0,rot:0};run.windMul=0;run.strikeMax=99},onEnd:function(){mode='title';run=null;eng=null},
+  steps:[{init:function(){tutFlag.dropped=0},done:function(){return tutFlag.dropped>=1&&run&&run.settle>40}},{init:function(){tutFlag.dropped=0;tutFlag.rot=0},done:function(){return tutFlag.dropped>=1&&tutFlag.rot>0&&run&&run.settle>40}},{init:function(){tutFlag.dropped=0;if(run)run.windMul=1},done:function(){return tutFlag.dropped>=2&&run&&run.settle>40}},
+    {init:function(){tutFlag.dropped=0;tutFlag.sb=run?run.strikes:0},done:function(){return run&&run.strikes>tutFlag.sb}},
+    {init:function(){if(run)openRelic()},done:function(){return mode!=='relic'}}]});
+function tutDraw(){if(mode==='relic'&&tut.i===4&&run.relicT>20){var rr=relicRect(1);GK.pulse(ctx,rr[0]+rr[2]/2,rr[1]+rr[3]/2,tut.t,ORANGE,18);return}
+  if(!run||!run.held||run.dropped)return;var t=tut.t,h=run.held;if(tut.i===3){GK.pulse(ctx,24,PY-camY-40,t,ORANGE,14);return}
   if(tut.i===0)GK.pulse(ctx,h.x,PY-camY-40,t,ORANGE,14);
   if(tut.i===1){var by=H-0;GK.pulse(ctx,W/2,PY-camY-40,t,ORANGE,14);rotPulse=1}
   if(tut.i===2){GK.pulse(ctx,W/2,34,t,ORANGE,14)}}

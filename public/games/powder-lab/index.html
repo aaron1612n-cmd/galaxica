@@ -38,7 +38,7 @@ canvas#c{image-rendering:pixelated;cursor:crosshair}
 .v.sel{border-color:var(--gk-acc);transform:rotate(-3deg)}
 .v.sel::after{content:"";position:absolute;inset:-4px;border:2px solid var(--gk-acc);border-radius:50%;opacity:.55}
 .v:hover{background:rgba(27,42,58,.07)}
-.v.pulse{animation:vp .7s steps(1) infinite}@keyframes vp{50%{background:rgba(214,58,47,.25)}}
+.v.pulse,#bar button.pulse{animation:vp .7s steps(1) infinite}@keyframes vp{50%{background:rgba(214,58,47,.25)}}
 .gk-names .v{flex-direction:column}.gk-names .v[data-cap]::after{content:attr(data-cap);font:10px/1 var(--gk-font);margin-top:-2px;white-space:nowrap}.gk-names #rack{grid-template-rows:repeat(2,68px);grid-auto-columns:56px}.v em.bdg{position:absolute;right:-2px;bottom:-2px;background:#1b2a3a;color:#f7f3e4;font:normal 10px/1.2 var(--gk-font);padding:0 3px;font-style:normal}.mg{display:grid;grid-template-columns:repeat(auto-fill,minmax(74px,1fr));gap:8px}.mg button{aspect-ratio:1;border:2px solid #1b2a3a;background:#f7f3e4;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer}.mg button i{display:flex;gap:3px}.mg button i b{width:9px;height:9px;border:2px solid #1b2a3a;transform:rotate(45deg)}.mg button i b.on{background:#d63a2f;border-color:#d63a2f}.mg canvas{width:30px;height:38px}.sizes{display:flex;gap:4px}
 .sizes .gk-b.on,.gk-b.on{background:var(--gk-ink);color:var(--gk-bg)}
 #modal{position:fixed;inset:0;z-index:30;background:rgba(27,42,58,.45);display:flex;align-items:center;justify-content:center;padding:14px}
@@ -241,7 +241,7 @@ function setBrush(n){brush=n;['b1','b2','b3'].forEach(function(id,i){R[id].class
 /* ---------- notebook ---------- */
 var modal=null;
 function sw(t,no){return'<span class="sw'+(no?' no':'')+'" style="background:'+(no?'transparent':COL[t])+'"></span>'}
-function openBook(){closeBook();modal=document.createElement('div');modal.id='modal';var sh=document.createElement('div');sh.className='sheet';modal.appendChild(sh);
+function openBook(){if(tut.active&&tutStep===7)tutOpened=1;closeBook();modal=document.createElement('div');modal.id='modal';var sh=document.createElement('div');sh.className='sheet';modal.appendChild(sh);
   modal.onpointerdown=function(e){if(e.target===modal)closeBook()};
   var els=seenEl.filter(function(t){return t>0&&t<100}).length;
   sh.innerHTML='<h2><span>'+els+'/'+ALLEL.length+' &nbsp; '+found.length+'/'+RXLIST.length+'</span><button class="gk-b" id="x">×</button></h2>';
@@ -260,14 +260,22 @@ function botTick(){botT++;
   if(botT%50===1){var pool=[];RXLIST.forEach(function(r,i){if(found.indexOf(i)<0)pool.push(r)});var r=pool.length?pool[Math.random()*pool.length|0]:RXLIST[Math.random()*RXLIST.length|0];botPair=[r[0],r[1],(Math.random()*(GW-60)+30)|0,(Math.random()*GH*.35+10)|0]}
   if(botPair&&botT%50<22){var a=botPair;var s1=botT%2?a[0]:a[1];var bx=a[2]+(botT%2?-3:3),prev=brush;brush=2;dab(bx,a[3],s1);brush=prev}}
 /* ============ tutorial (wordless) ============ */
-var tutPoured=0,tutPicked=0,tutStep=0,tutRx0=0;
+var tutPoured=0,tutPicked=0,tutStep=0,tutRx0=0,tutBase=0,tutOpened=0;
+function cnt0(t){var n=0;for(var i=0;i<NC;i++)if(T[i]===t)n++;return n}
+function pulseBtn(id){unpulse();R[id].classList.add('pulse')}
 var tut=GK.tutorial({parent:document.getElementById('stage'),steps:[
   {init:function(){tutStep=0;tutPoured=0;clearAll();setSel(N.SAND);setBrush(2)},draw:function(c,t){var v=GK.view;GK.swipe(c,v.w*.3,v.h*.2,v.w*.6,v.h*.2,t,'#d63a2f')},done:function(){var n=0;for(var i=0;i<NC;i+=3)if(T[i]===N.SAND)n++;return n>25}},
   {init:function(){tutStep=1;tutPicked=0;pulseVial(N.WATER)},draw:function(c,t){var v=GK.view;if(!tutPicked)return;GK.swipe(c,v.w*.55,v.h*.12,v.w*.62,v.h*.12,t,'#d63a2f')},done:function(){if(tutPicked)unpulse();var n=0;for(var i=0;i<NC;i+=3)if(T[i]===N.WATER)n++;return n>20}},
-  {init:function(){tutStep=2;tutPicked=0;tutRx0=stats.rx;pulseVial(N.FIRE);for(var x=70;x<170;x++)for(var y=GH-26;y<GH-22;y++)put(y*GW+x,N.WOOD)},draw:function(c,t){var v=GK.view;if(!tutPicked)return;GK.swipe(c,v.w*.35,v.h*.8,v.w*.55,v.h*.8,t,'#d63a2f')},done:function(){if(tutPicked)unpulse();var f=0;for(var i=0;i<NC;i+=2)if(T[i]===N.FIRE)f++;return f>10}}],
+  {init:function(){tutStep=2;tutPicked=0;tutRx0=stats.rx;pulseVial(N.FIRE);for(var x=70;x<170;x++)for(var y=GH-26;y<GH-22;y++)put(y*GW+x,N.WOOD)},draw:function(c,t){var v=GK.view;if(!tutPicked)return;GK.swipe(c,v.w*.35,v.h*.8,v.w*.55,v.h*.8,t,'#d63a2f')},done:function(){if(tutPicked)unpulse();var f=0;for(var i=0;i<NC;i+=2)if(T[i]===N.FIRE)f++;return f>10}},
+  {init:function(){tutStep=3;painting=false;tutPicked=0;tutBase=0;clearAll();for(var x=60;x<180;x++)for(var y=GH-30;y<GH-24;y++)put(y*GW+x,N.WOOD);tutBase=cnt0(N.WOOD);pulseVial(N.ACID)},draw:function(c,t){var v=GK.view;GK.swipe(c,v.w*.3,v.h*.55,v.w*.5,v.h*.55,t,'#d63a2f')},done:function(){if(sel===N.ACID)unpulse();return cnt0(N.WOOD)<tutBase-30}},
+  {init:function(){tutStep=4;painting=false;clearAll();rectF(40,GH-20,190,GH-8,N.MUD);rectF(36,GH-24,39,GH-8,N.STONE);rectF(191,GH-24,194,GH-8,N.STONE);pulseVial(N.SEED)},draw:function(c,t){var v=GK.view,y=v.h*(GH-30)/GH;GK.swipe(c,v.w*.25,y,v.w*.5,y,t,'#d63a2f')},done:function(){if(sel===N.SEED)unpulse();return cnt0(N.PLANT)>5}},
+  {init:function(){tutStep=5;painting=false;setBrush(1);pulseBtn('b3')},draw:function(){},done:function(){return brush===3}},
+  {init:function(){tutStep=6;painting=false;tutPoured=0;pulseBtn('er')},draw:function(c,t){var v=GK.view;if(sel!==0)return;GK.swipe(c,v.w*.2,v.h*.8,v.w*.7,v.h*.8,t,'#d63a2f')},done:function(){if(sel===0)unpulse();return sel===0&&tutPoured}},
+  {init:function(){tutStep=7;painting=false;tutOpened=0;pulseBtn('nb')},draw:function(){},done:function(){return tutOpened&&!modal}},
+  {init:function(){tutStep=8;painting=false;tutOpened=0;pulseBtn('ms')},draw:function(){},done:function(){return tutOpened&&(!modal||mis)}}],
   onEnd:function(){unpulse()}});
-function pulseVial(t){unpulse();[].forEach.call(rack.children,function(b){if(+b.dataset.t===t)b.classList.add('pulse')})}
-function unpulse(){[].forEach.call(rack.children,function(b){b.classList.remove('pulse')})}
+function pulseVial(t){unpulse();[].forEach.call(rack.children,function(b){if(+b.dataset.t===t){b.classList.add('pulse');try{b.scrollIntoView({block:'nearest',inline:'nearest'})}catch(e){}}})}
+function unpulse(){[].forEach.call(rack.children,function(b){b.classList.remove('pulse')});['b3','er','nb','ms'].forEach(function(id){R[id]&&R[id].classList.remove('pulse')})}
 /* ============ missions: 36 puzzles. Solve with a limited budget of materials. ============ */
 var MIS=GK.ls.get('mis',{}),mis=null;
 function gx(f){return Math.round(f*GW)}function gy(f){return Math.round(f*GH)}
@@ -310,7 +318,7 @@ function missionTick(){if(!mis)return;if(!mis.done){mis.t++;if(mis.t%15===0)chec
 function startMission(n){mis=null;buildMission(n);sel=Object.keys(mis.budget).map(Number)[0];build();setSel(sel);badges();R.rt.hidden=false;R.ms.classList.add('on');closeBook()}
 function nextMission(){if(mis.win)startMission((mis.n+1)%36);else startMission(mis.n)}
 function exitMission(){mis=null;clearAll();for(var x=0;x<GW;x++)for(var y=GH-3;y<GH;y++)put(y*GW+x,N.STONE);build();setSel(N.SAND);R.rt.hidden=true;R.ms.classList.remove('on')}
-function openMissions(){closeBook();modal=document.createElement('div');modal.id='modal';var sh=document.createElement('div');sh.className='sheet';modal.appendChild(sh);modal.onpointerdown=function(e){if(e.target===modal)closeBook()};
+function openMissions(){if(tut.active&&tutStep===8)tutOpened=1;closeBook();modal=document.createElement('div');modal.id='modal';var sh=document.createElement('div');sh.className='sheet';modal.appendChild(sh);modal.onpointerdown=function(e){if(e.target===modal)closeBook()};
   var tot=0;for(var k in MIS)tot+=MIS[k];sh.innerHTML='<h2><span>'+tot+' / 108</span><button class="gk-b" id="x">×</button></h2>';var g=document.createElement('div');g.className='mg';
   var sb=document.createElement('button');sb.innerHTML='<svg viewBox="0 0 22 22" width="30" height="30" fill="none" stroke="#1b2a3a" stroke-width="1.6"><path d="M4 4h6a2 2 0 0 1 2 2v13a2 2 0 0 0-2-2H4zM18 4h-6v15a2 2 0 0 1 2-2h4z"/></svg>';sb.onclick=function(){closeBook();exitMission()};g.appendChild(sb);
   var ICN=[null,N.FIRE,N.PLANT,N.ICE,N.TNT,null];

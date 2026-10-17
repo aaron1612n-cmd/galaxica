@@ -149,7 +149,7 @@ function place(t,x,y,vx,vy,tap,kind){
   if(tap){if(t.kind==='planet'||t.kind==='moon'||t.kind==='rock'||t.kind==='station'||t.kind==='comet'){c=GG.circ(x,y);b.vx=c.vx*(t.kind==='comet'?.5:1);b.vy=c.vy*(t.kind==='comet'?.5:1);if(c.d&&c.d.kind==='planet')b.par=c.d.id}}
   GG.add(b);finish(t,x,y,kind)}
 function finish(t,x,y,kind){var d=Math.hypot(x,y);tone(Math.max(180,Math.min(900,760-d*1.2)),.28,'sine',.05,t.kind==='planet'?1.4:.6);if(tut)tutHook(kind,t)}
-function erase(x,y){var b=pickBodyW(x,y);if(b){snap();var i=W.bodies.indexOf(b);W.bodies.splice(i,1);W.dirty=true;if(V.sel===b.id){V.sel=0;hideInsp()}tone(300,.12,'triangle',.04,.5)}}
+function erase(x,y){var b=pickBodyW(x,y);if(b){snap();var i=W.bodies.indexOf(b);W.bodies.splice(i,1);W.dirty=true;if(V.sel===b.id){V.sel=0;hideInsp()}tone(300,.12,'triangle',.04,.5);if(tut)tutHook('tap',{kind:'erase'})}}
 function pickBodyW(x,y){var s=V.toScreen(x,y);return pickBody(s.x,s.y)}
 function anchorAt(x,y){var b=pickBodyW(x,y);if(b){b.fixed=!b.fixed;if(b.fixed){b.vx=0;b.vy=0}W.dirty=true;tone(b.fixed?500:350,.1,'square',.03)}}
 
@@ -334,14 +334,18 @@ function bot(){
 
 /* ---------- wordless tutorial ---------- */
 var skipB=$('skip'),spdEl=document.querySelector('[data-speed]');
-function startTut(){tut={step:0};tutT=0;GG.newWorld();center();V.sel=0;hideInsp();setTool(TB.ocean);setGroup('planet');skipB.hidden=false;spdEl.classList.remove('nudge');V.overlay=drawTut}
+var TS=[{t:'ocean',g:'planet',k:'planet',m:'tap',p:[170,-30]},{t:'ocean',g:'planet',k:'planet',m:'drag',d:[-170,130,-70,40]},{t:'moon',g:'small',k:'moon',p:[196,-30]},{t:'comet',g:'small',k:'comet',m:'drag',d:[-200,-130,-110,-60]},{t:'hole',g:'star',k:'hole',p:[-215,-125]},{t:'nebula',g:'exotic',k:'nebula',p:[120,125]},{t:'erase',g:'tools',k:'erase',p:[-215,-125],hole:1}];
+function tutEnter(){var S=TS[tut.step];if(S){setGroup(S.g);setTool(TB[S.t])}else spdEl.classList.add('nudge')}
+function startTut(){tut={step:0};tutT=0;GG.newWorld();center();V.sel=0;hideInsp();tutEnter();skipB.hidden=false;spdEl.classList.remove('nudge');V.overlay=drawTut}
 function endTut(){tut=null;skipB.hidden=true;spdEl.classList.remove('nudge');V.overlay=null;GG.lsSet('ggTut',1)}
-function tutHook(kind,t){if(tut.step===0&&kind==='tap'&&t.kind==='planet'){tut.step=1;tutT=0}else if(tut.step===1&&kind==='drag'&&t.kind==='planet'){tut.step=2;tutT=0;spdEl.classList.add('nudge');if(Speed.v>=8)endTut()}}
 skipB.onclick=endTut;
-function drawTut(c,hx){tutT++;c.strokeStyle=GG.pal.rust;c.fillStyle=GG.pal.rust;c.lineWidth=hx*1.6;
-  if(tut.step===0){var ph=(tutT%70)/70;c.beginPath();c.arc(170,-30,6+ph*30,0,TAU);c.globalAlpha=1-ph;c.stroke();c.globalAlpha=1;c.beginPath();c.arc(170,-30,5,0,TAU);c.fill()}
-  else if(tut.step===1){var p2=(tutT%110)/110,e=p2<.8?p2/.8:1,x0=-170,y0=130,x1=-70,y1=40,x=x0+(x1-x0)*e,y=y0+(y1-y0)*e;c.globalAlpha=p2<.8?1:1-(p2-.8)/.2;c.beginPath();c.moveTo(x0,y0);c.lineTo(x,y);c.stroke();c.beginPath();c.arc(x0,y0,5,0,TAU);c.stroke();c.beginPath();c.arc(x,y,5,0,TAU);c.fill();c.globalAlpha=1}
-  else if(tut.step===2&&Speed.v>=8)endTut()}
+function tutHook(kind,t){var S=TS[tut.step];if(S&&t.kind===S.k&&(!S.m||kind===S.m)){tut.step++;tutT=0;tutEnter();if(!TS[tut.step]&&Speed.v>=8)tutDone()}}
+function tutDone(){endTut();GG.newWorld();center()}
+function drawTut(c,hx){tutT++;c.strokeStyle=GG.pal.rust;c.fillStyle=GG.pal.rust;c.lineWidth=hx*1.6;var S=TS[tut.step];
+  if(!S){if(Speed.v>=8)tutDone();return}
+  if(S.p){var px=S.p[0],py=S.p[1];if(S.hole){var hb=W.bodies.filter(function(b){return b.kind==='hole'})[0];if(hb){px=hb.x;py=hb.y}else{tut.step--;tutEnter();return}}
+    var ph=(tutT%70)/70;c.beginPath();c.arc(px,py,6+ph*30,0,TAU);c.globalAlpha=1-ph;c.stroke();c.globalAlpha=1;c.beginPath();c.arc(px,py,5,0,TAU);c.fill()}
+  else{var p2=(tutT%110)/110,e=p2<.8?p2/.8:1,x0=S.d[0],y0=S.d[1],x1=S.d[2],y1=S.d[3],x=x0+(x1-x0)*e,y=y0+(y1-y0)*e;c.globalAlpha=p2<.8?1:1-(p2-.8)/.2;c.beginPath();c.moveTo(x0,y0);c.lineTo(x,y);c.stroke();c.beginPath();c.arc(x0,y0,5,0,TAU);c.stroke();c.beginPath();c.arc(x,y,5,0,TAU);c.fill();c.globalAlpha=1}}
 $('tutb')&&0;
 
 /* ---------- keys ---------- */

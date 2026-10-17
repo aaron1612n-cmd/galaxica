@@ -73,7 +73,7 @@ var aimT=false;GK.pointer(cv,{hover:true,down:function(x,y,e){setAim(x,y);if(mod
 function shoot(){if(mode!=='play'||balls.length>0||shotsLeft<=0&&!sand||L.pegs.length===0&&!sand)return;var sp=7.2;shotScore=0;freeAt=0;balls.push({x:CANNON.x,y:CANNON.y,vx:Math.cos(ang)*sp,vy:Math.sin(ang)*sp,t:0,hits:0,free:0});if(!sand&&MODE!=='zen')shotsLeft--;mult=1;if(tut.active)tutFlag.shot=1;GK.audio.tone(200,.08,'triangle',.05,.6)}
 var sandTool='peg';
 function placeSand(x,y){if(sandTool==='erase'){for(var i=L.pegs.length-1;i>=0;i--){if(Math.hypot(L.pegs[i].x-x,L.pegs[i].y-y)<L.pegs[i].r+10){L.pegs.splice(i,1)}}return}
-  if(y<150||y>H-110)return;for(var i2=0;i2<L.pegs.length;i2++)if(Math.hypot(L.pegs[i2].x-x,L.pegs[i2].y-y)<26)return;var p={x:x,y:y,r:sandTool==='bumper'?17:9,k:sandTool,hit:0,dead:false,ox:x,oy:y};p.note=noteFor(p,L.key,L.n);L.pegs.push(p);ST.composed++;if(ST.composed%10===0)saveST();bell(p.note,.04)}
+  if(y<150||y>H-110)return;for(var i2=0;i2<L.pegs.length;i2++)if(Math.hypot(L.pegs[i2].x-x,L.pegs[i2].y-y)<26)return;var p={x:x,y:y,r:sandTool==='bumper'?17:9,k:sandTool,hit:0,dead:false,ox:x,oy:y};p.note=noteFor(p,L.key,L.n);L.pegs.push(p);if(tut.active)tutFlag.placed=1;ST.composed++;if(ST.composed%10===0)saveST();bell(p.note,.04)}
 /* ============ physics ============ */
 function stepBall(b){
   for(var sub=0;sub<4;sub++){b.x+=b.vx/4;b.y+=b.vy/4;b.vy+=G/4;
@@ -96,7 +96,7 @@ function starsFor(sc){var t=L.targets;return sc>=35000+t*1200?3:sc>=15000+t*700?
 function spawnBalls(b){for(var k=-1;k<=1;k+=2)balls.push({x:b.x,y:b.y,vx:b.vx+k*1.6,vy:b.vy,t:0,hits:0,free:1})}
 var BUCKET={w:96,y:H-26};
 function stepAll(){T++;GK.goals.tick();
-  if(!fever&&!sand&&!tut.active&&mode==='play'&&balls.length&&unlit()===0){fever=1;feverT=0;ST.fevers++;GK.fx.shake(8,24);GK.fx.hitstop(18);var f0=L.key;[0,4,7,12].forEach(function(s,i){GK.audio.tone(f0*2*Math.pow(2,s/12),.7,'sine',.06,1,GK.audio.ctx&&GK.audio.ctx.currentTime+i*.06)})}
+  if(!fever&&!sand&&(!tut.active||tutFlag.fev)&&mode==='play'&&balls.length&&unlit()===0){fever=1;feverT=0;ST.fevers++;GK.fx.shake(8,24);GK.fx.hitstop(18);var f0=L.key;[0,4,7,12].forEach(function(s,i){GK.audio.tone(f0*2*Math.pow(2,s/12),.7,'sine',.06,1,GK.audio.ctx&&GK.audio.ctx.currentTime+i*.06)})}
   if(fever)feverT++;var slow=fever&&feverT<160&&feverT%2;
   if(L.pegs.some(function(p){return p.orb})){L.pegs.forEach(function(p){if(p.orb){p.orb.ph+=p.orb.w;p.x=p.ox+Math.cos(p.orb.ph)*p.orb.r;p.y=p.oy+Math.sin(p.orb.ph)*p.orb.r}})}
   bucketX+=bucketD*(1.2+L.n*.02);if(bucketX>W-BUCKET.w/2-6){bucketD=-1;bucketX=W-BUCKET.w/2-6}if(bucketX<BUCKET.w/2+6){bucketD=1;bucketX=BUCKET.w/2+6}
@@ -165,9 +165,21 @@ function render(){var v=GK.view,so=GK.fx.offset();ctx.setTransform(v.dpr*v.s,0,0
   if(tut.active)tutDraw()}
 /* ============ tutorial ============ */
 var tutFlag={shot:0,bucket:0};
-var tut=GK.tutorial({parent:document.getElementById('stage'),onStart:function(){sand=false;loadLevel(1);L.pegs=L.pegs.filter(function(p,i){return i%3!==0});L.balls=99;shotsLeft=99;tutFlag={shot:0,bucket:0}},onEnd:function(){loadLevel(Math.max(1,prog.level))},
-  steps:[{done:function(){return tutFlag.shot&&balls.length===0}},{done:function(){return pegsLeft()<L.targets&&balls.length===0}},{done:function(){return pegsLeft()===0||(L.pegs.filter(function(p){return p.dead&&p.k==='target'}).length>=3&&balls.length===0)}}]});
-function tutDraw(){var t=tut.t;if(tut.i===0)GK.pulse(ctx,CANNON.x+Math.cos(ang)*60,CANNON.y+Math.sin(ang)*60,t,BRASS,14);else if(tut.i===1){var tg=L.pegs.find(function(p){return p.k==='target'&&!p.dead});if(tg)GK.pulse(ctx,tg.x,tg.y,t,BRASS,18)}else if(tut.i===2){var tg2=L.pegs.find(function(p){return p.k==='target'&&!p.dead});if(tg2)GK.pulse(ctx,tg2.x,tg2.y,t,BRASS,18)}}
+var tut=GK.tutorial({parent:document.getElementById('stage'),onStart:function(){sand=false;loadLevel(1);L.pegs=L.pegs.filter(function(p,i){return i%3!==0});L.balls=99;shotsLeft=99;tutFlag={shot:0,bucket:0}},onEnd:function(){R.sd.classList.remove('pulse');if(sand)R.sd.onclick();loadLevel(Math.max(1,prog.level))},
+  steps:[{done:function(){return tutFlag.shot&&balls.length===0}},{done:function(){return pegsLeft()<L.targets&&balls.length===0}},{done:function(){return pegsLeft()===0||(L.pegs.filter(function(p){return p.dead&&p.k==='target'}).length>=3&&balls.length===0)}},
+   {init:function(){tutSet([['power',W/2,310],['target',W/2-100,470],['target',W/2+100,470]]);power=0},done:function(){return power>0&&balls.length===0}},
+   {init:function(){tutSet([['bumper',W/2,330],['target',W/2+120,450]])},done:function(){var b=L.pegs.find(function(p){return p.k==='bumper'});return b&&b.hit&&balls.length===0}},
+   {init:function(){tutSet([['target',70,240]]);tutFlag.bucket=0},done:function(){return tutFlag.bucket}},
+   {init:function(){tutSet([['target',W/2,330]]);tutFlag.fev=1},done:function(){return fever&&feverT>90}},
+   {init:function(){tutFlag.fev=0;fever=0;balls=[];R.sd.classList.add('pulse')},done:function(){return sand&&L.pegs.length>0&&tutFlag.placed}}]});
+(function(){var st=document.createElement('style');st.textContent='.gk-b.pulse{outline:3px solid #c9a24a;outline-offset:2px;animation:psp .8s steps(1) infinite}@keyframes psp{50%{outline-color:transparent}}';document.head.appendChild(st)})();
+function tutSet(a){fever=0;feverT=0;balls=[];L.pegs=a.map(function(q){var p={x:q[1],y:q[2],r:q[0]==='bumper'?17:9,k:q[0],hit:0,dead:false,ox:q[1],oy:q[2]};p.note=noteFor(p,L.key,L.n);return p});L.targets=L.pegs.filter(function(p){return p.k==='target'}).length;shotsLeft=99}
+function tutDraw(){var t=tut.t;if(tut.i===0)GK.pulse(ctx,CANNON.x+Math.cos(ang)*60,CANNON.y+Math.sin(ang)*60,t,BRASS,14);else if(tut.i===1){var tg=L.pegs.find(function(p){return p.k==='target'&&!p.dead});if(tg)GK.pulse(ctx,tg.x,tg.y,t,BRASS,18)}else if(tut.i===3){var pw=L.pegs.find(function(p){return p.k==='power'});if(pw)GK.pulse(ctx,pw.x,pw.y,t,BRASS,18)}
+  else if(tut.i===4){var bm=L.pegs.find(function(p){return p.k==='bumper'});if(bm)GK.pulse(ctx,bm.x,bm.y,t,BRASS,24)}
+  else if(tut.i===5)GK.pulse(ctx,bucketX,BUCKET.y,t,BRASS,20);
+  else if(tut.i===6){var tf=L.pegs.find(function(p){return p.k==='target'&&!p.dead});if(tf)GK.pulse(ctx,tf.x,tf.y,t,BRASS,18)}
+  else if(tut.i===7&&sand){ctx.save();ctx.strokeStyle=BRASS;ctx.lineWidth=2;ctx.setLineDash([4,5]);ctx.strokeRect(W/2-60,260,120,120);ctx.restore();GK.pulse(ctx,W/2,320,t,BRASS,14)}
+  else if(tut.i===2){var tg2=L.pegs.find(function(p){return p.k==='target'&&!p.dead});if(tg2)GK.pulse(ctx,tg2.x,tg2.y,t,BRASS,18)}}
 /* ============ bar ============ */
 var R=GK.controls(document.getElementById('bar'),{bar:'bottom',onHelp:function(){tut.start()},extra:[
   {id:'sd',html:'<svg viewBox="0 0 22 22"><path d="M8 16V5l9-2v11"/><circle class="f" cx="6" cy="16" r="2"/><circle class="f" cx="15" cy="14" r="2"/></svg>',title:'Compose',fn:function(){sand=!sand;R.sd.classList.toggle('on',sand);R.sp.hidden=!sand;R.sb.hidden=!sand;R.se.hidden=!sand;if(sand){L.pegs=L.pegs.filter(function(p){return true});balls=[];mode='play'}else loadLevel(Math.max(1,prog.level))}},
