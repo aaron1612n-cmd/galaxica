@@ -201,5 +201,12 @@
     "blurb": "Mini golf printed in two riso inks. Pull back to putt round windmills, sand, ponds, slopes and tunnels across three 18-hole courses.",
     "added": "2026-10-17",
     "thumb": "games/putt/thumb.jpg"
+  },
+  {
+    "id": "sounding",
+    "title": "Sounding",
+    "blurb": "Survey a reef on a nautical chart. Each sounding counts the wrecks beside it; buoy them and chart the rest, never needing a blind guess.",
+    "added": "2026-10-17",
+    "thumb": "games/sounding/thumb.jpg"
   }
 ]

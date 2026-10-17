@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#f7f5ee">
+<title>Sounding</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Caslon+Text:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../shared/gk.css">
+<script src="../../shared/device.js"></script>
+<script src="../../shared/auto.js"></script>
+<script src="../../shared/speed.js"></script>
+<script src="../../shared/gk.js"></script>
+<script src="../../shared/gk2.js"></script>
+<style>
+/* Sounding: a nautical survey chart. Chart white, shallow-water blue, navy ink, chart magenta. */
+:root{--gk-ty:62;--gk-toy:120;--gk-bg:#f7f5ee;--gk-ink:#1f2a33;--gk-acc:#c0267c;--gk-font:"Libre Caslon Text",Georgia,serif;--gk-bw:1.5px;--gk-r:0;--gk-sh:none;--gk-h:42px;--gk-pr:0;--chart:#f7f5ee;--navy:#1f2a33;--mag:#c0267c;--shoal:#cde3e6}
+body,#stage{background:#f7f5ee}
+canvas#c{touch-action:none}
+/* bar skin: a chart's neat-line border, the scale bar's alternating ticks under each button */
+.gk-bar{background:var(--chart);border-top:1.5px solid var(--navy)}
+@media(min-width:760px) and (min-aspect-ratio:1/1){[data-bar=left] .gk-bar{border-top:0;border-right:1.5px solid var(--navy)}}
+.gk-bar .gk-b{position:relative;border:1.5px solid var(--navy);background:var(--chart);font:italic 700 15px "Libre Caslon Text",serif;border-bottom-width:5px;border-image:none}
+.gk-bar .gk-b::after{content:"";position:absolute;left:0;right:0;bottom:-5px;height:5px;background:repeating-linear-gradient(90deg,var(--navy) 0 25%,var(--chart) 25% 50%)}
+.gk-names .gk-bar .gk-b::after{display:none}
+.gk-bar .gk-b.gk-auto:not(.ghost),.gk-bar .gk-b.on,.gk-bar .gk-b.names.on{background:var(--mag);color:var(--chart);border-color:var(--mag)}
+#pad{display:flex;justify-content:center;gap:10px;padding:6px 10px 2px;flex:none}
+#pad button{height:54px;min-width:120px;display:flex;align-items:center;justify-content:center;gap:8px;border:1.5px solid var(--navy);background:var(--chart);color:var(--navy);font:italic 700 16px "Libre Caslon Text",serif}
+#pad button svg{width:28px;height:28px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+#pad button.on{background:var(--mag);border-color:var(--mag);color:var(--chart)}
+html:not([data-device=mobile]) #pad{display:none}
+.gk-sheet{border:1.5px solid var(--navy);outline:4px double var(--navy);outline-offset:-10px;padding:22px}
+.gk-mh{font:italic 700 24px "Libre Caslon Text",serif}
+.charts{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:8px}
+.ch{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;aspect-ratio:1;border:1.5px solid var(--navy);background:var(--chart);color:var(--navy);font:italic 700 18px "Libre Caslon Text",serif;cursor:pointer;padding:0}
+.ch small{font:italic 400 11px "Libre Caslon Text",serif;opacity:.8}
+.ch.done{background:var(--shoal)}.ch.cur{outline:2px solid var(--mag);outline-offset:2px}.ch:disabled{opacity:.3;cursor:default}
+.ch svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.6}
+.sizes{display:flex;gap:10px;flex-wrap:wrap}
+.sizes button{display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 14px;border:1.5px solid var(--navy);background:var(--chart);color:var(--navy);font:italic 700 16px "Libre Caslon Text",serif;cursor:pointer}
+.sizes button svg{width:30px;height:30px;fill:none;stroke:currentColor;stroke-width:1.5}
+</style>
+</head>
+<body>
+<div id="app"><div id="stage"><canvas id="c"></canvas></div><div id="pad"><button id="mk" aria-label="Mark mode" title="Mark"><svg viewBox="0 0 22 22"><path d="M11 3v12M7 19h8M11 3l6 3-6 3"/><circle cx="11" cy="17" r="2"/></svg></button></div><div id="bar"></div></div>
+<script src="sounding.js"></script>
+</body>
+</html>
