@@ -36,6 +36,9 @@ Build: `python3 tools/pyref/build.py [--only idprefix]` (~90 s full). FAILS if a
 Env: `uv venv --managed-python -p 3.12 /home/user/pyenv` + pillow matplotlib numpy pandas openpyxl beautifulsoup4 flask requests (system python has no tk).
 Search check: scratchpad search.js / q.js. Tune by adding phrases to `aka:`. Set outputs of strings are hash-order dependent: sort them (verify with PYTHONHASHSEED=1..3).
 
+## NEW GAMES BATCH 3 (2026-10-17, in progress)
+Plan: Bonfire (survivors-like, papercut night: pine-black/bone/ONE ember accent, Pirata One, tag-shaped bar), Angler (fishing+journal+upgrades), Lamplight (mirror beam puzzle), Putt (mini golf), Sounding (sonar minesweeper, no-guess solver), Duckling Parade (lemmings-like). Each: own look, wordless tutorial, AUTO, goals, daily, thumb, games.json; commit+push main+deploy per game.
+
 ## NEXT: BIG IDEAS (2026-10-17, user: "lots of usage to burn"). User picked, in order: more NEW GAMES, A+B, D Deepdig roguelite. REJECTED: C Party mode, E-H platform.
 A Bot Workshop: NO coding. Create menu to build bots by editing stats (reaction, aim, caution, greed, aggression, mistakes...) + LOTS of quick presets; bots play any game, scored | B Galaxica Online (Worker+D1 global daily leaderboards, ghost replays) | D Deepdig full roguelite campaign. Older: more answers, phone playtest, balance.
 
