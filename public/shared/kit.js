@@ -26,9 +26,9 @@
   var Kit=window.Kit={lsGet:lsGet,lsSet:lsSet,keys:{},scale:1,
     get mute(){return mute},
     ac:function(){if(!AC){try{AC=new(window.AudioContext||window.webkitAudioContext)()}catch(e){}}if(AC&&AC.state==='suspended')AC.resume();return AC},
-    tone:function(f,d,type,vol,slide,when){if(mute||!AC||Speed.v>2.5)return;var t=when||AC.currentTime,o=AC.createOscillator(),g=AC.createGain();o.type=type||'square';o.frequency.setValueAtTime(f,t);
+    tone:function(f,d,type,vol,slide,when){if(mute||!AC||Speed.v>2.5||Speed.ff)return;var t=when||AC.currentTime,o=AC.createOscillator(),g=AC.createGain();o.type=type||'square';o.frequency.setValueAtTime(f,t);
       if(slide)o.frequency.exponentialRampToValueAtTime(Math.max(30,f*slide),t+d);g.gain.setValueAtTime(vol||.05,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+d)},
-    noise:function(d,vol){if(mute||!AC||Speed.v>2.5)return;var n=AC.sampleRate*d|0,b=AC.createBuffer(1,n,AC.sampleRate),x=b.getChannelData(0);for(var i=0;i<n;i++)x[i]=(Math.random()*2-1)*(1-i/n);
+    noise:function(d,vol){if(mute||!AC||Speed.v>2.5||Speed.ff)return;var n=AC.sampleRate*d|0,b=AC.createBuffer(1,n,AC.sampleRate),x=b.getChannelData(0);for(var i=0;i<n;i++)x[i]=(Math.random()*2-1)*(1-i/n);
       var s=AC.createBufferSource(),g=AC.createGain();s.buffer=b;g.gain.value=vol||.1;s.connect(g);g.connect(AC.destination);s.start()},
     txt:function(ctx,s,x,y,size,col,al){ctx.font='700 '+size+'px Silkscreen,ui-monospace,monospace';ctx.fillStyle=col;ctx.textAlign=al||'left';ctx.fillText(s,x,y)},
     pt:function(e){var r=Kit.cv.getBoundingClientRect();return{x:(e.clientX-r.left)/r.width*Kit.W,y:(e.clientY-r.top)/r.height*Kit.H,touch:e.pointerType==='touch'}},
@@ -65,8 +65,7 @@
     holdBtn:function(el,name,onDown){el.addEventListener('pointerdown',function(e){e.preventDefault();Kit.ac();Kit.keys[name]=true;el.classList.add('on');if(onDown)onDown()});
       ['pointerup','pointercancel','pointerleave'].forEach(function(n){el.addEventListener(n,function(){Kit.keys[name]=false;el.classList.remove('on')})})},
     /* speed-aware loop: tick() runs Speed.steps() times per animation frame (12ms budget guard), draw() once; pre(): per-frame housekeeping */
-    run:function(tick,draw,pre){(function loop(){if(pre)pre();var n=Speed.steps(),t0=performance.now();
-      for(var i=0;i<n;i++){tick();if(i>0&&performance.now()-t0>12){Speed.acc=0;break}}
+    run:function(tick,draw,pre){(function loop(){if(pre)pre();Speed.run(tick);
       Kit.ctx.setTransform(Kit.scale*Kit.dpr,0,0,Kit.scale*Kit.dpr,0,0);Kit.ctx.imageSmoothingEnabled=false;draw();requestAnimationFrame(loop)})()}
   };
 })();

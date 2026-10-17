@@ -349,7 +349,7 @@ cv.addEventListener('pointerdown',function(){if(G&&G.st==='over'&&G.overT>40)new
 GK.goals.setup({metrics:function(){return ST},defs:{species:{ic:'book',t:[5,15,30,45,60]},kg:{ic:'weight',t:[10,100,1000,10000]},big:{ic:'fish',t:[1,10,50,200,500]},legends:{ic:'crown',t:[1,3,5]},
   earned:{ic:'coin',t:[500,5000,50000,200000]},catches:{ic:'hook',t:[10,100,500,2000]},locs:{ic:'map',t:[2,3,4,5]},derby:{ic:'clock',t:[20,80,200]},daily:{ic:'sun',t:[1,3,7,14,30]},snaps:{ic:'snap',t:[1,10]}}});
 GK.goals.mount(B);
-function fit(){var v=GK.fit(cv,stage);Z=GK.clamp(Math.min(v.w,v.h)/500,.62,2.1);VW=v.w/Z;VH=v.h/Z}
+function fit(){var v=GK.fit(cv,stage);Z=GK.clamp(Math.min(v.w/380,v.h/500),.62,2.1);VW=v.w/Z;VH=v.h/Z}
 addEventListener('resize',fit);addEventListener('orientationchange',fit);fit();
 paint();newGame();GK.loop(step,render);tut.maybe();
 window.__g={tut:tut,G:function(){return G},car:CAR,st:ST,F:function(){return F},newGame:newGame,openJournal:openJournal,openShop:openShop,

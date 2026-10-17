@@ -66,7 +66,7 @@ function loadLevel(n){fever=0;feverT=0;GK.fx.clear();L=makeLevel(MODE==='daily'?
 function unlit(){var c=0;L.pegs.forEach(function(p){if(!p.dead&&!p.hit&&p.k==='target')c++});return c}
 function pegsLeft(){var c=0;L.pegs.forEach(function(p){if(!p.dead&&p.k==='target')c++});return c}
 /* ============ audio: every peg is a note ============ */
-function bell(f,vol){var A=GK.audio;if(!A.ctx||A.mute||Speed.v>3)return;var now=A.ctx.currentTime;if(now-lastNoteT<.012)return;lastNoteT=now;A.tone(f,.55,'sine',vol||.06);A.tone(f*2.01,.25,'sine',(vol||.06)*.35);A.tone(f*3.98,.12,'sine',(vol||.06)*.15)}
+function bell(f,vol){var A=GK.audio;if(!A.ctx||A.mute||Speed.v>3||Speed.ff)return;var now=A.ctx.currentTime;if(now-lastNoteT<.012)return;lastNoteT=now;A.tone(f,.55,'sine',vol||.06);A.tone(f*2.01,.25,'sine',(vol||.06)*.35);A.tone(f*3.98,.12,'sine',(vol||.06)*.15)}
 /* ============ input ============ */
 function setAim(x,y){aimX=x;aimY=y;ang=Math.atan2(y-CANNON.y,x-CANNON.x);ang=GK.clamp(ang,.12,Math.PI-.12)}
 var aimT=false;GK.pointer(cv,{hover:true,down:function(x,y,e){setAim(x,y);if(mode==='fail'||mode==='won'){if(failT>40||clearT>60)next();return}if(sand){placeSand(x,y);return}if(Auto.on)return;if(e.pointerType!=='mouse'){aimT=true;return}shoot()},move:function(x,y,e,dn){if(e.pointerType!=='mouse'&&!dn)return;setAim(x,y);if(sand&&dn)placeSand(x,y)},up:function(x,y,e){if(aimT){aimT=false;if(!Auto.on&&!sand)shoot()}},key:function(c,d){if(d&&(c==='Space')){if(mode==='fail'||mode==='won')next();else if(!sand&&!Auto.on)shoot()}}});

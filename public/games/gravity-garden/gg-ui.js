@@ -75,12 +75,12 @@ function snap(){try{undo.push(JSON.stringify(GG.save()));if(undo.length>30)undo.
 
 /* ---------- audio ---------- */
 function ac(){if(!AC){try{AC=new(window.AudioContext||window.webkitAudioContext)()}catch(e){}}if(AC&&AC.state==='suspended')AC.resume()}
-function tone(f,d,type,vol,slide){if(mute||!AC||Speed.v>2.5)return;var t=AC.currentTime,o=AC.createOscillator(),g=AC.createGain();o.type=type||'sine';o.frequency.setValueAtTime(f,t);
+function tone(f,d,type,vol,slide){if(mute||!AC||Speed.v>2.5||Speed.ff)return;var t=AC.currentTime,o=AC.createOscillator(),g=AC.createGain();o.type=type||'sine';o.frequency.setValueAtTime(f,t);
   if(slide)o.frequency.exponentialRampToValueAtTime(Math.max(30,f*slide),t+d);g.gain.setValueAtTime(vol||.05,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+d)}
-function noise(d,vol){if(mute||!AC||Speed.v>2.5)return;var n=AC.sampleRate*d|0,b=AC.createBuffer(1,n,AC.sampleRate),x=b.getChannelData(0);for(var i=0;i<n;i++)x[i]=(Math.random()*2-1)*(1-i/n);
+function noise(d,vol){if(mute||!AC||Speed.v>2.5||Speed.ff)return;var n=AC.sampleRate*d|0,b=AC.createBuffer(1,n,AC.sampleRate),x=b.getChannelData(0);for(var i=0;i<n;i++)x[i]=(Math.random()*2-1)*(1-i/n);
   var s=AC.createBufferSource(),g=AC.createGain();s.buffer=b;g.gain.value=vol||.1;s.connect(g);g.connect(AC.destination);s.start()}
 var PENTA=[0,2,4,7,9];
-function note(r){if(mute||!AC||!set.music||Speed.v>4)return;var i=Math.max(0,Math.min(14,Math.round(14-Math.log(r/22)*5))),f=196*Math.pow(2,PENTA[i%5]/12+Math.floor(i/5));
+function note(r){if(mute||!AC||!set.music||Speed.v>4||Speed.ff)return;var i=Math.max(0,Math.min(14,Math.round(14-Math.log(r/22)*5))),f=196*Math.pow(2,PENTA[i%5]/12+Math.floor(i/5));
   var t=AC.currentTime,o=AC.createOscillator(),g=AC.createGain();o.type='sine';o.frequency.value=f;g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(.03,t+.03);g.gain.exponentialRampToValueAtTime(.0001,t+.9);o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+1)}
 
 /* ---------- tools ---------- */
@@ -367,9 +367,8 @@ function events(){var ev=W.ev,n=0;
 /* ---------- main loop ---------- */
 function fit(){V.fit(cv,stage)}
 function loop(){
-  var n=paused?0:Speed.steps(),t0=performance.now();
   if(V.brush&&dn&&dn.brush){var A=W.bodies,R=V.brush.r;for(var j=0;j<A.length;j++){var b=A[j];if(b.fixed)continue;var dx=dn.x-b.x,dy=dn.y-b.y,d=Math.hypot(dx,dy);if(d<R&&d>2){var a=.09*(1-d/R)*dn.brush;b.vx+=dx/d*a;b.vy+=dy/d*a;W.dirty=true}}}
-  for(var i=0;i<n;i++){if(Auto.on&&W.tick%45===0)bot();GG.step();if(i>0&&performance.now()-t0>12){Speed.acc=0;break}}
+  Speed.run(function(){if(Auto.on&&W.tick%45===0)bot();GG.step()},paused);
   if(Speed.v>=50)W.stats.speed=1;
   events();
   if(V.follow){var f=GG.byId(V.follow);if(f){V.cam.x+=(f.x-V.cam.x)*.12;V.cam.y+=(f.y-V.cam.y)*.12}else V.follow=0}

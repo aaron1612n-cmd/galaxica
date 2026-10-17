@@ -65,3 +65,7 @@ canvas{display:block;touch-action:none}
 
 /* the More panel never inherits a bar skin's inverted speed widget */
 .gk-bar .gk-more .spd input,.gk-bar .gk-more .spd .btn{color:var(--gk-ink,#eee);border-color:var(--gk-ink,#eee);background:transparent}.gk-bar .gk-more .spd .btn:not(.ghost){background:var(--gk-ink,#eee);color:var(--gk-bg,#111)}.gk-bar .gk-more .spd b{color:var(--gk-ink,#eee)}
+
+/* More panel: time played */
+.gk-time{display:inline-flex;align-items:center;gap:5px;height:var(--gk-h,38px);padding:0 6px;color:var(--gk-ink,#eee);font:600 14px var(--gk-font,monospace);font-variant-numeric:tabular-nums;white-space:nowrap}
+.gk-time svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round}

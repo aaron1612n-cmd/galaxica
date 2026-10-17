@@ -257,8 +257,7 @@ var bL=document.getElementById('bL'),bR=document.getElementById('bR'),bJ=documen
   t++;
   padEl.style.visibility=state==='play'?'visible':'hidden';
   [bL,bR].forEach(function(b){b.classList.toggle('pulse',!!tut&&tut.k===0)});bJ.classList.toggle('pulse',!!tut&&tut.k===1);bS.classList.toggle('pulse',!!tut&&tut.k===2);
-  var n=Speed.steps(),t0=performance.now();
-  for(var i=0;i<n;i++){tick();if(i>0&&performance.now()-t0>12){Speed.acc=0;break}}
+  Speed.run(tick);
   draw();requestAnimationFrame(loop)})();
 function tick(){
   if(Auto.on){if(tut)endTut();
@@ -267,7 +266,7 @@ function tick(){
   else if(aRun!==-1){aRun=-1;keys.L=keys.R=keys.J=false}
   if(state==='play'&&!paused)sim();else if(state==='clear'){sim()}
   after()}
-document.addEventListener('visibilitychange',function(){if(document.hidden&&state==='play')paused=true});
+
 cv.addEventListener('pointerdown',function(){if(paused)paused=false});
 if(!seen)startTut();
 </script>

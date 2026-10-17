@@ -94,10 +94,10 @@ var SFX={shoot:()=>tone(900,.05,'square',.02,.5),boom:()=>noise(.25,.12),big:()=
   dash:()=>tone(300,.15,'triangle',.06,3),bomb:()=>{noise(.9,.22);tone(90,.8,'sawtooth',.1,.3)},graze:()=>tone(1400,.03,'square',.015),
   charge:()=>tone(200,.3,'sawtooth',.07,4),ach:()=>{[0,4,7,12].forEach((n,i)=>tone(440*Math.pow(2,n/12),.12,'square',.04,1,AC&&AC.currentTime+i*.08))},
   life:()=>{[0,7,12].forEach((n,i)=>tone(330*Math.pow(2,n/12),.14,'triangle',.07,1,AC&&AC.currentTime+i*.09))}};
-function sfx(n){if(AC&&!cfg.mute&&Speed.v<=2.5)SFX[n]()}
+function sfx(n){if(AC&&!cfg.mute&&Speed.v<=2.5&&!Speed.ff)SFX[n]()}
 function buzz(ms){if(Device.mobile&&!cfg.mute&&navigator.vibrate)try{navigator.vibrate(ms)}catch(e){}}
 var BASS=[[0,0,7,5,0,0,10,7],[0,3,5,3,0,3,7,5],[0,0,5,7,3,3,5,7],[0,7,3,5,0,7,10,12]],mNext=0,mStep=0;
-function music(){var a=AC;if(!a||cfg.mute||Speed.v>1.5||s.state!=='play'||paused)return;if(mNext<a.currentTime)mNext=a.currentTime+.05;
+function music(){var a=AC;if(!a||cfg.mute||Speed.v>1.5||Speed.ff||s.state!=='play'||paused)return;if(mNext<a.currentTime)mNext=a.currentTime+.05;
   while(mNext<a.currentTime+.15){var n=BASS[sector()%4][mStep%8],f=55*Math.pow(2,n/12);
     tone(f,.16,'triangle',.07,1,mNext);if(mStep%2)tone(f*4,.08,'square',.012,1,mNext);mStep++;mNext+=boss()?.13:.17}}
 
@@ -188,7 +188,7 @@ function onPress(c){
   if(c==='Space')fireEdge=true;
   if(c==='ShiftLeft'||c==='ShiftRight')doDash();
   if(c==='KeyB')useBomb()}
-document.addEventListener('visibilitychange',function(){if(document.hidden&&s.state==='play')paused=true});
+
 var ab=document.getElementById('auto');ab.onclick=function(){auto=!auto;ab.textContent='AUTOFIRE '+(auto?'ON':'OFF')};
 document.getElementById('fs').onclick=function(){var f=document.fullscreenElement;f?document.exitFullscreen():(document.documentElement.requestFullscreen||function(){}).call(document.documentElement)};
 Auto.bind(document.getElementById('bot'));
@@ -487,7 +487,7 @@ function draw(){
   var play=s.state==='play'&&!paused;
   fire.hidden=!(Device.mobile&&play);bombB.hidden=!(Device.mobile&&play&&!tut);
   fire.classList.toggle('pulse',!!tut&&tut.k===1&&Device.mobile);
-  var n=Speed.steps(),t0=performance.now();for(var i=0;i<n;i++){step();if(i>0&&performance.now()-t0>12){Speed.acc=0;break}}
+  Speed.run(step);
   draw();requestAnimationFrame(loop)})();
 </script>
 <script src="../../shared/names.js"></script>

@@ -24,9 +24,9 @@ GK.audio={
   get ctx(){return AC},get mute(){return mute},
   ac:function(){if(!AC){try{AC=new(window.AudioContext||window.webkitAudioContext)()}catch(e){}}if(AC&&AC.state==='suspended')AC.resume();return AC},
   setMute:function(v){mute=!!v;try{localStorage.galaxicaMute=String(mute)}catch(e){}GK._snd&&GK._snd.forEach(function(b){b.classList.toggle('off',mute)})},
-  tone:function(f,d,type,vol,slide,when,dest){if(mute||!AC||Speed.v>2.5)return;var t=when||AC.currentTime,o=AC.createOscillator(),g=AC.createGain();o.type=type||'sine';o.frequency.setValueAtTime(f,t);
+  tone:function(f,d,type,vol,slide,when,dest){if(mute||!AC||Speed.v>2.5||Speed.ff)return;var t=when||AC.currentTime,o=AC.createOscillator(),g=AC.createGain();o.type=type||'sine';o.frequency.setValueAtTime(f,t);
     if(slide)o.frequency.exponentialRampToValueAtTime(Math.max(20,f*slide),t+d);g.gain.setValueAtTime(vol||.05,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);g.connect(dest||AC.destination);o.start(t);o.stop(t+d+.02)},
-  noise:function(d,vol,when,hp){if(mute||!AC||Speed.v>2.5)return;var n=AC.sampleRate*d|0,b=AC.createBuffer(1,n,AC.sampleRate),x=b.getChannelData(0);for(var i=0;i<n;i++)x[i]=(Math.random()*2-1)*(1-i/n);
+  noise:function(d,vol,when,hp){if(mute||!AC||Speed.v>2.5||Speed.ff)return;var n=AC.sampleRate*d|0,b=AC.createBuffer(1,n,AC.sampleRate),x=b.getChannelData(0);for(var i=0;i<n;i++)x[i]=(Math.random()*2-1)*(1-i/n);
     var s=AC.createBufferSource(),g=AC.createGain();s.buffer=b;g.gain.value=vol||.1;if(hp){var f=AC.createBiquadFilter();f.type='highpass';f.frequency.value=hp;s.connect(f);f.connect(g)}else s.connect(g);g.connect(AC.destination);s.start(when||AC.currentTime)}};
 document.addEventListener('pointerdown',function(){GK.audio.ac()},{capture:true});
 document.addEventListener('keydown',function(){GK.audio.ac()},{capture:true});
@@ -52,6 +52,8 @@ GK.controls=function(el,o){o=o||{};var R={};GK._snd=[];
   if(o.speed!==false){var sp=document.createElement('span');sp.setAttribute('data-speed','');(drawer?more:g2).appendChild(sp);Speed.mount(sp);R.speed=sp}
   if(drawer){g3=more;R.more=b('more','<svg viewBox="0 0 22 22" aria-hidden="true"><circle class="f" cx="5" cy="11" r="1.8"/><circle class="f" cx="11" cy="11" r="1.8"/><circle class="f" cx="17" cy="11" r="1.8"/></svg>','More',function(){more.hidden=!more.hidden;R.more.classList.toggle('on',!more.hidden)});g2.appendChild(R.more);R.panel=more;
     document.addEventListener('pointerdown',function(e){if(!more.hidden&&!more.contains(e.target)&&!R.more.contains(e.target)){more.hidden=true;R.more.classList.remove('on')}},true)}
+  if(drawer){/* game time played this session, including time caught up while away */ var tm=document.createElement('span');tm.className='gk-time';tm.title='Time played';tm.innerHTML='<svg viewBox="0 0 22 22" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="M11 6v5l3 2"/></svg><b>0:00</b>';more.appendChild(tm);R.time=tm;
+    var fmtT=function(){var s=Math.floor(Speed.ticks/60),h=Math.floor(s/3600),m=Math.floor(s%3600/60),z=s%60;tm.lastChild.textContent=(h?h+':'+String(m).padStart(2,'0'):m)+':'+String(z).padStart(2,'0')};setInterval(function(){if(!more.hidden)fmtT()},500);R.more.addEventListener('click',fmtT)}
   R.snd=b('snd',GK.icon('snd'),'Sound',function(){GK.audio.ac();GK.audio.setMute(!GK.audio.mute)});GK._snd.push(R.snd);R.snd.classList.toggle('off',mute);g3.appendChild(R.snd);
   R.names=b('names',GK.icon('info'),'Names',function(){GK.setNames(!GK.names)});g3.appendChild(R.names);R.names.classList.toggle('on',GK.names);
   if(o.help!==false){R.help=b('help',GK.icon('help'),'Tutorial',function(){o.onHelp&&o.onHelp()});g3.appendChild(R.help)}
@@ -66,7 +68,7 @@ GK.paused=false;
 GK.setPaused=function(v){GK.paused=!!v;var ov=document.getElementById('gkpause');
   if(GK.paused&&!ov){var st=document.getElementById('stage')||document.body;ov=document.createElement('div');ov.id='gkpause';ov.innerHTML='<i></i><i></i>';ov.onclick=function(){GK.setPaused(false)};st.appendChild(ov)}else if(!GK.paused&&ov){ov.remove()}
 document.querySelectorAll('.gk-b.pause').forEach(function(b){b.classList.toggle('paused',GK.paused)});GK.onPause&&GK.onPause(GK.paused)};
-var autoPaused=false;document.addEventListener('visibilitychange',function(){if(document.hidden&&!GK.paused){autoPaused=true;GK.setPaused(true)}else if(!document.hidden&&autoPaused){autoPaused=false;GK.setPaused(false)}});
+/* games keep running in hidden tabs; Speed.run catches up when the page comes back */
 addEventListener('keydown',function(e){if(e.target&&(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'))return;
   if(e.code==='KeyP'||e.code==='Escape'){GK.setPaused(!GK.paused)}else if(e.code==='KeyM'){GK.audio.setMute(!GK.audio.mute)}});
 
@@ -78,9 +80,9 @@ GK.fit=function(cv,stage,W,H,max){var r=stage.getBoundingClientRect(),dpr=Math.m
   /* tell overlays (tutorial pips, toasts) where the canvas sits so they can avoid each game's HUD */ var sr=stage.getBoundingClientRect(),crr=cv.getBoundingClientRect();stage.style.setProperty('--gk-ct',(crr.top-sr.top-stage.clientTop)+'px');stage.style.setProperty('--gk-cs',String(s));return GK.view};
 
 /* ---------- loop ---------- */
-GK.loop=function(tick,draw,pre){var last=0;(function f(ts){
+GK.loop=function(tick,draw,pre){(function f(ts){
   if(pre)pre(ts);
-  if(!GK.paused){var n=Speed.steps(),t0=performance.now();for(var i=0;i<n;i++){tick();if(i>0&&performance.now()-t0>12){Speed.acc=0;break}}}
+  Speed.run(tick,GK.paused);
   draw();requestAnimationFrame(f)})(0)};
 
 /* ---------- pointer ---------- */
