@@ -49,7 +49,7 @@ function left(){var f=0;for(var i=0;i<G.B.n;i++)if(G.flag[i])f++;return G.B.m-f}
 
 /* ---------- moves ---------- */
 function sound(i){if(G.st!=='play'||i<0||G.flag[i])return;var B=G.B;
-  if(G.rev[i]){/* chord on a settled sounding */ var f=0;B.NB[i].forEach(function(j){if(G.flag[j])f++});if(f!==B.N[i]||!B.N[i])return;B.NB[i].forEach(function(j){if(!G.rev[j]&&!G.flag[j])open(j)});ping(i);return}
+  if(G.rev[i]){/* chord on a settled sounding */ var f=0;B.NB[i].forEach(function(j){if(G.flag[j])f++});if(f!==B.N[i]||!B.N[i])return;if(G.m==='tut'&&B.NB[i].some(function(j){return!G.rev[j]&&!G.flag[j]}))tutF.chord=1;B.NB[i].forEach(function(j){if(!G.rev[j]&&!G.flag[j])open(j)});ping(i);return}
   open(i);ping(i)}
 function open(i){var B=G.B;if(G.rev[i]||G.st!=='play')return;if(B.M[i]){G.hit=i;G.st='lost';G.end=0;GK.fx.shake(8,16);sfx('aground');return}var l=[];flood(B,G.rev,i,l);l.forEach(function(p){G.revT[p[0]]=G.t+p[1]*2.2});ST.cells+=l.length;sfx('sound',l.length);checkWin()}
 function mark(i){if(G.st!=='play'||i<0||G.rev[i])return;G.flag[i]^=1;if(G.flag[i])ST.buoys++;sfx('buoy');ping(i,1)}
@@ -126,13 +126,18 @@ function sfx(k,n){var A=GK.audio,t=A.ctx&&A.ctx.currentTime;if(!A.ctx)return;if(
   else if(k==='aground'){A.noise(.8,.12,0,0);A.tone(70,.9,'sawtooth',.05,.6)}else if(k==='done')[659,784,988,1319].forEach(function(f,i){A.tone(f,.4,'sine',.04,1,t+i*.1)})}
 
 /* ---------- tutorial: sound a proven cell, buoy a proven hazard, finish ---------- */
-var tut=GK.tutorial({parent:stage,onStart:function(){var B=gen(77,{w:6,h:7,m:5,hex:0});G={m:'tut',i:0,B:B,rev:new Uint8Array(B.n),flag:new Uint8Array(B.n),revT:new Float32Array(B.n),st:'play',t:0,pings:[],end:0,mark:false,hit:-1};flood(B,G.rev,B.start);fit()},
+var tut=GK.tutorial({parent:stage,onStart:function(){tutBoard(77,{w:6,h:7,m:5,hex:0})},
   onEnd:function(){load(MODE,MODE==='survey'?curChart():0)},steps:[
   {init:function(){tutF.p=prog()},done:function(){return G&&prog()>tutF.p}},
   {init:function(){tutF.p=prog()},done:function(){return G&&prog()>tutF.p}},
-  {done:function(){return G&&G.st!=='play'&&G.end>40}}]});
+  {done:function(){return G&&G.st!=='play'&&G.end>40}},
+  {init:function(){tutF.chord=0;tutF.seed=91;tutBoard(91,{w:6,h:6,m:4,hex:0})},update:function(){if(G&&G.st!=='play'&&G.end>40&&!tutF.chord){tutF.seed+=7;tutBoard(tutF.seed,{w:6,h:6,m:4,hex:0})}},done:function(){return tutF.chord}},
+  {init:function(){tutBoard(88,{w:5,h:5,m:5,hex:1})},done:function(){return G&&G.st!=='play'&&G.end>40}}]});
+function tutBoard(seed,o){var B=gen(seed,o);G={m:'tut',i:0,B:B,rev:new Uint8Array(B.n),flag:new Uint8Array(B.n),revT:new Float32Array(B.n),st:'play',t:0,pings:[],end:0,mark:false,hit:-1};flood(B,G.rev,B.start);fit()}
 var tutF={};function prog(){var c=0;for(var i=0;i<G.B.n;i++)if(G.rev[i]||G.flag[i]&&G.B.M[i])c++;return c}
-function tutDraw(c){if(!G||G.st!=='play')return;var d=deduce(G.B,G.rev,G.flag,G.B.m),i=d.safe[0],hold=false;if(i==null){i=d.mine[0];hold=true}if(i==null||i<0)return;var p=center(i);
+function tutDraw(c){if(!G||G.st!=='play')return;
+  if(tut.i===3){var B0=G.B;for(var q=0;q<B0.n;q++){if(G.rev[q]&&B0.N[q]){var fl=0,un=0;B0.NB[q].forEach(function(j){if(G.flag[j])fl++;else if(!G.rev[j])un++});if(fl===B0.N[q]&&un>0){var pc=center(q);GK.pulse(c,pc.x,pc.y,tut.t,MAG,14);return}}}}
+  var d=deduce(G.B,G.rev,G.flag,G.B.m),i=d.safe[0],hold=false;if(i==null){i=d.mine[0];hold=true}if(i==null||i<0)return;var p=center(i);
   if(hold){var fr=(tut.t%70)/50;c.strokeStyle=MAG;c.lineWidth=3;c.beginPath();c.arc(p.x,p.y,CS*.42,-Math.PI/2,-Math.PI/2+Math.min(1,fr)*TAU);c.stroke();c.fillStyle=MAG;c.beginPath();c.arc(p.x,p.y,5,0,TAU);c.fill()}else GK.pulse(c,p.x,p.y,tut.t,MAG,10)}
 
 /* ---------- bar ---------- */
@@ -158,6 +163,6 @@ GK.guide({title:'Sounding',goal:'Chart every safe square of the reef without sou
  tips:['Start where a 1 touches only one unsurveyed square.','Free charts come in three sizes; the Daily chart is the same for everyone.']});GK.online.mount(B,{game:'sounding',boards:[{key:'charts',m:'charts',ic:'chart'},{key:'cells',m:'cells',ic:'compass'},{daily:{inv:10000,low:1},fmt:'time'}]});
 addEventListener('resize',fit);addEventListener('orientationchange',fit);
 save();paint();load(MODE,MODE==='survey'?curChart():0);GK.loop(step,render);tut.maybe();
-window.__g={tut:tut,G:function(){return G},boardFor:boardFor,deduce:deduce,provable:provable,load:load,prog:PROG,st:ST,
+window.__g={tut:tut,gen:gen,flood:flood,sound:sound,mark:mark,G:function(){return G},boardFor:boardFor,deduce:deduce,provable:provable,load:load,prog:PROG,st:ST,
   stats:function(){var r=0;for(var i=0;i<G.B.n;i++)if(G.rev[i])r++;return{m:G.m,i:G.i,st:G.st,w:G.B.w,h:G.B.h,hex:G.B.hex,mines:G.B.m,rev:r+'/'+(G.B.n-G.B.m),charts:ST.charts,t:Math.round(G.t/60)}}};
 })();
