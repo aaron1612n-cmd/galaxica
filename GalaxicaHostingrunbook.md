@@ -18,17 +18,20 @@ Purpose: resume this chat with full context. Cap ~1,500 tokens; condense, don't 
 - AUDIT before done: screenshots 1280x800 + 390x800 of tutorial, menus, overlays, toasts; no clipped words; real keyboard/mouse/CDP-touch input test; long headless AUTO run with no errors.
 - Mobile = app feel; fingers never cover what they steer (relative drag, GK.stick, pad below canvas).
 - Bots: exact sims/BFS beat heuristics; add watchdogs.
-- (2026-10-17) EVERY game keeps running when the tab is hidden or the phone sleeps: no auto-pause; on return, catch up the missed real time (fast-forward, time-budgeted). DEPLOY REGULARLY (after each playable step) so the user can test.
+- KEEP RUNNING (user 2026-10-17): all loops call `Speed.run(tick,paused)` (speed.js): frame gaps >250ms owed as ticks (x speed, cap 8h) and caught up 28ms/frame (badge with time left), hidden tab driven by 1s setInterval (250ms budget), sfx muted while `Speed.ff`. No auto-pause on hide. New games MUST use GK.loop/Kit.run/Speed.run. Phone-off = catch-up on wake (JS can't run while asleep; a discarded tab reloads fresh).
+- TIMER (user): every GK More panel shows time played (`Speed.ticks`/60). Old-bar games (galaxica, squeeze, pinprick, hairline, gravity-garden) have no More panel.
+- DEPLOY REGULARLY (after each playable step) so the user can test.
 
-## Games (26 live)
-galaxica, squeeze, pinprick, hairline, gravity-garden, powder-lab, tidewater, loom, moth-mail, cairn, tantrum, ant-kingdom, peg-song, switchyard, chirp, floe, brass-pinball, ripple, cauldron, snail-rocket, deepdig, hedgerow, sneeze-heist, bramble, rube-garden, bonfire. Favourites: Deepdig, Hedgerow.
+## Games (27 live)
+galaxica, squeeze, pinprick, hairline, gravity-garden, powder-lab, tidewater, loom, moth-mail, cairn, tantrum, ant-kingdom, peg-song, switchyard, chirp, floe, brass-pinball, ripple, cauldron, snail-rocket, deepdig, hedgerow, sneeze-heist, bramble, rube-garden, bonfire, angler. Favourites: Deepdig, Hedgerow.
 - BONFIRE (2026-10-17) `games/bonfire/` index.html+bonfire.js: survivors-like; papercut night (#10140f, bone #e7dcc4, ember #ff6a1f, Pirata One, tag bar left rail). 10 weapons (8 lv) + 12 charms, evolve = weapon lv8 + paired charm + chest; 10 heroes (gold unlock, Reaper by winning), 3 stages (unlock: survive 10:00 on previous), modes Night/Hurry/Endless/Daily, bosses 5/10/15 min, Hearth meta shop. Bot = 16-dir danger sampling; usually wins 15:00 with damage. Balance knobs: need(), hpMul(), director spawn rate.
+- ANGLER `games/angler/` (index.html+angler.js): gyotaku look (paper #f1ebdd, sumi #1d1b19, seal #b3202a, Shippori Mincho B1, brush-square bar right rail; night inverts). Hold=charge cast/raise lure/reel; tap=strike on bite. 60 species (SP table) in 5 waters, legends idx 11/23/35/47/59, tension fight (snap >1, slack), rod/reel/line/hook upgrades, 7 baits, journal of ink prints. Modes career/derby/daily (3 min kg). Bot casts at best-value fish, holds depth, tension controller.
 
 ## Python Answer Book `public/python/` (live /python/)
 1371 answers / 79 sections / 1447 run-checked examples. Content `tools/pyref/content/NN-*.txt`; build `python3 tools/pyref/build.py` (needs `/home/user/pyenv`: `uv venv --managed-python -p 3.12` + pillow etc; runs every example, fails on wrong output/broken links). User wants beginner fundamentals explained ("I NEED MORE").
 
 ## NEXT (user picks 2026-10-17, in order)
-1. NEW GAMES batch 3: Bonfire DONE; next Angler (fishing+journal+upgrades), Lamplight (mirror beams), Putt (mini golf), Sounding (sonar minesweeper, no-guess), Duckling Parade (lemmings-like).
+1. NEW GAMES batch 3: Bonfire, Angler DONE; next Lamplight (mirror beams), Putt (mini golf), Sounding (sonar minesweeper, no-guess), Duckling Parade (lemmings-like).
 2. A Bot Workshop: NO coding; create menu editing bot stats (reaction, aim, caution, greed, aggression, mistakes...) + LOTS of presets; bots play games, scored. B Galaxica Online: Worker+D1 global/daily leaderboards, ghost replays.
 3. D Deepdig full roguelite campaign.
 REJECTED: party mode, cabinet galaxy/level editor/Run-it/attract mode.
