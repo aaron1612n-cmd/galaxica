@@ -187,5 +187,12 @@
     "blurb": "Cast, hold the depth, strike on the bite and play the line. Sixty fish in five waters, each one pressed into your journal as an ink print.",
     "added": "2026-10-17",
     "thumb": "games/angler/thumb.jpg"
+  },
+  {
+    "id": "lamplight",
+    "title": "Lamplight",
+    "blurb": "Set mirrors on a rocky coast so the lighthouse beam reaches every ship at once. Sixty voyages, split beams, bolted mirrors and a second lighthouse.",
+    "added": "2026-10-17",
+    "thumb": "games/lamplight/thumb.jpg"
   }
 ]

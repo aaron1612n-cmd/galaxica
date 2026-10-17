@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#0f3b3a">
+<title>Lamplight</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Limelight&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../shared/gk.css">
+<script src="../../shared/device.js"></script>
+<script src="../../shared/auto.js"></script>
+<script src="../../shared/speed.js"></script>
+<script src="../../shared/gk.js"></script>
+<script src="../../shared/gk2.js"></script>
+<style>
+/* Lamplight: an Art Deco lighthouse poster. Sea green, cream, one lamp yellow. */
+:root{--gk-ty:58;--gk-toy:120;--gk-bg:#0f3b3a;--gk-ink:#efe3c8;--gk-acc:#f2b705;--gk-font:"Limelight",Georgia,serif;--gk-bw:3px;--gk-r:0;--gk-sh:none;--gk-h:42px;--gk-pr:0;--sea:#0f3b3a;--cream:#efe3c8;--lamp:#f2b705}
+body,#stage{background:#0f3b3a}
+canvas#c{touch-action:none}
+/* bar skin: deco frames, a double cream rule with stepped corners */
+.gk-bar{background:#0b2f2e;border-bottom:3px double var(--cream)}
+.gk-bar .gk-b{border:3px double var(--cream);background:transparent;clip-path:polygon(6px 0,calc(100% - 6px) 0,100% 6px,100% calc(100% - 6px),calc(100% - 6px) 100%,6px 100%,0 calc(100% - 6px),0 6px);font:16px "Limelight",serif}
+.gk-bar .gk-b.gk-auto:not(.ghost),.gk-bar .gk-b.on,.gk-bar .gk-b.names.on{background:var(--lamp);border-color:var(--lamp);color:var(--sea)}
+.gk-more{background:#0b2f2e}
+.gk-sheet{border:3px double var(--cream)}
+.gk-mh{font:24px "Limelight",serif}
+.chap{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
+.chap h3{margin:0;display:flex;align-items:center;gap:10px;font:20px "Limelight",serif;color:var(--lamp)}
+.chap h3 svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.6}
+.lvls{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
+@media(min-width:620px){.lvls{grid-template-columns:repeat(12,1fr)}}
+.lv{position:relative;aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border:2px solid var(--cream);background:transparent;color:var(--cream);font:18px/1 "Limelight",serif;cursor:pointer;padding:0}
+.lv.done{background:var(--cream);color:var(--sea)}
+.lv.cur{outline:3px solid var(--lamp);outline-offset:2px}
+.lv:disabled{opacity:.3;cursor:default}
+.lv i{display:flex;gap:1px}.lv i b{width:5px;height:5px;background:currentColor;opacity:.25;transform:rotate(45deg)}.lv i b.on{opacity:1;background:var(--lamp)}
+.lv.done i b.on{background:#b07f00}
+</style>
+</head>
+<body>
+<div id="app"><div id="stage"><canvas id="c"></canvas></div><div id="bar"></div></div>
+<script src="lamplight.js"></script>
+</body>
+</html>
