@@ -67,7 +67,7 @@ function mission(k,n){var m=MISS[G.mi%MISS.length];if(m[0]!==k)return;G.mp+=n||1
 /* ============ physics ============ */
 function collideSeg(b,s){if(s.gate&&b.vy<0)return;var dx=s.x2-s.x1,dy=s.y2-s.y1,l2=dx*dx+dy*dy,t=Math.max(0,Math.min(1,((b.x-s.x1)*dx+(b.y-s.y1)*dy)/l2)),cx=s.x1+dx*t,cy=s.y1+dy*t,ex=b.x-cx,ey=b.y-cy,d=Math.hypot(ex,ey);
   if(d>=BR||d===0)return;var nx=ex/d,ny=ey/d;b.x=cx+nx*BR;b.y=cy+ny*BR;var vn=b.vx*nx+b.vy*ny;if(vn<0){b.vx-=(1+s.e)*vn*nx;b.vy-=(1+s.e)*vn*ny;
-    if(s.kick&&vn<-1.2){b.vx+=nx*s.kick;b.vy+=ny*s.kick;s.f=8;add(10);GK.audio.tone(330,.05,'square',.03);GK.fx.burst(cx,cy,5,{col:BRASSL,speed:2,life:12,size:2})}else if(vn<-3)GK.audio.tone(140,.03,'triangle',.02)}}
+    if(s.kick&&vn<-1.2){if(tut.active&&s.sl)tutF.sling=1;b.vx+=nx*s.kick;b.vy+=ny*s.kick;s.f=8;add(10);GK.audio.tone(330,.05,'square',.03);GK.fx.burst(cx,cy,5,{col:BRASSL,speed:2,life:12,size:2})}else if(vn<-3)GK.audio.tone(140,.03,'triangle',.02)}}
 function collideCir(b,c,kick){var ex=b.x-c.x,ey=b.y-c.y,d=Math.hypot(ex,ey),R=BR+c.r;if(d>=R||d===0)return false;var nx=ex/d,ny=ey/d;b.x=c.x+nx*R;b.y=c.y+ny*R;var vn=b.vx*nx+b.vy*ny;if(vn<0){var e=c.e==null?.7:c.e;b.vx-=(1+e)*vn*nx;b.vy-=(1+e)*vn*ny}if(kick){b.vx+=nx*kick;b.vy+=ny*kick}return true}
 function collideFl(b,f){var tx=f.px+Math.cos(f.a)*f.len,ty=f.py+Math.sin(f.a)*f.len,dx=tx-f.px,dy=ty-f.py,l2=dx*dx+dy*dy,t=Math.max(0,Math.min(1,((b.x-f.px)*dx+(b.y-f.py)*dy)/l2)),cx=f.px+dx*t,cy=f.py+dy*t,rf=10-4*t,ex=b.x-cx,ey=b.y-cy,d=Math.hypot(ex,ey),R=BR+rf;
   if(d>=R||d===0)return;var nx=ex/d,ny=ey/d;b.x=cx+nx*R;b.y=cy+ny*R;var vsx=-f.w*(cy-f.py),vsy=f.w*(cx-f.px),rx=b.vx-vsx,ry=b.vy-vsy,vn=rx*nx+ry*ny;if(vn<0){rx-=1.35*vn*nx;ry-=1.35*vn*ny;b.vx=rx+vsx;b.vy=ry+vsy;if(Math.abs(f.w)>.05){b.hitFl=1;if(tut.active)tutF.flip=1}}}
@@ -77,7 +77,7 @@ function physics(){
       if(b.lane&&b.y>772&&b.x>440){b.y=772;b.vy=0;b.vx=0}
       for(var k=0;k<SEG.length;k++)collideSeg(b,SEG[k]);for(k=0;k<CIR.length;k++)collideCir(b,CIR[k]);
       for(k=0;k<BUMP.length;k++){if(collideCir(b,BUMP[k],5.2)){var bp=BUMP[k];bp.f=10;add(100);G.bumps++;ST.bumps++;mission('bolt');GK.audio.tone(200+k*60,.08,'square',.05);GK.fx.burst(bp.x,bp.y,8,{col:BRASSL,speed:3,life:14,size:2,shape:'ci'});if(tut.active)tutF.hit=1}}
-      DROP.forEach(function(d){if(!d.up)return;if(b.x-BR<d.x+5&&b.x>d.x&&b.y>d.y-3&&b.y<d.y+d.h+3&&b.vx<0){d.up=0;b.x=d.x+5+BR;b.vx=Math.abs(b.vx)*.6;add(500,d.x+14,d.y);G.bonus+=500;GK.audio.tone(520+d.i*80,.1,'triangle',.05);if(tut.active)tutF.hit=1;
+      DROP.forEach(function(d){if(!d.up)return;if(b.x-BR<d.x+5&&b.x>d.x&&b.y>d.y-3&&b.y<d.y+d.h+3&&b.vx<0){d.up=0;if(tut.active)tutF.drop=1;b.x=d.x+5+BR;b.vx=Math.abs(b.vx)*.6;add(500,d.x+14,d.y);G.bonus+=500;GK.audio.tone(520+d.i*80,.1,'triangle',.05);if(tut.active)tutF.hit=1;
         if(DROP.every(function(q){return!q.up})){add(5000*G.X,60,440);ST.banks++;mission('box');G.X=Math.min(5,G.X+1);setTimeout(function(){DROP.forEach(function(q){q.up=1})},900);GK.fx.shake(4,10)}}});
       if(b.lane&&b.y<300)b.lane=0;
       for(k=0;k<FL.length;k++)collideFl(b,FL[k]);
@@ -85,7 +85,7 @@ function physics(){
   balls.forEach(function(b){if(b.held||b.lane)return;if(Math.hypot(b.vx,b.vy)<.4){b.still=(b.still||0)+1;if(b.still>180){b.still=0;b.vx+=(Math.random()-.5)*6;b.vy-=4;GK.fx.shake(5,10);GK.audio.noise(.1,.08)}}else b.still=0});
   /* sensors */ balls.forEach(function(b){if(b.held)return;SENS.forEach(function(s){var d=Math.hypot(b.x-s.x,b.y-s.y);if(d>s.r){if(b['in'+s.k+(s.i||0)])b['in'+s.k+(s.i||0)]=0;return}var key='in'+s.k+(s.i||0);if(b[key])return;b[key]=1;
       if(s.k==='lane'){if(!G.lanes[s.i]){G.lanes[s.i]=1;add(300);GK.audio.tone(660+s.i*110,.1,'sine',.05)}if(G.lanes.every(function(x){return x})){G.lanes=[0,0,0];G.X=Math.min(5,G.X+1);ST.lanes++;mission('flag');add(3000,232,200);GK.fx.burst(232,180,20,{col:BRASSL,speed:4,life:30,size:3,shape:'ci'})}}
-      else if(s.k==='bell'){add(G.multi?20000:1000,s.x,s.y);mission('note');if(G.multi){ST.jack++;GK.fx.shake(8,16)}var f0=G.multi?1047:784;GK.audio.tone(f0,.9,'sine',.07);GK.audio.tone(f0*2.76,.5,'sine',.02)}
+      else if(s.k==='bell'){if(tut.active)tutF.bell=1;add(G.multi?20000:1000,s.x,s.y);mission('note');if(G.multi){ST.jack++;GK.fx.shake(8,16)}var f0=G.multi?1047:784;GK.audio.tone(f0,.9,'sine',.07);GK.audio.tone(f0*2.76,.5,'sine',.02)}
       else if(s.k==='saucer'&&Math.hypot(b.vx,b.vy)<6&&!G.hold&&!(G.saucCd>0)){b.held=1;b.x=s.x;b.y=s.y;b.vx=b.vy=0;G.hold={b:b,t:0};G.sauc++;ST.saucer++;add(2500,s.x,s.y);mission('target');GK.audio.tone(180,.25,'triangle',.06,1.6)}})});
   if(G.hold){G.hold.t++;if(G.hold.t>55){var hb=G.hold.b;hb.held=0;hb.vx=-7.5;hb.vy=4.5;G.hold=null;G.saucCd=90;if(G.sauc%3===0&&!G.multi){startMulti()}}}}
 function startMulti(){G.multi=1;ST.multi++;GK.fx.shake(10,20);GK.fx.hitstop(10);for(var i=0;i<2;i++)(function(i){setTimeout(function(){if(!G||G.over)return;balls.push({x:455,y:772,vx:0,vy:-19-i,lane:1})},300+i*600)})(i);G.save=Math.max(G.save,600)}
@@ -149,9 +149,18 @@ function drawGlass(){ctx.fillStyle=MAHO;ctx.fillRect(0,0,W,100);ctx.strokeStyle=
 function drawCard(sc){ctx.fillStyle='rgba(42,20,12,.78)';ctx.fillRect(40,300,W-80,220);ctx.strokeStyle=BRASS;ctx.lineWidth=2;ctx.strokeRect(46,306,W-92,208);ctx.fillStyle=BRASSL;ctx.textAlign='center';ctx.font='800 46px Cinzel';ctx.fillText(String(sc),W/2,420);
   GK.icoDraw(ctx,MODE==='zen'?'infinity':MODE==='daily'?'sun':'crown',W/2,356,30,BRASS,1.8);if(MODE==='daily'){ctx.font='800 20px Cinzel';ctx.fillText(String(GK.daily.streak()),W/2+30,364)}GK.pulse(ctx,W/2,476,T,BRASSL,9)}
 /* ============ tutorial: plunge, flip, hit something ============ */
-function tutDraw(){var t=tut.t;if(tut.i===0)GK.pulse(ctx,455,800,t,BRASSL,12);else if(tut.i===1){var b=balls[0];if(b&&!b.lane){GK.pulse(ctx,b.x<232?150:314,722,t,BRASSL,12)}}else{GK.pulse(ctx,232,412,t,BRASSL,14)}}
+function tutDraw(){var t=tut.t;if(tut.i===0)GK.pulse(ctx,455,800,t,BRASSL,12);else if(tut.i===1){var b=balls[0];if(b&&!b.lane){GK.pulse(ctx,b.x<232?150:314,722,t,BRASSL,12)}}else if(tut.i===2){GK.pulse(ctx,232,412,t,BRASSL,14)}else{var q=STG[tut.i-3];GK.pulse(ctx,q[4],q[5],t,BRASSL,16)}}
 var tut=GK.tutorial({parent:stage,onStart:function(){newGame();G.tut=true;tutF={plunge:0,flip:0,hit:0}},onEnd:function(){mode='title';G=null;balls=[]},
-  steps:[{done:function(){return tutF.plunge}},{done:function(){return tutF.flip}},{done:function(){return tutF.hit}}]});
+  steps:[{done:function(){return tutF.plunge}},{done:function(){return tutF.flip}},{done:function(){return tutF.hit}},
+   {init:function(){tstage(0)},update:function(t){stageTick(t,0)},done:function(){return G.bumps>0}},
+   {init:function(){tstage(1)},update:function(t){stageTick(t,1)},done:function(){return tutF.bell}},
+   {init:function(){tstage(2)},update:function(t){stageTick(t,2)},done:function(){return tutF.drop}},
+   {init:function(){tstage(3)},update:function(t){stageTick(t,3)},done:function(){return G.lanes.some(function(x){return x})||G.X>1}},
+   {init:function(){tstage(4)},update:function(t){stageTick(t,4)},done:function(){return G.sauc>0}},
+   {init:function(){tstage(5)},update:function(t){stageTick(t,5)},done:function(){return tutF.sling}}]});
+var STG=[[170,255,0,2.4,170,330],[232,190,0,3,232,256],[150,470,-7,.5,34,452],[232,120,0,2,232,176],[392,380,0,2.4,392,452],[84,500,0,3,90,590]];
+function tstage(i){var q=STG[i];balls=[{x:q[0],y:q[1],vx:q[2],vy:q[3]}];G.save=0;if(i===3)G.lanes=[0,0,0]}
+function stageTick(t,i){if(t%150===149||!balls.length)tstage(i)}
 /* ============ bar ============ */
 var R=GK.controls(document.getElementById('bar'),{bar:'right',onHelp:function(){tut.start()},extra:[
   {id:'rs',html:GK.icon('restart'),title:'New game',fn:function(){if(!tut.active)newGame()}},
