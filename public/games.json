@@ -194,5 +194,12 @@
     "blurb": "Set mirrors on a rocky coast so the lighthouse beam reaches every ship at once. Sixty voyages, split beams, bolted mirrors and a second lighthouse.",
     "added": "2026-10-17",
     "thumb": "games/lamplight/thumb.jpg"
+  },
+  {
+    "id": "putt",
+    "title": "Putt",
+    "blurb": "Mini golf printed in two riso inks. Pull back to putt round windmills, sand, ponds, slopes and tunnels across three 18-hole courses.",
+    "added": "2026-10-17",
+    "thumb": "games/putt/thumb.jpg"
   }
 ]

@@ -22,17 +22,18 @@ Purpose: resume this chat with full context. Cap ~1,500 tokens; condense, don't 
 - TIMER (user): every GK More panel shows time played (`Speed.ticks`/60). Old-bar games (galaxica, squeeze, pinprick, hairline, gravity-garden) have no More panel.
 - DEPLOY REGULARLY (after each playable step) so the user can test.
 
-## Games (28 live)
-galaxica, squeeze, pinprick, hairline, gravity-garden, powder-lab, tidewater, loom, moth-mail, cairn, tantrum, ant-kingdom, peg-song, switchyard, chirp, floe, brass-pinball, ripple, cauldron, snail-rocket, deepdig, hedgerow, sneeze-heist, bramble, rube-garden, bonfire, angler, lamplight. Favourites: Deepdig, Hedgerow.
+## Games (29 live)
+galaxica, squeeze, pinprick, hairline, gravity-garden, powder-lab, tidewater, loom, moth-mail, cairn, tantrum, ant-kingdom, peg-song, switchyard, chirp, floe, brass-pinball, ripple, cauldron, snail-rocket, deepdig, hedgerow, sneeze-heist, bramble, rube-garden, bonfire, angler, lamplight, putt. Favourites: Deepdig, Hedgerow.
 - BONFIRE (2026-10-17) `games/bonfire/` index.html+bonfire.js: survivors-like; papercut night (#10140f, bone #e7dcc4, ember #ff6a1f, Pirata One, tag bar left rail). 10 weapons (8 lv) + 12 charms, evolve = weapon lv8 + paired charm + chest; 10 heroes (gold unlock, Reaper by winning), 3 stages (unlock: survive 10:00 on previous), modes Night/Hurry/Endless/Daily, bosses 5/10/15 min, Hearth meta shop. Bot = 16-dir danger sampling; usually wins 15:00 with damage. Balance knobs: need(), hpMul(), director spawn rate.
 - ANGLER `games/angler/` (index.html+angler.js): gyotaku look (paper #f1ebdd, sumi #1d1b19, seal #b3202a, Shippori Mincho B1, brush-square bar right rail; night inverts). Hold=charge cast/raise lure/reel; tap=strike on bite. 60 species (SP table) in 5 waters, legends idx 11/23/35/47/59, tension fight (snap >1, slack), rod/reel/line/hook upgrades, 7 baits, journal of ink prints. Modes career/derby/daily (3 min kg). Bot casts at best-value fish, holds depth, tension controller.
 - LAMPLIGHT `games/lamplight/`: Art Deco poster (sea #0f3b3a, cream #efe3c8, lamp #f2b705, Limelight, double-rule bar top). Tap water=place / then \ then remove; tap bolted ring mirror=rotate. 60 seeded levels (params(n): rot from ch2, splitter ch3, 2 lighthouses ch4, spare ch5), built along a planned beam path; solve() = DFS deciding cells as light reaches them; par = min mirrors; crate K = par+spare; stars by mirrors used. Modes voyage/watch(endless)/daily. Bot replays solver answer (all 60 x3 stars).
+- PUTT `games/putt/`: riso 2-ink (paper #f4efe4, green #00835f, pink #ff4f9a multiply + offset, halftone patterns, Bowlby One SC, ticket-stub bar bottom). Drag anywhere to pull back; arrows+Space. Holes = seeded cell paths (tryHole) with posts/bumpers/sand/water/slopes/mills/bars/tunnels; bestShot() searches angle x power with exact sim; par = clamp(botStrokes+1,2,5); holes past d>.08 must not be bot-aceable. 3 courses x18 (unlock in order), free play, daily nine.
 
 ## Python Answer Book `public/python/` (live /python/)
 1371 answers / 79 sections / 1447 run-checked examples. Content `tools/pyref/content/NN-*.txt`; build `python3 tools/pyref/build.py` (needs `/home/user/pyenv`: `uv venv --managed-python -p 3.12` + pillow etc; runs every example, fails on wrong output/broken links). User wants beginner fundamentals explained ("I NEED MORE").
 
 ## NEXT (user picks 2026-10-17, in order)
-1. NEW GAMES batch 3: Bonfire, Angler, Lamplight DONE; next Putt (mini golf), Sounding (sonar minesweeper, no-guess), Duckling Parade (lemmings-like).
+1. NEW GAMES batch 3: Bonfire, Angler, Lamplight, Putt DONE; next Sounding (sonar minesweeper, no-guess), Duckling Parade (lemmings-like).
 2. A Bot Workshop: NO coding; create menu editing bot stats (reaction, aim, caution, greed, aggression, mistakes...) + LOTS of presets; bots play games, scored. B Galaxica Online: Worker+D1 global/daily leaderboards, ghost replays.
 3. D Deepdig full roguelite campaign.
 REJECTED: party mode, cabinet galaxy/level editor/Run-it/attract mode.

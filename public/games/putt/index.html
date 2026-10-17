@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#f4efe4">
+<title>Putt</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bowlby+One+SC&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../shared/gk.css">
+<script src="../../shared/device.js"></script>
+<script src="../../shared/auto.js"></script>
+<script src="../../shared/speed.js"></script>
+<script src="../../shared/gk.js"></script>
+<script src="../../shared/gk2.js"></script>
+<style>
+/* Putt: a two-ink risograph print. Paper, riso green, fluorescent pink printed slightly off-register. */
+:root{--gk-ty:74;--gk-toy:130;--gk-bg:#f4efe4;--gk-ink:#00835f;--gk-acc:#ff4f9a;--gk-font:"Bowlby One SC",Impact,sans-serif;--gk-bw:2px;--gk-r:0;--gk-sh:none;--gk-h:42px;--gk-pr:0;--paper:#f4efe4;--green:#00835f;--pink:#ff4f9a}
+body,#stage{background:#f4efe4}
+canvas#c{touch-action:none}
+/* bar skin: ticket stubs, perforated ends, pink shadow printed off-register */
+.gk-bar{background:var(--paper);border-top:2px dashed var(--green)}
+.gk-bar .gk-b{border:2px solid var(--green);background:var(--paper);box-shadow:3px 2px 0 var(--pink);-webkit-mask:radial-gradient(circle at 0 50%,transparent 5px,#000 5.5px) left/51% 100% no-repeat,radial-gradient(circle at 100% 50%,transparent 5px,#000 5.5px) right/51% 100% no-repeat;mask:radial-gradient(circle at 0 50%,transparent 5px,#000 5.5px) left/51% 100% no-repeat,radial-gradient(circle at 100% 50%,transparent 5px,#000 5.5px) right/51% 100% no-repeat;font:15px "Bowlby One SC",sans-serif;padding:0 12px}
+.gk-bar .gk-b.gk-auto:not(.ghost),.gk-bar .gk-b.on,.gk-bar .gk-b.names.on{background:var(--pink);color:var(--paper);border-color:var(--pink)}
+.gk-sheet{border:2px solid var(--green);box-shadow:5px 4px 0 var(--pink)}
+.gk-mh{font:24px "Bowlby One SC",sans-serif;color:var(--green)}
+.card{width:100%;border-collapse:collapse;font:15px "Bowlby One SC",sans-serif;color:var(--green)}
+.card td,.card th{border:1.5px solid var(--green);text-align:center;padding:4px 2px;min-width:22px}
+.card th{background:var(--green);color:var(--paper);font-weight:400}
+.card td.u{color:var(--pink)}.card td.ace{background:var(--pink);color:var(--paper)}
+.wrap{overflow-x:auto}
+.crs{display:flex;gap:10px;flex-wrap:wrap}
+.crs button{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 14px;border:2px solid var(--green);background:var(--paper);color:var(--green);font:18px "Bowlby One SC",sans-serif;box-shadow:4px 3px 0 var(--pink);cursor:pointer}
+.crs button svg{width:34px;height:34px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.crs button.on{background:var(--green);color:var(--paper)}
+.crs button:disabled{opacity:.4;cursor:default}
+</style>
+</head>
+<body>
+<div id="app"><div id="stage"><canvas id="c"></canvas></div><div id="bar"></div></div>
+<script src="putt.js"></script>
+</body>
+</html>
