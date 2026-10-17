@@ -4,7 +4,7 @@ Purpose: resume this chat with full context. Cap ~1,500 tokens; condense, don't 
 ## Hosting
 - Repo `aaron1612n-cmd/galaxica`. Static arcade in `public/`, served by Cloudflare Worker `play` (wrangler.jsonc assets ./public).
 - LIVE: https://play.galaxica.workers.dev. Deploy: `npx wrangler deploy` (user approved deploys 2026-10-15; edge cache lags ~1 min). Pushing alone does not publish.
-- Branches: work landed on `claude/determined-brown-9f1py4` (draft PR aaron1612n-cmd/galaxica#2, open, unmerged; main still at d27943c). Session 2026-10-16 branch `claude/keen-johnson-dabr2d` fast-forwarded to it (9d2fb0a). Live site = that state (25 games). Commit + push + deploy after each finished game.
+- BRANCH RULE (user, 2026-10-17, permanent): ALL work happens on `main`. Commit + push main + deploy after each finished change. If a session is handed a `claude/*` branch, fast-forward/merge it into main and keep working on main. 2026-10-17: every branch (cool-dirac, dazzling-johnson, determined-brown, keen-johnson, nice-lovelace, epic-babbage) merged into main (all fast-forward). Live site = main (25 games + Python Answer Book).
 
 ## Structure
 - Hub `public/index.html` reads `public/games.json` ({id,title,blurb,thumb}). Game = `public/games/<id>/index.html` + `thumb.jpg` (469x352).
@@ -35,9 +35,6 @@ User feedback 2026-10-16: "doesn't even explain what from tkinter import * is, I
 Build: `python3 tools/pyref/build.py [--only idprefix]` (~90 s full). FAILS if a ```text block after a run block differs from real output, on invisible chars (Write tool turns \uXXXX into real chars: fix with python), on broken [[links]]/see:. Fake tk events need focus_force()+update(). TK_MS=3000 runs tk examples longer. Runner auto-closes turtle.
 Env: `uv venv --managed-python -p 3.12 /home/user/pyenv` + pillow matplotlib numpy pandas openpyxl beautifulsoup4 flask requests (system python has no tk).
 Search check: scratchpad search.js / q.js. Tune by adding phrases to `aka:`. Set outputs of strings are hash-order dependent: sort them (verify with PYTHONHASHSEED=1..3).
-
-## Session 2026-10-17 (branch `claude/epic-babbage-dtojge`)
-Fast-forwarded to nice-lovelace-x5im31 (f7311d6) = latest state of all work. Continue here.
 
 ## NEXT
 1. Ask user which Answer Book answers are missing (ideas: lazy-load bodies if data.js grows past 2.4 MB, struct/io, email parsing, pygame section).
