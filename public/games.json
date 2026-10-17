@@ -208,5 +208,12 @@
     "blurb": "Survey a reef on a nautical chart. Each sounding counts the wrecks beside it; buoy them and chart the rest, never needing a blind guess.",
     "added": "2026-10-17",
     "thumb": "games/sounding/thumb.jpg"
+  },
+  {
+    "id": "duckling-parade",
+    "title": "Duckling Parade",
+    "blurb": "Ducklings waddle off on their own. Hand out jobs (build, dig, tunnel, stop, float, climb) so the parade reaches Mother Duck's pond.",
+    "added": "2026-10-17",
+    "thumb": "games/duckling-parade/thumb.jpg"
   }
 ]

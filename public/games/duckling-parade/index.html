@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#f3ead2">
+<title>Duckling Parade</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gluten:wght@500;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../shared/gk.css">
+<script src="../../shared/device.js"></script>
+<script src="../../shared/auto.js"></script>
+<script src="../../shared/speed.js"></script>
+<script src="../../shared/gk.js"></script>
+<script src="../../shared/gk2.js"></script>
+<style>
+/* Duckling Parade: a cut-paper picture book. Cream sky, paper hills, earth, slate, one duckling yellow. */
+:root{--gk-ty:44;--gk-toy:90;--gk-bg:#f3ead2;--gk-ink:#2b2622;--gk-acc:#ffcf33;--gk-font:"Gluten",Georgia,serif;--gk-bw:2.5px;--gk-r:14px;--gk-sh:none;--gk-h:42px;--gk-pr:14px;--cream:#f3ead2;--ink:#2b2622;--yolk:#ffcf33;--earth:#8a5a3b}
+body,#stage{background:#f3ead2}
+canvas#c{touch-action:none}
+/* bar skin: torn paper labels, soft-cornered, a little tilted */
+.gk-bar{background:#eadfc1}
+.gk-bar .gk-b{border:2.5px solid var(--ink);border-radius:14px 10px 16px 9px;background:var(--cream);font:800 16px "Gluten",serif;transform:rotate(-1.5deg)}
+.gk-bar .gk-b:nth-child(even){transform:rotate(1.5deg)}
+.gk-bar .gk-b.gk-auto:not(.ghost),.gk-bar .gk-b.on,.gk-bar .gk-b.names.on{background:var(--yolk)}
+/* the skill pad: one paper tag per job, with how many are left */
+#pad{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;padding:6px 8px 4px;flex:none;background:#eadfc1;border-top:2.5px solid var(--ink)}
+#pad button{position:relative;width:58px;height:62px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border:2.5px solid var(--ink);border-radius:14px 10px 16px 9px;background:var(--cream);color:var(--ink);font:800 17px/1 "Gluten",serif;cursor:pointer;touch-action:manipulation}
+#pad button svg{width:28px;height:28px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+#pad button.on{background:var(--yolk);transform:translateY(-4px) rotate(-2deg)}
+#pad button:disabled{opacity:.35}
+#pad .rate{width:auto;flex-direction:row;padding:0 6px;gap:4px}
+#pad .rate b{min-width:22px;text-align:center}
+#pad .rate i{display:flex;width:26px;height:26px;align-items:center;justify-content:center;font-style:normal;font-size:20px;border:2px solid var(--ink);border-radius:50%}
+.gk-names #pad button[data-cap]::after{content:attr(data-cap);font:500 9px "Gluten",serif}
+@media(max-width:520px){#pad button{width:48px;height:56px;font-size:15px}#pad button svg{width:24px;height:24px}}
+.lvs{display:grid;grid-template-columns:repeat(auto-fill,minmax(58px,1fr));gap:8px}
+.lvs button{aspect-ratio:1;border:2.5px solid var(--ink);border-radius:14px 10px 16px 9px;background:var(--cream);font:800 20px "Gluten",serif;color:var(--ink);cursor:pointer}
+.lvs button.done{background:var(--yolk)}.lvs button:disabled{opacity:.3;cursor:default}
+.gk-sheet{border:2.5px solid var(--ink);border-radius:18px 12px 20px 10px}
+.gk-mh{font:800 24px "Gluten",serif}
+</style>
+</head>
+<body>
+<div id="app"><div id="stage"><canvas id="c"></canvas></div><div id="pad"></div><div id="bar"></div></div>
+<script src="parade.js"></script>
+</body>
+</html>
