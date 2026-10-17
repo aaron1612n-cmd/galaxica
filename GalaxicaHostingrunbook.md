@@ -34,8 +34,12 @@ galaxica, squeeze, pinprick, hairline, gravity-garden, powder-lab, tidewater, lo
 ## Python Answer Book `public/python/` (live /python/)
 1371 answers / 79 sections / 1447 run-checked examples. Content `tools/pyref/content/NN-*.txt`; build `python3 tools/pyref/build.py` (needs `/home/user/pyenv`: `uv venv --managed-python -p 3.12` + pillow etc; runs every example, fails on wrong output/broken links). User wants beginner fundamentals explained ("I NEED MORE").
 
-## NEXT (user picks 2026-10-17, in order)
-1. NEW GAMES batch 3 DONE (6 games, 2026-10-17).
-2. A Bot Workshop: NO coding; create menu editing bot stats (reaction, aim, caution, greed, aggression, mistakes...) + LOTS of presets; bots play games, scored. B Galaxica Online: Worker+D1 global/daily leaderboards, ghost replays.
-3. D Deepdig full roguelite campaign.
+## ONLINE + BOT WORKSHOP (A+B, 2026-10-17, LIVE)
+- Worker `worker/index.js` (wrangler main; assets run_worker_first /api/*) + D1 `galaxica` (binding DB, migrations/). API: GET /api/top?game&board&kind&low&pid, POST /api/score {game,board,score,low,pid,kind,name,bot,ghost}, GET /api/mine?pid&kind, GET /api/ghost?id, POST /api/name. One row per owner (pid, or pid:botname). Rate limit 40/min/IP. Test locally: `npx wrangler dev --port 8787` (+ `d1 migrations apply galaxica --local`). Clean test rows with `wrangler d1 execute galaxica --remote`.
+- shared/online.js (Online.post/top/open/watch/button; pid+name in localStorage). gk2.js auto-loads it; GK.online.mount(R,{game,boards}) in all 26 GK games (metric boards poll goals metrics; daily boards read dstreak best with inv/scale). Old-bar games: Online.watch+button injected before </body>. Putt posts course totals with shot-log ghosts and races them.
+- Bot profiles in auto.js: Auto.profile {n,p,i,c,s{rea,acc,cau,gre,agg,pat,mis,foc,tem}}, 30 PRESETS, helpers think/react/slip/noise/w/st. Games with Auto.deep=true use stats directly (bonfire, angler, lamplight, putt, sounding, duckling-parade); others get the tempo/focus gate in Speed.run. AUTO runs post to the 'bot' boards. Page `public/workshop/` (hub look, linked from hub top bar).
+
+## NEXT
+1. Guides + deeper tutorials for ALL games (see RULE CHANGE).
+2. D Deepdig full roguelite campaign.
 REJECTED: party mode, cabinet galaxy/level editor/Run-it/attract mode.
