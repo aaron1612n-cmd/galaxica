@@ -172,3 +172,41 @@ mark{background:none;color:inherit;box-shadow:inset 0 -.38em 0 color-mix(in srgb
 }
 @media (prefers-reduced-motion:reduce){.copy.done{animation:none}.rail{transition:none}}
 @media print{.top,.rail,.copy,.pn{display:none}.page{display:block}}
+
+/* ---------- Pip, the buddy ---------- */
+.pip-fab{position:fixed;z-index:40;right:max(16px,env(safe-area-inset-right));bottom:max(16px,env(safe-area-inset-bottom));width:52px;height:58px;padding:0;border:0;background:none;color:var(--ink);cursor:pointer;filter:drop-shadow(3px 3px 0 var(--acc));transition:transform .18s}
+.pip-fab svg{width:100%;height:100%;display:block}
+.pip-fab:hover{transform:translateY(-3px) rotate(-4deg)}
+.pip-fab.on{display:none}
+.eyes{transform-origin:20px 15px;animation:blink 5s infinite}
+@keyframes blink{0%,92%,100%{transform:scaleY(1)}95%{transform:scaleY(.1)}}
+.pip{position:fixed;z-index:41;right:max(16px,env(safe-area-inset-right));bottom:max(16px,env(safe-area-inset-bottom));width:min(400px,calc(100vw - 32px));height:min(560px,calc(100dvh - 32px));display:flex;flex-direction:column;background:var(--paper);border:1.5px solid var(--ink);box-shadow:5px 5px 0 var(--ink);animation:pipin .22s cubic-bezier(.2,1.3,.4,1)}
+.pip[hidden]{display:none}
+@keyframes pipin{from{transform:translateY(14px) scale(.97);opacity:0}}
+.pip header{display:flex;align-items:center;gap:10px;padding:8px 10px 8px 12px;border-bottom:3px double var(--ink);font:700 19px var(--narrow);text-transform:uppercase;letter-spacing:.04em}
+.pip .pf{width:22px;height:24px;color:var(--ink)}.pip .pf svg{width:100%;height:100%;display:block}.pip .pf .eyes{animation:none}
+.pip .px{margin-left:auto;width:38px;height:38px;border:1.5px solid var(--ink);background:none;font:400 24px/1 var(--narrow);cursor:pointer}
+.pip .px:hover{background:var(--ink);color:var(--paper)}
+.pl{flex:1;overflow:auto;padding:14px 14px 6px;display:flex;flex-direction:column;gap:12px;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.pl .m{max-width:92%;font-size:15.5px;line-height:1.5;overflow-wrap:anywhere}
+.pl .m p{margin:0 0 .6em}.pl .m p:last-child{margin:0}
+.pl .m.u{align-self:flex-end;background:var(--ink);color:var(--paper);padding:8px 12px}
+.pl .m.b{align-self:flex-start;border-left:4px solid var(--acc);padding:2px 0 2px 12px}
+.pl .m.err{border-left-color:var(--mute);color:var(--mute)}
+.pl pre{margin:.5em 0;padding:10px 12px;background:var(--paper2);border:1px solid var(--rule);overflow:auto;font:400 13px/1.5 var(--mono);white-space:pre}
+.pl a.ref{font-weight:600}
+.pl .wait{display:flex;gap:5px;padding:10px 0 10px 12px}
+.pl .wait i{width:7px;height:7px;background:var(--acc);animation:dot 1s infinite}
+.pl .wait i:nth-child(2){animation-delay:.15s}.pl .wait i:nth-child(3){animation-delay:.3s}
+@keyframes dot{0%,70%,100%{transform:translateY(0)}35%{transform:translateY(-6px)}}
+.pf2{display:flex;gap:8px;padding:10px;border-top:1.5px solid var(--ink)}
+.pf2 textarea{flex:1;min-width:0;resize:none;font:400 16px/1.4 var(--mono);color:var(--ink);background:var(--paper2);border:1.5px solid var(--ink);border-radius:0;padding:9px 10px;-webkit-appearance:none;appearance:none}
+.pf2 textarea:focus{outline:none;border-color:var(--acc);box-shadow:inset 0 -3px 0 var(--acc)}
+.pf2 button{width:46px;border:1.5px solid var(--ink);background:var(--ink);color:var(--paper);cursor:pointer;display:flex;align-items:center;justify-content:center}
+.pf2 button svg{width:20px;height:20px}
+.pip.busy .pf2 button{opacity:.4}
+@media (max-width:620px){
+  .pip{right:0;left:0;bottom:0;width:auto;height:min(78dvh,620px);box-shadow:0 -4px 0 var(--ink);border-width:1.5px 0 0;padding-bottom:env(safe-area-inset-bottom)}
+}
+@media (prefers-reduced-motion:reduce){.eyes,.pip,.pl .wait i{animation:none}.pip-fab{transition:none}}
+@media print{.pip-fab,.pip{display:none}}
