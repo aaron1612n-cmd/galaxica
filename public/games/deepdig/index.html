@@ -35,6 +35,9 @@ html:not([data-device=mobile]) #pad{display:none}
 .pips{display:flex;gap:4px}.pips i{width:12px;height:12px;border:1px solid #2b2219;transform:rotate(45deg)}.pips i.on{background:#2b2219}
 .buy{display:flex;align-items:center;gap:4px;height:38px;padding:0 12px;border:1px solid #2b2219;background:#f6efdc;color:#2b2219;font:18px "IM Fell English",serif;cursor:pointer}
 .buy svg{width:18px;height:18px}.buy:disabled{opacity:.35;cursor:default}.buy.max{visibility:hidden}
+.buy.hint{outline:2px solid #c8432a;animation:hintring 1.1s ease-in-out infinite}
+@keyframes hintring{0%,100%{outline-offset:2px}50%{outline-offset:6px}}
+@media (prefers-reduced-motion:reduce){.buy.hint{animation:none;outline-offset:3px}}
 </style>
 </head>
 <body>

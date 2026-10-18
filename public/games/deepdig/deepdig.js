@@ -38,7 +38,7 @@ function tryDir(d){if(D.act||D.dead||mode!=='play')return;var dx=[1,0,-1,0][d],d
   if(m===7)return;if(m===5&&lv('drill')<2){bump();return}if(m===6&&lv('drill')<4){bump();return}
   var hov=d!==1&&mat(D.x,D.y+1)===0; /* digging while hovering burns extra fuel */
   var t=hard(ny,m)*16/(1+lv('drill')*.45)*(d===3?1.5:1);D.fuel-=hard(ny,m)*.22+(hov?.5:0);D.act={k:'dig',dx:dx,dy:dy,t:0,n:t}}
-function bump(){if(D.bumpT>0)return;D.bumpT=20;GK.fx.shake(2,6);GK.audio.tone(110,.08,'square',.03)}
+function bump(){tutF.bump=1;if(D.bumpT>0)return;D.bumpT=20;GK.fx.shake(2,6);GK.audio.tone(110,.08,'square',.03)}
 function finish(){var a=D.act;D.act=null;
   if(a.k==='dig'){var nx=D.x+a.dx,ny=D.y+a.dy,i=ny*GW+nx;
     if(HID[i]){HID[i]=0;boom(nx,ny)}
@@ -50,24 +50,24 @@ function finish(){var a=D.act;D.act=null;
   if(a.k==='mv'||a.k==='fall'){D.x+=a.dx;D.y+=a.dy;var m=mat(D.x,D.y);if(m===8){hurt(45,'lava')}
     if(a.k==='fall')D.fall++;else if(a.dy<0)D.fall=0;
     var below=mat(D.x,D.y+1);if(below!==0&&below!==8){if(D.fall>10){hurt((D.fall-10)*5,'fall')}D.fall=0}
-    if(D.y>SR-1){var dp=D.y-SR+1;if(dp>D.dmax)D.dmax=dp;if(!D.tut&&dp>ST.depth){ST.depth=dp}}
+    if(D.y>SR-1){D.atHut='';var dp=D.y-SR+1;if(dp>D.dmax)D.dmax=dp;if(!D.tut&&dp>ST.depth){ST.depth=dp}}
     if(D.y===SR-1)atSurface()}}
 function boom(x,y){if(!D.tut)ST.boom++;hurt(30,'gas');for(var dy=-1;dy<=1;dy++)for(var dx=-1;dx<=1;dx++){var xx=x+dx,yy=y+dy;if(xx>=0&&xx<GW&&yy>SR&&mat(xx,yy)!==7){M[yy*GW+xx]=0;O[yy*GW+xx]=0}}
   GK.fx.burst((x+.5)*TS,(y+.5)*TS,40,{col:VER,speed:6,life:34,shape:'ci',size:4});GK.fx.burst((x+.5)*TS,(y+.5)*TS,30,{col:INK,speed:4,life:40,size:3,grav:.1});GK.fx.shake(10,20);GK.fx.hitstop(6);GK.audio.noise(.7,.25,0,0)}
-function hurt(n,why){D.hull-=n;GK.fx.shake(6,12);GK.audio.tone(120,.3,'sawtooth',.06,.5);if(D.hull<=0){D.hull=0;strand()}}
-function strand(){if(D.dead)return;D.dead=1;D.deadT=0;D.cargo=[];GK.audio.tone(90,.8,'sawtooth',.06,.4);if(MODE==='career'){D.fee=Math.floor(D.money*.3);D.money-=D.fee;CAR.money=D.money;saveCar()}else endTimed()}
+function hurt(n,why){D.hull-=n;if(D.tut){tutF[why]=1;D.hull=Math.max(D.hull,12)}GK.fx.shake(6,12);GK.audio.tone(120,.3,'sawtooth',.06,.5);if(D.hull<=0){D.hull=0;strand()}}
+function strand(){if(D.dead)return;D.dead=1;D.deadT=0;D.cargo=[];GK.audio.tone(90,.8,'sawtooth',.06,.4);if(MODE==='career'&&!D.tut){D.fee=Math.floor(D.money*.3);D.money-=D.fee;CAR.money=D.money;saveCar()}else endTimed()}
 function atSurface(){var h=D.x===HUT.sell?'sell':D.x===HUT.fuel?'fuel':D.x===HUT.shop?'shop':'';if(h===D.atHut)return;D.atHut=h;
   if(h==='sell'&&D.cargo.length){var v=0;D.cargo.forEach(function(o){v+=ORE[o].v});D.money+=v;D.earned+=v;if(!D.tut)ST.earned+=v;D.cargo=[];GK.fx.text(HUT.sell*TS+TS/2,(SR-1)*TS-10,'+'+v,VER,28);GK.fx.burst(HUT.sell*TS+TS/2,(SR-1)*TS,18,{col:'#d9a72e',speed:3,life:26,shape:'ci',size:3,up:2,grav:.12});[784,988,1175].forEach(function(f,j){GK.audio.tone(f,.15,'triangle',.05,1,GK.audio.ctx&&GK.audio.ctx.currentTime+j*.07)});if(D.tut)tutF.sold=1;saveST()}
   if(h==='fuel'){var need=tank()-D.fuel,c=Math.min(Math.ceil(need/5),D.money);D.fuel=Math.min(tank(),D.fuel+c*5);D.money-=c;if(D.fuel<tank()*.6&&D.money<3){D.fuel=tank()*.6;GK.fx.text(HUT.fuel*TS+TS/2,(SR-1)*TS-10,'+',INK,26)}var rp=Math.min(Math.ceil((hullMax()-D.hull)/2),D.money);D.hull=Math.min(hullMax(),D.hull+rp*2);D.money-=rp;if(D.hull<hullMax()*.5&&D.money<3)D.hull=hullMax()*.5;if(c||rp)GK.audio.tone(330,.25,'sine',.04,1.6)}
-  if(h==='shop'&&!Auto.on&&!D.tut)openShop();
-  if(MODE==='career'){CAR.money=D.money;saveCar()}}
+  if(h==='shop'&&!Auto.on&&(!D.tut||tut.i===7))openShop();
+  if(MODE==='career'&&!D.tut){CAR.money=D.money;saveCar()}}
 function cost(k){var l=lv(k);return l>=5?0:Math.round(UP[k].b*[1,3,8,20,50][l])}
-function buy(k){var c=cost(k);if(!c||D.money<c)return false;D.money-=c;D.up[k]=lv(k)+1;if(!D.tut)ST.ups++;if(k==='tank')D.fuel=tank();if(k==='hull')D.hull=hullMax();if(MODE==='career'){CAR.money=D.money;CAR.up=D.up;saveCar()}saveST();GK.audio.tone(523,.12,'triangle',.05);GK.audio.tone(784,.2,'triangle',.05,1,GK.audio.ctx&&GK.audio.ctx.currentTime+.08);return true}
+function buy(k){var c=cost(k);if(!c||D.money<c)return false;D.money-=c;D.up[k]=lv(k)+1;if(!D.tut)ST.ups++;if(k==='tank')D.fuel=tank();if(k==='hull')D.hull=hullMax();if(MODE==='career'&&!D.tut){CAR.money=D.money;CAR.up=D.up;saveCar()}saveST();GK.audio.tone(523,.12,'triangle',.05);GK.audio.tone(784,.2,'triangle',.05,1,GK.audio.ctx&&GK.audio.ctx.currentTime+.08);return true}
 function openShop(){var m=document.createElement('div');m.className='gk-modal';var sh=document.createElement('div');sh.className='gk-sheet';
   function paint(){sh.innerHTML='';var hd=document.createElement('div');hd.className='gk-mh';hd.innerHTML='<span>'+GK.icoSvg('coin')+' '+D.money+'</span>';var x=document.createElement('button');x.className='gk-b';x.textContent='×';x.onclick=function(){m.remove()};hd.appendChild(x);sh.appendChild(hd);
     var list=document.createElement('div');list.className='shop';Object.keys(UP).forEach(function(k){var r=document.createElement('div');r.className='srow';var l=lv(k),c=cost(k);
       r.innerHTML=GK.icoSvg(UP[k].ic)+'<div class="pips">'+[0,1,2,3,4].map(function(j){return'<i class="'+(j<l?'on':'')+'"></i>'}).join('')+'</div>';
-      var b=document.createElement('button');b.className='buy'+(c?'':' max');b.innerHTML=GK.icoSvg('coin')+' '+c;b.disabled=!c||D.money<c;b.onclick=function(){if(buy(k))paint()};r.appendChild(b);list.appendChild(r)});sh.appendChild(list)}
+      var b=document.createElement('button');b.className='buy'+(c?'':' max');b.innerHTML=GK.icoSvg('coin')+' '+c;b.disabled=!c||D.money<c;b.onclick=function(){if(buy(k))paint()};if(k==='drill'&&D.tut&&tut.i===7)b.classList.add('hint');r.appendChild(b);list.appendChild(r)});sh.appendChild(list)}
   paint();m.appendChild(sh);m.onpointerdown=function(e){if(e.target===m)m.remove()};document.body.appendChild(m)}
 function endTimed(){var sc=D.earned;if(MODE==='dash')ST.dash=Math.max(ST.dash,sc);if(MODE==='daily')ST.daily=GK.daily.claim(sc).n;saveST();D.dead=1;D.deadT=0;D.over=1}
 /* ============ input: hold toward a side of the digger, or arrows / WASD ============ */
@@ -114,6 +114,7 @@ function step(){T++;GK.goals.tick();if(mode!=='play')return;if(D.bumpT>0)D.bumpT
     var canUp=dIn===3&&D.fuel>0&&D.y-1>=SR-1&&canEnter(mat(D.x,D.y-1));
     if((below===0||below===8)&&D.y<GH-1&&!canUp&&!canSide){D.act={k:'fall',dx:0,dy:1,t:0,n:4}}
     else if(dIn>=0)tryDir(dIn)}
+  if(D.tut&&D.fuel<12)D.fuel=12;
   if(D.fuel<=0&&!D.act&&D.y>SR-1&&!D.dead){D.fuel=0;strand()}
   D.fuel=Math.max(0,D.fuel-.004);
   var ty=D.y-7;cam+=(ty-cam)*.12;cam=GK.clamp(cam,0,GH-VIEWR);
@@ -169,13 +170,36 @@ function drawHud(){ctx.fillStyle=PAPER;ctx.fillRect(0,0,W,HUD);ctx.strokeStyle=I
 function drawDead(){var a=Math.min(.85,D.deadT/30);ctx.fillStyle='rgba(236,226,204,'+a+')';ctx.fillRect(0,0,W,H);ctx.fillStyle=INK;ctx.textAlign='center';
   if(D.over){GK.icoDraw(ctx,'coin',W/2,H/2-70,44,INK,1.5);ctx.font='72px "IM Fell English"';ctx.fillText(String(D.earned),W/2,H/2+10)}else{GK.icoDraw(ctx,'skull',W/2,H/2-60,48,INK,1.5);ctx.font='44px "IM Fell English"';ctx.fillStyle=VER;ctx.fillText('−'+(D.fee||0),W/2,H/2+10)}
   if(D.deadT>40)GK.pulse(ctx,W/2,H/2+70,D.deadT,VER,10)}
-/* ============ tutorial: dig, gather, sell ============ */
-var tutF={sold:0};
-var tut=GK.tutorial({parent:stage,onStart:function(){var m0=MODE;MODE='tut';newRun();MODE=m0;D.tut=true;D.timer=0;D.money=0;D.up={drill:0,tank:0,hull:0,cargo:0,engine:0};D.fuel=tank();D.hull=hullMax();
-    for(var y=SR;y<SR+4;y++){M[y*GW+7]=1;O[y*GW+7]=0;HID[y*GW+7]=0}O[(SR+3)*GW+9]=2;M[(SR+3)*GW+9]=1;M[(SR+3)*GW+8]=1;O[(SR+3)*GW+8]=0;HID[(SR+3)*GW+8]=0;HID[(SR+3)*GW+9]=0;tutF={sold:0}},
+/* ============ tutorial: dig, gather, sell, fall, mend, gas, hard rock, shop, lava ============ */
+var tutF={};
+function cset(x,y,m,o,h){var i=y*GW+x;M[i]=m;O[i]=o||0;HID[i]=h||0}
+function tutWorld(){for(var y=SR;y<SR+18;y++)for(var x=0;x<GW;x++)cset(x,y,y===SR+17?7:1);
+  cset(9,SR+3,1,2);                                           /* copper beside the first shaft */
+  for(var f=0;f<16;f++)cset(3,SR+f,0);                         /* a deep drop at x3 */
+  cset(5,SR+1,1,0,1);cset(5,SR+2,1,5);                         /* gas pocket over gold */
+  cset(11,SR+1,8);cset(11,SR+2,1,7);                           /* lava over an emerald */
+  cset(13,SR+1,5,5)}                                           /* hard rock holding gold */
+var tut=GK.tutorial({parent:stage,onStart:function(){var m0=MODE;MODE='tut';newRun();MODE=m0;D.tut=true;D.timer=0;D.money=0;D.up={drill:1,tank:0,hull:0,cargo:0,engine:0};D.fuel=tank();D.hull=hullMax();tutWorld();tutF={}},
   onEnd:function(){newRun()},
-  steps:[{done:function(){return D.y>=SR+3}},{done:function(){return D.cargo.length>0}},{done:function(){return tutF.sold}}]});
-function tutDraw(){var t=tut.t,px=(D.x+.5)*TS,py=HUD+(D.y-cam+.5)*TS;ctx.save();if(tut.i===0)GK.swipe(ctx,px,py,px,py+TS*2.5,t,VER);else if(tut.i===1){var ox=(9+.5)*TS,oy=HUD+(SR+3-cam+.5)*TS;if(D.cargo.length===0)GK.pulse(ctx,ox,oy,t,VER,12)}else{GK.pulse(ctx,HUT.sell*TS+TS/2,HUD+(SR-1-cam+.5)*TS,t,VER,14);if(D.y>SR-1)GK.swipe(ctx,px,py,px,py-TS*2.5,t,VER)}ctx.restore()}
+  steps:[{done:function(){return D.y>=SR+3}},{done:function(){return D.cargo.length>0}},{done:function(){return tutF.sold}},
+    {init:function(){D.fuel=tank()*.4;tutF.fall=0},done:function(){return tutF.fall}},
+    {init:function(){D.money=Math.max(D.money,40)},done:function(){return D.y===SR-1&&D.atHut==='fuel'&&D.hull>=hullMax()-1}},
+    {done:function(){return tutF.gas}},
+    {done:function(){return tutF.bump}},
+    {init:function(){D.money=Math.max(D.money,400)},done:function(){return lv('drill')>=2}},
+    {done:function(){return D.cargo.indexOf(5)>=0}},
+    {done:function(){return D.cargo.indexOf(7)>=0}}]});
+function tutDraw(){var t=tut.t,px=(D.x+.5)*TS,py=HUD+(D.y-cam+.5)*TS,i=tut.i;function cx(x){return(x+.5)*TS}function cy(y){return HUD+(y-cam+.5)*TS}
+  ctx.save();
+  if(i===0)GK.swipe(ctx,px,py,px,py+TS*2.5,t,VER);
+  else if(i===1){if(D.cargo.length===0)GK.pulse(ctx,cx(9),cy(SR+3),t,VER,12)}
+  else if(i===2||i===4){var hx=i===2?HUT.sell:HUT.fuel;GK.pulse(ctx,hx*TS+TS/2,cy(SR-1),t,VER,14);if(D.y>SR-1)GK.swipe(ctx,px,py,px,py-TS*2.5,t,VER)}
+  else if(i===3){GK.pulse(ctx,cx(3),cy(SR),t,VER,12);if(D.y===SR-1&&D.x===3)GK.swipe(ctx,px,py,px,py+TS*2.5,t,VER)}
+  else if(i===5){if(D.y===SR-1)GK.pulse(ctx,cx(5),cy(SR),t,VER,12);else GK.swipe(ctx,px,py,px,py+TS*2.5,t,VER)}
+  else if(i===6||i===8)GK.pulse(ctx,cx(13),cy(SR+1),t,VER,12);
+  else if(i===7)GK.pulse(ctx,HUT.shop*TS+TS/2,cy(SR-1),t,VER,14);
+  else if(i===9)GK.pulse(ctx,cx(11),cy(SR+2),t,VER,12);
+  ctx.restore()}
 /* ============ bar ============ */
 var R=GK.controls(document.getElementById('bar'),{bar:'bottom',onHelp:function(){tut.start()},extra:[
   {id:'sh',html:GK.icoSvg('wrench'),title:'Workshop',fn:function(){if(D&&D.y===SR-1&&!D.dead)openShop();else bump()}},
@@ -194,4 +218,4 @@ GK.guide({title:'Deepdig',goal:'Dig down through the strata, bring ore back to s
  tips:['Watch the fuel bar: head home while you still have enough to fly up.','Dash and Daily give everyone the same full-upgrade digger for three minutes.']});
 function fit(){GK.fit(cv,stage,W,H,1.5)}addEventListener('resize',fit);addEventListener('orientationchange',fit);fit();
 newRun();GK.loop(step,render);tut.maybe();
-window.__g={D:function(){return D},around:function(){var o=[];for(var dy=-1;dy<=1;dy++){var r="";for(var dx=-1;dx<=1;dx++)r+=mat(D.x+dx,D.y+dy);o.push(r)}return o.join("|")+" bot:"+JSON.stringify(bot.plan)+" act:"+(D.act?D.act.k:"-")+" dir:"+botDir()},st:ST,setMode:setMode,tut:tut,newRun:newRun,stats:function(){return{MODE:MODE,x:D.x,y:D.y,depth:D.dmax*2,money:D.money,earned:D.earned,fuel:Math.round(D.fuel),hull:Math.round(D.hull),cargo:D.cargo.length+'/'+cap(),up:JSON.stringify(D.up),dead:D.dead,won:D.won,timer:D.timer}}};
+window.__g={D:function(){return D},cell:function(x,y){return[mat(x,y),O[y*GW+x],HID[y*GW+x]]},around:function(){var o=[];for(var dy=-1;dy<=1;dy++){var r="";for(var dx=-1;dx<=1;dx++)r+=mat(D.x+dx,D.y+dy);o.push(r)}return o.join("|")+" bot:"+JSON.stringify(bot.plan)+" act:"+(D.act?D.act.k:"-")+" dir:"+botDir()},st:ST,setMode:setMode,tut:tut,newRun:newRun,stats:function(){return{MODE:MODE,x:D.x,y:D.y,depth:D.dmax*2,money:D.money,earned:D.earned,fuel:Math.round(D.fuel),hull:Math.round(D.hull),cargo:D.cargo.length+'/'+cap(),up:JSON.stringify(D.up),dead:D.dead,won:D.won,timer:D.timer}}};
