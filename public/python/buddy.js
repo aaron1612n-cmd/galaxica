@@ -49,8 +49,13 @@
     say('u', '<p>' + esc(q).replace(/\n/g, '<br>') + '</p>');
     var wait = say('b wait', '<i></i><i></i><i></i>'); busy = true; box.classList.add('busy');
     var body = { q: q, ctx: context(q), hist: hist.slice(-6) };
-    fetch('/api/buddy', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
-      .then(function (r) { return r.json().then(function (j) { return { s: r.status, j: j }; }); })
+    function go(again) {
+      return fetch('/api/buddy', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
+        .then(function (r) { return r.json().then(function (j) { return { s: r.status, j: j }; }); })
+        .catch(function () { return { s: 0, j: {} }; })
+        .then(function (x) { return !(x.j && x.j.text) && x.s !== 429 && again ? new Promise(function (ok) { setTimeout(ok, 1500); }).then(function () { return go(false); }) : x; });
+    }
+    go(true)
       .then(function (x) {
         if (x.j && x.j.text) { hist.push({ r: 'u', t: q }, { r: 'b', t: x.j.text }); wait.className = 'm b'; wait.innerHTML = render(x.j.text); }
         else if (x.s === 429) { wait.className = 'm b err'; wait.innerHTML = '<p>One moment, then ask again.</p>'; }
