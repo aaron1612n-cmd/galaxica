@@ -30,6 +30,7 @@
     if (on) { if (!log.children.length) say('b', '<p>Hi, I’m Pip. Paste an error or ask anything about Python or tkinter.</p>'); setTimeout(function () { ta.focus(); }, 30); }
   }
   fab.onclick = function () { open(box.hidden); };
+  window.__pip = { ask: function (t) { open(true); ta.value = t; ta.dispatchEvent(new Event('input')); } };
   $('.px', box).onclick = function () { open(false); fab.focus(); };
   document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape' && !box.hidden) open(false); });
   ta.addEventListener('input', function () { ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight, 130) + 'px'; });
