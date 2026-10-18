@@ -20,7 +20,7 @@ canvas{display:block;touch-action:none}
 .gk-bar .spd .btn{min-width:0;padding:0 7px;font-size:11px}
 .gk-bar .spd .btn:not(.ghost){background:var(--gk-ink,#eee);color:var(--gk-bg,#111)}
 .spd.nudge{outline:2px dashed var(--gk-acc,#f60);outline-offset:3px;animation:gk-n .9s steps(1) infinite}@keyframes gk-n{50%{outline-color:transparent}}
-.gk-tut{position:absolute;left:0;right:0;top:calc(var(--gk-ct,0px) + var(--gk-ty,10) * var(--gk-cs,1) * 1px);display:flex;justify-content:center;align-items:center;gap:14px;pointer-events:none;z-index:5}
+.gk-tut{position:absolute;left:0;right:0;top:calc(var(--gk-ct,0px) + var(--gk-ty,10) * var(--gk-cs,1) * 1px);display:flex;justify-content:center;align-items:center;gap:14px;transform:translateX(calc(var(--gk-tx,0) * var(--gk-cs,1) * 1px));pointer-events:none;z-index:5}
 .gk-pips{display:flex;gap:6px}.gk-pips i{width:10px;height:10px;border:2px solid var(--gk-ink,#eee);border-radius:var(--gk-r,0)}
 .gk-pips i.done{background:var(--gk-ink,#eee)}.gk-pips i.now{background:var(--gk-acc,#f60);border-color:var(--gk-acc,#f60);animation:gk-n .8s steps(1) infinite}
 .gk-skip{pointer-events:auto;height:30px;padding:0 12px;border:max(var(--gk-bw,2px),1.5px) solid var(--gk-ink,#eee);border-radius:var(--gk-pr,6px);background:var(--gk-bg,#111);color:var(--gk-ink,#eee);font:600 12px var(--gk-font,sans-serif);cursor:pointer}
