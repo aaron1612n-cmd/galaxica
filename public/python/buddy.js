@@ -49,20 +49,29 @@
     say('u', '<p>' + esc(q).replace(/\n/g, '<br>') + '</p>');
     var wait = say('b wait', '<i></i><i></i><i></i>'); busy = true; box.classList.add('busy');
     var body = { q: q, ctx: context(q), hist: hist.slice(-6) };
-    function go(again) {
+    /* a phone suspends or kills the request when the tab or Safari goes to the background: wait until the page is visible again, then ask once more (up to 3 tries) */
+    var hid = false; function seen() { if (document.hidden) hid = true; }
+    document.addEventListener('visibilitychange', seen);
+    function visible() { return document.hidden ? new Promise(function (ok) { function f() { if (!document.hidden) { document.removeEventListener('visibilitychange', f); setTimeout(ok, 300); } } document.addEventListener('visibilitychange', f); }) : Promise.resolve(); }
+    function go(left) {
+      hid = document.hidden;
       return fetch('/api/buddy', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
         .then(function (r) { return r.json().then(function (j) { return { s: r.status, j: j }; }); })
         .catch(function () { return { s: 0, j: {} }; })
-        .then(function (x) { return !(x.j && x.j.text) && x.s !== 429 && again ? new Promise(function (ok) { setTimeout(ok, 1500); }).then(function () { return go(false); }) : x; });
+        .then(function (x) {
+          if ((x.j && x.j.text) || x.s === 429 || left < 1) return x;
+          if (!x.s || hid || document.hidden) return visible().then(function () { return go(left - 1); });
+          return new Promise(function (ok) { setTimeout(ok, 1500); }).then(function () { return go(left - 1); });
+        });
     }
-    go(true)
+    go(2)
       .then(function (x) {
         if (x.j && x.j.text) { hist.push({ r: 'u', t: q }, { r: 'b', t: x.j.text }); wait.className = 'm b'; wait.innerHTML = render(x.j.text); }
         else if (x.s === 429) { wait.className = 'm b err'; wait.innerHTML = '<p>One moment, then ask again.</p>'; }
         else { wait.className = 'm b err'; wait.innerHTML = '<p>Pip can’t answer right now.</p>' + (body.ctx.length ? '<p><a class="ref" href="#/q/' + encodeURIComponent(q.slice(0, 200)) + '">Search the book instead</a></p>' : ''); }
       })
       .catch(function () { wait.className = 'm b err'; wait.innerHTML = '<p>Pip can’t answer right now.</p>'; })
-      .then(function () { busy = false; box.classList.remove('busy'); log.scrollTop = log.scrollHeight; });
+      .then(function () { document.removeEventListener('visibilitychange', seen); busy = false; box.classList.remove('busy'); log.scrollTop = log.scrollHeight; });
   });
   log.addEventListener('click', function (ev) { if (ev.target.closest('a.ref') && matchMedia('(max-width:620px)').matches) open(false); });
 })();
