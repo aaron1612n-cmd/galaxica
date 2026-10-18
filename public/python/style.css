@@ -222,6 +222,28 @@ mark{background:none;color:inherit;box-shadow:inset 0 -.38em 0 color-mix(in srgb
 .pip .pw.no{animation:pipno .3s}
 @keyframes pipno{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
 .pip-notice{padding:6px max(12px,env(safe-area-inset-left));border-top:1.5px solid var(--ink);background:var(--acc);color:var(--paper);font:700 13px/1.35 var(--narrow);letter-spacing:.04em;text-transform:uppercase}
+/* Ultra cosmetics: accent-ink shadow, hatch rule, accent eyes, a mark on the bookmark, one stamp-press on unlock */
+.mk{display:none}
+.mk-star .mk-star,.mk-crown .mk-crown,.mk-flag .mk-flag{display:inline}
+.pip.ultra{box-shadow:5px 5px 0 var(--acc);border-color:var(--ink)}
+.pip.ultra header{background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8'%3E%3Cpath d='M-1 1l2-2M0 8l8-8M7 9l2-2' stroke='%23888' stroke-opacity='.28' stroke-width='1'/%3E%3C/svg%3E")}
+.pip.ultra .eyes rect,.pip-fab.ultra .eyes rect{fill:var(--acc)}
+.pip.ultra .pf2 button{background:var(--acc);border-color:var(--acc)}
+.pip.ultra .pl .m.u{background:var(--ink)}
+.pip .pc{width:38px;height:38px;border:1.5px solid var(--ink);background:none;color:var(--acc);cursor:pointer;display:flex;align-items:center;justify-content:center}
+.pip .pc[hidden]{display:none}
+.pip .pc svg{width:18px;height:18px}
+.pip .pc:hover{background:var(--ink)}
+.pip .pt{display:flex;align-items:center;gap:6px;padding:8px 10px;border-bottom:1.5px solid var(--ink);background:var(--paper2);flex-wrap:wrap}
+.pip .pt[hidden]{display:none}
+.pip .inks,.pip .marks{display:flex;gap:6px}.pip .marks{margin-left:auto}
+.pip .pt button{width:40px;height:40px;border:1.5px solid var(--ink);background:var(--paper);color:var(--ink);cursor:pointer;display:flex;align-items:center;justify-content:center;font:700 18px var(--narrow);padding:0}
+.pip .inks button{background:var(--sw);border-color:var(--sw)}
+.pip .pt button[aria-pressed=true]{outline:2px solid var(--ink);outline-offset:2px}
+.pip .marks button svg{width:26px;height:16px}
+.pip.stamp{animation:pipstamp .38s cubic-bezier(.3,1.6,.5,1)}
+@keyframes pipstamp{0%{transform:translate(5px,5px);box-shadow:0 0 0 var(--acc)}60%{transform:translate(-1px,-1px)}100%{transform:none}}
+@media (max-width:620px){.pip.ultra{box-shadow:0 -4px 0 var(--acc)}}
 /* Pip's visible actions: a step row per tool, the editor flashes when Pip writes */
 .pl .m.s{align-self:stretch;max-width:none;display:flex;align-items:center;gap:9px;padding:5px 8px;border:1px dashed var(--ink);font:400 12.5px/1.35 var(--mono);color:var(--mute)}
 .pl .m.s b{color:var(--ink);font-weight:700}
@@ -237,7 +259,7 @@ mark{background:none;color:inherit;box-shadow:inset 0 -.38em 0 color-mix(in srgb
   .pip.act{height:34dvh}
   .pip{right:0;left:0;bottom:0;width:auto;height:min(78dvh,620px);box-shadow:0 -4px 0 var(--ink);border-width:1.5px 0 0;padding-bottom:env(safe-area-inset-bottom)}
 }
-@media (prefers-reduced-motion:reduce){.eyes,.pip,.pl .wait i,.pl .m.s.run i,.stack.pipwrote,.pip .pw.no{animation:none}.pip-fab{transition:none}}
+@media (prefers-reduced-motion:reduce){.eyes,.pip,.pl .wait i,.pl .m.s.run i,.stack.pipwrote,.pip .pw.no,.pip.stamp{animation:none}.pip-fab{transition:none}}
 @media print{.pip-fab,.pip{display:none}}
 
 /* ---------- editor + shell ---------- */
