@@ -256,6 +256,11 @@
         else { fallbackCopy(txt); done(); }
       };
       f.appendChild(b);
+      if (!f.classList.contains('sh') && window.__ide) {
+        var t = document.createElement('button'); t.className = 'copy try'; t.type = 'button'; t.textContent = 'Try';
+        t.onclick = function () { window.__ide.seed(f.querySelector('pre').textContent.replace(/\n$/, '') + '\n'); };
+        f.appendChild(t);
+      }
     });
     var seen = (store('pyrefSeen') || []).filter(function (x) { return x !== id; }); seen.unshift(id); store('pyrefSeen', seen.slice(0, 12));
     buildRail(s.id, id);
@@ -298,6 +303,8 @@
   function route() {
     document.body.classList.remove('idx');
     var h = decodeURIComponent(location.hash.slice(1) || '/'), m;
+    if (window.__ide && !/^\/run/.test(h)) window.__ide.hide();
+    if (/^\/run/.test(h)) { if (window.__ide) window.__ide.show(); return; }
     if ((m = h.match(/^\/a\/(.+)$/))) entry(m[1]);
     else if ((m = h.match(/^\/s\/(.+)$/))) section(m[1]);
     else if ((m = h.match(/^\/q\/([\s\S]*)$/))) { if (!typing) q.value = m[1]; results(m[1]); }
