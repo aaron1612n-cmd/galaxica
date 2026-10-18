@@ -69,6 +69,7 @@
     } },
     write_editor: { v: 'Wrote to the editor', d: function (a) { return String(a.code || '').split('\n').length + ' lines'; }, f: function (a) {
       if (typeof a.code !== 'string' || !a.code.trim()) throw new Error('code must be a non-empty string');
+      if (flat(a.code)) throw new Error('the code arrived with no indentation, so it was not written. Send it again in a fenced python block with real 4-space indentation.');
       return ide().ensure().then(function () { undo = ide().setCode(a.code.replace(/\s+$/, '') + '\n'); return 'Editor now holds the new code (' + a.code.split('\n').length + ' lines).'; });
     }, undo: true },
     run_code: { v: 'Ran the editor’s code', d: function () { return ''; }, f: function () {
@@ -100,14 +101,41 @@
     var T = TOOLSET[name], d = document.createElement('div'); d.className = 'm s run';
     d.innerHTML = '<i></i><span><b>' + esc(T.v) + '</b> ' + esc(T.d(a) || '') + '</span>'; log.appendChild(d); log.scrollTop = log.scrollHeight; return d;
   }
-  function parseAct(t) {
-    var i = t.search(/ACTION\s*\{/); if (i < 0) return null;
-    var j = t.indexOf('{', i), depth = 0, k, inS = false, esc2 = false;
-    for (k = j; k < t.length; k++) { var c = t[k]; if (inS) { if (esc2) esc2 = false; else if (c === '\\') esc2 = true; else if (c === '"') inS = false; } else if (c === '"') inS = true; else if (c === '{') depth++; else if (c === '}' && --depth === 0) break; }
+  /* the model's ACTION line can arrive in code fences, with broken JSON, or with the code in a fenced block after it: read it leniently, never show it */
+  var STR = { search_book: ['query'], open_entry: ['id'], run_line: ['line'], list_modules: ['filter'], peek_module: ['name'], open_page: ['page'] };
+  function unesc(c) { return c.replace(/\\(n|t|r|"|\\|\/)/g, function (_, k) { return { n: '\n', t: '\t', r: '\r' }[k] || k; }); }
+  function strictJSON(t, j) {
+    var depth = 0, k, inS = false, e = false;
+    for (k = j; k < t.length; k++) { var c = t[k]; if (inS) { if (e) e = false; else if (c === '\\') e = true; else if (c === '"') inS = false; } else if (c === '"') inS = true; else if (c === '{') depth++; else if (c === '}' && --depth === 0) break; }
     if (depth) return null;
-    try { var o = JSON.parse(t.slice(j, k + 1)); if (o && TOOLSET[o.tool]) return { tool: o.tool, args: (o.args && typeof o.args === 'object') ? o.args : {}, pre: t.slice(0, i).trim() }; } catch (_) {}
-    return null;
+    try { return JSON.parse(t.slice(j, k + 1)); } catch (_) { return null; }
   }
+  /* longest non-empty fenced block, read line by line so empty or unclosed fences don't swallow each other */
+  function fenced(t) {
+    var best = null, cur = null; t.split('\n').forEach(function (l) {
+      if (/^\s*```[\w-]/.test(l)) cur = []; else if (/^\s*```/.test(l)) { if (cur) { if (cur.join('').trim() && (!best || cur.join('\n').length > best.length)) best = cur.join('\n'); cur = null; } else cur = []; } else if (cur) cur.push(l);
+    });
+    if (cur && cur.join('').trim() && (!best || cur.join('\n').length > best.length)) best = cur.join('\n');
+    return best;
+  }
+  function cleanPre(x) { return x.replace(/```[\w-]*\s*$/, '').trim(); }
+  function parseAct(t) {
+    var i = t.search(/ACTION\b/); if (i < 0) return null;
+    var pre = cleanPre(t.slice(0, i)), rest = t.slice(i), j = rest.indexOf('{'), o = j >= 0 ? strictJSON(rest, j) : null;
+    var tool = (o && o.tool) || ((/"tool"\s*:\s*"(\w+)"/.exec(rest) || [])[1]), args = (o && o.args && typeof o.args === 'object') ? o.args : {};
+    if (!TOOLSET[tool]) return { bad: 'unknown tool', pre: pre };
+    if (tool === 'write_editor') {
+      var fb = fenced(rest);
+      var code = typeof args.code === 'string' ? args.code : fb;
+      if (code == null) { var m = /"code"\s*:\s*"([\s\S]*)$/.exec(rest); if (m) code = unesc(m[1].replace(/"\s*\}\s*\}?\s*(```)?\s*$/, '')); }
+      if (code == null || !code.trim()) return { bad: 'no code found', pre: pre };
+      args = { code: code };
+    } else if (STR[tool] && !o) {
+      STR[tool].forEach(function (k) { var m = new RegExp('"' + k + '"\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)"').exec(rest); if (m) args[k] = unesc(m[1]); });
+    }
+    return { tool: tool, args: args, pre: pre };
+  }
+  function flat(c) { return !/^[ \t]+\S/m.test(c) && /^(def|class|if|elif|else|for|while|try|except|finally|with)\b.*:[ \t]*$/m.test(c) && c.split('\n').length > 2; }
   function useTool(act, row) {
     var T = TOOLSET[act.tool];
     return new Promise(function (ok) { ok(T.f(act.args)); }).then(function (r) { row.className = 'm s ok'; return String(r); }, function (e) { row.className = 'm s bad'; return 'Failed: ' + (e && e.message || e); });
@@ -150,11 +178,15 @@
       return post({ agent: 1, q: last.t, ctx: ctx, hist: h.slice(-22) }).then(function (x) {
         if (!(x.j && x.j.text)) { fail(wait, x, q, ctx); return false; }
         var t = x.j.text, act = steps < 8 ? parseAct(t) : null;
-        if (!act) { turn.push({ r: 'b', t: t.replace(/ACTION\s*\{[\s\S]*$/, '').trim() || t }); wait.className = 'm b'; wait.innerHTML = render(turn[turn.length - 1].t); return true; }
+        if (act && act.bad) {
+          steps++; wait.remove(); turn.push({ r: 'b', t: 'ACTION (unreadable)' }, { r: 'u', t: 'RESULT: that ACTION could not be read (' + act.bad + '). For write_editor, send the line ACTION {"tool":"write_editor","args":{}} and then the complete program in a fenced python block. Otherwise answer in plain text.' });
+          return ask();
+        }
+        if (!act) { var fin = t.replace(/(```[\w-]*\s*)?ACTION\b[\s\S]*$/, '').trim() || 'Sorry, I got that muddled. Could you ask again?'; turn.push({ r: 'b', t: fin }); wait.className = 'm b'; wait.innerHTML = render(fin); return true; }
         steps++; acted = true; box.classList.add('act');
         if (act.pre) { wait.className = 'm b'; wait.innerHTML = render(act.pre); } else wait.remove();
         var row = stepRow(act.tool, act.args);
-        turn.push({ r: 'b', t: (act.pre ? act.pre + '\n' : '') + 'ACTION ' + JSON.stringify({ tool: act.tool, args: act.args }) });
+        turn.push({ r: 'b', t: (act.pre ? act.pre + '\n' : '') + (act.tool === 'write_editor' ? 'ACTION {"tool":"write_editor","args":{}}\n```python\n' + act.args.code.replace(/\n$/, '') + '\n```' : 'ACTION ' + JSON.stringify({ tool: act.tool, args: act.args })) });
         return useTool(act, row).then(function (res) {
           if (TOOLSET[act.tool].undo && undo !== null && row.className === 'm s ok') {
             var u = document.createElement('button'); u.type = 'button'; u.className = 'undo'; u.textContent = 'Undo'; var was = undo;
