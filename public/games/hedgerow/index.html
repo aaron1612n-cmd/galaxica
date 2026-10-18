@@ -57,6 +57,7 @@ var L=null,lvN=1,inTut=-1,turns=0,won=0,winT=0,anim={},TT=0,lit=null,hog=null,es
 function seedFor(n){return MODE==='daily'?GK.daily.seed()*5+3:MODE==='endless'?eseed*977+n:n*6151+29}
 function load(n){inTut=-1;lvN=n;L=gen(MODE==='daily'?30:MODE==='endless'?Math.min(60,4+n*2):n,seedFor(n));reset()}
 var TUTL=[{w:2,h:1,sol:[E|N,Wd],cur:[E|N,N],lock:[1,0],gate:0},{w:3,h:2,sol:[E,Wd|E|S_|N,Wd,S_,N|S_,0],cur:0,lock:[0,0,0,0,0,0],gate:1}];
+TUTL[2]={w:3,h:2,sol:[N|E|S_,Wd|E,Wd|S_,N|E,Wd|E,N|Wd],cur:[rot(N|E|S_,1),Wd|E,rot(Wd|S_,1),rot(N|E,2),rot(Wd|E,1),rot(N|Wd,3)],lock:[0,1,0,0,0,0],gate:0};
 function loadTut(i){inTut=i;var t=TUTL[i];if(i===1){var g=gen(1,77);L=g;L.n=0}else{L={n:0,w:t.w,h:t.h,sol:new Uint8Array(t.sol),cur:new Uint8Array(t.cur),lock:new Uint8Array(t.lock),gate:t.gate,par:1}}reset()}
 function reset(){turns=0;won=0;winT=0;anim={};hog=null;GK.fx.clear();layout();light()}
 function layout(){W=Math.max(360,L.w*T+PAD*2);H=L.h*T+TOP+PAD+16;fit()}
@@ -76,7 +77,7 @@ function winNow(){won=1;winT=0;var st=turns<=L.par?3:turns<=Math.ceil(L.par*1.5)
 function leaves(){var c=0;for(var i=0;i<L.w*L.h;i++){var m=L.cur[i],b=0;for(var k=0;k<4;k++)if(m&(1<<k))b++;if(b===1)c++}return c}
 /* the hedgehog walks the whole maze once (an Euler tour of the tree) */
 function tour(){var path=[],seen=new Uint8Array(L.w*L.h);(function dfs(c){seen[c]=1;path.push(c);var cx=c%L.w,cy=(c/L.w)|0;for(var d=0;d<4;d++){if(!(L.cur[c]&DIR[d][2]))continue;var nx=cx+DIR[d][0],ny=cy+DIR[d][1];if(nx<0||ny<0||nx>=L.w||ny>=L.h)continue;var ni=ny*L.w+nx;if(!seen[ni]){dfs(ni);path.push(c)}}})(L.gate);return{path:path,t:0,got:{}}}
-function next(){if(inTut>=0){if(inTut<1)loadTut(1);else tut.end();return}if(MODE==='daily'){load(1);return}load(MODE==='garden'?Math.min(NLV,lvN+1):lvN+1)}
+function next(){if(inTut>=0){if(inTut<2)loadTut(inTut+1);else tut.end();return}if(MODE==='daily'){load(1);return}load(MODE==='garden'?Math.min(NLV,lvN+1):lvN+1)}
 /* ============ input ============ */
 GK.pointer(cv,{down:function(x,y){if(won){if(winT>40)next();return}if(Auto.on)return;var tx=Math.floor((x-ox())/T),ty=Math.floor((y-TOP)/T);if(tx<0||ty<0||tx>=L.w||ty>=L.h)return;turn(ty*L.w+tx)},
   key:function(c,d){if(!d)return;if(won&&(c==='Space'||c==='Enter')){next();return}if(c==='KeyR')restart()}});
@@ -118,7 +119,8 @@ function drawHog(){var p=hog.path,k=Math.min(p.length-1,Math.floor(hog.t)),f=hog
 function drawWin(){if(winT<(hog?Math.min(200,hog.path.length*5.6):30))return;var a=Math.min(1,(winT-(hog?Math.min(200,hog.path.length*5.6):30))/20);ctx.fillStyle='rgba(236,230,214,'+.85*a+')';ctx.fillRect(0,0,W,H);ctx.globalAlpha=a;ctx.fillStyle=INK;ctx.textAlign='center';ctx.font='64px Marcellus';ctx.fillText(String(turns),W/2,H/2-26);
   if(inTut<0)for(var k=0;k<3;k++)GK.icoDraw(ctx,'flower',W/2-56+k*56,H/2+34,k<L.st?44:28,k<L.st?ROSE:'rgba(35,51,31,.3)',1.8);ctx.globalAlpha=1;GK.pulse(ctx,W/2,H/2+100,winT,ROSE,10)}
 /* ============ tutorial ============ */
-var tut=GK.tutorial({parent:stage,onStart:function(){loadTut(0)},onEnd:function(){load(MODE==='garden'?Math.min(NLV,Math.max(1,prog.done+1)):1)},steps:[{done:function(){return inTut>=1}},{done:function(){return won&&winT>120&&inTut===1}}]});
+var tut=GK.tutorial({parent:stage,onStart:function(){loadTut(0)},onEnd:function(){load(MODE==='garden'?Math.min(NLV,Math.max(1,prog.done+1)):1)},steps:[{done:function(){return inTut>=1}},{done:function(){return inTut>=2}},{done:function(){return won&&winT>120&&inTut===2}}]});
+tut.steps.forEach(function(st){var u=st.update;st.update=function(t){if(won&&winT>90&&inTut>=0&&inTut<2)next();if(u)u(t)}});
 function tutDraw(){for(var i=0;i<L.w*L.h;i++){if(!L.lock[i]&&L.cur[i]!==L.sol[i]){GK.pulse(ctx,ox()+(i%L.w)*T+T/2,TOP+((i/L.w)|0)*T+T/2,tut.t,ROSE,12);return}}}
 /* ============ level list ============ */
 function openLevels(){var m=document.createElement('div');m.className='gk-modal';var sh=document.createElement('div');sh.className='gk-sheet';var hd=document.createElement('div');hd.className='gk-mh';hd.innerHTML='<span>'+prog.done+' / '+NLV+'</span>';var x=document.createElement('button');x.className='gk-b';x.textContent='×';x.onclick=function(){m.remove()};hd.appendChild(x);sh.appendChild(hd);

@@ -83,13 +83,15 @@ var TUT=[mk({docks:[{x:240,y:200,r:28}],boats:[{x:240,y:420}],par:1}),mk({docks:
 /* ============ game state ============ */
 var L=null,S=null,lvN=1,inTut=-1,left=0,used=0,won=0,winT=0,T=0,splash=[],failT=0;
 function load(n){inTut=-1;lvN=n;var seed=MODE==='daily'?GK.daily.seed()*3+1:MODE==='free'?(Math.random()*1e9)|0:n*7919+5;L=gen(MODE==='daily'?24:MODE==='free'?8+((Math.random()*26)|0):n,seed);reset()}
+TUT[3]=mk({docks:[{x:380,y:200,r:28}],boats:[{x:110,y:430}],par:3});TUT[3].cur=[{x:16,y:380,w:448,h:100,vx:1.2,vy:0}];
+TUT[4]=mk({docks:[{x:240,y:150,r:28}],boats:[{x:240,y:500}],par:3});TUT[4].whirl=[{x:240,y:330,r:80}];
 function loadTut(i){inTut=i;L=TUT[i];reset()}
 function reset(){S=fresh(L);left=L.peb;used=0;won=0;winT=0;failT=0;splash=[];GK.fx.clear()}
 function throwAt(x,y){if(won||left<=0||!okDrop(L,x,y))return;drop(S,x,y);left--;used++;if(inTut<0){ST.pebbles++;}splash.push({x:x,y:y,t:0});GK.fx.burst(x,y,10,{col:CREAM,speed:2.6,life:20,shape:'ci',size:2.4,up:1.5,grav:.12});GK.audio.tone(520+Math.random()*80,.12,'sine',.05,.5);GK.audio.noise(.08,.04,0,1800)}
 function stars(){return used<=L.par?3:used<=L.par+2?2:1}
 function win(){won=1;winT=0;var st=stars();[392,523,659,784].forEach(function(f,i){GK.audio.tone(f,.4,'sine',.05,1,GK.audio.ctx&&GK.audio.ctx.currentTime+i*.09)});if(inTut>=0)return;
   if(st===3)ST.par++;if(MODE==='pond'){var k0=prog.stars[lvN]||0;if(st>k0){ST.stars+=st-k0;prog.stars[lvN]=st}if(lvN>prog.done){prog.done=lvN;ST.cleared=Math.max(ST.cleared,lvN)}GK.ls.set('prog',prog)}else if(MODE==='daily')ST.daily=GK.daily.claim(100-used).n;else ST.free++;saveST()}
-function next(){if(inTut>=0){if(inTut<2)loadTut(inTut+1);else tut.end();return}if(MODE==='daily'){load(1);return}load(MODE==='pond'?Math.min(NLV,lvN+1):lvN+1)}
+function next(){if(inTut>=0){if(inTut<4)loadTut(inTut+1);else tut.end();return}if(MODE==='daily'){load(1);return}load(MODE==='pond'?Math.min(NLV,lvN+1):lvN+1)}
 /* ============ input ============ */
 GK.pointer(cv,{down:function(x,y){if(won){if(winT>30)next();return}if(failT>40){reset();return}if(!Auto.on)throwAt(x,y)},key:function(c,d){if(!d)return;if(c==='KeyR')reset();if(won&&(c==='Space'||c==='Enter'))next()}});
 /* ============ tick ============ */
@@ -133,7 +135,8 @@ function openLevels(){var m=document.createElement('div');m.className='gk-modal'
   sh.appendChild(g);m.appendChild(sh);m.onpointerdown=function(e){if(e.target===m)m.remove()};document.body.appendChild(m)}
 /* ============ tutorial: three small ponds ============ */
 var tut=GK.tutorial({parent:stage,onStart:function(){loadTut(0)},onEnd:function(){load(MODE==='pond'?Math.min(NLV,Math.max(1,prog.done+1)):1)},
-  steps:[{done:function(){return inTut>=1}},{done:function(){return inTut>=2}},{done:function(){return won&&winT>45&&inTut===2}}]});
+  steps:[{done:function(){return inTut>=1}},{done:function(){return inTut>=2}},{done:function(){return inTut>=3}},{done:function(){return inTut>=4}},{done:function(){return won&&winT>45&&inTut===4}}]});
+tut.steps.forEach(function(st){var u=st.update;st.update=function(t){if(won&&winT>50&&inTut>=0&&inTut<4)next();if(u)u(t)}});
 /* ============ bar ============ */
 var R=GK.controls(document.getElementById('bar'),{bar:'bottom',onHelp:function(){tut.start()},extra:[
   {id:'rs',html:GK.icon('restart'),title:'Restart (R)',fn:function(){reset()}},

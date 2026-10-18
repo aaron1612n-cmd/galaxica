@@ -15,7 +15,7 @@
 <script src="../../shared/gk2.js"></script>
 <style>
 /* Ant Kingdom: an ant farm behind glass. Wooden frame, strata of soil, sugar amber as the one accent. */
-:root{--gk-bg:#24302d;--gk-ink:#f0e2c4;--gk-acc:#ffb42e;--gk-font:"Rokkitt","Rockwell",serif;--gk-bw:3px;--gk-r:3px;--gk-sh:0 3px 0 #101816;--gk-h:40px}
+:root{--gk-ty:58;--gk-bg:#24302d;--gk-ink:#f0e2c4;--gk-acc:#ffb42e;--gk-font:"Rokkitt","Rockwell",serif;--gk-bw:3px;--gk-r:3px;--gk-sh:0 3px 0 #101816;--gk-h:40px}
 body{background:#24302d}
 #stage{padding:8px 8px 2px}
 canvas#c{border:10px solid #3a2616;box-shadow:inset 0 0 0 3px #1a0f08,0 0 0 3px #1a0f08,0 6px 0 3px #1a0f08;background:#000;cursor:crosshair}
@@ -201,11 +201,20 @@ function drawHud(){ctx.fillStyle='rgba(20,15,10,.6)';ctx.fillRect(8,6,208,34);ct
   ctx.fillStyle='rgba(20,15,10,.6)';ctx.fillRect(W-(G.fossils?150:76),6,G.fossils?142:68,34);ctx.fillStyle=CREAM;ctx.textAlign='right';ctx.fillText(String(G.year),W-16,30);GK.icoDraw(ctx,MODEIC[MODE],W-58,22,20,AMBER,2);if(G.fossils){GK.icoDraw(ctx,'bone',W-94,22,18,CREAM,2);ctx.fillText(String(G.fossils),W-108,30)}}
 /* ============ tutorial ============ */
 var tutFlag={sugar:0,mark:0,dug:0};
-var tut=GK.tutorial({parent:document.getElementById('stage'),onStart:function(){reset();G.tut=true;tutFlag={sugar:0,mark:0,dug:0};tool='sugar';paintTools()},onEnd:function(){reset();tool='dig';paintTools()},
+var tut=GK.tutorial({parent:document.getElementById('stage'),onStart:function(){reset();G.tut=true;tutFlag={sugar:0,mark:0,dug:0};tool='sugar';paintTools()},onEnd:function(){R.t_fer.classList.remove('pulse');reset();tool='dig';paintTools()},
   steps:[{init:function(){tool='sugar';paintTools()},done:function(){return tutFlag.sugar&&G.stores>13},update:function(){}},
    {init:function(){tool='dig';paintTools()},done:function(){var n=0;for(var i=0;i<MARK.length;i++)n+=MARK[i];return n>=8}},
-   {init:function(){tutFlag.dug0=G.dug},done:function(){return G.dug-tutFlag.dug0>=6}}]});
-function tutDraw(){var t=tut.t;if(tut.i===0)GK.pulse(ctx,W/2+120,(SR-1)*CELL,t,AMBER,16);else if(tut.i===1)GK.swipe(ctx,W/2-60,(SR+16)*CELL,W/2+60,(SR+16)*CELL,t,AMBER);else if(tut.i===2){}}
+   {init:function(){tutFlag.dug0=G.dug},done:function(){return G.dug-tutFlag.dug0>=6}},
+   {init:function(){tool='pebble';paintTools();tutFlag.pb0=pebs()},done:function(){return pebs()-tutFlag.pb0>=4}},
+   {init:function(){tool='erase';paintTools();tutFlag.p0=pebs()},done:function(){return pebs()<=tutFlag.p0-3}},
+   {init:function(){R.t_fer.classList.add('pulse')},done:function(){if(showFer){R.t_fer.classList.remove('pulse');return true}return false}},
+   {init:function(){tutFlag.k0=G.kills||0;spawnThreat('beetle')},update:function(){if(!threats.length&&(G.kills||0)===tutFlag.k0)spawnThreat('beetle')},done:function(){return (G.kills||0)>tutFlag.k0&&!threats.length}},
+   {init:function(){tutFlag.k0=G.kills||0;spawnThreat('spider')},update:function(){if(!threats.length&&(G.kills||0)===tutFlag.k0)spawnThreat('spider')},done:function(){return (G.kills||0)>tutFlag.k0&&!threats.length}}]});
+function pebs(){var n=0;for(var i=0;i<S.length;i++)if(S[i]===2)n++;return n}
+function tutDraw(){var t=tut.t;if(tut.i===0)GK.pulse(ctx,W/2+120,(SR-1)*CELL,t,AMBER,16);else if(tut.i===1)GK.swipe(ctx,W/2,(SR+12)*CELL,W/2,(SR+22)*CELL,t,AMBER);else if(tut.i===3)GK.swipe(ctx,W/2-36,(SR+6)*CELL,W/2+36,(SR+6)*CELL,t,AMBER);
+  else if(tut.i===4)GK.swipe(ctx,W/2-36,(SR+6)*CELL,W/2+36,(SR+6)*CELL,t,AMBER);
+  else if(tut.i>=6&&threats[0])GK.pulse(ctx,(threats[0].x+.5)*CELL,(threats[0].y+.5)*CELL,t,'#d63a2f',18)}
+(function(){var st=document.createElement('style');st.textContent='.gk-b.pulse,.tl.pulse{outline:3px solid #e0a230;outline-offset:2px;animation:akp .8s steps(1) infinite}@keyframes akp{50%{outline-color:transparent}}';document.head.appendChild(st)})();
 /* ============ bar ============ */
 var tbtn={};
 var R=GK.controls(document.getElementById('bar'),{bar:'left',onHelp:function(){tut.start()},extra:[

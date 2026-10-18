@@ -56,6 +56,7 @@
 
 <script>
 var LV=[["####################", "#..................#", "#..................#", "#..................#", "#..................#", "#..................#", "#..................#", "#..................#", "#..................#", "#..................#", "#..................#", "#........*.........#", "#........##........#", "#@.......##......E.#", "####################", "####################"], ["####################", "#........##........#", "#........##........#", "#........##........#", "#........##........#", "#........##........#", "#........##........#", "#........##........#", "#........##........#", "#........##........#", "#........##........#", "#........##........#", "#........##........#", "#.@......*.......E.#", "####################", "####################"], ["####################", "#..................#", "#..................#", "#..................#", "#..................#", "#..................#", "#..................#", "#..................#", "#..................#", "#........*.........#", "#..................#", "#.......###........#", "#.......###........#", "#.$.....###.....E..#", "####################", "####################"], ["####################", "#.....#.....##.....#", "#.....#.....##.....#", "#.....#.....##.....#", "#.....#.....##.....#", "#.....#.....##.....#", "#.....#.....##.....#", "#.....#.....##.....#", "#.....#.....##.....#", "#.....#.....##.....#", "#.....c.....##.....#", "#.....c.....##.....#", "#.....c.....##.....#", "#.@...c.....*....E.#", "####################", "####################"], ["####################", "#..........#..##...#", "#..........#..##...#", "#..........#..##...#", "#..........#..##...#", "#..........#..##...#", "#..........#..##...#", "#..........#..##...#", "#..........#..##...#", "#..........#..##...#", "#...p......d..##...#", "#..###.....d..##...#", "#..###.....d..##...#", "#$.###.....d..*..E.#", "####################", "####################"], ["####################", "#.........#.##.....#", "#.........#.##.....#", "#.........#.##.....#", "#.........#.##.....#", "#.........#.##.....#", "#.........#.##.....#", "#.........#.##.....#", "#.........#.##.....#", "#.........#.##.....#", "#.........c.##....E#", "#....##...c.##...###", "#....##...c.##...###", "#$...##...c.*....###", "####################", "####################"], ["####################", "#..##............#.#", "#..##............#.#", "#..##............#.#", "#..##............#.#", "#..##............#.#", "#..##............#.#", "#..##............#.#", "#..##............d.#", "#..##............d.#", "#..##............d.#", "#..##............d.#", "#..##............d.#", "#@.*...^^........dE#", "#############pp#####", "####################"], ["####################", "#....#.............#", "#....#.............#", "#....d.............#", "#....d.............#", "#....d.............#", "#....d.............*", "#E...d...^^........#", "################..##", "#......c...##......#", "#......c...##...p..#", "#......c...##...##.#", "#......c...##......#", "#$.....c...........#", "####################", "####################"]],TUT=["####################", "#.........##.......#", "#.........##.......#", "#.........##.......#", "#.........##.......#", "#.........##.......#", "#.........##.......#", "#.........##.......#", "#.........##.......#", "#.........##.......#", "#.........##.......#", "#.........##.......#", "#.........##.......#", "#.@..............E.#", "####################", "####################"];
+var TUTS=[TUT,["####################", "#..........c.......#", "#..........c.......#", "#..........c.......#", "#..........c.......#", "#..........c.......#", "#..........c.......#", "#..........c.......#", "#..........c.......#", "#..........c.......#", "#..........c.......#", "#..........c.......#", "#..........c.......#", "#$.........c.....E.#", "####################", "####################"],["####################", "#...........d......#", "#...........d......#", "#...........d......#", "#...........d......#", "#...........d......#", "#...........d......#", "#...........d......#", "#...........d......#", "#...........d......#", "#...........d......#", "#...........d......#", "#...........d......#", "#$..p.......d....E.#", "####################", "####################"],["####################", "#..................#", "#..................#", "#..................#", "#..................#", "#..................#", "#..................#", "#..................#", "#..................#", "#..................#", "#.......*..........#", "#..................#", "#..................#", "#$......^^.......E.#", "####################", "####################"]];
 var W=480,H=384,T=24,C=20,RN=16;
 /* auto-mode replay plans: one char per 6-frame step; bits = dir(0-2)*4 + jump*2 + size-toggle. Found by a solver driving this exact physics. */
 var PLANS=["jiiiiiiiiikkiiiijjiiiiij", "liiiikiiiiiiiijliiiiij", "iiiiiiihliiiiiiiiiiiij", "iiilijjiijjiiiiiiiiiiij", "lliiiiijjiiiiiiiiiiiiiiib", "iiilkjiiiijiijiiiiiiijklij", "jiiiiiiikiiiiiiiiiifliiiij", "iiiiiiijliiiiiiiiiijkliiddaaaaaaaacaaaaaaaaaaaab"],runId=0,aRun=-1,aStep=0,aF=0,menuWait=0;
@@ -96,7 +97,7 @@ function parse(rows){g=rows.map(function(r){return r.split('')});orig=rows;var s
   var big=st.big,w=big?34:12;p={x:st.c*T+T/2-w/2,y:(st.r+1)*T-w,w:w,h:w,vx:0,vy:0,big:big,ground:false,coy:0,jb:0,dead:0,sq:0,deny:0,face:1,jumped:false,toggled:false,moved:0,vw:w,vh:w};
   got=false;plateOn=false;parts=[];runId++}
 function loadLevel(i){isTutLevel=false;lvIdx=i;parse(LV[i]);state='play';clearT=0}
-function startTut(){tut={k:0,t:0};isTutLevel=true;parse(TUT.tut||TUT);state='play';skipB.hidden=false}
+function startTut(){tut={k:0,t:0,room:0};isTutLevel=true;parse(TUTS[0]);state='play';skipB.hidden=false}
 var skipB=document.getElementById('skip');
 function endTut(){tut=null;skipB.hidden=true;lsSet('squeezeTut',1);seen=1;toMenu()}
 function toMenu(){state='menu';isTutLevel=false}
@@ -105,7 +106,7 @@ document.getElementById('mnu').onclick=function(){tut=null;skipB.hidden=true;toM
 document.getElementById('rst').onclick=function(){restart()};
 Auto.bind(document.getElementById('bot'));
 var sndB=document.getElementById('snd');sndB.style.opacity=mute?.45:1;sndB.classList.toggle('off',mute);sndB.onclick=function(){ac();mute=!mute;lsSet('squeezeMute',mute);sndB.style.opacity=mute?.45:1;sndB.classList.toggle('off',mute)};
-function restart(){if(state!=='play')return;if(isTutLevel){parse(TUT.tut||TUT)}else parse(LV[lvIdx])}
+function restart(){if(state!=='play')return;if(isTutLevel){parse(TUTS[tut?tut.room:0])}else parse(LV[lvIdx])}
 
 /* tiles */
 function tileAt(c,r){if(c<0||c>=C||r<0||r>=RN)return'#';return g[r][c]}
@@ -158,7 +159,7 @@ function toggle(){if(state!=='play'||p.dead||paused)return;
 
 /* sim */
 function die(){if(p.dead)return;p.dead=34;deaths++;shake=6;sfx('die');puff(p.x+p.w/2,p.y+p.h/2,22,'#ff5a36')}
-function win(){if(state!=='play')return;state='clear';clearT=60;sfx('win');
+function win(){if(state!=='play'||tut&&tut.room===3&&!got)return;state='clear';clearT=60;sfx('win');
   if(!isTutLevel){if(lvIdx>=prog.best&&lvIdx<LV.length-1)prog.best=lvIdx+1;if(lvIdx===prog.best&&false)0;
     if(got)prog.stars[lvIdx]=1;if(lvIdx===LV.length-1)prog.best=Math.max(prog.best,LV.length-1);lsSet('squeezeProg',prog)}}
 function smashAt(x,y,w,h){var any=false;hits(x,y,w,h,function(ch,c,r){if(ch==='c'){g[r][c]='.';any=true;puff(c*T+T/2,r*T+T/2,10,'#8d9aa5')}return false});if(any){sfx('smash');shake=5}return any}
@@ -194,10 +195,11 @@ function sim(){
   if(shake>0)shake*=.8;
 }
 function tutStep(){tut.t++;
-  if(tut.k===0&&p.moved>110){tut.k=1}
-  else if(tut.k===1&&p.jumped){tut.k=2}
-  else if(tut.k===2&&p.toggled&&!p.big){tut.k=3}
+  if(tut.room===0){if(tut.k===0&&p.moved>110){tut.k=1}
+    else if(tut.k===1&&p.jumped){tut.k=2}
+    else if(tut.k===2&&p.toggled&&!p.big){tut.k=-1}}
   if(state==='clear'&&tut){clearT=1}}
+function tutNext(){tut.room++;tut.k=[0,3,4,5][tut.room];tut.t=0;parse(TUTS[tut.room]);state='play'}
 
 /* drawing */
 function txt(s,x,y,size,col,al){ctx.font='700 '+size+'px Silkscreen,ui-monospace,monospace';ctx.fillStyle=col;ctx.textAlign=al||'left';ctx.fillText(s,x,y)}
@@ -223,9 +225,15 @@ function drawPlayer(){if(p.dead)return;
   if(p.big){ctx.fillStyle='#8d9aa5';ctx.fillRect(x|0,(y+h-3)|0,w|0,3)}}
 function arrowK(cx,cy,dir,col){ctx.fillStyle=col;for(var i=0;i<4;i++){var h=(i+1)*3,x=dir<0?cx-8+i*4:cx+5-i*4;ctx.fillRect(x,cy-h/2,4,h)}}
 function keyK(cx,cy,w,h,hi){ctx.fillStyle=hi?'#ffb000':'#0b1016';ctx.fillRect(cx-w/2,cy-h/2,w,h);ctx.strokeStyle='#efe6d2';ctx.lineWidth=2;ctx.strokeRect(cx-w/2,cy-h/2,w,h)}
-function tutDraw(){var k=tut.k,ph=(tut.t/28|0)%2;if(k>2)return;
-  txt(['MOVE','JUMP','SIZE'][k],W/2,70,26,'#ffb000','center');
-  for(var i=0;i<3;i++){ctx.fillStyle=i<=k?'#ffb000':'#2b3744';ctx.fillRect(W/2-36+i*26,82,18,5)}
+function tutDraw(){var k=tut.k,ph=(tut.t/28|0)%2;if(k<0)return;
+  txt(['MOVE','JUMP','SIZE','SMASH','PLATE','STAR'][k],W/2,70,26,'#ffb000','center');
+  for(var i=0;i<6;i++){ctx.fillStyle=i<=k?'#ffb000':'#2b3744';ctx.fillRect(W/2-76+i*26,82,18,5)}
+  if(k>=3){var go=k===3?!p.big:k===4?(!p.big&&!plateOn):false,jp=k===5&&!got;
+    if(go&&!Device.mobile){keyK(W/2,120,40,34,!!ph);txt('X',W/2,126,14,ph?'#0b1016':'#efe6d2','center')}
+    else if(jp&&!Device.mobile){keyK(W/2,120,150,34,!!ph);txt('SPACE',W/2,126,12,ph?'#0b1016':'#efe6d2','center')}
+    else if(!Device.mobile){keyK(W/2+34,120,40,34,!!ph);arrowK(W/2+34,120,1,ph?'#0b1016':'#efe6d2');keyK(W/2-34,120,40,34,false);arrowK(W/2-34,120,-1,'#efe6d2')}
+    if(k===5&&!got)for(var r=0;r<RN;r++)for(var c=0;c<C;c++)if(g[r][c]==='*'){ctx.strokeStyle='#ffb000';ctx.lineWidth=2;var q=10+(tut.t%40)/3;ctx.globalAlpha=1-(tut.t%40)/40;ctx.strokeRect(c*T+12-q,r*T+12-q,q*2,q*2);ctx.globalAlpha=1}
+    return}
   if(k===0){if(!Device.mobile){keyK(W/2-34,120,40,34,!ph);arrowK(W/2-34,120,-1,ph?'#efe6d2':'#0b1016');keyK(W/2+34,120,40,34,!!ph);arrowK(W/2+34,120,1,ph?'#0b1016':'#efe6d2')}}
   if(k===1){if(!Device.mobile){keyK(W/2,120,150,34,!!ph);txt('SPACE',W/2,126,12,ph?'#0b1016':'#efe6d2','center')}}
   if(k===2){var big=ph===0;ctx.fillStyle=big?'#efe6d2':'#ffb000';var s=big?34:12;ctx.fillRect(W/2-s/2,150-s,s,s);
@@ -251,12 +259,12 @@ function draw(){
   if(state==='clear'){txt('CLEAR',W/2,H/2,34,'#ffb000','center')}
   if(paused){ctx.fillStyle='rgba(11,16,22,.88)';ctx.fillRect(0,0,W,H);txt('PAUSED',W/2,H/2,30,'#ffb000','center')}}
 function after(){
-  if(state==='clear'){if(--clearT<=0){if(isTutLevel)endTut();else if(lvIdx<LV.length-1)loadLevel(lvIdx+1);else{toMenu();if(Auto.on)Auto.set(false)}}}}
+  if(state==='clear'){if(--clearT<=0){if(isTutLevel){if(tut&&tut.room<TUTS.length-1)tutNext();else endTut()}else if(lvIdx<LV.length-1)loadLevel(lvIdx+1);else{toMenu();if(Auto.on)Auto.set(false)}}}}
 var bL=document.getElementById('bL'),bR=document.getElementById('bR'),bJ=document.getElementById('bJ'),padEl=document.getElementById('pad');
 (function loop(){
   t++;
   padEl.style.visibility=state==='play'?'visible':'hidden';
-  [bL,bR].forEach(function(b){b.classList.toggle('pulse',!!tut&&tut.k===0)});bJ.classList.toggle('pulse',!!tut&&tut.k===1);bS.classList.toggle('pulse',!!tut&&tut.k===2);
+  [bL,bR].forEach(function(b){b.classList.toggle('pulse',!!tut&&tut.k===0)});bJ.classList.toggle('pulse',!!tut&&(tut.k===1||tut.k===5&&!got));bS.classList.toggle('pulse',!!tut&&(tut.k===2||(tut.k===3||tut.k===4&&!plateOn)&&!p.big));
   Speed.run(tick);
   draw();requestAnimationFrame(loop)})();
 function tick(){

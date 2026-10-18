@@ -65,7 +65,7 @@ function build(seed,d,tutorial){var R=GK.rng(seed);function ri(a,b){return a+Mat
   var W0=mk(900),M=W0.M,LW=900,x=0,g=56,plan=[],need={};function col(x,top,type){for(var y=top;y<LH;y++)M[y*LW+x]=type||DIRT}
   function flat(n){for(var i=0;i<n;i++)col(x++,g)}
   for(var y=0;y<LH;y++)M[y*LW]=ROCK;x=1;flat(30);var sx=8,sy=g-14;
-  var kinds=tutorial==='climb'?['cwall']:tutorial?['pit']:[],n=tutorial?1:1+Math.floor(d*6)+(d>.15?ri(0,1):0),pool=['pit','wall','floor','step','steel','drop','thorns'];
+  var kinds=tutorial==='climb'?['cwall']:tutorial?(Array.isArray(tutorial)?tutorial.slice():['pit']):[],n=tutorial?1:1+Math.floor(d*6)+(d>.15?ri(0,1):0),pool=['pit','wall','floor','step','steel','drop','thorns'];
   for(var k=0;k<n&&!tutorial;k++){var kd=pool[ri(0,pool.length-1)];if(kd==='floor'&&g>62)kd='wall';if(kd==='step'&&g<30)kd='drop';if(kd==='drop'&&g>66)kd='steel';kinds.push(kd)}
   kinds.forEach(function(kd,i){flat(ri(10,18));
     if(kd==='pit'){var w=ri(8,Math.min(20,10+Math.floor(d*12))),edge=x-1;for(var i2=0;i2<w;i2++){for(var y=g+7;y<LH;y++)M[y*LW+x]=DIRT;for(var y2=g+1;y2<g+7;y2++)M[y2*LW+x]=WAT;x++}plan.push({sk:'build',lo:edge-3,hi:edge});add('build')}
@@ -76,7 +76,9 @@ function build(seed,d,tutorial){var R=GK.rng(seed);function ri(a,b){return a+Mat
       for(var y5=g-26;y5<g+Tk;y5++)M[y5*LW+x]=ROCK;for(var y6=g2;y6<LH;y6++)M[y6*LW+x]=DIRT;x++;plan.push({sk:'dig',lo:z0+3,hi:z0+L2-4});g=g2;add('dig')}
     else if(kd==='step'){var h2=ri(5,9),cx=x;plan.push({sk:'build',lo:cx-21,hi:cx-2*h2+3});g-=h2;add('build')}
     else if(kd==='steel'){var sh=ri(4,8),sw=ri(3,6);plan.push({sk:'build',lo:x-21,hi:x-2*sh+3});for(var i6=0;i6<sw;i6++){col(x,g);for(var y7=g-sh;y7<g;y7++)M[y7*LW+x]=ROCK;x++}add('build')}
-    else if(kd==='drop'){g+=ri(8,13)}});
+    else if(kd==='drop'){g+=ri(8,13)}
+    else if(kd==='dropf'){plan.push({sk:'float',lo:x-12,hi:x-3});g+=ri(9,12);add('float')}
+    else if(kd==='wallc'){var h3=ri(5,9),th3=ri(4,6);plan.push({sk:'climb',lo:x-12,hi:x-3});for(var i7=0;i7<th3;i7++)col(x++,g-h3);add('climb')}});
   flat(10);var ex0=x+2,ex1=x+16;flat(26);for(var y8=0;y8<LH;y8++)M[y8*LW+x]=ROCK;x++;
   /* the pond is shallow and safe: it is the exit */ for(var px=ex0;px<=ex1;px++)for(var py=g;py<g+3;py++)M[py*LW+px]=AIR;
   var Wn=mk(x);for(var yy=0;yy<LH;yy++)for(var xx=0;xx<x;xx++)Wn.M[yy*x+xx]=M[yy*LW+xx];
@@ -190,10 +192,23 @@ var tut=GK.tutorial({parent:stage,onStart:function(){var L=makeLevel(4242,0,true
   {done:function(){return G&&G.sel==='build'||G&&G.skills.build===0}},
   {done:function(){return G&&G.skills.build===0}},
   {done:function(){return G&&G.st==='won'&&G.end>60||G&&G.st==='lost'&&(load('tut',0,G.L),false)}},
+  {init:function(){tutLvl(['floor'],4301,{dig:1})},update:tutRetry,done:function(){return tutWon()}},
+  {init:function(){tutLvl(['wall'],4302,{bash:1})},update:tutRetry,done:function(){return tutWon()}},
+  {init:function(){tutLvl(['dropf'],4303,{float:1})},update:tutRetry,done:function(){return tutWon()}},
+  {init:function(){tutLvl(true,4305,{stop:1,build:1})},update:function(){if(G&&G.W.ducks.some(function(d){return d.st==='stop'}))tutStopped=1;tutRetry()},done:function(){return tutStopped}},
+  {init:function(){tutLvl(true,4306,{})},update:tutRetry,done:function(){return G&&G.W.rate!==40}},
   {init:function(){load('tut',1,makeLevel(4243,0,'climb'))},done:function(){return G&&G.i===1&&(G.sel==='climb'||G.skills.climb<3)}},
   {done:function(){return G&&G.skills.climb===0}},
   {done:function(){return G&&G.i===1&&(G.st==='won'&&G.end>60||G.st==='lost'&&(load('tut',1,G.L),false))}}]});
-function tutDraw(c){if(!G)return;if(tut.i===0||tut.i===3){var b=padEl.children[tut.i?5:1];if(b){b.classList.toggle('on',(tut.t>>4)%2===0||G.sel===(tut.i?'climb':'build'))}}else if(tut.i===1||tut.i===4){var it=G.L.plan[0],lead=null;G.W.ducks.forEach(function(d){if(d.st==='walk'&&(!lead||d.x>lead.x))lead=d});
+var tutStopped=0;
+function tutLvl(kinds,seed,sk){var L=makeLevel(seed,0,kinds);Object.keys(sk).forEach(function(k){L.skills[k]=sk[k]});tutStopped=0;load('tut',0,L)}
+function tutWon(){return G&&G.st==='won'&&G.end>60}
+function tutRetry(){if(G&&G.st==='lost'&&G.end>40)load('tut',0,G.L)}
+function tutDraw(c){if(!G)return;if(tut.i>=3&&tut.i<=6){var sk0=['dig','bash','float','stop'][tut.i-3],b0=padEl.children[SK.indexOf(sk0)];if(b0&&G.sel!==sk0)b0.classList.toggle('on',(tut.t>>4)%2===0)}
+  if(tut.i===7){var rb=padEl.querySelector('.rate');if(rb)rb.classList.toggle('on',(tut.t>>4)%2===0)}
+  if(tut.i===8){var cb=padEl.children[5];if(cb)cb.classList.toggle('on',(tut.t>>4)%2===0||G.sel==='climb')}
+  if((tut.i>=3&&tut.i<=6||tut.i===9)&&G.sel){var lead2=null;G.W.ducks.forEach(function(d){if(d.st==='walk'&&(!lead2||d.x>lead2.x))lead2=d});if(lead2){var s2=scale();GK.pulse(c,(lead2.x*CELL-G.cam)*s2,((lead2.y-1)*CELL+HUDH)*s2,tut.t,YOLK,10)}}
+  if(tut.i===0){var b=padEl.children[1];if(b){b.classList.toggle('on',(tut.t>>4)%2===0||G.sel==='build')}}else if(tut.i===1){var it=G.L.plan[0],lead=null;G.W.ducks.forEach(function(d){if(d.st==='walk'&&(!lead||d.x>lead.x))lead=d});
     if(lead){var s=scale();GK.pulse(c,(lead.x*CELL-G.cam)*s,((lead.y-1)*CELL+HUDH)*s,tut.t,YOLK,10)}}}
 
 /* ---------- bar ---------- */
@@ -219,6 +234,6 @@ GK.guide({title:'Duckling Parade',goal:'Get enough ducklings into Mother Duck\'s
  tips:['Give jobs to the leading duckling so the rest follow its path.','Running out of time ends the level, so plan the first few jobs quickly.']});GK.online.mount(B,{game:'duckling-parade',boards:[{key:'levels',m:'levels',ic:'flag'},{key:'perfect',m:'perfect',ic:'star'},{key:'endless',m:'endless',ic:'infinity'},{daily:{}}]});
 function fit(){GK.fit(cv,stage)}addEventListener('resize',fit);addEventListener('orientationchange',fit);fit();
 save();paint();load(MODE,MODE==='parade'?curLevel():0);GK.loop(step,render);tut.maybe();
-window.__g={tut:tut,G:function(){return G},levelFor:levelFor,trial:trial,load:load,prog:PROG,st:ST,
+window.__g={tut:tut,makeLevel:makeLevel,G:function(){return G},levelFor:levelFor,trial:trial,load:load,prog:PROG,st:ST,
   stats:function(){return{m:G.m,i:G.i,st:G.st,out:G.W.out,n:G.L.n,saved:G.W.saved,dead:G.W.dead,req:G.L.req,plan:G.P.k+'/'+G.L.plan.length,levels:ST.levels,t:G.W.t}}};
 })();

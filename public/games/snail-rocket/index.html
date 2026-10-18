@@ -50,7 +50,7 @@ function launch(){R0={up:upsFor()};var seed=MODE==='daily'?GK.daily.seed()*11+1:
   var rv=8+U('ramp')*1.6;S={x:60,y:GROUND-40,vx:rv*Math.cos(-.62),vy:rv*Math.sin(-.62),fuel:60+U('fuel')*40,fmax:60+U('fuel')*40,a:-.62,phase:'ramp',rampT:0,let:0,bounces:0,maxH:0,stopT:0,birds:0,drops:0,trail:[],done:0,doneT:0};
   S.phase='fly';mode='fly';camX=0;camY=0;zoom=1;GK.fx.clear();if(!tut.active)ST.launches++;GK.audio.noise(.4,.12,0,300);GK.audio.tone(140,.5,'sawtooth',.05,2.5)}
 /* ============ flight ============ */
-var gT=0;function step(){T++;GK.goals.tick();if(mode==='garage'&&Auto.on&&!tut.active){if(++gT>40){gT=0;if(gm){gm.remove();gm=null}openGarage(true)}}if(mode!=='fly')return;var s=S;if(s.done){s.doneT++;if(Auto.on&&s.doneT>90){openGarage(true)}return}
+var gT=0;function step(){T++;GK.goals.tick();if(mode==='garage'&&Auto.on&&!tut.active){if(++gT>40){gT=0;if(gm){gm.remove();gm=null}openGarage(true)}}if(mode!=='fly')return;var s=S;if(s.done){s.doneT++;if(tut.active)tut.tick();if(Auto.on&&s.doneT>90){openGarage(true)}return}
   var thr=(hold||botHold())&&s.fuel>0;if(thr){var p=.22+U('thrust')*.06;s.vx+=Math.cos(s.a)*p;s.vy+=Math.sin(s.a)*p-.04;s.fuel-=.5;if(T%3===0)GK.fx.burst(s.x-Math.cos(s.a)*20,s.y-Math.sin(s.a)*20,1,{col:RED,speed:1.5,life:16,shape:'ci',size:4})}
   var sp=Math.hypot(s.vx,s.vy),lift=U('wings')*.0065*sp*Math.max(0,Math.cos(s.a));s.vy+=.12-lift*(s.vy>0?1.4:.6);
   var drag=.0016-U('wings')*.00012;s.vx-=s.vx*drag*sp*.5;s.vy-=s.vy*drag*sp*.5;
@@ -66,8 +66,8 @@ var gT=0;function step(){T++;GK.goals.tick();if(mode==='garage'&&Auto.on&&!tut.a
       if(it.k==='let'){it.gone=1;s.let++;GK.audio.tone(880+Math.random()*120,.06,'sine',.04);GK.fx.burst(it.x,it.y,5,{col:LEAF2,speed:1.6,life:14,size:3})}
       else if(it.k==='dew'){it.gone=1;s.fuel=Math.min(s.fmax,s.fuel+s.fmax*.25);s.drops++;GK.audio.tone(1320,.1,'sine',.04);GK.fx.burst(it.x,it.y,7,{col:'#9cc3c9',speed:2,life:16,shape:'ci',size:3})}
       else if(it.k==='bird'){it.gone=1;s.vx*=.6;s.vy=Math.abs(s.vy)*.3+1;s.birds++;GK.fx.shake(6,12);GK.audio.tone(600,.15,'square',.04,.5);GK.fx.burst(it.x,it.y,10,{col:INK,speed:3,life:24,size:2,grav:.08})}
-      else if(it.k==='bal'){it.gone=1;s.vy=-Math.abs(s.vy)-6;s.vx+=1;GK.audio.tone(520,.12,'triangle',.05,1.8);GK.fx.burst(it.x,it.y,12,{col:RED,speed:3,life:20,size:3})}
-      else if(it.k==='mush'&&s.vy>=-1){s.vy=-9-Math.abs(s.vx)*.2;s.vx+=1.5;GK.audio.tone(300,.15,'triangle',.05,2);GK.fx.burst(it.x,GROUND-8,10,{col:RED,speed:2.5,life:18,shape:'ci',size:3})}
+      else if(it.k==='bal'){if(tut.active)tutF.bal=1;it.gone=1;s.vy=-Math.abs(s.vy)-6;s.vx+=1;GK.audio.tone(520,.12,'triangle',.05,1.8);GK.fx.burst(it.x,it.y,12,{col:RED,speed:3,life:20,size:3})}
+      else if(it.k==='mush'&&s.vy>=-1){if(tut.active)tutF.mush=1;s.vy=-9-Math.abs(s.vx)*.2;s.vx+=1.5;GK.audio.tone(300,.15,'triangle',.05,2);GK.fx.burst(it.x,GROUND-8,10,{col:RED,speed:2.5,life:18,shape:'ci',size:3})}
       else if(it.k==='gust'&&!it.used){it.used=1;s.vx+=4;GK.audio.noise(.3,.06,0,1200)}}});
   if(Math.abs(s.vx)<.25&&s.y>=GROUND-15){if(++s.stopT>40)finish()}else s.stopT=0;
   /* camera: frame the snail, zoom out as it climbs */ var tz=GK.clamp(1-(GROUND-s.y)/1600,.38,1);zoom+=(tz-zoom)*.05;camX=s.x-W*.3/zoom;camY=Math.min(0,s.y-H*.5/zoom);
@@ -79,7 +79,7 @@ function finish(){var s=S;s.done=1;s.doneT=0;var d=dist();if(tut.active){tutF.la
   [523,659,784].forEach(function(f,i){GK.audio.tone(f,.25,'triangle',.05,1,GK.audio.ctx&&GK.audio.ctx.currentTime+i*.1)})}
 /* ============ garage ============ */
 function cost(k){var l=CAR.up[k]||0;return l>=5?0:Math.round(UPS[k].b*[1,2.5,6,14,30][l])}
-function buy(k){var c=cost(k);if(!c||CAR.let<c)return false;CAR.let-=c;CAR.up[k]=(CAR.up[k]||0)+1;ST.ups++;saveCar();saveST();GK.audio.tone(660,.12,'triangle',.05);GK.audio.tone(990,.18,'triangle',.05,1,GK.audio.ctx&&GK.audio.ctx.currentTime+.08);return true}
+function buy(k){var c=cost(k);if(!c||CAR.let<c)return false;if(tut.active)tutF.bought=1;CAR.let-=c;CAR.up[k]=(CAR.up[k]||0)+1;ST.ups++;saveCar();saveST();GK.audio.tone(660,.12,'triangle',.05);GK.audio.tone(990,.18,'triangle',.05,1,GK.audio.ctx&&GK.audio.ctx.currentTime+.08);return true}
 var gm=null;
 function openGarage(auto){mode='garage';if(gm)gm.remove();if(MODE!=='career'||auto&&Auto.on){if(auto&&Auto.on&&MODE==='career'){var ks=Object.keys(UPS).sort(function(a,b){return cost(a)-cost(b)});ks.forEach(function(k){while(cost(k)&&CAR.let>=cost(k)&&buy(k)){}})}if(Auto.on){launch();return}}
   gm=document.createElement('div');gm.className='gk-modal';var sh=document.createElement('div');sh.className='gk-sheet';gm.appendChild(sh);
@@ -91,7 +91,7 @@ function openGarage(auto){mode='garage';if(gm)gm.remove();if(MODE!=='career'||au
 /* ============ AUTO ============ */
 function botHold(){if(!Auto.on||tut.active||!S||S.done)return false;var s=S;return s.fuel>0&&(s.vy>-1.5||s.y>GROUND-120)&&s.a>-1.0}
 /* ============ input ============ */
-GK.pointer(cv,{down:function(){if(mode==='fly'&&S.done){if(S.doneT>30)openGarage();return}hold=true},up:function(){hold=false},key:function(c,d){if(c==='Space'||c==='ArrowUp'||c==='KeyW'){hold=d;if(d&&mode==='fly'&&S.done&&S.doneT>30)openGarage()}else if(d&&c==='Enter'&&mode==='garage'&&gm){gm.remove();gm=null;launch()}}});
+GK.pointer(cv,{down:function(){if(mode==='fly'&&S.done){if(S.doneT>30&&!tut.active)openGarage();return}hold=true},up:function(){hold=false},key:function(c,d){if(c==='Space'||c==='ArrowUp'||c==='KeyW'){hold=d;if(d&&mode==='fly'&&S.done&&S.doneT>30&&!tut.active)openGarage()}else if(d&&c==='Enter'&&mode==='garage'&&gm){gm.remove();gm=null;launch()}}});
 /* ============ drawing: a picture book ============ */
 function wob(i,a){var v=Math.sin(i*12.9898)*43758.5453;return(v-Math.floor(v)-.5)*a}
 function render(){var v=GK.view,so=GK.fx.offset();ctx.setTransform(v.dpr*v.s,0,0,v.dpr*v.s,0,0);ctx.fillStyle=PAPER;ctx.fillRect(0,0,W,H);
@@ -134,8 +134,20 @@ function drawTitle(){S={x:60,y:GROUND-40,a:-.62,fuel:1,fmax:1,let:0,done:0};draw
 /* ============ tutorial: hold to boost, land ============ */
 var tutF={boost:0,landed:0};
 var tut=GK.tutorial({parent:stage,onStart:function(){if(gm){gm.remove();gm=null}var m0=MODE;MODE='daily';launch();MODE=m0;tutF={boost:0,landed:0}},onEnd:function(){openGarage()},
-  steps:[{update:function(){if(hold)tutF.boost++},done:function(){return tutF.boost>40}},{done:function(){return S&&S.let>0||tutF.landed}},{done:function(){return tutF.landed&&S.doneT>40}}]});
-function tutDraw(){var t=tut.t;if(tut.i===0)GK.pulse(ctx,W/2,H/2+80,t,RED,16);else if(tut.i===1){var it=items.find(function(o){return o.k==='let'&&!o.gone&&o.x>S.x});if(it)GK.pulse(ctx,(it.x-camX)*zoom,(it.y-camY)*zoom,t,RED,12)}}
+  steps:[{update:function(){if(hold)tutF.boost++},done:function(){return tutF.boost>40}},{done:function(){return S&&S.let>0||tutF.landed}},{done:function(){return tutF.landed&&S.doneT>40}},
+   {init:function(){stg('dew')},update:function(){if(S&&S.done)stg('dew')},done:function(){return S&&S.drops>0}},
+   {init:function(){stg('bird')},update:function(){if(S&&S.done)stg('bird')},done:function(){var b=items[0];return S&&(S.birds>0||b&&b.k==='bird'&&b.x<S.x-90)}},
+   {init:function(){tutF.mush=0;stg('mush')},update:function(){if(S&&S.done&&!tutF.mush)stg('mush')},done:function(){return tutF.mush}},
+   {init:function(){tutF.bal=0;stg('bal')},update:function(){if(S&&S.done&&!tutF.bal)stg('bal')},done:function(){return tutF.bal}},
+   {init:function(){tutF.bought=0;tutF.car=JSON.stringify(CAR);tutF.mode=MODE;MODE='career';CAR.let=Math.max(CAR.let,200);if(S)S.done=1;openGarage()},update:function(){var b=document.querySelector('.buy:not(:disabled)');if(b)b.classList.add('pulse')},done:function(){if(tutF.bought){CAR=JSON.parse(tutF.car);MODE=tutF.mode;saveCar();if(gm){gm.remove();gm=null}return true}return false}}]});
+function pred(n){var x=S.x,y=S.y,vx=S.vx,vy=S.vy;for(var i=0;i<n;i++){var sp=Math.hypot(vx,vy);vy+=.12;vx-=vx*.0016*sp*.5;vy-=vy*.0016*sp*.5;x+=vx;y+=vy;if(y>GROUND-14){y=GROUND-14;break}}return[x,y]}
+function stg(kind){launch();items=[];var q;
+  if(kind==='dew'){q=pred(60);items.push({k:'dew',x:q[0],y:q[1]-60})}
+  else if(kind==='bird'){q=pred(80);items.push({k:'bird',x:q[0],y:q[1]-10,vx:-.4,ph:0})}
+  else if(kind==='bal'){q=pred(55);items.push({k:'bal',x:q[0],y:q[1]-50})}
+  else if(kind==='mush'){q=pred(400);for(var m=-2;m<=3;m++)items.push({k:'mush',x:q[0]+m*38,y:GROUND})}}
+(function(){var st=document.createElement('style');st.textContent='.buy.pulse{outline:3px solid #c0392b;outline-offset:2px;animation:srp .8s steps(1) infinite}@keyframes srp{50%{outline-color:transparent}}';document.head.appendChild(st)})();
+function tutDraw(){var t=tut.t;if(tut.i>=3&&tut.i<=6){var it3=items[0];if(it3&&!it3.gone)GK.pulse(ctx,(it3.x-camX)*zoom,(it3.y-camY)*zoom,t,tut.i===4?'#c0392b':RED,14);return}if(tut.i===0)GK.pulse(ctx,W/2,H/2+80,t,RED,16);else if(tut.i===1){var it=items.find(function(o){return o.k==='let'&&!o.gone&&o.x>S.x});if(it)GK.pulse(ctx,(it.x-camX)*zoom,(it.y-camY)*zoom,t,RED,12)}}
 /* ============ bar ============ */
 var R=GK.controls(document.getElementById('bar'),{bar:'left',onHelp:function(){tut.start()},extra:[
   {id:'gr',html:GK.icoSvg('wrench'),title:'Garden shed',fn:function(){if(!tut.active)openGarage()}},

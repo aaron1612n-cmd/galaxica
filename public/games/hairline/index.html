@@ -53,14 +53,14 @@ function gen(w,seed,n,finishW){
     if(!ok)throw new Error('gen failed at '+i)}
   return{plats:plats,plan:plan}}
 var LV=[];function level(t){if(!LV[t])LV[t]=gen(WIDTHS[t],SEEDS[t],N,150);return LV[t]}
-var TUT=null;function tutLevel(){if(!TUT)TUT=gen(60,5,3,120);return TUT}
+var TUT=[];function tutLevel(){var i=tut?tut.lv:0;if(!TUT[i])TUT[i]=i===0?gen(60,5,3,120):i===1?gen(10,8,3,120):gen(4,9,2,120);return TUT[i]}
 
 /* ---------- state ---------- */
 var state='menu',tier=Kit.lsGet('hairTier',0),run=null,tut=null,seen=Kit.lsGet('hairTut',0),jumpReq=false,t=0,menuWait=0,autoRun=false,tries=1;
 function best(d){return Kit.lsGet('hairBest'+d,0)}
 function newRun(){var L=tut?tutLevel():level(tier);run={L:L,p:{x:20,y:250,vy:0,ground:true,land:null},f:0,pj:0,cleared:0,dead:0,win:0,cam:0,trail:[],lastLand:L.plats[0]};state='play'}
 function toMenu(){run=null;state='menu';tut=null}
-function startTut(){tut={k:0,t:0};tries=1;newRun();K.showSkip(true)}
+function startTut(){tut={k:0,t:0,lv:0,fails:0};tries=1;newRun();K.showSkip(true)}
 function endTut(){tut=null;K.showSkip(false);Kit.lsSet('hairTut',1);seen=1;toMenu()}
 function tone(f,d,ty,v,sl){Kit.tone(f,d,ty,v,sl)}
 
@@ -80,10 +80,10 @@ function tick(){
   if(jump&&r.p.jumped){tone(320,.1,'square',.03,2);r.p.jumped=false}
   if(r.p.ground&&r.p.land&&r.p.land!==r.lastLand){r.lastLand=r.p.land;r.cleared=r.L.plats.indexOf(r.p.land);tone(180,.05,'square',.03);
     if(tut&&r.cleared>=1&&tut.k===0)tut.k=1;
-    if(r.cleared>=r.L.plats.length-1){if(tut){endTut();return}state='win';r.win=0;if(r.cleared>best(tier))Kit.lsSet('hairBest'+tier,r.cleared);tone(520,.15,'square',.05);tone(780,.25,'square',.05,1)}}
+    if(r.cleared>=r.L.plats.length-1){if(tut){if(tut.lv<2){tut.lv++;tut.k=tut.lv+1;tut.fails=0;newRun();return}endTut();return}state='win';r.win=0;if(r.cleared>best(tier))Kit.lsSet('hairBest'+tier,r.cleared);tone(520,.15,'square',.05);tone(780,.25,'square',.05,1)}}
   r.trail.push({x:r.p.x,y:r.p.y,l:14});r.trail=r.trail.filter(function(q){return--q.l>0});
   r.cam=Math.max(0,r.p.x-150);
-  if(r.p.y>H+60){r.dead=1;Kit.noise(.3,.12);if(!tut&&r.cleared>best(tier))Kit.lsSet('hairBest'+tier,r.cleared)}
+  if(r.p.y>H+60){r.dead=1;if(tut&&++tut.fails>=8&&tut.lv===2){endTut();return}Kit.noise(.3,.12);if(!tut&&r.cleared>best(tier))Kit.lsSet('hairBest'+tier,r.cleared)}
   if(tut)tut.t++}
 
 /* ---------- input ---------- */
@@ -110,7 +110,7 @@ function drawWorld(){var r=run,ox=-r.cam|0;
   r.trail.forEach(function(q){ctx.globalAlpha=q.l/16;ctx.fillStyle='#8d9aa5';ctx.fillRect(q.x+ox-2|0,q.y-8|0,4,4)});ctx.globalAlpha=1;
   if(!r.dead){var p=r.p,x=p.x+ox-5|0,y=p.y-14|0;ctx.fillStyle='#efe6d2';ctx.fillRect(x,y,10,14);ctx.fillStyle='#0b1016';ctx.fillRect(x+6,y+4,2,3);ctx.fillRect(x+3,y+4,2,3)}
   else{var d=r.dead;ctx.fillStyle='#ff5a36';for(var k=0;k<8;k++){var a=k/8*6.28;ctx.fillRect(r.p.x+ox+Math.cos(a)*d*2|0,Math.min(H-4,r.p.y-8+Math.sin(a)*d*2)|0,4,4)}}}
-function tutDraw(){var ph=(tut.t/28|0)%2;txt(tut.k===0?'JUMP':'AGAIN',W/2,70,28,'#ffb000','center');for(var i=0;i<2;i++){ctx.fillStyle=i<=tut.k?'#ffb000':'#2b3744';ctx.fillRect(W/2-22+i*26,82,18,5)}
+function tutDraw(){var ph=(tut.t/28|0)%2;txt(['JUMP','AGAIN','THIN','TINY'][tut.k],W/2,70,28,'#ffb000','center');for(var i=0;i<4;i++){ctx.fillStyle=i<=tut.k?'#ffb000':'#2b3744';ctx.fillRect(W/2-48+i*26,82,18,5)}
   if(!Device.mobile){keyK(W/2,116,170,34,!!ph);txt('SPACE',W/2,122,12,ph?'#0b1016':'#efe6d2','center')}}
 function drawMenu(){
   ctx.font='700 40px Silkscreen,monospace';var a=ctx.measureText('HAIR').width,b=ctx.measureText('LINE').width,x0=(W-a-b)/2;txt('HAIR',x0,80,40,'#efe6d2');txt('LINE',x0+a,80,40,'#ffb000');

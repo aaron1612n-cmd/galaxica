@@ -56,7 +56,7 @@ GK.pointer(cv,{hover:true,
   up:function(){rel=null},
   key:function(c,d){if(!d)return;if(mode==='pick'){var n=c==='Digit1'?0:c==='Digit2'?1:c==='Digit3'?2:-1;if(c==='ArrowLeft'||c==='KeyA')G.sel=(G.sel+G.pick.length-1)%G.pick.length;if(c==='ArrowRight'||c==='KeyD')G.sel=(G.sel+1)%G.pick.length;if(c==='Space'||c==='Enter')n=G.sel;if(n>=0&&G.pick[n]&&G.pickT>25)choose(G.pick[n]);return}if(c==='Space'||c==='KeyB'){if(mode==='play')bomb();else if((mode==='title'||mode==='over')&&!tut.active)newRun()}}});
 var KEYS=GK.keys;
-function bomb(){if(!G||G.bombs<=0||G.dead||G.pause>60)return;G.bombs--;ST.hugs++;G.inv=Math.max(G.inv,110);clearBullets(true);GK.fx.shake(6,14);GK.fx.burst(px,py,30,{col:RED,speed:6,life:30,shape:'ci',size:4});GK.audio.noise(.6,.2);GK.audio.tone(110,.5,'sine',.1,.5);G.hp-=G.maxhp*.025;G.clearT=40}
+function bomb(){if(!G||G.bombs<=0||G.dead||G.pause>60)return;if(G.tut)tutFlag.hug=1;G.bombs--;ST.hugs++;G.inv=Math.max(G.inv,110);clearBullets(true);GK.fx.shake(6,14);GK.fx.burst(px,py,30,{col:RED,speed:6,life:30,shape:'ci',size:4});GK.audio.noise(.6,.2);GK.audio.tone(110,.5,'sine',.1,.5);G.hp-=G.maxhp*.025;G.clearT=40}
 function clearBullets(spark){for(var i=0;i<BUL.length;i++){var b=BUL[i];if(spark&&SPARK.length<200)SPARK.push({x:b.x,y:b.y,vx:(Math.random()-.5)*3,vy:(Math.random()-.5)*3,l:20})}BUL.length=0}
 /* ============ bullets ============ */
 function B(x,y,vx,vy,o){o=o||{};var sl=G&&G.toy?1-.08*(G.toy.lullaby||0):1;vx*=sl;vy*=sl;BUL.push({x:x,y:y,vx:vx,vy:vy,ax:o.ax||0,ay:o.ay||0,r:o.r||7,k:o.k||'ball',x0:x,amp:o.amp||0,fr:o.fr||0,ph:o.ph||0,life:0,len:o.len||0,ang:o.ang||0,bounce:o.bounce||0,id:BUL.length})}
@@ -230,11 +230,22 @@ function drawTitle(){G={stage:0,round:0,lives:3,bombs:2,power:1,score:0,hp:90,ma
 /* ============ tutorial (wordless) ============ */
 var tutFlag={pick:0,survive:0};
 var MODEIC={story:'heart',nap:'skull',rush:'bolt',daily:'sun'};
-var tut=GK.tutorial({parent:document.getElementById('stage'),onStart:function(){var m0=MODE;MODE='story';newRun();MODE=m0;G.tut=true;G.pause=99999;G.lives=99;tutFlag={pick:0,survive:0};px=W/2;py=H-120;tgtX=px;tgtY=py},onEnd:function(){mode='title';G=null;BUL.length=0;PICK.length=0;SHOT.length=0},
+var tut=GK.tutorial({parent:document.getElementById('stage'),onStart:function(){var m0=MODE;MODE='story';newRun();MODE=m0;G.tut=true;G.pause=99999;G.lives=99;tutFlag={pick:0,survive:0};px=W/2;py=H-120;tgtX=px;tgtY=py},onEnd:function(){R.fo.classList.remove('pulse');R.bm.classList.remove('pulse');mode='title';G=null;BUL.length=0;PICK.length=0;SHOT.length=0},
   steps:[{done:function(){return Math.hypot(px-W/2,py-300)<60}},
    {init:function(){PICK.length=0;PICK.push({x:W/2+110,y:200,vy:.5,k:'cookie'})},done:function(){return tutFlag.pick}},
-   {init:function(){G.pause=0;G.hp=G.maxhp*.99;tutFlag.survive=0;G.t=0},done:function(){return tutFlag.survive>420}}]});
-function tutDraw(){var t=tut.t;if(tut.i===0)GK.pulse(ctx,W/2,300,t,RED,14);else if(tut.i===1&&PICK[0])GK.pulse(ctx,PICK[0].x,PICK[0].y,t,RED,18);else if(tut.i===2&&G.pause>0)GK.pulse(ctx,W/2,H-120,t,RED,14)}
+   {init:function(){G.pause=0;G.hp=G.maxhp*.99;tutFlag.survive=0;G.t=0},done:function(){return tutFlag.survive>420}},
+   {init:function(){tutFlag.slowT=0},update:function(){tutKeep();if(KEYS.ShiftLeft||KEYS.ShiftRight||focus)tutFlag.slowT++},done:function(){return tutFlag.slowT>=60}},
+   {init:function(){G.graze=0},update:tutKeep,done:function(){return G.graze>=3}},
+   {init:function(){G.bombs=1;tutFlag.hug=0},update:tutKeep,done:function(){return tutFlag.hug}},
+   {init:function(){openPick()},done:function(){return mode!=='pick'}}]});
+function tutKeep(){if(G&&G.hp<G.maxhp*.5)G.hp=G.maxhp*.9}
+function tutDraw(){var t=tut.t;if(tut.i===0)GK.pulse(ctx,W/2,300,t,RED,14);else if(tut.i===1&&PICK[0])GK.pulse(ctx,PICK[0].x,PICK[0].y,t,RED,18);else if(tut.i===2&&G.pause>0)GK.pulse(ctx,W/2,H-120,t,RED,14);
+  else if(tut.i===3){tutKey('SHIFT',R.fo)}
+  else if(tut.i===4){var rr=22+(t%40)/3;ctx.save();ctx.strokeStyle=RED;ctx.lineWidth=2;ctx.globalAlpha=1-(t%40)/40;ctx.beginPath();ctx.arc(px,py,rr+10,0,6.3);ctx.stroke();ctx.restore()}
+  else if(tut.i===5){tutKey('SPACE',R.bm)}
+  else if(tut.i===6&&mode==='pick'&&G.pickT>20){GK.pulse(ctx,cardX(0)+66,345,t,RED,18)}}
+(function(){var st=document.createElement('style');st.textContent='.gk-b.pulse{outline:3px solid #e0412f;outline-offset:2px}';document.head.appendChild(st)})();
+function tutKey(word,btn){var t=tut.t,on=(t/28|0)%2;if(Device.mobile){if(btn)btn.classList.toggle('pulse',on===1)}else{ctx.save();ctx.fillStyle=on?RED:'#fff';ctx.strokeStyle='#2b2220';ctx.lineWidth=3;ctx.fillRect(W/2-60,H/2-20,120,40);ctx.strokeRect(W/2-60,H/2-20,120,40);ctx.fillStyle=on?'#fff':'#2b2220';ctx.font='700 15px sans-serif';ctx.textAlign='center';ctx.fillText(word,W/2,H/2+6);ctx.restore()}}
 /* ============ boot ============ */
 var R=GK.controls(document.getElementById('bar'),{bar:'bottom',onHelp:function(){tut.start()},extra:[
   {id:'bm',html:'<svg viewBox="0 0 22 22"><circle cx="11" cy="11" r="7"/><path d="M7 11h8M11 7v8"/></svg>',title:'Hug (Space)',fn:function(){if(mode==='play')bomb()}},

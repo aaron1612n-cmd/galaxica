@@ -167,8 +167,27 @@ function drawTitle(){var t=T;ctx.save();ctx.translate(W/2,H/2);ctx.strokeStyle=C
 /* ============ tutorial ============ */
 var tutFlag={chirp:0,moth:0,exit:0};
 var tut=GK.tutorial({parent:document.getElementById('stage'),onStart:function(){G={level:0,energy:100,moths:0,eaten:0,t:0,hurt:0,chirpCd:0,deadT:0,tut:true,perk:{},score:0,combo:0,lastEat:-999,glow:0,crys:0,timer:0};G.level=1;genCave(1,3,true);moths=moths.slice(0,1);bat={x:startP.x,y:startP.y,vx:0,vy:-.6,a:0,flap:0};cam.x=0;cam.y=bat.y-H*.6;tutFlag={chirp:0,moth:0,exit:0};mode='play';G.energy=100},onEnd:function(){mode='title';G=null},
-  steps:[{done:function(){return tutFlag.chirp}},{done:function(){return tutFlag.moth||moths.every(function(m){return!m.alive})}},{done:function(){return tutFlag.exit}}]});
-function tutDraw(){var t=tut.t;ctx.save();ctx.translate(-Math.round(cam.x),-Math.round(cam.y));if(tut.i===0)GK.pulse(ctx,bat.x,bat.y,t,CORAL,12);else if(tut.i===1){var m=moths.find(function(m){return m.alive});if(m){var seenM=echoes.some(function(e){return e.k==='moth'});if(seenM)GK.pulse(ctx,m.x,m.y,t,YEL,10);else GK.pulse(ctx,bat.x,bat.y,t,CORAL,12)}}else GK.pulse(ctx,exitP.x,exitP.y,t,YEL,14);ctx.restore()}
+  steps:[{done:function(){return tutFlag.chirp}},{done:function(){return tutFlag.moth||moths.every(function(m){return!m.alive})}},{done:function(){return tutFlag.exit}},
+   {init:function(){tutCave('crystal')},update:tutKeep,done:function(){return G.crys>=1}},
+   {init:function(){tutCave('spider')},update:tutKeep,done:function(){return tutFlag.exit}},
+   {init:function(){tutCave('stalac')},update:tutKeep,done:function(){return tutFlag.exit}},
+   {init:function(){tutCave('owl')},update:tutKeep,done:function(){return tutFlag.exit}},
+   {init:function(){G.win=0;openPick()},done:function(){return mode!=='pick'}}]});
+function tutKeep(){if(G&&G.energy<60)G.energy=60}
+function tutCave(kind){genCave(1,3,true);moths=[];spiders=[];owls=[];stalac=[];crystals=[];bat={x:startP.x,y:startP.y,vx:0,vy:-.6,a:0,flap:0};cam.x=0;cam.y=bat.y-H*.6;G.win=0;G.crys=0;G.hurt=0;tutFlag.exit=0;mode='play';echoes=[];rings=[];
+  var cs=[],x,y;for(y=6;y<MH-8;y++)for(x=3;x<MW-3;x++){var d=dist[y*MW+x];if(!MAP[y*MW+x]&&d>=14&&d<=34)cs.push([x,y,d])}
+  cs.sort(function(a,b){return a[2]-b[2]});
+  function ceil(c){return MAP[(c[1]-1)*MW+c[0]]===1}
+  if(kind==='crystal'){var c=cs[Math.floor(cs.length*.3)]||cs[0];crystals.push({x:c[0]*TS+TS/2,y:c[1]*TS+TS/2,got:false,ph:0})}
+  else if(kind==='spider'){var cd=cs.filter(function(c){var len=0;while(!MAP[(c[1]+len+1)*MW+c[0]]&&len<6)len++;return ceil(c)&&len>=2})[0];if(cd){var ln=0;while(!MAP[(cd[1]+ln+1)*MW+cd[0]]&&ln<6)ln++;spiders.push({x:cd[0]*TS+TS/2,y0:cd[1]*TS,len:ln*TS,ph:0,seenT:-999,yy:0})}}
+  else if(kind==='stalac'){var cd2=cs.filter(function(c){return ceil(c)&&!MAP[(c[1]+1)*MW+c[0]]})[0];if(cd2)stalac.push({x:cd2[0]*TS+TS/2,y:cd2[1]*TS+TS-2,y0:cd2[1]*TS+TS-2,state:0,t:0,seenT:-999})}
+  else if(kind==='owl'){var c4=cs[Math.floor(cs.length*.5)]||cs[0];owls.push({x:c4[0]*TS+TS/2,y:c4[1]*TS+TS/2,vx:.8,vy:0,seenT:-999})}}
+function tutDraw(){var t=tut.t;ctx.save();ctx.translate(-Math.round(cam.x),-Math.round(cam.y));if(tut.i===0)GK.pulse(ctx,bat.x,bat.y,t,CORAL,12);else if(tut.i===1){var m=moths.find(function(m){return m.alive});if(m){var seenM=echoes.some(function(e){return e.k==='moth'});if(seenM)GK.pulse(ctx,m.x,m.y,t,YEL,10);else GK.pulse(ctx,bat.x,bat.y,t,CORAL,12)}}else if(tut.i===3){var cr=crystals.find(function(c){return!c.got});if(cr)GK.pulse(ctx,cr.x,cr.y,t,YEL,12)}
+  else if(tut.i===4){var sp=spiders[0];if(sp)GK.pulse(ctx,sp.x,sp.y0+sp.len/2,t,CORAL,14);GK.pulse(ctx,exitP.x,exitP.y,t+30,YEL,14)}
+  else if(tut.i===5){var st0=stalac[0];if(st0)GK.pulse(ctx,st0.x,st0.y,t,CORAL,12);GK.pulse(ctx,exitP.x,exitP.y,t+30,YEL,14)}
+  else if(tut.i===6){var ow=owls[0];if(ow)GK.pulse(ctx,ow.x,ow.y,t,CORAL,14);GK.pulse(ctx,exitP.x,exitP.y,t+30,YEL,14)}
+  else if(tut.i===7){ctx.restore();if(mode==='pick'&&G.pickT>20)GK.pulse(ctx,cardX(1)+64,350,t,YEL,18);return}
+  else GK.pulse(ctx,exitP.x,exitP.y,t,YEL,14);ctx.restore()}
 /* ============ bar ============ */
 var R=GK.controls(document.getElementById('bar'),{bar:'top',onHelp:function(){tut.start()},extra:[
   {id:'ch',html:'<svg viewBox="0 0 22 22"><path d="M5 11c0-4 3-6 6-6M5 11c0 4 3 6 6 6M8 11c0-2 1-3 3-3M8 11c0 2 1 3 3 3"/></svg>',title:'Chirp (Space)',fn:function(){chirp()}},
