@@ -8,11 +8,12 @@
   function text(h) { var d = document.createElement('div'); d.innerHTML = h; return d.textContent.replace(/\s+/g, ' ').trim(); }
   function codeOf(e) { var m = e.h.match(/<figure class="code"[^>]*><pre>([\s\S]*?)<\/pre>/); if (!m) return ''; var d = document.createElement('div'); d.innerHTML = m[1]; return d.textContent; }
 
-  var FACE = '<svg viewBox="0 0 40 40" aria-hidden="true"><path d="M8 4h24v32l-12-7-12 7z" fill="currentColor"/><g class="eyes"><rect x="13" y="12" width="4" height="7" fill="var(--paper)"/><rect x="23" y="12" width="4" height="7" fill="var(--paper)"/></g><path d="M14 23q6 5 12 0" stroke="var(--paper)" stroke-width="2.2" fill="none"/></svg>';
+  var FACE = '<svg viewBox="0 -10 40 50" aria-hidden="true"><g class="mk mk-star"><path d="M20-9l2.4 5 5.4.7-4 3.7 1 5.4-4.8-2.7-4.8 2.7 1-5.4-4-3.7 5.4-.7z" fill="var(--acc)"/></g><g class="mk mk-crown"><path d="M9 4l2-10 6 6 3-9 3 9 6-6 2 10z" fill="var(--acc)"/></g><g class="mk mk-flag"><path d="M20 4V-9" stroke="currentColor" stroke-width="2"/><path d="M20-9l11 3.5L20-2z" fill="var(--acc)"/></g><path d="M8 4h24v32l-12-7-12 7z" fill="currentColor"/><g class="eyes"><rect x="13" y="12" width="4" height="7" fill="var(--paper)"/><rect x="23" y="12" width="4" height="7" fill="var(--paper)"/></g><path d="M14 23q6 5 12 0" stroke="var(--paper)" stroke-width="2.2" fill="none"/></svg>';
   var fab = document.createElement('button'); fab.className = 'pip-fab'; fab.type = 'button'; fab.setAttribute('aria-label', 'Ask Pip'); fab.title = 'Ask Pip'; fab.innerHTML = FACE;
   var box = document.createElement('section'); box.className = 'pip'; box.setAttribute('aria-label', 'Pip'); box.hidden = true;
-  box.innerHTML = '<header><span class="pf">' + FACE + '</span><b>Pip</b><button type="button" class="pu" aria-label="Ultra" title="Ultra"><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="4" y="9" width="12" height="8" fill="currentColor"/><path class="sh" d="M7 9V6a3 3 0 0 1 6 0v3" stroke="currentColor" stroke-width="2" fill="none"/></svg></button><button type="button" class="px" aria-label="Close">&times;</button></header>' +
+  box.innerHTML = '<header><span class="pf">' + FACE + '</span><b>Pip</b><button type="button" class="pu" aria-label="Ultra" title="Ultra"><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="4" y="9" width="12" height="8" fill="currentColor"/><path class="sh" d="M7 9V6a3 3 0 0 1 6 0v3" stroke="currentColor" stroke-width="2" fill="none"/></svg></button><button type="button" class="pc" aria-label="Cosmetics" title="Cosmetics" hidden><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2l2.2 5 5.3.5-4 3.6 1.2 5.2L10 13.5 5.3 16.3l1.2-5.2-4-3.6 5.3-.5z" fill="currentColor"/></svg></button><button type="button" class="px" aria-label="Close">&times;</button></header>' +
     '<form class="pw" hidden><label class="vh" for="pwi">Passcode</label><input id="pwi" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Passcode"><button type="submit" aria-label="Unlock"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 10h12M10 4l6 6-6 6" stroke="currentColor" stroke-width="2.2" fill="none"/></svg></button></form>' +
+    '<div class="pt" hidden><div class="inks" role="group" aria-label="Ink"></div><div class="marks" role="group" aria-label="Mark"></div></div>' +
     '<div class="pl" role="log" aria-live="polite"></div>' +
     '<form class="pf2"><label class="vh" for="pq">Ask Pip</label><textarea id="pq" rows="1" enterkeyhint="send" spellcheck="false" placeholder="Ask, or paste an error"></textarea><button type="submit" aria-label="Send"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 10h12M10 4l6 6-6 6" stroke="currentColor" stroke-width="2.2" fill="none"/></svg></button></form>';
   document.body.appendChild(fab); document.body.appendChild(box);
@@ -225,7 +226,7 @@
 
   /* ---------- Ultra: owner powers, unlocked by a passcode the server checks; the page only ever holds a short-lived token ---------- */
   function live() { if (token && exp < Date.now()) lockUp(); return !!token; }
-  function paintUltra() { box.classList.toggle('ultra', !!token); $('.pu', box).setAttribute('aria-pressed', !!token); }
+  function paintUltra() { box.classList.toggle('ultra', !!token); $('.pc', box).hidden = !token; if (!token) $('.pt', box).hidden = true; skin(); fab.classList.toggle('ultra', !!token); $('.pu', box).setAttribute('aria-pressed', !!token); }
   function lockUp() { token = ''; exp = 0; try { sessionStorage.removeItem('pipUltra'); } catch (_) {} paintUltra(); }
   function ult(tool, args) {
     if (!live()) return Promise.reject(new Error('Ultra is locked. Unlock it with the lock button first.'));
@@ -255,18 +256,40 @@
     fetch('/api/ultra/unlock', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ code: code }) })
       .then(function (r) { return r.json().then(function (j) { return { s: r.status, j: j }; }); })
       .then(function (x) {
-        if (x.j && x.j.token) { token = x.j.token; exp = x.j.exp; try { sessionStorage.setItem('pipUltra', JSON.stringify({ token: token, exp: exp })); } catch (_) {} f.hidden = true; paintUltra(); say('b', '<p>Ultra is on for 30 minutes.</p>'); }
+        if (x.j && x.j.token) { token = x.j.token; exp = x.j.exp; try { sessionStorage.setItem('pipUltra', JSON.stringify({ token: token, exp: exp })); } catch (_) {} f.hidden = true; paintUltra(); box.classList.remove('stamp'); void box.offsetWidth; box.classList.add('stamp'); say('b', '<p>Ultra is on for 30 minutes.</p>'); }
         else { f.classList.remove('no'); void f.offsetWidth; f.classList.add('no'); if (x.s === 429) say('b err', '<p>Too many tries. Wait a minute.</p>'); }
       }).catch(function () { say('b err', '<p>Couldn’t reach the server.</p>'); });
   });
   /* the owner's live settings: greeting, accent colour and a banner on the book */
   function applySite() {
     fetch('/api/site').then(function (r) { return r.json(); }).then(function (c) {
-      greet = c.greeting || ''; if (c.accent) { box.style.setProperty('--acc', c.accent); fab.style.setProperty('--acc', c.accent); } else { box.style.removeProperty('--acc'); fab.style.removeProperty('--acc'); }
+      greet = c.greeting || ''; siteAcc = c.accent || ''; skin();
       var top = document.querySelector('.top'), n = document.querySelector('.pip-notice');
       if (c.notice && top) { if (!n) { n = document.createElement('div'); n.className = 'pip-notice'; top.appendChild(n); } n.textContent = c.notice; } else if (n) n.remove();
     }).catch(function () {});
   }
+
+  /* Ultra cosmetics: an ink colour and a mark for Pip's bookmark, kept in this browser and shown only while Ultra is on */
+  var INKS = [['Vermilion', ''], ['Forest', '#2a6f4f'], ['Ochre', '#a86f00'], ['Ink', '#1a1916']], MARKS = [['None', ''], ['Star', 'star'], ['Crown', 'crown'], ['Flag', 'flag']];
+  var sk = { ink: '', mark: 'star' }; try { var ss = JSON.parse(localStorage.getItem('pipSkin') || 'null'); if (ss) sk = { ink: String(ss.ink || ''), mark: String(ss.mark || '') }; } catch (_) {}
+  function skin() {
+    var on = !!token, ink = on && sk.ink ? sk.ink : '';
+    ['mk-star', 'mk-crown', 'mk-flag'].forEach(function (c) { box.classList.remove(c); fab.classList.remove(c); });
+    if (on && sk.mark) { box.classList.add('mk-' + sk.mark); fab.classList.add('mk-' + sk.mark); }
+    if (ink) { box.style.setProperty('--acc', ink); fab.style.setProperty('--acc', ink); } else if (!siteAcc) { box.style.removeProperty('--acc'); fab.style.removeProperty('--acc'); } else { box.style.setProperty('--acc', siteAcc); fab.style.setProperty('--acc', siteAcc); }
+    $$('.inks button', box).forEach(function (b) { b.setAttribute('aria-pressed', b.dataset.v === sk.ink); });
+    $$('.marks button', box).forEach(function (b) { b.setAttribute('aria-pressed', b.dataset.v === sk.mark); });
+  }
+  function $$(q, r) { return [].slice.call((r || document).querySelectorAll(q)); }
+  var siteAcc = '';
+  $('.inks', box).innerHTML = INKS.map(function (i) { return '<button type="button" data-v="' + i[1] + '" aria-label="' + i[0] + '" title="' + i[0] + '" style="--sw:' + (i[1] || '#c8412b') + '"></button>'; }).join('');
+  $('.marks', box).innerHTML = MARKS.map(function (m) { return '<button type="button" data-v="' + m[1] + '" aria-label="' + m[0] + '" title="' + m[0] + '">' + (m[1] ? '<svg viewBox="0 -10 40 20" aria-hidden="true">' + (m[1] === 'star' ? '<path d="M20-9l2.4 5 5.4.7-4 3.7 1 5.4-4.8-2.7-4.8 2.7 1-5.4-4-3.7 5.4-.7z" fill="currentColor"/>' : m[1] === 'crown' ? '<path d="M6 8l2-14 8 8 4-12 4 12 8-8 2 14z" fill="currentColor"/>' : '<path d="M14 9V-9" stroke="currentColor" stroke-width="3"/><path d="M14-9l16 5-16 5z" fill="currentColor"/>') + '</svg>' : '–') + '</button>'; }).join('');
+  $('.pt', box).addEventListener('click', function (ev) {
+    var b = ev.target.closest('button'); if (!b) return;
+    if (b.parentNode.classList.contains('inks')) sk.ink = b.dataset.v; else sk.mark = b.dataset.v;
+    try { localStorage.setItem('pipSkin', JSON.stringify(sk)); } catch (_) {} skin();
+  });
+  $('.pc', box).onclick = function () { var t = $('.pt', box); t.hidden = !t.hidden; };
   paintUltra(); applySite();
 
   function post(body) {
