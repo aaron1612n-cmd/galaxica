@@ -36,7 +36,13 @@ function mk(x,y,ang,sp,r,c){if(s.b.length<1100)s.b.push({x:x,y:y,vx:Math.cos(ang
 function level(){return Math.min(8,Math.floor(s.t/900))}
 function emit(){
   var tt=s.t,L=level(),dm=DM[diff];
-  if(tut){if(tut.k===2&&tt%7===0){s.a1+=.21;mk(W/2,70,s.a1,1.6,4,'#ffb000');mk(W/2,70,s.a1+Math.PI,1.6,4,'#ffb000')}return}
+  if(tut){var k=tut.k,u=tut.t;
+    if(k===2&&u%45===1)mk(s.x+(Math.random()<.5?-1:1)*(10+Math.random()*3),50,Math.PI/2,2.4,4,'#ffb000');
+    else if(k===3&&u%7===0){s.a1+=.21;mk(W/2,70,s.a1,1.6,4,'#ffb000');mk(W/2,70,s.a1+Math.PI,1.6,4,'#ffb000')}
+    else if(k===4&&u%70===1){var rx=100+Math.random()*280;for(var i=0;i<20;i++)mk(rx,90,i/20*6.2832+s.a2,1.8,4,'#ff5a36');s.a2+=.3}
+    else if(k===5&&u%60===1){var a0=Math.atan2(s.y-70,s.x-W/2);for(var j=-3;j<=3;j++)mk(W/2,70,a0+j*.12,3,3,'#efe6d2')}
+    else if(k===6&&u%40===1){var gc=W/2+Math.sin(u/110)*150;for(var x=8;x<W;x+=16)if(Math.abs(x-gc)>46)s.b.push({x:x,y:-8,vx:0,vy:2.2,ax:0,ay:0,r:5,c:'#6ec3c9',g:0})}
+    return}
   if(tt%Math.max(2,Math.round(4/dm))===0){s.a1+=.19;for(var arm=0;arm<2;arm++)mk(W/2,70,s.a1+arm*Math.PI,2+L*.08,4,'#ffb000')}
   if(L>=1&&tt%Math.round(70/dm)===0){var rx=100+Math.random()*280;for(var i=0;i<20;i++)mk(rx,90,i/20*6.2832+s.a2,1.8,4,'#ff5a36');s.a2+=.3}
   if(L>=2&&tt%Math.round(60/dm)===0){var a0=Math.atan2(s.y-70,s.x-W/2);for(var j=-3;j<=3;j++)mk(W/2,70,a0+j*.12,3,3,'#efe6d2')}
@@ -108,13 +114,14 @@ function tick(){
   if(tut)tutStep()}
 function finish(win){state='over';s.overT=0;s.win=!!win;var bt=best(diff);s.rank=s.t>bt?1:0;if(s.t>bt)Kit.lsSet('pinBest'+diff,s.t);plan=null;if(win){Kit.tone(660,.2,'square',.05);Kit.tone(990,.3,'square',.05,1,Kit.ac()&&Kit.ac().currentTime+.15)}}
 var flash=0;
-function hit(){if(!tut)s.lives--;s.ic=tut?45:90;flash=8;Kit.noise(.3,.14);Kit.tone(150,.3,'sawtooth',.07,.4);
+function hit(){if(!tut)s.lives--;else if(tut.k>=3)tut.t=0;s.ic=tut?45:90;flash=8;Kit.noise(.3,.14);Kit.tone(150,.3,'sawtooth',.07,.4);
   var w=0;for(var i=0;i<s.b.length;i++){var q=s.b[i];if(Math.hypot(q.x-s.x,q.y-s.y)>70)s.b[w++]=q}s.b.length=w;
   if(!tut&&s.lives<=0)finish(false)}
 function tutStep(){tut.t++;
   if(tut.k===0&&s.moved>260)tut.k=1;
-  else if(tut.k===1&&s.focused>45)tut.k=2;
-  else if(tut.k===2&&tut.t>900)endTut()}
+  else if(tut.k===1&&s.focused>45){tut.k=2;tut.t=0;s.b=[]}
+  else if(tut.k===2&&s.graze>=3){tut.k=3;tut.t=0;s.b=[]}
+  else if(tut.k>=3&&tut.t>420){if(tut.k===6)endTut();else{tut.k++;tut.t=0;s.b=[]}}}
 
 /* ---------- input ---------- */
 cv.addEventListener('pointerdown',function(e){Kit.ac();var p=Kit.pt(e);
@@ -136,7 +143,9 @@ var SHIP=['...X...','..XXX..','..XXX..','.XXXXX.','XX.X.XX'];
 function arrowK(cx,cy,dir,col){ctx.fillStyle=col;for(var i=0;i<4;i++){var h=(i+1)*3,x=dir<0?cx-8+i*4:cx+5-i*4;ctx.fillRect(x,cy-h/2,4,h)}}
 function keyK(cx,cy,w,h,hi){ctx.fillStyle=hi?'#ffb000':'#0b1016';ctx.fillRect(cx-w/2,cy-h/2,w,h);ctx.strokeStyle='#efe6d2';ctx.lineWidth=2;ctx.strokeRect(cx-w/2,cy-h/2,w,h)}
 function tutDraw(){var k=tut.k,ph=(tut.t/28|0)%2;
-  txt(['MOVE','SLOW','DODGE'][k],W/2,230,28,'#ffb000','center');for(var i=0;i<3;i++){ctx.fillStyle=i<=k?'#ffb000':'#2b3744';ctx.fillRect(W/2-36+i*26,244,18,5)}
+  txt(['MOVE','SLOW','GRAZE','DODGE','RING','AIM','GAP'][k],W/2,230,28,'#ffb000','center');for(var i=0;i<7;i++){ctx.fillStyle=i<=k?'#ffb000':'#2b3744';ctx.fillRect(W/2-88+i*26,244,18,5)}
+  if(k===2){ctx.strokeStyle='#ffb000';ctx.lineWidth=2;var rr=16+(tut.t%40)/4;ctx.globalAlpha=1-(tut.t%40)/40;ctx.strokeRect(s.x-rr,s.y-rr,rr*2,rr*2);ctx.globalAlpha=1}
+  if(k>=3){ctx.fillStyle='#2b3744';ctx.fillRect(W/2-60,262,120,4);ctx.fillStyle='#ffb000';ctx.fillRect(W/2-60,262,120*Math.min(1,tut.t/420),4)}
   if(k===0){if(Device.mobile){var fx=W/2+Math.sin(tut.t/22)*100;spr(HAND,fx,300,5,'#efe6d2')}else{keyK(W/2-34,290,40,34,!ph);arrowK(W/2-34,290,-1,ph?'#efe6d2':'#0b1016');keyK(W/2+34,290,40,34,!!ph);arrowK(W/2+34,290,1,ph?'#0b1016':'#efe6d2')}}
   if(k===1&&!Device.mobile){keyK(W/2,290,120,34,!!ph);txt('SHIFT',W/2,296,12,ph?'#0b1016':'#efe6d2','center')}}
 function drawPlay(){

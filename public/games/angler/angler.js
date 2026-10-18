@@ -294,17 +294,17 @@ function modal(fill){var m=document.createElement('div');m.className='gk-modal';
   function head(html){var hd=document.createElement('div');hd.className='gk-mh';hd.innerHTML='<span style="display:flex;gap:10px;align-items:center">'+html+'</span>';var x=document.createElement('button');x.className='gk-b';x.textContent='×';x.onclick=function(){m.remove()};hd.appendChild(x);sh.appendChild(hd)}
   fill(sh,head,function(){sh.innerHTML='';fill(sh,head,arguments.callee)});return m}
 function money(){return'<span class="seal">'+GK.icoSvg('coin')+'</span>'+CAR.money}
-function openShop(){if(G.mode!=='career'||G.st!=='idle')return;modal(function draw(sh,head){sh.innerHTML='';head(money());var rows=document.createElement('div');rows.className='rows';
+function openShop(){if(G.mode!=='career'||G.st!=='idle')return;if(tut.active)tutF.sh=1;modal(function draw(sh,head){sh.innerHTML='';head(money());var rows=document.createElement('div');rows.className='rows';
     Object.keys(UP).forEach(function(k){var l=CAR.up[k],c=l<5?UP[k].cost[l]:0,r=document.createElement('div');r.className='row';r.title=UP[k].nm;var pp='';for(var i=0;i<5;i++)pp+='<i class="'+(i<l?'on':'')+'"></i>';
       r.innerHTML=GK.icoSvg(UP[k].ic)+'<div class="pp">'+pp+'</div>';var b=document.createElement('button');b.className='buy'+(c?'':' max');b.innerHTML=GK.icoSvg('coin')+c;b.disabled=!c||CAR.money<c;b.onclick=function(){if(c&&CAR.money>=c){CAR.money-=c;CAR.up[k]++;save();sfx('buy');draw(sh,head)}};r.appendChild(b);rows.appendChild(r)});sh.appendChild(rows);
     var lab=document.createElement('div');lab.className='lab';lab.innerHTML=GK.icoSvg('worm');sh.appendChild(lab);var ch=document.createElement('div');ch.className='chips';
     BAITS.forEach(function(bt){var own=CAR.baits.indexOf(bt.id)>=0;if(own)return;var b=document.createElement('button');b.className='chip lock';b.title=bt.nm;b.innerHTML=GK.icoSvg(bt.ic)+GK.icoSvg('coin')+bt.cost;b.disabled=CAR.money<bt.cost;b.onclick=function(){if(CAR.money>=bt.cost){CAR.money-=bt.cost;CAR.baits.push(bt.id);save();sfx('buy');draw(sh,head)}};ch.appendChild(b)});sh.appendChild(ch)})}
-function openBait(){if(G.st!=='idle'&&G.st!=='charge')return;modal(function(sh,head){head(GK.icoSvg('worm'));var ch=document.createElement('div');ch.className='chips';
+function openBait(){if(G.st!=='idle'&&G.st!=='charge')return;if(tut.active)tutF.bt=1;modal(function(sh,head){head(GK.icoSvg('worm'));var ch=document.createElement('div');ch.className='chips';
     BAITS.forEach(function(bt){if(G.baits.indexOf(bt.id)<0)return;var b=document.createElement('button');b.className='chip'+(G.bait===bt.id?' on':'');b.title=bt.nm;b.innerHTML=GK.icoSvg(bt.ic);b.onclick=function(){G.bait=bt.id;if(G.mode==='career'){CAR.bait=bt.id;save()}document.querySelector('.gk-modal').remove()};ch.appendChild(b)});sh.appendChild(ch)})}
-function openMap(){if(G.mode!=='career'||G.st!=='idle')return;modal(function draw(sh,head){sh.innerHTML='';head(money());var rows=document.createElement('div');rows.className='chips';
+function openMap(){if(G.mode!=='career'||G.st!=='idle')return;if(tut.active)tutF.mp=1;modal(function draw(sh,head){sh.innerHTML='';head(money());var rows=document.createElement('div');rows.className='chips';
     LOCS.forEach(function(L,i){var own=CAR.locs.indexOf(L.id)>=0,b=document.createElement('button');b.className='chip'+(G.loc===i?' on':'')+(own?'':' lock');b.title=L.nm;b.innerHTML=GK.icoSvg(L.ic)+(own?'<span>'+caughtIn(i)+'/12</span>':GK.icoSvg('coin')+L.cost);b.disabled=!own&&CAR.money<L.cost;
       b.onclick=function(){if(!own){if(CAR.money<L.cost)return;CAR.money-=L.cost;CAR.locs.push(L.id);sfx('buy')}CAR.loc=i;G.loc=i;F=[];for(var j=0;j<18;j++)spawnFish(true);save();document.querySelector('.gk-modal').remove()};rows.appendChild(b)});sh.appendChild(rows)})}
-function openJournal(){var tab=G.loc;modal(function draw(sh,head){sh.innerHTML='';head(GK.icoSvg('book')+'<span>'+Object.keys(CAR.jr).length+' / 60</span>');var tabs=document.createElement('div');tabs.className='tabs';
+function openJournal(){if(tut.active)tutF.jr=1;var tab=G.loc;modal(function draw(sh,head){sh.innerHTML='';head(GK.icoSvg('book')+'<span>'+Object.keys(CAR.jr).length+' / 60</span>');var tabs=document.createElement('div');tabs.className='tabs';
     LOCS.forEach(function(L,i){var b=document.createElement('button');b.className='tab'+(tab===i?' on':'');b.title=L.nm;b.innerHTML=GK.icoSvg(L.ic)+'<span>'+caughtIn(i)+'</span>';b.onclick=function(){tab=i;draw(sh,head)};tabs.appendChild(b)});sh.appendChild(tabs);
     var g=document.createElement('div');g.className='jgrid';SP.forEach(function(s,i){if(s[1]!==tab)return;var jr=CAR.jr[i],d=document.createElement('div');d.className='jc'+(jr?' got':'')+(LEG[i]?' leg':'');d.title=jr?s[0]:'?';
       var c2=document.createElement('canvas');c2.width=192;c2.height=104;var x=c2.getContext('2d');x.scale(2,2);x.translate(48,26);var L=Math.min(80,36+Math.log(1+s[5])*9);
@@ -320,11 +320,17 @@ function sfx(k){var A=GK.audio,t=A.ctx&&A.ctx.currentTime;if(!A.ctx)return;switc
 
 /* ---------- tutorial: cast, strike, fight, admire ---------- */
 var tutF={};
-var tut=GK.tutorial({parent:stage,onStart:function(){newGame('career');G.tut=true;G.loc=0;G.bait='w';G.up={rod:0,reel:0,line:0,hook:2};F=[];tutF={}},onEnd:function(){newGame()},steps:[
+var tut=GK.tutorial({parent:stage,onStart:function(){newGame('career');G.tut=true;G.loc=0;G.bait='w';G.up={rod:0,reel:0,line:0,hook:2};F=[];tutF={}},onEnd:function(){['jr','bt','sh','mp'].forEach(function(k){if(B[k])B[k].classList.remove('pulse')});newGame()},steps:[
   {done:function(){return G&&G.st==='sink'}},
   {init:function(){var L=G.lure;F.push({sp:1,kg:.3,L:fishLen(.3),x:L.x+50,y:Math.min(40,bottom(L.x)-10),tx:L.x,ty:20,face:-1,t:0,st:'swim',cd:0,sp2:.4})},update:function(){var L=G.lure;if(G.st==='sink'&&!G.eng&&F[0]&&F[0].st==='swim'){F[0].st='come';G.eng=F[0]}if(G.st==='idle'&&F.length)G.st='idle'},done:function(){return G&&G.st==='fight'}},
   {done:function(){return G&&tutF.caught||tutF.lost}},
-  {done:function(){return G&&G.st==='idle'}}]});
+  {done:function(){return G&&G.st==='idle'}},
+  {init:function(){tutF.jr=0;tutBtn('jr')},done:function(){return tutF.jr&&!document.querySelector('.gk-modal')}},
+  {init:function(){tutF.bt=0;tutBtn('bt')},done:function(){return tutF.bt&&!document.querySelector('.gk-modal')}},
+  {init:function(){tutF.sh=0;tutBtn('sh')},done:function(){return tutF.sh&&!document.querySelector('.gk-modal')}},
+  {init:function(){tutF.mp=0;tutBtn('mp')},done:function(){return tutF.mp&&!document.querySelector('.gk-modal')}}]});
+function tutBtn(id){['jr','bt','sh','mp'].forEach(function(k){if(B[k])B[k].classList.remove('pulse')});if(B[id])B[id].classList.add('pulse')}
+(function(){var st=document.createElement('style');st.textContent='.gk-b.pulse{outline:3px solid #b3202a;outline-offset:2px;animation:anp .8s steps(1) infinite}@keyframes anp{50%{outline-color:transparent}}';document.head.appendChild(st)})();
 function tutDraw(c){var v=GK.view,t=tut.t;if(!G)return;var sx=function(x){return v.w/2+(x-G.cam.x)*Z},sy=function(y){return v.h/2+(y-G.cam.y)*Z};
   if(tut.i===0&&(G.st==='idle'||G.st==='charge'))GK.pulse(c,v.w/2,v.h*.62,t,RED,16);
   if(tut.i===1&&G.eng&&G.eng.st==='bite')GK.pulse(c,sx(G.lure.x),sy(G.lure.y),t*2,RED,12);
