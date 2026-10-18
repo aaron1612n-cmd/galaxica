@@ -56,7 +56,7 @@
   var root, ta, hl, gut, outEl, prompt, ps, pin, runB, stopB, chip, keysEl, modsEl, listEl, qEl, sheet;
   var worker, ready = false, busy = false, runId = 0, swOK = null, needId = 0, more = false, hist = [], hpos = 0, lastErr = '';
   var info = { mods: [], add: [], bad: {} }, tab = 'ed', which = 'std', showPriv = false, probing = false, probeCb;
-  var swTried;
+  var swTried, outLog = '', doneW = [], peekW = {}, reflW = [];
 
   function sw() {
     if (swTried) return swTried;
@@ -95,8 +95,9 @@
     else if (m.t === 'done') {
       busy = false; more = false; prompt.classList.remove('stdin'); needId = 0; ps.textContent = '>>>'; prompt.hidden = false; lock();
       if (lastErr) errBtn();
+      doneW.splice(0).forEach(function (f) { f(); });
       focusShell(true);
-    } else if (m.t === 'peek') showPeek(m);
+    } else if (m.t === 'peek') { showPeek(m); (peekW[m.name] || []).splice(0).forEach(function (f) { f(m.info); }); }
     else if (m.t === 'probing') { chip2.textContent = m.n + ' / ' + probeN; }
     else if (m.t === 'probed') { probing = false; info.bad = m.bad; store('pyideBad' + info.mods.length, JSON.stringify(m.bad)); renderMods(); setChip('Python ' + (chip.dataset.ver || ''), 'ok'); chip2.textContent = ''; lock(); }
   }
@@ -111,6 +112,7 @@
     if (last && last.dataset.k === k && k !== 'echo') { last.textContent += s; }
     else { var n = document.createElement('span'); n.dataset.k = k; n.className = 'o-' + k; n.textContent = s; outEl.appendChild(n); }
     if (k === 'e') lastErr += s;
+    if (k !== 'echo') outLog = (outLog + (k === 'e' ? '' : '') + s).slice(-8000);
     while (outEl.childNodes.length > 600) outEl.removeChild(outEl.firstChild);
     outEl.scrollTop = outEl.scrollHeight;
     var sc = outEl.parentNode; sc.scrollTop = sc.scrollHeight;
@@ -129,7 +131,7 @@
     if (busy) return;
     if (!ready) { pendingRun = true; setTab('sh'); return; }
     var code = ta.value; store('pyideCode', code);
-    lastErr = ''; busy = true; lock();
+    lastErr = ''; outLog = ''; busy = true; lock();
     write('banner', (outEl.firstChild ? '\n' : '') + '=== RESTART: editor ===\n');
     if (!wide()) setTab('sh');
     prompt.hidden = true;
@@ -137,7 +139,7 @@
   }
   function stop() {
     if (!busy && !probing) return;
-    worker.terminate(); busy = false; probing = false; needId = 0; more = false; write('banner', '\n=== STOPPED ===\n'); prompt.hidden = true; spawn();
+    worker.terminate(); busy = false; probing = false; needId = 0; more = false; write('banner', '\n=== STOPPED ===\n'); prompt.hidden = true; spawn(); doneW.splice(0).forEach(function (f) { f(); });
   }
   function submit() {
     var line = pin.value;
@@ -315,7 +317,49 @@
       var ph = store('pyideSeed'); if (ph != null) { store('pyideSeed', ''); try { localStorage.removeItem('pyideSeed'); } catch (_) {} ta.value = ph; sync(); store('pyideCode', ph); setTab('ed'); }
     },
     hide: function () { document.body.classList.remove('run', 'kb'); document.title = 'Python Answer Book'; },
-    seed: function (code) { store('pyideSeed', code); location.hash = '#/run'; }
+    seed: function (code) { store('pyideSeed', code); location.hash = '#/run'; },
+    /* hands for Pip: every call is the same thing a person could do with the buttons */
+    ensure: function () {
+      if (!root || !root.isConnected) location.hash = '#/run';
+      return new Promise(function (ok) { var n = 0; (function w() { if (root && root.isConnected && ready) ok(true); else if (++n > 160) ok(!!(root && root.isConnected)); else setTimeout(w, 150); })(); });
+    },
+    state: function () { return { open: !!(root && root.isConnected), ready: ready, busy: busy, waitingInput: !!needId, lines: ta ? ta.value.split('\n').length : 0 }; },
+    getCode: function () { return ta ? ta.value : (store('pyideCode') || ''); },
+    setCode: function (code) {
+      var old = ta.value; ta.value = code; sync(); store('pyideCode', code); setTab('ed'); ta.scrollTop = 0; scrollSync();
+      var st = root.querySelector('.stack'); st.classList.remove('pipwrote'); void st.offsetWidth; st.classList.add('pipwrote');
+      return old;
+    },
+    shellTail: function (n) { return outLog.slice(-(n || 3000)); },
+    run: function () {
+      return this.ensure().then(function () {
+        if (busy) return { skipped: 'already running' };
+        return new Promise(function (ok) {
+          var t = setTimeout(function () { ok({ timeout: 1 }); }, 25000);
+          doneW.push(function () { clearTimeout(t); ok({ done: 1 }); }); run();
+        });
+      });
+    },
+    stop: function () { stop(); },
+    send: function (line) {
+      var self = this; return this.ensure().then(function () {
+        if (busy && !needId) return { skipped: 'busy' };
+        if (needId) { pin.value = line; submit(); return { done: 1 }; }
+        return new Promise(function (ok) { var t = setTimeout(function () { ok({ timeout: 1 }); }, 15000); doneW.push(function () { clearTimeout(t); ok({ done: 1 }); }); pin.value = line; outLog = ''; submit(); });
+      });
+    },
+    modules: function (q, add) {
+      q = (q || '').toLowerCase(); var names = add ? info.add : info.mods;
+      return names.filter(function (n) { return (add || n[0] !== '_') && (!q || n.toLowerCase().indexOf(q) >= 0); }).map(function (n) { var st = add ? ['add', ''] : statusOf(n); return { name: n, status: st[0] === 'ok' ? 'works' : st[0] === 'ltd' ? 'limited' : st[0] === 'no' ? 'cannot run' : 'add-on', note: st[1] }; });
+    },
+    peek: function (name) {
+      var self = this; return this.ensure().then(function () {
+        return new Promise(function (ok) {
+          var t = setTimeout(function () { ok(null); }, 8000);
+          (peekW[name] = peekW[name] || []).push(function (i) { clearTimeout(t); ok(i); }); worker.postMessage({ t: 'peek', name: name });
+        });
+      });
+    }
   };
   if (/^#\/run/.test(location.hash)) dispatchEvent(new Event('hashchange'));
 })();
