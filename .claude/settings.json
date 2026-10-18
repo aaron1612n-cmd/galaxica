@@ -1,1 +1,1 @@
-{"permissions":{"allow":["Bash(npx wrangler deploy*)" Dangerously skip permissions]}}
+{"permissions":{"allow":["Bash(npx wrangler deploy*)","Edit(worker/**)","Bash(python3*)"]}}
