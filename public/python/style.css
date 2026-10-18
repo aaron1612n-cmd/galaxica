@@ -205,6 +205,23 @@ mark{background:none;color:inherit;box-shadow:inset 0 -.38em 0 color-mix(in srgb
 .pf2 button{width:46px;border:1.5px solid var(--ink);background:var(--ink);color:var(--paper);cursor:pointer;display:flex;align-items:center;justify-content:center}
 .pf2 button svg{width:20px;height:20px}
 .pip.busy .pf2 button{opacity:.4}
+/* Ultra: lock button, passcode row, a marked panel, and the owner's banner */
+.pip .pu{width:38px;height:38px;margin-left:auto;border:1.5px solid var(--ink);background:none;color:var(--ink);cursor:pointer;display:flex;align-items:center;justify-content:center}
+.pip .pu+.px{margin-left:0}
+.pip .pu svg{width:18px;height:18px}
+.pip .pu .sh{transform-origin:7px 9px;transform:rotate(-24deg) translateY(-1px)}
+.pip.ultra .pu{background:var(--acc);color:var(--paper);border-color:var(--acc)}.pip.ultra .pu .sh{transform:none}
+.pip.ultra header{border-bottom-color:var(--acc)}
+.pip.ultra header b::after{content:" Ultra";color:var(--acc)}
+.pip .pw{display:flex;gap:8px;padding:8px 10px;border-bottom:1.5px solid var(--ink);background:var(--paper2)}
+.pip .pw[hidden]{display:none}
+.pip .pw input{flex:1;min-width:0;font:400 16px/1.4 var(--mono);color:var(--ink);background:var(--paper);border:1.5px solid var(--ink);border-radius:0;padding:8px 10px;-webkit-appearance:none;appearance:none}
+.pip .pw input:focus{outline:none;border-color:var(--acc);box-shadow:inset 0 -3px 0 var(--acc)}
+.pip .pw button{width:44px;border:1.5px solid var(--ink);background:var(--ink);color:var(--paper);cursor:pointer;display:flex;align-items:center;justify-content:center}
+.pip .pw button svg{width:20px;height:20px}
+.pip .pw.no{animation:pipno .3s}
+@keyframes pipno{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.pip-notice{padding:6px max(12px,env(safe-area-inset-left));border-top:1.5px solid var(--ink);background:var(--acc);color:var(--paper);font:700 13px/1.35 var(--narrow);letter-spacing:.04em;text-transform:uppercase}
 /* Pip's visible actions: a step row per tool, the editor flashes when Pip writes */
 .pl .m.s{align-self:stretch;max-width:none;display:flex;align-items:center;gap:9px;padding:5px 8px;border:1px dashed var(--ink);font:400 12.5px/1.35 var(--mono);color:var(--mute)}
 .pl .m.s b{color:var(--ink);font-weight:700}
@@ -220,7 +237,7 @@ mark{background:none;color:inherit;box-shadow:inset 0 -.38em 0 color-mix(in srgb
   .pip.act{height:34dvh}
   .pip{right:0;left:0;bottom:0;width:auto;height:min(78dvh,620px);box-shadow:0 -4px 0 var(--ink);border-width:1.5px 0 0;padding-bottom:env(safe-area-inset-bottom)}
 }
-@media (prefers-reduced-motion:reduce){.eyes,.pip,.pl .wait i,.pl .m.s.run i,.stack.pipwrote{animation:none}.pip-fab{transition:none}}
+@media (prefers-reduced-motion:reduce){.eyes,.pip,.pl .wait i,.pl .m.s.run i,.stack.pipwrote,.pip .pw.no{animation:none}.pip-fab{transition:none}}
 @media print{.pip-fab,.pip{display:none}}
 
 /* ---------- editor + shell ---------- */
