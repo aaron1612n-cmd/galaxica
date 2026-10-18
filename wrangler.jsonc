@@ -3,6 +3,7 @@
   "compatibility_date": "2026-10-01",
   "main": "worker/index.js",
   "assets": { "directory": "./public", "binding": "ASSETS", "run_worker_first": ["/api/*"] },
+  "ai": { "binding": "AI" },
   "d1_databases": [
     { "binding": "DB", "database_name": "galaxica", "database_id": "9f05347b-8085-4a06-8558-fd78f20a6815" }
   ]
