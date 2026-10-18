@@ -48,7 +48,7 @@
   function clipT(t, n) { t = String(t == null ? '' : t); return t.length > n ? t.slice(0, n) + '\n…(cut)' : t; }
   function numbered(c) { return c.split('\n').map(function (l, i) { return (i + 1) + '  ' + l; }).join('\n'); }
   function entryText(e) { return e.q + '\n' + (e.aPlain || text(e.a)) + (codeOf(e) ? '\n\nCode:\n' + codeOf(e) : ''); }
-  var undo = null;
+  var MAXS = 12;
   var TOOLSET = {
     search_book: { v: 'Searched the book', d: function (a) { return '“' + clipT(a.query, 60) + '”'; }, f: function (a) {
       var l = R.search(String(a.query || '')).list.slice(0, 5); if (!l.length) return 'No entries matched.';
@@ -70,8 +70,8 @@
     write_editor: { v: 'Wrote to the editor', d: function (a) { return String(a.code || '').split('\n').length + ' lines'; }, f: function (a) {
       if (typeof a.code !== 'string' || !a.code.trim()) throw new Error('code must be a non-empty string');
       if (flat(a.code)) throw new Error('the code arrived with no indentation, so it was not written. Send it again in a fenced python block with real 4-space indentation.');
-      return ide().ensure().then(function () { undo = ide().setCode(a.code.replace(/\s+$/, '') + '\n'); return 'Editor now holds the new code (' + a.code.split('\n').length + ' lines).'; });
-    }, undo: true },
+      return ide().ensure().then(function () { var was = ide().setCode(a.code.replace(/\s+$/, '') + '\n'); return { t: 'Editor now holds the new code (' + a.code.split('\n').length + ' lines).', undo: function () { ide().setCode(was); } }; });
+    } },
     run_code: { v: 'Ran the editor’s code', d: function () { return ''; }, f: function () {
       return ide().run().then(function (r) {
         var o = clipT(ide().shellTail(2500), 2500).replace(/^[\s\S]*?=== RESTART: editor ===\n?/, '');
@@ -95,14 +95,91 @@
     open_page: { v: 'Switched page', d: function (a) { return a.page === 'home' ? 'home' : 'editor'; }, f: function (a) {
       if (a.page === 'home') { location.hash = '#/'; return 'On the home page.'; }
       return ide().ensure().then(function () { return 'The editor is open.'; });
+    } },
+    navigate: { v: 'Went to', d: function (a) { return clipT(a.hash, 50); }, f: function (a) {
+      var h = String(a.hash || '').replace(/^#?\/?/, '#/'); if (resetish(h)) throw new Error(REFUSE);
+      if (!/^#\/(a\/[\w.-]+|q\/.*|s\/[\w.-]+|run)?$/.test(h)) throw new Error('unknown route. Routes: #/ , #/a/<id>, #/q/<search>, #/s/<section>, #/run');
+      location.hash = h; return 'Now at ' + h;
+    } },
+    read_page: { v: 'Looked at the page', d: function () { return ''; }, f: function () {
+      var main = $('#main'), t = main ? main.textContent.replace(/\s+/g, ' ').trim() : '';
+      var cs = [].slice.call(document.querySelectorAll('button, a[href], [role=tab], input, textarea, select')).filter(function (e) { return e.offsetParent !== null && !box.contains(e) && !resetish(ctl(e)); }).slice(0, 60)
+        .map(function (e) { return (e.id ? '#' + e.id : e.tagName.toLowerCase()) + ' — ' + clipT(ctl(e).replace(/\s+/g, ' ').trim(), 60); });
+      return 'Page ' + location.hash + ': ' + clipT(t, 900) + '\n\nControls:\n' + cs.join('\n');
+    } },
+    click: { v: 'Clicked', d: function (a) { return clipT(a.selector || a.text, 50); }, f: function (a) {
+      var e = findEl(a); if (!e) throw new Error('nothing on the page matches. Use read_page to see the controls.');
+      if (resetish(ctl(e))) throw new Error(REFUSE);
+      e.click(); return 'Clicked ' + clipT(ctl(e).replace(/\s+/g, ' ').trim(), 60) + '.';
+    } },
+    type_text: { v: 'Typed into a field', d: function (a) { return clipT(a.selector, 40); }, f: function (a) {
+      var e = findEl(a); if (!e || !/^(INPUT|TEXTAREA)$/.test(e.tagName)) throw new Error('no text field matches. Use read_page.');
+      if (resetish(ctl(e)) || box.contains(e)) throw new Error(REFUSE);
+      var was = e.value; e.focus(); e.value = String(a.value == null ? '' : a.value); e.dispatchEvent(new Event('input', { bubbles: true }));
+      return { t: 'Typed into ' + (e.id || e.tagName.toLowerCase()) + '.', undo: function () { e.value = was; e.dispatchEvent(new Event('input', { bubbles: true })); } };
+    } },
+    clear_editor: { v: 'Cleared the editor', d: function () { return ''; }, f: function () {
+      return ide().ensure().then(function () { var was = ide().setCode(''); return { t: 'The editor is empty.', undo: function () { ide().setCode(was); } }; });
+    } },
+    clear_shell: { v: 'Cleared the shell', d: function () { return ''; }, f: function () {
+      return ide().ensure().then(function () { $('#iClear').click(); return 'The shell output is cleared.'; });
+    } },
+    save_file: { v: 'Saved a file', d: function (a) { return clipT(a.name, 40); }, f: function (a) {
+      var n = fname(a.name), code = a.code && a.code.trim() ? a.code : ide() && ide().getCode(), k = 'pyfile:' + n, was = lsGet(k);
+      lsSet(k, code); return { t: 'Saved ' + n + ' (' + code.split('\n').length + ' lines).', undo: function () { if (was == null) lsDel(k); else lsSet(k, was); } };
+    } },
+    list_files: { v: 'Listed saved files', d: function () { return ''; }, f: function () {
+      var l = lsKeys().filter(function (k) { return k.indexOf('pyfile:') === 0; }); return l.length ? l.map(function (k) { return k.slice(7) + ' (' + (lsGet(k) || '').split('\n').length + ' lines)'; }).join('\n') : 'No saved files yet.';
+    } },
+    open_file: { v: 'Opened a file', d: function (a) { return clipT(a.name, 40); }, f: function (a) {
+      var n = fname(a.name), c = lsGet('pyfile:' + n); if (c == null) throw new Error('no saved file called ' + n);
+      return ide().ensure().then(function () { var was = ide().setCode(c); return { t: n + ' is now in the editor.', undo: function () { ide().setCode(was); } }; });
+    } },
+    delete_file: { v: 'Deleted a file', d: function (a) { return clipT(a.name, 40); }, f: function (a) {
+      var n = fname(a.name), k = 'pyfile:' + n, was = lsGet(k); if (was == null) throw new Error('no saved file called ' + n);
+      lsDel(k); return { t: 'Deleted ' + n + '.', undo: function () { lsSet(k, was); } };
+    } },
+    storage: { v: 'Used browser storage', d: function (a) { return clipT((a.action || '') + ' ' + (a.key || ''), 50); }, f: function (a) {
+      var act = String(a.action || 'list'), k = String(a.key || '');
+      if (resetish(k) || resetish(String(a.value || ''))) throw new Error(REFUSE);
+      if (act === 'list') return lsKeys().map(function (x) { return x + ' (' + (lsGet(x) || '').length + ' chars)'; }).join('\n') || 'Storage is empty.';
+      if (!k) throw new Error('key is needed');
+      var was = lsGet(k);
+      if (act === 'get') return was == null ? '(not set)' : clipT(was, 2200);
+      if (act === 'set') { lsSet(k, String(a.value == null ? '' : a.value)); return { t: 'Set ' + k + '.', undo: function () { if (was == null) lsDel(k); else lsSet(k, was); } }; }
+      if (act === 'delete') { if (was == null) return k + ' was not set.'; lsDel(k); return { t: 'Deleted ' + k + '.', undo: function () { lsSet(k, was); } }; }
+      throw new Error('action must be list, get, set or delete');
+    } },
+    install_package: { v: 'Installed a package', d: function (a) { return clipT(a.name, 40); }, f: function (a) {
+      var n = String(a.name || '').replace(/[^\w.-]/g, ''); if (!n) throw new Error('name is needed');
+      return ide().send('import ' + n.replace(/-/g, '_')).then(function () {
+        if (!/ModuleNotFoundError|No module/.test(ide().shellTail(600))) return n + ' is available. ' + clipT(ide().shellTail(300), 300);
+        return ide().send("await __import__('micropip').install('" + n + "')").then(function () { return clipT(ide().shellTail(900), 900) || (n + ' installed.'); });
+      });
     } }
   };
+  var REFUSE = 'Pip never touches reset. Refused.';
+  function resetish(t) { return /reset/i.test(String(t)); }
+  function ctl(e) { return [e.id, typeof e.className === 'string' ? e.className : '', e.getAttribute('aria-label'), e.getAttribute('title'), e.getAttribute('name'), e.getAttribute('placeholder'), e.getAttribute('data-k'), e.getAttribute('href'), e.textContent && e.textContent.slice(0, 80)].filter(Boolean).join(' '); }
+  function findEl(a) {
+    var sel = String(a.selector || '').trim(), txt = String(a.text || '').trim().toLowerCase(), e = null;
+    if (sel) { try { e = document.querySelector(sel); } catch (_) {} }
+    if (!e && txt) { e = [].slice.call(document.querySelectorAll('button, a[href], [role=tab], summary, label')).filter(function (x) { return x.offsetParent !== null && !box.contains(x) && (x.textContent.trim().toLowerCase() === txt || (x.getAttribute('aria-label') || '').toLowerCase() === txt); })[0] || null; }
+    return e && !box.contains(e) ? e : null;
+  }
+  function fname(n) { n = String(n || '').trim().replace(/[^\w. -]/g, '').slice(0, 40); if (!n) throw new Error('name is needed'); return n.indexOf('.') < 0 ? n + '.py' : n; }
+  function lsGet(k) { try { return localStorage.getItem(k); } catch (_) { return null; } }
+  function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (_) { throw new Error('browser storage is full or blocked'); } }
+  function lsDel(k) { try { localStorage.removeItem(k); } catch (_) {} }
+  function lsKeys() { var o = []; try { for (var i = 0; i < localStorage.length; i++) o.push(localStorage.key(i)); } catch (_) {} return o.sort(); }
   function stepRow(name, a) {
     var T = TOOLSET[name], d = document.createElement('div'); d.className = 'm s run';
     d.innerHTML = '<i></i><span><b>' + esc(T.v) + '</b> ' + esc(T.d(a) || '') + '</span>'; log.appendChild(d); log.scrollTop = log.scrollHeight; return d;
   }
   /* the model's ACTION line can arrive in code fences, with broken JSON, or with the code in a fenced block after it: read it leniently, never show it */
-  var STR = { search_book: ['query'], open_entry: ['id'], run_line: ['line'], list_modules: ['filter'], peek_module: ['name'], open_page: ['page'] };
+  var STR = { search_book: ['query'], open_entry: ['id'], run_line: ['line'], list_modules: ['filter'], peek_module: ['name'], open_page: ['page'], save_file: ['name'], open_file: ['name'], delete_file: ['name'], install_package: ['name'], navigate: ['hash'], click: ['selector', 'text'], type_text: ['selector', 'text'], storage: ['action', 'key', 'value'] };
+  var BLOCK = { write_editor: 1, save_file: 1 };
+  function noCode(a) { var o = {}; for (var k in a) if (k !== 'code') o[k] = a[k]; return o; }
   function unesc(c) { return c.replace(/\\(n|t|r|"|\\|\/)/g, function (_, k) { return { n: '\n', t: '\t', r: '\r' }[k] || k; }); }
   function strictJSON(t, j) {
     var depth = 0, k, inS = false, e = false;
@@ -124,12 +201,13 @@
     var pre = cleanPre(t.slice(0, i)), rest = t.slice(i), j = rest.indexOf('{'), o = j >= 0 ? strictJSON(rest, j) : null;
     var tool = (o && o.tool) || ((/"tool"\s*:\s*"(\w+)"/.exec(rest) || [])[1]), args = (o && o.args && typeof o.args === 'object') ? o.args : {};
     if (!TOOLSET[tool]) return { bad: 'unknown tool', pre: pre };
-    if (tool === 'write_editor') {
+    if (BLOCK[tool]) {
       var fb = fenced(rest);
       var code = typeof args.code === 'string' ? args.code : fb;
       if (code == null) { var m = /"code"\s*:\s*"([\s\S]*)$/.exec(rest); if (m) code = unesc(m[1].replace(/"\s*\}\s*\}?\s*(```)?\s*$/, '')); }
-      if (code == null || !code.trim()) return { bad: 'no code found', pre: pre };
-      args = { code: code };
+      if (STR[tool] && !o) STR[tool].forEach(function (k) { var m = new RegExp('"' + k + '"\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)"').exec(rest); if (m) args[k] = unesc(m[1]); });
+      if ((code == null || !code.trim()) && tool !== 'save_file') return { bad: 'no code found', pre: pre };
+      args.code = code == null ? '' : code;
     } else if (STR[tool] && !o) {
       STR[tool].forEach(function (k) { var m = new RegExp('"' + k + '"\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)"').exec(rest); if (m) args[k] = unesc(m[1]); });
     }
@@ -138,7 +216,7 @@
   function flat(c) { return !/^[ \t]+\S/m.test(c) && /^(def|class|if|elif|else|for|while|try|except|finally|with)\b.*:[ \t]*$/m.test(c) && c.split('\n').length > 2; }
   function useTool(act, row) {
     var T = TOOLSET[act.tool];
-    return new Promise(function (ok) { ok(T.f(act.args)); }).then(function (r) { row.className = 'm s ok'; return String(r); }, function (e) { row.className = 'm s bad'; return 'Failed: ' + (e && e.message || e); });
+    return new Promise(function (ok) { ok(T.f(act.args)); }).then(function (r) { row.className = 'm s ok'; if (r && typeof r === 'object' && r.undo) { row.undoFn = r.undo; return String(r.t); } return String(r); }, function (e) { row.className = 'm s bad'; return 'Failed: ' + (e && e.message || e); });
   }
 
   function post(body) {
@@ -177,7 +255,7 @@
       var h = hist.concat(turn.slice(0, -1)), last = turn[turn.length - 1];
       return post({ agent: 1, q: last.t, ctx: ctx, hist: h.slice(-22) }).then(function (x) {
         if (!(x.j && x.j.text)) { fail(wait, x, q, ctx); return false; }
-        var t = x.j.text, act = steps < 8 ? parseAct(t) : null;
+        var t = x.j.text, act = steps < MAXS ? parseAct(t) : null;
         if (act && act.bad) {
           steps++; wait.remove(); turn.push({ r: 'b', t: 'ACTION (unreadable)' }, { r: 'u', t: 'RESULT: that ACTION could not be read (' + act.bad + '). For write_editor, send the line ACTION {"tool":"write_editor","args":{}} and then the complete program in a fenced python block. Otherwise answer in plain text.' });
           return ask();
@@ -186,14 +264,14 @@
         steps++; acted = true; box.classList.add('act');
         if (act.pre) { wait.className = 'm b'; wait.innerHTML = render(act.pre); } else wait.remove();
         var row = stepRow(act.tool, act.args);
-        turn.push({ r: 'b', t: (act.pre ? act.pre + '\n' : '') + (act.tool === 'write_editor' ? 'ACTION {"tool":"write_editor","args":{}}\n```python\n' + act.args.code.replace(/\n$/, '') + '\n```' : 'ACTION ' + JSON.stringify({ tool: act.tool, args: act.args })) });
+        turn.push({ r: 'b', t: (act.pre ? act.pre + '\n' : '') + (BLOCK[act.tool] ? 'ACTION ' + JSON.stringify({ tool: act.tool, args: noCode(act.args) }) + '\n```python\n' + String(act.args.code || '').replace(/\n$/, '') + '\n```' : 'ACTION ' + JSON.stringify({ tool: act.tool, args: act.args })) });
         return useTool(act, row).then(function (res) {
-          if (TOOLSET[act.tool].undo && undo !== null && row.className === 'm s ok') {
-            var u = document.createElement('button'); u.type = 'button'; u.className = 'undo'; u.textContent = 'Undo'; var was = undo;
-            u.onclick = function () { if (ide()) { ide().setCode(was); u.remove(); } }; row.appendChild(u);
+          if (row.undoFn && row.className === 'm s ok') {
+            var u = document.createElement('button'); u.type = 'button'; u.className = 'undo'; u.textContent = 'Undo'; var fn = row.undoFn;
+            u.onclick = function () { try { fn(); u.textContent = 'Undone'; u.disabled = true; } catch (_) {} }; row.appendChild(u);
           }
           log.scrollTop = log.scrollHeight;
-          turn.push({ r: 'u', t: 'RESULT ' + act.tool + (steps >= 8 ? ' (no more actions allowed; give your answer now)' : '') + ':\n' + clipT(res, 2600) });
+          turn.push({ r: 'u', t: 'RESULT ' + act.tool + (steps >= MAXS ? ' (no more actions allowed; give your answer now)' : '') + ':\n' + clipT(res, 2600) });
           return ask();
         });
       });
