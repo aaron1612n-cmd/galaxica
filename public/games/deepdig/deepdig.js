@@ -142,7 +142,8 @@ function step(){T++;GK.goals.tick();if(mode!=='play')return;if(D.bumpT>0)D.bumpT
   if(D.tut&&D.fuel<12)D.fuel=12;
   if(D.fuel<=0&&!D.act&&D.y>SR-1&&!D.dead){D.fuel=0;strand()}
   D.fuel=Math.max(0,D.fuel-.004);if(XW&&EX.has('oil')&&D.fuel<f0)D.fuel=f0-(f0-D.fuel)*.75;
-  var ty=D.y-7;cam+=(ty-cam)*.12;cam=GK.clamp(cam,0,GH-VIEWR);
+  var ty=D.y-7,ab=XW?EX.arena(D.y):-1;if(ab>=0)ty=EX.at[ab]-2; /* a boss arena stays framed whole */
+  cam+=(ty-cam)*.12;cam=GK.clamp(cam,0,GH-VIEWR);
   tut.tick();tutX.tick()}
 /* ============ drawing: an engraved section ============ */
 function jr(i,k){var v=Math.sin(i*78.233+k*12.9898)*43758.5453;return v-Math.floor(v)}

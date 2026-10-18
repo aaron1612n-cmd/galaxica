@@ -29,9 +29,9 @@ var PERK=[
  {k:'bombs',ic:'bomb',max:5,cost:[40,100,160,220,280]},{k:'tank',ic:'drop',max:3,cost:[80,200,400]},{k:'drill',ic:'pick',max:3,cost:[120,300,600]},
  {k:'lamp',ic:'star',max:2,cost:[150,400]},{k:'purse',ic:'coin',max:3,cost:[60,150,300]}];
 var BOMBCOST=30,BOMBMAX=9,FUSE=48;
-var s=null,H=null,mdl=null;
+var s=null,HL=null;
 
-function hall(){if(!H){H=GK.ls.get('hall',null)||{};H.fame=H.fame||0;H.p=H.p||{};PERK.forEach(function(p){H.p[p.k]=H.p[p.k]||0});H.pl=H.pl||[0,0,0,0,0];H.runs=H.runs||0;H.best=H.best||0;H.wins=H.wins||0}return H}
+function hall(){if(!HL){HL=GK.ls.get('hall',null)||{};HL.fame=HL.fame||0;HL.p=HL.p||{};PERK.forEach(function(p){HL.p[p.k]=HL.p[p.k]||0});HL.pl=HL.pl||[0,0,0,0,0];HL.runs=HL.runs||0;HL.best=HL.best||0;HL.wins=HL.wins||0}return HL}
 function saveHall(){GK.ls.set('hall',hall())}
 function bOf(y){for(var b=BOSS-1;b>0;b--)if(y>=g[b]-3)return b;return 0}
 function arena(y){for(var b=0;b<BOSS;b++)if(y>=at[b]&&y<af[b])return b;return-1}
