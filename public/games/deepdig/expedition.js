@@ -18,7 +18,7 @@ var BANDS=[['#b9915f','dots'],['#c9a06b','lines'],['#a9835a','stip'],
  ['#92583f','cross'],['#7b4a38','thin'],['#a5663f','dots'],
  ['#7e8d95','thin'],['#6b7b86','cross'],['#909ca2','stip'],
  ['#5b4a46','cross'],['#4b3e3b','thin'],['#6c5750','dots']];
-var BOSSN=['Mole Queen','Spore Matron','Slag Colossus','Crystal Warden','Core Titan'],BHP=[6,8,10,10,14],BR=[1.15,1.2,1.5,1.1,1.6];
+var BOSSN=['Mole Queen','Spore Matron','Slag Colossus','Crystal Warden','Core Titan'],BHP=[6,8,10,8,12],BR=[1.15,1.2,1.5,1.1,1.6];
 var PLATE=['The Queen kept the first vein for herself.','Under the caps, the old crews still hum.','A furnace someone forgot to bank.','Every crystal remembers a voice.','The relic was never buried. It was planted.'];
 var ROM=['I','II','III','IV','V'];
 var RELIC=[

@@ -57,7 +57,7 @@ function assign(W,d,sk){if(!d||d.st==='dead'||d.st==='saved'||d.st==='exit')retu
   if(sk==='float'){if(d.float)return false;d.float=true;return true}if(sk==='climb'){if(d.climber)return false;d.climber=true;return true}
   if(d.st!=='walk'||d.job==='bash')return false;if(sk==='stop'){d.st='stop';return true}if(sk==='build'){d.st='build';d.bricks=0;d.t=0;return true}if(sk==='dig'){d.st='dig';d.job='dig';d.t=0;return true}if(sk==='bash'){d.job='bash';return true}return false}
 /* the plan follower: hand job k to the frontmost rightward walker once it is inside the window */
-function planStep(W,P){if(P.k>=P.items.length)return null;var it=P.items[P.k],best=null;for(var i=0;i<W.ducks.length;i++){var d=W.ducks[i];if(d.st==='walk'&&d.dir===1&&!d.job&&d.x>=it.lo&&d.x<=it.hi&&(!best||d.x>best.x))best=d}
+function planStep(W,P){if(P.k>=P.items.length)return null;var it=P.items[P.k],best=null;for(var i=0;i<W.ducks.length;i++){var d=W.ducks[i];if(d.st==='walk'&&d.dir===1&&!d.job&&!(it.sk==='climb'&&d.climber)&&!(it.sk==='float'&&d.float)&&d.x>=it.lo&&d.x<=it.hi&&(!best||d.x>best.x))best=d}
   if(best&&assign(W,best,it.sk)){P.k++;return{d:best,sk:it.sk}}return null}
 
 /* ---------- level builder ---------- */
@@ -65,12 +65,13 @@ function build(seed,d,tutorial){var R=GK.rng(seed);function ri(a,b){return a+Mat
   var W0=mk(900),M=W0.M,LW=900,x=0,g=56,plan=[],need={};function col(x,top,type){for(var y=top;y<LH;y++)M[y*LW+x]=type||DIRT}
   function flat(n){for(var i=0;i<n;i++)col(x++,g)}
   for(var y=0;y<LH;y++)M[y*LW]=ROCK;x=1;flat(30);var sx=8,sy=g-14;
-  var kinds=tutorial?(Array.isArray(tutorial)?tutorial.slice():['pit']):[],n=tutorial?1:1+Math.floor(d*6)+(d>.15?ri(0,1):0),pool=['pit','wall','floor','step','steel','drop','thorns'];
+  var kinds=tutorial==='climb'?['cwall']:tutorial?(Array.isArray(tutorial)?tutorial.slice():['pit']):[],n=tutorial?1:1+Math.floor(d*6)+(d>.15?ri(0,1):0),pool=['pit','wall','floor','step','steel','drop','thorns'];
   for(var k=0;k<n&&!tutorial;k++){var kd=pool[ri(0,pool.length-1)];if(kd==='floor'&&g>62)kd='wall';if(kd==='step'&&g<30)kd='drop';if(kd==='drop'&&g>66)kd='steel';kinds.push(kd)}
   kinds.forEach(function(kd,i){flat(ri(10,18));
     if(kd==='pit'){var w=ri(8,Math.min(20,10+Math.floor(d*12))),edge=x-1;for(var i2=0;i2<w;i2++){for(var y=g+7;y<LH;y++)M[y*LW+x]=DIRT;for(var y2=g+1;y2<g+7;y2++)M[y2*LW+x]=WAT;x++}plan.push({sk:'build',lo:edge-3,hi:edge});add('build')}
     else if(kd==='thorns'){var w2=ri(6,14),edge2=x-1;for(var i3=0;i3<w2;i3++){col(x,g);M[(g-1)*LW+x]=THN;x++}plan.push({sk:'build',lo:edge2-3,hi:edge2});add('build')}
     else if(kd==='wall'){var h=ri(5,12),th=ri(5,10);plan.push({sk:'bash',lo:x-12,hi:x-3});for(var i4=0;i4<th;i4++)col(x++,g-h);add('bash')}
+    else if(kd==='cwall'){var ch=ri(6,9),cth=ri(4,6);for(var cj=0;cj<3;cj++)plan.push({sk:'climb',lo:x-12,hi:x-3});for(var i7=0;i7<cth;i7++)col(x++,g-ch);add('climb');add('climb');add('climb')}
     else if(kd==='floor'){var Tk=ri(4,8),L2=ri(14,22),g2=g+Tk+9,z0=x;for(var i5=0;i5<L2;i5++){for(var y3=g;y3<g+Tk;y3++)M[y3*LW+x]=DIRT;for(var y4=g2;y4<LH;y4++)M[y4*LW+x]=DIRT;x++}
       for(var y5=g-26;y5<g+Tk;y5++)M[y5*LW+x]=ROCK;for(var y6=g2;y6<LH;y6++)M[y6*LW+x]=DIRT;x++;plan.push({sk:'dig',lo:z0+3,hi:z0+L2-4});g=g2;add('dig')}
     else if(kd==='step'){var h2=ri(5,9),cx=x;plan.push({sk:'build',lo:cx-21,hi:cx-2*h2+3});g-=h2;add('build')}
@@ -81,7 +82,7 @@ function build(seed,d,tutorial){var R=GK.rng(seed);function ri(a,b){return a+Mat
   flat(10);var ex0=x+2,ex1=x+16;flat(26);for(var y8=0;y8<LH;y8++)M[y8*LW+x]=ROCK;x++;
   /* the pond is shallow and safe: it is the exit */ for(var px=ex0;px<=ex1;px++)for(var py=g;py<g+3;py++)M[py*LW+px]=AIR;
   var Wn=mk(x);for(var yy=0;yy<LH;yy++)for(var xx=0;xx<x;xx++)Wn.M[yy*x+xx]=M[yy*LW+xx];
-  var nd=tutorial?5:ri(12,18)+Math.floor(d*14);
+  var nd=tutorial==='climb'?3:tutorial?5:ri(12,18)+Math.floor(d*14);
   var L={LW:x,sx:sx,sy:sy,ex0:ex0,ex1:ex1,ey:g+2,g:g,n:nd,plan:plan,M0:Wn.M,skills:{}};
   SK.forEach(function(s){L.skills[s]=(need[s]||0)});if(!tutorial){var sp=1+Math.floor(d*2);for(var q=0;q<sp;q++){var s2=SK[ri(0,SK.length-1)];L.skills[s2]++}L.skills.stop=Math.max(L.skills.stop,1)}
   function add(s){need[s]=(need[s]||0)+1}
@@ -195,14 +196,18 @@ var tut=GK.tutorial({parent:stage,onStart:function(){var L=makeLevel(4242,0,true
   {init:function(){tutLvl(['wall'],4302,{bash:1})},update:tutRetry,done:function(){return tutWon()}},
   {init:function(){tutLvl(['dropf'],4303,{float:1})},update:tutRetry,done:function(){return tutWon()}},
   {init:function(){tutLvl(true,4305,{stop:1,build:1})},update:function(){if(G&&G.W.ducks.some(function(d){return d.st==='stop'}))tutStopped=1;tutRetry()},done:function(){return tutStopped}},
-  {init:function(){tutLvl(true,4306,{})},update:tutRetry,done:function(){return G&&G.W.rate!==40}}]});
+  {init:function(){tutLvl(true,4306,{})},update:tutRetry,done:function(){return G&&G.W.rate!==40}},
+  {init:function(){load('tut',1,makeLevel(4243,0,'climb'))},done:function(){return G&&G.i===1&&(G.sel==='climb'||G.skills.climb<3)}},
+  {done:function(){return G&&G.skills.climb===0}},
+  {done:function(){return G&&G.i===1&&(G.st==='won'&&G.end>60||G.st==='lost'&&(load('tut',1,G.L),false))}}]});
 var tutStopped=0;
 function tutLvl(kinds,seed,sk){var L=makeLevel(seed,0,kinds);Object.keys(sk).forEach(function(k){L.skills[k]=sk[k]});tutStopped=0;load('tut',0,L)}
 function tutWon(){return G&&G.st==='won'&&G.end>60}
 function tutRetry(){if(G&&G.st==='lost'&&G.end>40)load('tut',0,G.L)}
 function tutDraw(c){if(!G)return;if(tut.i>=3&&tut.i<=6){var sk0=['dig','bash','float','stop'][tut.i-3],b0=padEl.children[SK.indexOf(sk0)];if(b0&&G.sel!==sk0)b0.classList.toggle('on',(tut.t>>4)%2===0)}
   if(tut.i===7){var rb=padEl.querySelector('.rate');if(rb)rb.classList.toggle('on',(tut.t>>4)%2===0)}
-  if(tut.i>=3&&tut.i<=6&&G.sel){var lead2=null;G.W.ducks.forEach(function(d){if(d.st==='walk'&&(!lead2||d.x>lead2.x))lead2=d});if(lead2){var s2=scale();GK.pulse(c,(lead2.x*CELL-G.cam)*s2,((lead2.y-1)*CELL+HUDH)*s2,tut.t,YOLK,10)}}
+  if(tut.i===8){var cb=padEl.children[5];if(cb)cb.classList.toggle('on',(tut.t>>4)%2===0||G.sel==='climb')}
+  if((tut.i>=3&&tut.i<=6||tut.i===9)&&G.sel){var lead2=null;G.W.ducks.forEach(function(d){if(d.st==='walk'&&(!lead2||d.x>lead2.x))lead2=d});if(lead2){var s2=scale();GK.pulse(c,(lead2.x*CELL-G.cam)*s2,((lead2.y-1)*CELL+HUDH)*s2,tut.t,YOLK,10)}}
   if(tut.i===0){var b=padEl.children[1];if(b){b.classList.toggle('on',(tut.t>>4)%2===0||G.sel==='build')}}else if(tut.i===1){var it=G.L.plan[0],lead=null;G.W.ducks.forEach(function(d){if(d.st==='walk'&&(!lead||d.x>lead.x))lead=d});
     if(lead){var s=scale();GK.pulse(c,(lead.x*CELL-G.cam)*s,((lead.y-1)*CELL+HUDH)*s,tut.t,YOLK,10)}}}
 

@@ -105,13 +105,15 @@ function botDir(){if(D.dead||D.act)return-1;
 function botX(){var ab=EX.arena(D.y),B=EX.boss();
   if(ab>=0){if(EX.bossDead(ab))return D.x<7?0:D.x>7?2:1;if(!B)return-1;return botFight(B)}}
 function botFight(B){var p={x:D.x+.5,y:D.y+.5},bl=EX.bl(),R=EX.R(),i,air=mat(D.x,D.y-1)===0&&D.fuel>8;
-  for(i=0;i<bl.length;i++){var b=bl[i],dx=p.x-(b.x+.5),dy=p.y-(b.y+.5);if(Math.abs(dx)<=R+.9&&Math.abs(dy)<=R+.9){if(air&&dy<R+1.2)return 3;return dx<0?2:0}}
+  for(i=0;i<bl.length;i++){var b=bl[i],dx=p.x-(b.x+.5),dy=p.y-(b.y+.5);if(Math.abs(dx)<=R+.9&&Math.abs(dy)<=R+.9){if(B.k===3)return B.x>p.x?2:0;if(air&&dy<R+1.2)return 3;return dx<0?2:0}}
   var pl=EX.pl();for(i=0;i<pl.length;i++)if(Math.abs(pl[i].x+.5-p.x)<1.4)return p.x<pl[i].x+.5?2:0;
   var dxb=B.x-p.x,dyb=B.y-p.y,d=Math.hypot(dxb,dyb);
+  if(B.k===3&&(B.m==='closed'||B.c<30))return d<4.4?(dxb>0?2:0):-1; /* keep clear of the shard ring until the Warden opens */
   if(B.k===0&&B.m==='charge'&&air)return 3;
-  if(EX.bombsLeft()>0&&!bl.length&&d<=R+B.r+.5&&!(B.k===3&&B.m==='closed')){EX.drop();return air?3:dxb>0?2:0}
+  if(EX.bombsLeft()>0&&!bl.length&&d<=R+B.r+.5&&!(B.k===3&&(B.m==='closed'||B.c<52))){EX.drop();return B.k===3||!air?(dxb>0?2:0):3}
   if(EX.bombsLeft()===0&&!bl.length)return air?3:-1;
-  if(Math.abs(dxb)>1.6)return dxb>0?0:2;
+  if(Math.abs(dxb)>2.1)return dxb>0?0:2;
+  if(Math.abs(dxb)<1.7&&Math.abs(dyb)<1.8)return dxb>0?2:0; /* too close: the body hurts */
   if(dyb<-1.2&&air)return 3;return-1}
 /* route to the surface: Dijkstra with a binary heap, never through lava or unbreakable rock */
 function homePath(){var N=GW*GH,dist=new Float32Array(N).fill(1e9),prev=new Int32Array(N).fill(-1),pd=new Int8Array(N),h=[],s0=D.y*GW+D.x;dist[s0]=0;h.push([0,s0]);
