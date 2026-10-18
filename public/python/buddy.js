@@ -11,11 +11,14 @@
   var FACE = '<svg viewBox="0 0 40 40" aria-hidden="true"><path d="M8 4h24v32l-12-7-12 7z" fill="currentColor"/><g class="eyes"><rect x="13" y="12" width="4" height="7" fill="var(--paper)"/><rect x="23" y="12" width="4" height="7" fill="var(--paper)"/></g><path d="M14 23q6 5 12 0" stroke="var(--paper)" stroke-width="2.2" fill="none"/></svg>';
   var fab = document.createElement('button'); fab.className = 'pip-fab'; fab.type = 'button'; fab.setAttribute('aria-label', 'Ask Pip'); fab.title = 'Ask Pip'; fab.innerHTML = FACE;
   var box = document.createElement('section'); box.className = 'pip'; box.setAttribute('aria-label', 'Pip'); box.hidden = true;
-  box.innerHTML = '<header><span class="pf">' + FACE + '</span><b>Pip</b><button type="button" class="px" aria-label="Close">&times;</button></header>' +
+  box.innerHTML = '<header><span class="pf">' + FACE + '</span><b>Pip</b><button type="button" class="pu" aria-label="Ultra" title="Ultra"><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="4" y="9" width="12" height="8" fill="currentColor"/><path class="sh" d="M7 9V6a3 3 0 0 1 6 0v3" stroke="currentColor" stroke-width="2" fill="none"/></svg></button><button type="button" class="px" aria-label="Close">&times;</button></header>' +
+    '<form class="pw" hidden><label class="vh" for="pwi">Passcode</label><input id="pwi" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Passcode"><button type="submit" aria-label="Unlock"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 10h12M10 4l6 6-6 6" stroke="currentColor" stroke-width="2.2" fill="none"/></svg></button></form>' +
     '<div class="pl" role="log" aria-live="polite"></div>' +
     '<form class="pf2"><label class="vh" for="pq">Ask Pip</label><textarea id="pq" rows="1" enterkeyhint="send" spellcheck="false" placeholder="Ask, or paste an error"></textarea><button type="submit" aria-label="Send"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 10h12M10 4l6 6-6 6" stroke="currentColor" stroke-width="2.2" fill="none"/></svg></button></form>';
   document.body.appendChild(fab); document.body.appendChild(box);
-  var log = $('.pl', box), ta = $('textarea', box), form = $('form', box), hist = [], busy = false, off = false;
+  var greet = '', token = '', exp = 0;
+  try { var sv = JSON.parse(sessionStorage.getItem('pipUltra') || 'null'); if (sv && sv.exp > Date.now()) { token = sv.token; exp = sv.exp; } } catch (_) {}
+  var log = $('.pl', box), ta = $('textarea', box), form = $('.pf2', box), hist = [], busy = false, off = false;
 
   function render(t) {
     var h = esc(t).replace(/```(?:\w+)?\n?([\s\S]*?)```/g, function (_, c) { return '<pre>' + c.replace(/\n$/, '') + '</pre>'; })
@@ -27,7 +30,7 @@
   function say(who, html) { var d = document.createElement('div'); d.className = 'm ' + who; d.innerHTML = html; log.appendChild(d); log.scrollTop = log.scrollHeight; return d; }
   function open(on) {
     box.hidden = !on; fab.classList.toggle('on', on); document.body.classList.toggle('pip-open', on);
-    if (on) { if (!log.children.length) say('b', '<p>Hi, I’m Pip. Paste an error or ask anything about Python or tkinter. I can open entries, read and fix your code, and run it.</p>'); setTimeout(function () { ta.focus(); }, 30); }
+    if (on) { if (!log.children.length) say('b', greet ? '<p>' + esc(greet) + '</p>' : '<p>Hi, I’m Pip. Paste an error or ask anything about Python or tkinter. I can open entries, read and fix your code, and run it.</p>'); setTimeout(function () { ta.focus(); }, 30); }
   }
   fab.onclick = function () { open(box.hidden); };
   window.__pip = { ask: function (t) { open(true); ta.value = t; ta.dispatchEvent(new Event('input')); } };
@@ -219,6 +222,53 @@
     return new Promise(function (ok) { ok(T.f(act.args)); }).then(function (r) { row.className = 'm s ok'; if (r && typeof r === 'object' && r.undo) { row.undoFn = r.undo; return String(r.t); } return String(r); }, function (e) { row.className = 'm s bad'; return 'Failed: ' + (e && e.message || e); });
   }
 
+
+  /* ---------- Ultra: owner powers, unlocked by a passcode the server checks; the page only ever holds a short-lived token ---------- */
+  function live() { if (token && exp < Date.now()) lockUp(); return !!token; }
+  function paintUltra() { box.classList.toggle('ultra', !!token); $('.pu', box).setAttribute('aria-pressed', !!token); }
+  function lockUp() { token = ''; exp = 0; try { sessionStorage.removeItem('pipUltra'); } catch (_) {} paintUltra(); }
+  function ult(tool, args) {
+    if (!live()) return Promise.reject(new Error('Ultra is locked. Unlock it with the lock button first.'));
+    return fetch('/api/ultra/do', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ token: token, tool: tool, args: args }) })
+      .then(function (r) { return r.json().then(function (j) { if (r.status === 401) lockUp(); if (!r.ok) throw new Error(j.error || 'failed'); return j; }); });
+  }
+  function ulTool(v, d, f) { return { v: v, d: d, f: f, ultra: 1 }; }
+  var rowJ = function (o) { return JSON.stringify(o).slice(0, 2400); };
+  TOOLSET.settings_get = ulTool('Read Pip’s settings', function () { return ''; }, function () { return ult('settings_get', {}).then(rowJ); });
+  TOOLSET.settings_set = ulTool('Changed a setting for everyone', function (a) { return clipT(a.key, 20); }, function (a) {
+    return ult('settings_set', { key: a.key, value: a.value }).then(function (j) { return { t: 'Set ' + j.key + '.', undo: function () { ult('settings_set', { key: j.key, value: j.was }).then(applySite, function () {}); } }; }).then(function (r) { applySite(); return r; });
+  });
+  TOOLSET.db_tables = ulTool('Looked at the database', function () { return ''; }, function () { return ult('db_tables', {}).then(function (j) { return j.tables.join('\n'); }); });
+  TOOLSET.db_select = ulTool('Queried the database', function (a) { return clipT(a.sql, 70); }, function (a) { return ult('db_select', { sql: a.sql }).then(function (j) { return j.rows.length ? rowJ(j.rows) : 'No rows.'; }); });
+  TOOLSET.score_delete = ulTool('Deleted a score', function (a) { return '#' + a.id; }, function (a) {
+    return ult('score_delete', { id: a.id }).then(function (j) { return { t: 'Deleted score ' + a.id + ' (' + j.row.name + ', ' + j.row.game + ').', undo: function () { ult('score_restore', { row: j.row }).catch(function () {}); } }; });
+  });
+  TOOLSET.score_update = ulTool('Edited a score', function (a) { return '#' + a.id; }, function (a) {
+    return ult('score_update', { id: a.id, name: a.name, score: a.score }).then(function (j) { return { t: 'Updated score ' + a.id + '.', undo: function () { ult('score_update', { id: a.id, name: j.row.name, score: j.row.score }).catch(function () {}); } }; });
+  });
+  $('.pu', box).onclick = function () {
+    if (token) { lockUp(); say('b', '<p>Ultra is off.</p>'); return; }
+    var f = $('.pw', box); f.hidden = !f.hidden; if (!f.hidden) setTimeout(function () { $('input', f).focus(); }, 30);
+  };
+  $('.pw', box).addEventListener('submit', function (ev) {
+    ev.preventDefault(); var f = ev.currentTarget, i = $('input', f), code = i.value; i.value = ''; if (!code) return;
+    fetch('/api/ultra/unlock', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ code: code }) })
+      .then(function (r) { return r.json().then(function (j) { return { s: r.status, j: j }; }); })
+      .then(function (x) {
+        if (x.j && x.j.token) { token = x.j.token; exp = x.j.exp; try { sessionStorage.setItem('pipUltra', JSON.stringify({ token: token, exp: exp })); } catch (_) {} f.hidden = true; paintUltra(); say('b', '<p>Ultra is on for 30 minutes.</p>'); }
+        else { f.classList.remove('no'); void f.offsetWidth; f.classList.add('no'); if (x.s === 429) say('b err', '<p>Too many tries. Wait a minute.</p>'); }
+      }).catch(function () { say('b err', '<p>Couldn’t reach the server.</p>'); });
+  });
+  /* the owner's live settings: greeting, accent colour and a banner on the book */
+  function applySite() {
+    fetch('/api/site').then(function (r) { return r.json(); }).then(function (c) {
+      greet = c.greeting || ''; if (c.accent) { box.style.setProperty('--acc', c.accent); fab.style.setProperty('--acc', c.accent); } else { box.style.removeProperty('--acc'); fab.style.removeProperty('--acc'); }
+      var top = document.querySelector('.top'), n = document.querySelector('.pip-notice');
+      if (c.notice && top) { if (!n) { n = document.createElement('div'); n.className = 'pip-notice'; top.appendChild(n); } n.textContent = c.notice; } else if (n) n.remove();
+    }).catch(function () {});
+  }
+  paintUltra(); applySite();
+
   function post(body) {
     /* a phone suspends or kills the request when the tab or Safari goes to the background: wait until the page is visible again, then ask once more (up to 3 tries) */
     var hid = false; function seen() { if (document.hidden) hid = true; }
@@ -253,7 +303,7 @@
     function ask() {
       wait = say('b wait', '<i></i><i></i><i></i>');
       var h = hist.concat(turn.slice(0, -1)), last = turn[turn.length - 1];
-      return post({ agent: 1, q: last.t, ctx: ctx, hist: h.slice(-22) }).then(function (x) {
+      return post({ agent: 1, q: last.t, ctx: ctx, hist: h.slice(-22), ultra: live() ? token : undefined }).then(function (x) {
         if (!(x.j && x.j.text)) { fail(wait, x, q, ctx); return false; }
         var t = x.j.text, act = steps < MAXS ? parseAct(t) : null;
         if (act && act.bad) {
