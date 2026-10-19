@@ -2,7 +2,7 @@
 Purpose: resume this chat with full context. Cap ~1,500 tokens; condense, don't truncate. Update proactively.
 
 ## Hosting + git
-- Repo `aaron1612n-cmd/galaxica`; static arcade `public/` served by Cloudflare Worker `play` (wrangler.jsonc). LIVE https://play.galaxica.workers.dev
+- Repo `aaron1612n-cmd/galaxica`; static arcade `public/` served by Cloudflare Worker `galaxica` (wrangler.jsonc). LIVE https://galaxica.avadlabs.workers.dev
 - Deploy `npx wrangler deploy` (user approved earlier; wrangler logged in). Push alone does not publish. NOTE 2026-10-17: auto-mode classifier denied `wrangler deploy` ('Production Deploy'): user must add a Bash permission rule for it (or deploy themselves).
 - BRANCH RULE (user, permanent): work on `main`, commit+push after each finished change. Sessions handed a `claude/*` branch work there (session 2026-10-17 pm: `claude/friendly-cray-9yekgc`, PR to main) and the user merges.
 - Always commit when ready. Local test servers: `npx http-server public -p 8080 -s -c-1`, `npx wrangler dev --port 8787` (for /api). Test kit `tools/gametest/` (shot/bot/thumb) + Playwright at /opt/node22/lib/node_modules/playwright.
