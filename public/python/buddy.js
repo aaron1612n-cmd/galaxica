@@ -11,8 +11,8 @@
   var FACE = '<svg viewBox="0 -10 40 50" aria-hidden="true"><g class="mk mk-star"><path d="M20-9l2.4 5 5.4.7-4 3.7 1 5.4-4.8-2.7-4.8 2.7 1-5.4-4-3.7 5.4-.7z" fill="var(--acc)"/></g><g class="mk mk-crown"><path d="M9 4l2-10 6 6 3-9 3 9 6-6 2 10z" fill="var(--acc)"/></g><g class="mk mk-flag"><path d="M20 4V-9" stroke="currentColor" stroke-width="2"/><path d="M20-9l11 3.5L20-2z" fill="var(--acc)"/></g><path d="M8 4h24v32l-12-7-12 7z" fill="currentColor"/><g class="eyes"><rect x="13" y="12" width="4" height="7" fill="var(--paper)"/><rect x="23" y="12" width="4" height="7" fill="var(--paper)"/></g><path d="M14 23q6 5 12 0" stroke="var(--paper)" stroke-width="2.2" fill="none"/></svg>';
   var fab = document.createElement('button'); fab.className = 'pip-fab'; fab.type = 'button'; fab.setAttribute('aria-label', 'Ask Pip'); fab.title = 'Ask Pip'; fab.innerHTML = FACE;
   var box = document.createElement('section'); box.className = 'pip'; box.setAttribute('aria-label', 'Pip'); box.hidden = true;
-  box.innerHTML = '<header><span class="pf">' + FACE + '</span><b>Pip</b><button type="button" class="pu" aria-label="Ultra" title="Ultra"><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="4" y="9" width="12" height="8" fill="currentColor"/><path class="sh" d="M7 9V6a3 3 0 0 1 6 0v3" stroke="currentColor" stroke-width="2" fill="none"/></svg></button><button type="button" class="pc" aria-label="Cosmetics" title="Cosmetics" hidden><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2l2.2 5 5.3.5-4 3.6 1.2 5.2L10 13.5 5.3 16.3l1.2-5.2-4-3.6 5.3-.5z" fill="currentColor"/></svg></button><button type="button" class="px" aria-label="Close">&times;</button></header>' +
-    '<form class="pw" hidden><label class="vh" for="pwi">Passcode</label><input id="pwi" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Passcode"><button type="submit" aria-label="Unlock"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 10h12M10 4l6 6-6 6" stroke="currentColor" stroke-width="2.2" fill="none"/></svg></button></form>' +
+  box.innerHTML = '<header><span class="pf">' + FACE + '</span><b>Pip</b><button type="button" class="pu" aria-label="Lock" title="Lock"><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="4" y="9" width="12" height="8" fill="currentColor"/><path class="sh" d="M7 9V6a3 3 0 0 1 6 0v3" stroke="currentColor" stroke-width="2" fill="none"/></svg></button><button type="button" class="pc" aria-label="Cosmetics" title="Cosmetics" hidden><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2l2.2 5 5.3.5-4 3.6 1.2 5.2L10 13.5 5.3 16.3l1.2-5.2-4-3.6 5.3-.5z" fill="currentColor"/></svg></button><button type="button" class="px" aria-label="Close">&times;</button></header>' +
+    '<form class="pw"><label class="vh" for="pwi">Passcode</label><input id="pwi" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Passcode"><button type="submit" aria-label="Unlock"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 10h12M10 4l6 6-6 6" stroke="currentColor" stroke-width="2.2" fill="none"/></svg></button></form>' +
     '<div class="pt" hidden><div class="inks" role="group" aria-label="Ink"></div><div class="marks" role="group" aria-label="Mark"></div></div>' +
     '<div class="pl" role="log" aria-live="polite"></div>' +
     '<form class="pf2"><label class="vh" for="pq">Ask Pip</label><textarea id="pq" rows="1" enterkeyhint="send" spellcheck="false" placeholder="Ask, or paste an error"></textarea><button type="submit" aria-label="Send"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 10h12M10 4l6 6-6 6" stroke="currentColor" stroke-width="2.2" fill="none"/></svg></button></form>';
@@ -29,9 +29,10 @@
     return h.split(/(<pre>[\s\S]*?<\/pre>)/).map(function (p) { return /^<pre>/.test(p) ? p : p.split(/\n{2,}/).map(function (x) { return x.trim() ? '<p>' + x.trim().replace(/\n/g, '<br>') + '</p>' : ''; }).join(''); }).join('');
   }
   function say(who, html) { var d = document.createElement('div'); d.className = 'm ' + who; d.innerHTML = html; log.appendChild(d); log.scrollTop = log.scrollHeight; return d; }
+  function hello() { if (token && !log.children.length) say('b', greet ? '<p>' + esc(greet) + '</p>' : '<p>Hi, I’m Pip. Paste an error or ask anything about Python or tkinter. I can open entries, read and fix your code, and run it.</p>'); }
   function open(on) {
     box.hidden = !on; fab.classList.toggle('on', on); document.body.classList.toggle('pip-open', on);
-    if (on) { if (!log.children.length) say('b', greet ? '<p>' + esc(greet) + '</p>' : '<p>Hi, I’m Pip. Paste an error or ask anything about Python or tkinter. I can open entries, read and fix your code, and run it.</p>'); setTimeout(function () { ta.focus(); }, 30); }
+    if (on) { hello(); setTimeout(function () { (token ? ta : $('.pw input', box)).focus(); }, 30); }
   }
   fab.onclick = function () { open(box.hidden); };
   window.__pip = { ask: function (t) { open(true); ta.value = t; ta.dispatchEvent(new Event('input')); } };
@@ -226,8 +227,8 @@
 
   /* ---------- Ultra: owner powers, unlocked by a passcode the server checks; the page only ever holds a short-lived token ---------- */
   function live() { if (token && exp < Date.now()) lockUp(); return !!token; }
-  function paintUltra() { box.classList.toggle('ultra', !!token); $('.pc', box).hidden = !token; if (!token) $('.pt', box).hidden = true; skin(); fab.classList.toggle('ultra', !!token); $('.pu', box).setAttribute('aria-pressed', !!token); }
-  function lockUp() { token = ''; exp = 0; try { sessionStorage.removeItem('pipUltra'); } catch (_) {} paintUltra(); }
+  function paintUltra() { box.classList.toggle('ultra', !!token); box.classList.toggle('locked', !token); $('.pw', box).hidden = !!token; $('.pc', box).hidden = !token; if (!token) $('.pt', box).hidden = true; skin(); fab.classList.toggle('ultra', !!token); fab.classList.toggle('locked', !token); $('.pu', box).setAttribute('aria-pressed', !!token); }
+  function lockUp() { token = ''; exp = 0; try { sessionStorage.removeItem('pipUltra'); } catch (_) {} log.innerHTML = ''; hist = []; paintUltra(); }
   function ult(tool, args) {
     if (!live()) return Promise.reject(new Error('Ultra is locked. Unlock it with the lock button first.'));
     return fetch('/api/ultra/do', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ token: token, tool: tool, args: args }) })
@@ -248,15 +249,15 @@
     return ult('score_update', { id: a.id, name: a.name, score: a.score }).then(function (j) { return { t: 'Updated score ' + a.id + '.', undo: function () { ult('score_update', { id: a.id, name: j.row.name, score: j.row.score }).catch(function () {}); } }; });
   });
   $('.pu', box).onclick = function () {
-    if (token) { lockUp(); say('b', '<p>Ultra is off.</p>'); return; }
-    var f = $('.pw', box); f.hidden = !f.hidden; if (!f.hidden) setTimeout(function () { $('input', f).focus(); }, 30);
+    if (token) { lockUp(); setTimeout(function () { $('.pw input', box).focus(); }, 30); }
+    else $('.pw input', box).focus();
   };
   $('.pw', box).addEventListener('submit', function (ev) {
     ev.preventDefault(); var f = ev.currentTarget, i = $('input', f), code = i.value; i.value = ''; if (!code) return;
     fetch('/api/ultra/unlock', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ code: code }) })
       .then(function (r) { return r.json().then(function (j) { return { s: r.status, j: j }; }); })
       .then(function (x) {
-        if (x.j && x.j.token) { token = x.j.token; exp = x.j.exp; try { sessionStorage.setItem('pipUltra', JSON.stringify({ token: token, exp: exp })); } catch (_) {} f.hidden = true; paintUltra(); box.classList.remove('stamp'); void box.offsetWidth; box.classList.add('stamp'); say('b', '<p>Ultra is on for 30 minutes.</p>'); }
+        if (x.j && x.j.token) { token = x.j.token; exp = x.j.exp; try { sessionStorage.setItem('pipUltra', JSON.stringify({ token: token, exp: exp })); } catch (_) {} paintUltra(); box.classList.remove('stamp'); void box.offsetWidth; box.classList.add('stamp'); hello(); setTimeout(function () { ta.focus(); }, 30); }
         else { f.classList.remove('no'); void f.offsetWidth; f.classList.add('no'); if (x.s === 429) say('b err', '<p>Too many tries. Wait a minute.</p>'); }
       }).catch(function () { say('b err', '<p>Couldn’t reach the server.</p>'); });
   });
@@ -303,7 +304,7 @@
         .then(function (r) { return r.json().then(function (j) { return { s: r.status, j: j }; }); })
         .catch(function () { return { s: 0, j: {} }; })
         .then(function (x) {
-          if ((x.j && x.j.text) || x.s === 429 || left < 1) return x;
+          if ((x.j && x.j.text) || x.s === 429 || x.s === 401 || left < 1) return x;
           if (!x.s || hid || document.hidden) return visible().then(function () { return go(left - 1); });
           return new Promise(function (ok) { setTimeout(ok, 1500); }).then(function () { return go(left - 1); });
         });
@@ -312,13 +313,14 @@
   }
   function fail(wait, x, q, ctx) {
     wait.className = 'm b err';
+    if (x && x.s === 401) { lockUp(); return; }
     if (x && x.s === 429) wait.innerHTML = '<p>One moment, then ask again.</p>';
     else wait.innerHTML = '<p>Pip can’t answer right now.</p>' + (ctx.length ? '<p><a class="ref" href="#/q/' + encodeURIComponent(q.slice(0, 200)) + '">Search the book instead</a></p>' : '');
   }
 
   form.addEventListener('submit', function (ev) {
     ev.preventDefault();
-    var q = ta.value.trim(); if (!q || busy) return;
+    var q = ta.value.trim(); if (!q || busy || !live()) return;
     ta.value = ''; ta.style.height = 'auto';
     say('u', '<p>' + esc(q).replace(/\n/g, '<br>') + '</p>');
     busy = true; box.classList.add('busy');
@@ -326,7 +328,7 @@
     function ask() {
       wait = say('b wait', '<i></i><i></i><i></i>');
       var h = hist.concat(turn.slice(0, -1)), last = turn[turn.length - 1];
-      return post({ agent: 1, q: last.t, ctx: ctx, hist: h.slice(-22), ultra: live() ? token : undefined }).then(function (x) {
+      return post({ agent: 1, q: last.t, ctx: ctx, hist: h.slice(-22), token: token }).then(function (x) {
         if (!(x.j && x.j.text)) { fail(wait, x, q, ctx); return false; }
         var t = x.j.text, act = steps < MAXS ? parseAct(t) : null;
         if (act && act.bad) {

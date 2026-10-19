@@ -1,5 +1,5 @@
-/* Ultra Pip: owner-only powers over the whole site, unlocked by a passcode that lives only in the ULTRA_CODE Worker secret.
-   A correct passcode earns a 30-minute signed token. No code or repo access; anything that mentions "reset" is refused. */
+/* Pip lock: the one Pip, with every owner power, is unlocked by a passcode that lives only in the PASSCODE Worker secret.
+   A correct passcode earns an 8-hour signed token. No code or repo access; anything that mentions "reset" is refused. */
 const enc = new TextEncoder();
 const b64u = buf => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 async function hmac(key, msg) { const k = await crypto.subtle.importKey('raw', enc.encode(key), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']); return new Uint8Array(await crypto.subtle.sign('HMAC', k, enc.encode(msg))); }
@@ -16,19 +16,19 @@ export async function settings(env) {
 
 /* wrong attempts are counted per address and overall; the hits table already prunes anything older than a minute */
 export async function unlock(env, ip, code) {
-  if (!env.ULTRA_CODE) return { s: 503, j: { error: 'off' } };
+  if (!env.PASSCODE) return { s: 503, j: { error: 'off' } };
   const now = Date.now(), n = async k => ((await env.DB.prepare('SELECT COUNT(*) AS n FROM hits WHERE ip = ?').bind(k).first()) || {}).n || 0;
   await env.DB.prepare('DELETE FROM hits WHERE t < ?').bind(now - 60000).run();
   if (await n('u:' + ip) >= 5 || await n('u:*') >= 20) return { s: 429, j: { error: 'slow down' } };
-  const ok = same(await hmac('cmp', clip(code, 200)), await hmac('cmp', env.ULTRA_CODE));
+  const ok = same(await hmac('cmp', clip(code, 200)), await hmac('cmp', env.PASSCODE));
   if (!ok) { for (const k of ['u:' + ip, 'u:*']) await env.DB.prepare('INSERT INTO hits (ip, t) VALUES (?, ?)').bind(k, now).run(); return { s: 401, j: { error: 'no' } }; }
-  const p = b64u(enc.encode(JSON.stringify({ e: now + 30 * 60000 })));
-  return { s: 200, j: { token: p + '.' + b64u(await hmac('tok:' + env.ULTRA_CODE, p)), exp: now + 30 * 60000 } };
+  const p = b64u(enc.encode(JSON.stringify({ e: now + 8 * 3600000 })));
+  return { s: 200, j: { token: p + '.' + b64u(await hmac('tok:' + env.PASSCODE, p)), exp: now + 8 * 3600000 } };
 }
 export async function valid(env, token) {
-  if (!env.ULTRA_CODE || typeof token !== 'string') return false;
+  if (!env.PASSCODE || typeof token !== 'string') return false;
   const [p, sig] = token.split('.'); if (!p || !sig) return false;
-  if (!same(enc.encode(sig), enc.encode(b64u(await hmac('tok:' + env.ULTRA_CODE, p))))) return false;
+  if (!same(enc.encode(sig), enc.encode(b64u(await hmac('tok:' + env.PASSCODE, p))))) return false;
   try { return JSON.parse(atob(p.replace(/-/g, '+').replace(/_/g, '/'))).e > Date.now() } catch (e) { return false }
 }
 
